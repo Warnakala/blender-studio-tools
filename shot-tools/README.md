@@ -1,6 +1,6 @@
 # Project Description
 
-Shot tools is an Add-on that helps studios to work with task specific
+Shot Tools is an Add-on that helps studios to work with task specific
 blend-files. The main functionalities are
 
 * Build blend files for a specific task and shot.
@@ -14,8 +14,8 @@ The main design principles are:
   configuration should be part of the production repository.
 * The configuration files are a collection of python files. The API between
   the configuration files and the add-on should be very friendly as pipeline
-  TD's working on the production should be able to work with it.
-* TD's/artists should be able to handle issues during building without looking
+  TDs working on the production should be able to work with it.
+* TDs/artists should be able to handle issues during building without looking
   at how the add-on is structured.
 * The tool contains connectors that can be configured to read/write data
   from the system/file that is the main location of the data. For example
@@ -49,23 +49,23 @@ there are multiple ways how to change the configuration.
 
 For any combination of these configurations hooks can be defined.
 
-```[python]
+```
 @shot_tools.hook(asset='Spring', shot='02_020A')
-fn hook_Spring_02_020A(asset: shot_tools.Asset, shot: shot_tools.Shot, **kwargs):
+def hook_Spring_02_020A(asset: shot_tools.Asset, shot: shot_tools.Shot, **kwargs) -> None:
     """
     Specific overrides when Spring is loaded in 02_020A.
     """
 
 @shot_tools.hook(task='anim')
-fn hook_task_anim(task: shot_tools.Task, shot: shot_tools.Shot, **kwargs):
+def hook_task_anim(task: shot_tools.Task, shot: shot_tools.Shot, **kwargs) -> None:
     """
     Specific overrides for any animation task.
     """
 ```
 
 The add-on will internally create a list containing the hooks that needs to be
-executed for the command in the order what will make sense. It will then
-execute them one by one.
+executed for the command in a sensible order. It will then execute them in that
+order.
 
 A hook can request/use needed data by simply adding a parameter. The `**kwargs`
 will contain data that cannot be mapped to a parameter.
@@ -118,9 +118,9 @@ settings about the production, including:
 Any artist can open a shot file via the `File` menu. A modal panel appears
 where the user can select the task type and sequence/shot. When the file
 already exists it will be opened. When the file doesn't exist the file
-will be build.
+will be built.
 
-In the future other use cases will also be accessible. Use cases like:
+In the future other use cases will also be accessible, such as:
 
 * Syncing data back from a work file to the source of the data.
 * Report of errors/differences between the shot file and the configuration.
