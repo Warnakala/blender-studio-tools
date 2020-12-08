@@ -1,6 +1,6 @@
 # Project Description
 
-Shot tools is an Add-on that helps studios to work with task specific 
+Shot tools is an Add-on that helps studios to work with task specific
 blend-files. The main functionalities are
 
 * Build blend files for a specific task and shot.
@@ -10,7 +10,7 @@ blend-files. The main functionalities are
 
 The main design principles are:
 
-* The tool can be installed as an add-on, but the (production specific) 
+* The tool can be installed as an add-on, but the (production specific)
   configuration should be part of the production repository.
 * The configuration files are a collection of python files. The API between
   the configuration files and the add-on should be very friendly as pipeline
@@ -31,14 +31,14 @@ in multiple productions or studios.
 In the configuration files the TD can setup the connectors that are use for
 the production. There are several connectors in the add-on:
 
-* Connector for text based config files (json/yaml). 
+* Connector for text based config files (json/yaml).
 * Connector for kitsu (https://www.cg-wire.com/en/kitsu.html).
 * Connector for blend files.
 
 ## Layering & Hooks
 
 The configuration of the tool is layered. When building a work file for a sequence
-there are multiple ways how to change the configuration. 
+there are multiple ways how to change the configuration.
 
 * Configuration for the production.
 * Configuration for the asset that is needed.
@@ -75,7 +75,7 @@ will contain data that cannot be mapped to a parameter.
 
 The shot tool has an API between the add-on and the configuration files. This
 API contains convenience functions and classes to hide complexity and makes
-sure that the configuration files are easy to maintain. 
+sure that the configuration files are easy to maintain.
 
 ```
 register_task_type(task_type="anim")
