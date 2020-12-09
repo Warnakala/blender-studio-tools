@@ -1,6 +1,6 @@
 # Project Description (DRAFT)
 
-Shot tools is an Add-on that helps studios to work with task specific 
+Shot Tools is an Add-on that helps studios to work with task specific
 blend-files. The main functionalities are
 
 * Build blend files for a specific task and shot.
@@ -31,14 +31,14 @@ in multiple productions or studios.
 In the configuration files the TD can setup the connectors that are use for
 the production. Possible connectors would be:
 
-* Connector for text based config files (json/yaml). 
+* Connector for text based config files (json/yaml).
 * Connector for kitsu (https://www.cg-wire.com/en/kitsu.html).
 * Connector for blend files.
 
 ## Layering & Hooks
 
 The configuration of the tool is layered. When building a work file for a sequence
-there are multiple ways how to change the configuration. 
+there are multiple ways how to change the configuration.
 
 * Configuration for the production.
 * Configuration for the asset that is needed.
@@ -81,8 +81,8 @@ following items.
 ### Execution Order
 
 The add-on will internally create a list containing the hooks that needs to be
-executed for the command in the order what will make sense. It will then
-execute them one by one.
+executed for the command in a sensible order. It will then execute them in that
+order.
 
 By default the next order will be used:
 
@@ -136,7 +136,7 @@ can only be used in the `run_before` parameter.
 
 The shot tool has an API between the add-on and the configuration files. This
 API contains convenience functions and classes to hide complexity and makes
-sure that the configuration files are easy to maintain. 
+sure that the configuration files are easy to maintain.
 
 ```
 register_task_type(task_type="anim")
@@ -179,9 +179,9 @@ settings about the production, including:
 Any artist can open a shot file via the `File` menu. A modal panel appears
 where the user can select the task type and sequence/shot. When the file
 already exists it will be opened. When the file doesn't exist the file
-will be build.
+will be built.
 
-In the future other use cases will also be accessible. Use cases like:
+In the future other use cases will also be accessible, such as:
 
 * Syncing data back from a work file to the source of the data.
 * Report of errors/differences between the shot file and the configuration.
