@@ -1,16 +1,16 @@
 # Project Description (DRAFT)
 
-Shot Tools is an Add-on that helps studios to work with task specific
-blend-files. The main functionalities are
+Shot Builder is an Add-on that helps studios to work with task specific
+Blend-files. The shot builder is part of the shot-tools repository. The main functionalities are
 
 * Build blend files for a specific task and shot.
-* Sync data back from work files to places like kitsu, or sequence.blend.
+* Sync data back from work files to places like kitsu, or `edit.blend`.
 
 ## Design Principles
 
 The main design principles are:
 
-* The core-tool can be installed as an add-on, but the (production specific) 
+* The core-tool can be installed as an add-on, but the (production specific)
   configuration should be part of the production repository.
 * The configuration files are a collection of python files. The API between
   the configuration files and the add-on should be easy to use as pipeline
@@ -19,16 +19,15 @@ The main design principles are:
   at how the add-on is structured.
 * The tool contains connectors that can be configured to read/write data
   from the system/file that is the main location of the data. For example
-  The start and end time of a shot could be stored in a sequence.blend or
-  in an external production tracking application.
+  The start and end time of a shot could be stored in an external production tracking application.
 
 ## Connectors
 
-Connectors are components that can be used to read or write to a files or
+Connectors are components that can be used to read or write to files or
 systems. The connectors will add flexibility to the add-on so it could be used
 in multiple productions or studios.
 
-In the configuration files the TD can setup the connectors that are use for
+In the configuration files the TD can setup the connectors that are used for
 the production. Possible connectors would be:
 
 * Connector for text based config files (json/yaml).
@@ -38,7 +37,7 @@ the production. Possible connectors would be:
 ## Layering & Hooks
 
 The configuration of the tool is layered. When building a work file for a sequence
-there are multiple ways how to change the configuration.
+there are multiple ways to change the configuration.
 
 * Configuration for the production.
 * Configuration for the asset that is needed.
@@ -65,7 +64,7 @@ def hook_task_anim(task: shot_tools.Task, shot: shot_tools.Shot, **kwargs) -> No
 
 ### Data
 
-All hooks will must have pythons `**kwargs` parameter. The `kwargs` contains
+All hooks must have Python’s `**kwargs` parameter. The `kwargs` contains
 the context at the moment the hook is invoked. The context can contain the
 following items.
 
@@ -87,24 +86,23 @@ order.
 By default the next order will be used:
 
 * Production wide hooks
-* Asset hooks
 * Asset Type hooks
+* Asset hooks
 * Sequence hooks
 * Shot hooks
 * Task type hooks
 
-When a hook needs is defined to match an asset it will always be run when during
-the asset loading phase.
+A hook with a single ‘match’ rule will be run in the corresponding phase. A hook with multiple ‘match’ rules will be run in the last matching phase. For example, a hook with ‘asset’ and ‘task type’ match rules will be run in the ‘task type’ phase.
 
 #### Events
 
-When order of execution can be customized by adding the optional `run_before`
+Order of execution can be customized by adding the optional `run_before`
 or `run_after` parameters.
 
 ```
 @shot_tools.hook(match_task_type='anim',
-                 run_after=[shot_tools.events.AssetsLoaded()],
-                 run_before=[shot_tools.events.ShotOverrides()])
+                 requires={shot_tools.events.AssetsLoaded, hook_task_other_anim},
+                 is_required_by={shot_tools.events.ShotOverrides})
 def hook_task_anim(task: shot_tools.Task, shot: shot_tools.Shot, **kwargs) -> None:
     """
     Specific overrides for any animation task run after all assets have been loaded.
@@ -134,7 +132,7 @@ can only be used in the `run_before` parameter.
 
 ## API
 
-The shot tool has an API between the add-on and the configuration files. This
+The shot builder has an API between the add-on and the configuration files. This
 API contains convenience functions and classes to hide complexity and makes
 sure that the configuration files are easy to maintain.
 
@@ -144,15 +142,48 @@ register_task_type(task_type="lighting")
 ```
 
 ```
-register_asset_type(asset_type="char")
-```
+# shot_tool/characters.py
+class Asset(shot_tool.some_module.Asset):
+    asset_file = "/{asset_type}/{name}/{name}.blend"
+    collection = “{class_name}”
+    name = “{class_name}”
+
+class Character(Asset):
+    asset_type = ‘char’
+
+
+class Ellie(Character):
+    collection = “{class_name}-{variant_name}”
+    variants = {‘default’, ‘short_hair’}
+
+class Victoria(Character): pass
+class Rex(Character): pass
+
+# shot_tool/shots.py
+class Shot_01_020_A(shot_tool.some_module.Shot):
+    shot_id = ‘01_020_A’
+    assets = {
+        characters.Ellie(variant=”short_hair”),
+        characters.Rex,
+        sets.LogOverChasm,
+    }
+
+class AllHumansShot(shot_tool.some_module.Shot):
+    assets = {
+        characters.Ellie(variant=”short_hair”),
+        characters.Rex,
+        characters.Victoria,
+    }
+
+class Shot_01_035_A(AllHumansShot):
+    assets = {
+        sets.Camp,
+    }
 
 ```
-register_asset(name="Spring", asset_type="char", asset_file="/chars/spring/Spring.blend")
-```
 
-This API is structured/implemented in such a way that it keeps track of what
-the is being done. This will be used when an error occurs so a descriptive
+This API is structured/implemented in a way that it keeps track of what
+is being done. This will be used when an error occurs so a descriptive
 error message can be generated that would help the TD to solve the issue more
 quickly. The goal would be that the error messages are descriptive enough to
 direct the TD into the direction where the actual cause is. And when possible
@@ -160,25 +191,22 @@ propose several solutions to fix it.
 
 ## Setting up the tool
 
-When enabled the artist/TD can point the add-on to a default production
-repository. This is only needed when the location cannot be determined based
-on the current blend-file.
+The artist/TD can configure their current local project directory in the add-on preferences. This can then be used for new blend files. The project associated with an opened (so existing) blend file can be found automatically by iterating over parent directories until a Shot Builder configuration file is found. Project-specific settings are not configured/stored in the add-on, but in this configuration file.
 
 The add-on will look in the root of the production repository to locate the
-main configuration file `.shot-tools/config.py`. This file contains general
+main configuration file `shot-builder/config.py`. This file contains general
 settings about the production, including:
 
-* Define the name of the production for reporting back to the user when needed.
-* Define naming standards to test against when reporting deviations.
-* Location of other configuration (`tasks.py`, `assets.py`, `asset_types.py`)
-  relative from the root of the production.
-* Configuration of the connectors that are needed.
+* The name of the production for reporting back to the user when needed.
+* Naming standards to test against when reporting deviations.
+* Location of other configuration (`tasks.py`, `assets.py`) relative to the `shot-builder` directory of the production.
+* Configuration of the needed connectors.
 
 ## Usage
 
 Any artist can open a shot file via the `File` menu. A modal panel appears
 where the user can select the task type and sequence/shot. When the file
-already exists it will be opened. When the file doesn't exist the file
+already exists, it will be opened. When the file doesn't exist, the file
 will be built.
 
 In the future other use cases will also be accessible, such as:
