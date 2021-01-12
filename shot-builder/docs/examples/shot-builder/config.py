@@ -9,6 +9,9 @@ CONFIGURATION_FILES = {
     "shots.py"
 }
 
+"""
+    The set of task types.
+"""
 TASK_TYPES = {
     'anim',
     'lighting',

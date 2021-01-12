@@ -5,6 +5,8 @@ class Shot_01_020_A(shot_builder.some_module.Shot):
         characters.Rex,
         sets.LogOverChasm,
     }
+    # Offset of all assets to reduce floating point errors.
+    world_center = [1000, 0, 250]
 
 
 class AllHumansShot(shot_builder.some_module.Shot):
