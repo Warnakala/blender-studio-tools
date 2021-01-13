@@ -19,43 +19,76 @@
 # <pep8 compliant>
 
 import pathlib
+import logging
+from typing import *
 
 import bpy
 
+from shot_builder.task_type import *
 
-def is_valid_project_path(project_path: pathlib.Path) -> bool:
+
+logger = logging.getLogger(__name__)
+
+
+class Production():
+    """
+    Class containing data and methods for a production.
+    """
+    def __init__(self, production_path: pathlib.Path):
+        self.path = production_path
+        self.task_types = []
+        self.task_types.extend([TaskType('anim'), TaskType('light')])
+
+    def get_task_types_items(self) -> list:
+        """
+        Get the list of task types items to be used in an item function of a
+        `bpy.props.EnumProperty`
+        """
+        return [
+            (task_type.name, task_type.name, task_type.name)
+            for task_type in self.task_types
+        ]
+    
+
+_PRODUCTION: Optional[Production] = None
+
+
+def is_valid_production_root(path: pathlib.Path) -> bool:
     """
     Test if the given project path is configured correctly.
     
     A valid project path contains a subfolder with the name `shot-builder`
     holding configuration files.
     """
-    if not project_path.is_absolute():
+    if not path.is_absolute():
         return False
-    if not project_path.exists():
+    if not path.exists():
         return False
-    if not project_path.is_dir():
+    if not path.is_dir():
         return False
-    config_file_path = get_project_config_file_path(project_path)
+    config_file_path = get_production_config_file_path(path)
     return config_file_path.exists()
 
 
-def get_project_config_dir_path(project_path: pathlib.Path) -> pathlib.Path:
+def get_production_config_dir_path(path: pathlib.Path) -> pathlib.Path:
     """
-    Get the project configuration dir path.
+    Get the production configuration dir path.
     """
-    return project_path / "shot-builder"
+    return path / "shot-builder"
 
 
-def get_project_config_file_path(project_path: pathlib.Path) -> pathlib.Path:
+def get_production_config_file_path(path: pathlib.Path) -> pathlib.Path:
     """
-    Get the project configuration file path.
+    Get the production configuration file path.
     """
-    return get_project_config_dir_path(project_path) / "config.py"
+    return get_production_config_dir_path(path) / "config.py"
 
 
-def _find_production_root(path: pathlib.Path) -> pathlib.Path:
-    if is_valid_project_path(path):
+def _find_production_root(path: pathlib.Path) -> Optional[pathlib.Path]:
+    """
+    Given a path try to find the production root
+    """
+    if is_valid_production_root(path):
         return path
     try:
         parent_path = path.parents[0]
@@ -63,8 +96,9 @@ def _find_production_root(path: pathlib.Path) -> pathlib.Path:
     except IndexError:
         return None
     
+
 # TODO: return type is optional
-def get_production_root(context: bpy.types.Context) -> pathlib.Path:
+def get_production_root(context: bpy.types.Context) -> Optional[pathlib.Path]:
     """
     Determine the project root based on the current file.
     When current file isn't part of a project the project root 
@@ -75,7 +109,38 @@ def get_production_root(context: bpy.types.Context) -> pathlib.Path:
     if production_root:
         return production_root
     production_root = pathlib.Path(
-        context.preferences.addons[__package__].preferences.project_path)
-    if is_valid_project_path(production_root):
+        context.preferences.addons[__package__].preferences.production_path)
+    if is_valid_production_root(production_root):
         return production_root
     return None
+
+
+def ensure_loaded_production(context: bpy.types.Context) -> bool:
+    """
+    Ensure that the production of the current context is loaded.
+
+    Returns if the production of for the given context is loaded.
+    """
+    global _PRODUCTION
+    production_root = get_production_root(context)
+    if production_root is None:
+        _PRODUCTION = None
+        return False
+    if _PRODUCTION and (_PRODUCTION.path == production_root):
+        return True
+    
+    logger.debug(f"loading new production configuration from '{production_root}'.")
+    return __load_production_configuration(context, production_root)
+
+
+def __load_production_configuration(context: bpy.types.Context,
+                                    production_path: pathlib.Path) -> bool:
+    global _PRODUCTION
+    _PRODUCTION = Production(production_path)
+    return False
+
+
+def get_active_production() -> Production:
+    global _PRODUCTION
+    assert(_PRODUCTION)
+    return _PRODUCTION

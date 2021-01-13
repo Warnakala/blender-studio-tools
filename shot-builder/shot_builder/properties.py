@@ -21,13 +21,14 @@ import bpy
 
 import pathlib
 
-from shot_builder.project import is_valid_project_path
+from shot_builder.project import is_valid_production_root
+
 
 class ShotBuilderPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    project_path: bpy.props.StringProperty(
-        name="Project Root",
+    production_path: bpy.props.StringProperty(
+        name="Production Root",
         description="The location to load configuration files from when "
             "they couldn't be found in any parent folder of the current "
             "file. Folder must contain a sub-folder named `shot-builder` "
@@ -38,8 +39,8 @@ class ShotBuilderPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        is_valid = is_valid_project_path(pathlib.Path(self.project_path))
-        layout.prop(self, "project_path", icon='NONE' if is_valid else 'ERROR')
+        is_valid = is_valid_production_root(pathlib.Path(self.production_path))
+        layout.prop(self, "production_path", icon='NONE' if is_valid else 'ERROR')
         if not is_valid:
             layout.label(text="Folder must contain a sub-folder named "
                               "`shot-builder` that holds the configuration "
