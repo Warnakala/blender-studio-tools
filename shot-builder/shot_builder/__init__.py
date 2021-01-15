@@ -18,6 +18,13 @@
 
 # <pep8 compliant>
 
+from shot_builder.ui import *
+from shot_builder.connectors.kitsu import *
+from shot_builder.operators import *
+from shot_builder.properties import *
+import bpy
+
+
 bl_info = {
     'name': 'Shot Builder',
     "author": "Jeroen Bakker",
@@ -28,14 +35,9 @@ bl_info = {
     'category': 'Studio',
 }
 
-import bpy
-
-from shot_builder.properties import *
-from shot_builder.operators import *
-from shot_builder.ui import *
-
 
 classes = (
+    KitsuPreferences,
     ShotBuilderPreferences,
     SHOTBUILDER_OT_NewShotFile,
 )

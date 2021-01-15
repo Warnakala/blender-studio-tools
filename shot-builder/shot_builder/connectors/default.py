@@ -17,11 +17,15 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
-import bpy
-from shot_builder.operators import *
+from shot_builder.shot import Shot
+from shot_builder.task_type import TaskType
+from shot_builder.connectors.connector import Connector
+from typing import List
 
 
-def topbar_file_new_draw_handler(self, context: bpy.types.Context):
-    layout = self.layout
-    op = layout.operator(
-        SHOTBUILDER_OT_NewShotFile.bl_idname, text="Shot File")
+class DefaultConnector(Connector):
+    def get_shots(self) -> List[Shot]:
+        return []
+
+    def get_task_types(self) -> List[TaskType]:
+        return [TaskType("anim"), TaskType("light")]
