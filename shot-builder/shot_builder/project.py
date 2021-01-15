@@ -26,6 +26,7 @@ from typing import *
 import bpy
 
 from shot_builder.task_type import *
+from shot_builder.shot import *
 from shot_builder.sys_utils import *
 from shot_builder.connectors.default import DefaultConnector
 from shot_builder.connectors.connector import Connector
@@ -52,7 +53,7 @@ class Production():
         self.path = production_path
         self.task_types = DefaultConnector
         self.shots = DefaultConnector
-        self.name = "Unnamed production"
+        self.name = DefaultConnector
         self.config = {}
 
     def __create_connector(self,
@@ -95,6 +96,23 @@ class Production():
             for shot in shots
         ]
 
+    # TODO: Use visitor pattern.
+    def __load_name(self, main_config_mod):
+        name = getattr(main_config_mod, "PRODUCTION_NAME", None)
+        if name is None:
+            return
+
+        # Extract task types from a list of strings
+        if isinstance(name, str):
+            self.name = name
+            return
+
+        if issubclass(name, Connector):
+            self.name = name
+
+        logger.warn(
+            "Skip loading of production name. Incorrect configuration detected.")
+
     def __load_task_types(self, main_config_mod):
         task_types = getattr(main_config_mod, "TASK_TYPES", None)
         if task_types is None:
@@ -109,7 +127,7 @@ class Production():
             self.task_types = task_types
 
         logger.warn(
-            "Skip loading of task_types. Incorrect configuration detected (task_types)")
+            "Skip loading of task_types. Incorrect configuration detected.")
 
     def __load_shots(self, main_config_mod):
         shots = getattr(main_config_mod, "SHOTS", None)
@@ -125,7 +143,7 @@ class Production():
             self.shots = shots
 
         logger.warn(
-            "Skip loading of shots. Incorrect configuration detected (shots)")
+            "Skip loading of shots. Incorrect configuration detected")
 
     def __load_connector_keys(self, main_config_mod):
         connectors = set()
@@ -146,7 +164,7 @@ class Production():
 
     # TODO: what is the typing for a module. Unable to use `: module`
     def _load_config(self, main_config_mod):
-        self.name = getattr(main_config_mod, "PRODUCTION_NAME", self.name)
+        self.__load_name(main_config_mod)
         self.__load_task_types(main_config_mod)
         self.__load_shots(main_config_mod)
         self.__load_connector_keys(main_config_mod)

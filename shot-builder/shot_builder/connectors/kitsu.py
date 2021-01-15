@@ -28,11 +28,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class KitsuError(Exception):
+class KitsuException(Exception):
     pass
 
 
 class KitsuPreferences(bpy.types.PropertyGroup):
+    backend: bpy.props.StringProperty(
+        name="Server URL",
+        description="Kitsu server address",
+        default="https://kitsu.blender.cloud/")
     username: bpy.props.StringProperty(
         name="Username",
         description="Username to connect to Kitsu",)
@@ -43,12 +47,13 @@ class KitsuPreferences(bpy.types.PropertyGroup):
 
     def draw(self, layout: bpy.types.UILayout, context: bpy.types.Context):
         layout.label(text="Kitsu")
+        layout.prop(self, "backend")
         layout.prop(self, "username")
         layout.prop(self, "password")
 
 
 class KitsuConnector(Connector):
-    PRODUCTION_KEYS = {'KITSU_BACKEND', 'KITSU_PRODUCTION_ID'}
+    PRODUCTION_KEYS = {'KITSU_BACKEND', 'KITSU_PROJECT_ID'}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -56,9 +61,11 @@ class KitsuConnector(Connector):
         self.__authorize()
 
     def __authorize(self):
-        username = self._preferences.kitsu.username
-        password = self._preferences.kitsu.password
-        backend = self._production.config['KITSU_BACKEND']
+        kitsu_pref = self._preferences.kitsu
+        backend = kitsu_pref.backend
+        username = kitsu_pref.username
+        password = kitsu_pref.password
+
         logger.info(f"authorize {username} against {backend}")
         response = requests.post(
             url=f"{backend}/auth/login", data={'email': username, 'password': password})

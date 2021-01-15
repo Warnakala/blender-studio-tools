@@ -24,6 +24,9 @@ from typing import List
 
 
 class DefaultConnector(Connector):
+    def get_name(self) -> str:
+        return "unnamed production"
+
     def get_shots(self) -> List[Shot]:
         return []
 
