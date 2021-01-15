@@ -12,8 +12,14 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
 
     production_root: bpy.props.StringProperty(
         name="Production Root",
-        description="Root of the production.",
+        description="Root of the production",
         subtype='DIR_PATH',
+    )
+
+    production_name: bpy.props.StringProperty(
+        name="Production",
+        description="Name of the production to create a shot file for",
+        options=set()
     )
 
     shot_id: bpy.props.StringProperty(
@@ -35,6 +41,7 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
         ensure_loaded_production(context)
         production = get_active_production()
         self.production_root = str(production.path)
+        self.production_name = production.name
         
         return context.window_manager.invoke_props_dialog(self, width = 400)
     
@@ -44,6 +51,9 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
+        row = layout.row()
+        row.enabled = False
+        row.prop(self, "production_name")
         layout.prop(self, "shot_id")
         layout.prop(self, "task_type")
     

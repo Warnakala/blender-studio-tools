@@ -20,11 +20,13 @@
 
 import pathlib
 import logging
+import importlib
 from typing import *
 
 import bpy
 
 from shot_builder.task_type import *
+from shot_builder.sys_utils import *
 
 
 logger = logging.getLogger(__name__)
@@ -33,11 +35,19 @@ logger = logging.getLogger(__name__)
 class Production():
     """
     Class containing data and methods for a production.
+
+    # Data members #
+    path: contains the path to the root of the production.
+    task_types: contains a list of `TaskType`s that are defined for this
+        production. By default the task_types are prefilled with anim and light.
+    name: human readable name of the production.
+
     """
     def __init__(self, production_path: pathlib.Path):
         self.path = production_path
         self.task_types = []
         self.task_types.extend([TaskType('anim'), TaskType('light')])
+        self.name = "Unnamed production"
 
     def get_task_types_items(self) -> list:
         """
@@ -48,6 +58,14 @@ class Production():
             (task_type.name, task_type.name, task_type.name)
             for task_type in self.task_types
         ]
+
+    # TODO: what is the typing for a module. Unable to use `: module`
+    def _load_config(self, main_config_mod):
+        self.name = getattr(main_config_mod, "PRODUCTION_NAME", self.name)
+        task_types = getattr(main_config_mod, "TASK_TYPES", None)
+        if task_types:
+            self.task_types = [TaskType(task_type) for task_type in task_types]
+
     
 
 _PRODUCTION: Optional[Production] = None
@@ -137,6 +155,13 @@ def __load_production_configuration(context: bpy.types.Context,
                                     production_path: pathlib.Path) -> bool:
     global _PRODUCTION
     _PRODUCTION = Production(production_path)
+    paths = [production_path/"shot-builder"]
+    with SystemPathInclude(paths) as _include:
+        import config as production_config
+        importlib.reload(production_config)
+        _PRODUCTION._load_config(production_config)
+        pass
+
     return False
 
 
