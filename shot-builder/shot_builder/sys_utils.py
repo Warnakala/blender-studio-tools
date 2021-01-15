@@ -20,7 +20,10 @@
 
 import sys
 import pathlib
-from typing import List
+import logging
+from typing import *
+
+logger = logging.getLogger(__name__)
 
 
 class SystemPathInclude:
@@ -41,7 +44,7 @@ class SystemPathInclude:
     def __init__(self, paths_to_add: List[pathlib.Path]):
         # TODO: Check if all paths exist and are absolute.
         self.__paths = paths_to_add
-        self.__original_sys_path = None
+        self.__original_sys_path: List[str] = []
 
     def __enter__(self):
         self.__original_sys_path = sys.path

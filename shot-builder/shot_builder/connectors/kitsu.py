@@ -34,14 +34,16 @@ class KitsuException(Exception):
 
 
 class KitsuPreferences(bpy.types.PropertyGroup):
-    backend: bpy.props.StringProperty(
+    backend: bpy.props.StringProperty(  # type: ignore
         name="Server URL",
         description="Kitsu server address",
         default="https://kitsu.blender.cloud/api")
-    username: bpy.props.StringProperty(
+
+    username: bpy.props.StringProperty(  # type: ignore
         name="Username",
         description="Username to connect to Kitsu",)
-    password: bpy.props.StringProperty(
+
+    password: bpy.props.StringProperty(  # type: ignore
         name="Password",
         description="Password to connect to Kitsu",
         subtype='PASSWORD',)
@@ -92,7 +94,7 @@ class KitsuConnector(Connector):
     def get_name(self) -> str:
         project_id = self._production.config['KITSU_PROJECT_ID']
         production = self.__api_get(f"data/projects/{project_id}")
-        return production['name']
+        return str(production['name'])
 
     def get_task_types(self) -> List[TaskType]:
         task_types = self.__api_get(f"data/task_types/")

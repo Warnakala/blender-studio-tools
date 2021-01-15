@@ -22,12 +22,12 @@ import bpy
 from shot_builder.project import *
 
 
-def production_task_type_items(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+def production_task_type_items(self: SHOTBUILDER_OT_NewShotFile, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
     production = get_active_production()
     return production.get_task_type_items(context=context)
 
 
-def production_shot_id_items(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+def production_shot_id_items(self: SHOTBUILDER_OT_NewShotFile, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
     production = get_active_production()
     return production.get_shot_items(context=context)
 
@@ -37,31 +37,31 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
     bl_idname = "shotbuilder.new_shot_file"
     bl_label = "New Production Shot File"
 
-    production_root: bpy.props.StringProperty(
+    production_root: bpy.props.StringProperty(  # type: ignore
         name="Production Root",
         description="Root of the production",
         subtype='DIR_PATH',
     )
 
-    production_name: bpy.props.StringProperty(
+    production_name: bpy.props.StringProperty(  # type: ignore
         name="Production",
         description="Name of the production to create a shot file for",
         options=set()
     )
 
-    shot_id: bpy.props.EnumProperty(
+    shot_id: bpy.props.EnumProperty(  # type: ignore
         name="Shot ID",
         description="Shot ID of the shot to build",
         items=production_shot_id_items,
     )
 
-    task_type: bpy.props.EnumProperty(
+    task_type: bpy.props.EnumProperty(  # type: ignore
         name="Task",
         description="Task to create the shot file for",
         items=production_task_type_items
     )
 
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event):
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         production_root = get_production_root(context)
         if production_root is None:
             self.report(
@@ -74,7 +74,7 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
 
         return context.window_manager.invoke_props_dialog(self, width=400)
 
-    def execute(self, context: bpy.types.Context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         production = get_active_production()
         return {'CANCELLED'}
 

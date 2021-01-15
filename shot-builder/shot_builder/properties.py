@@ -28,7 +28,7 @@ from shot_builder.connectors.kitsu import KitsuPreferences
 class ShotBuilderPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    production_path: bpy.props.StringProperty(
+    production_path: bpy.props.StringProperty(  # type: ignore
         name="Production Root",
         description="The location to load configuration files from when "
         "they couldn't be found in any parent folder of the current "
@@ -37,7 +37,7 @@ class ShotBuilderPreferences(bpy.types.AddonPreferences):
         subtype='DIR_PATH',
     )
 
-    kitsu: bpy.props.PointerProperty(
+    kitsu: bpy.props.PointerProperty(  # type: ignore
         name="Kitsu Preferences",
         type=KitsuPreferences
     )

@@ -51,9 +51,9 @@ class Production():
 
     def __init__(self, production_path: pathlib.Path):
         self.path = production_path
-        self.task_types = []
+        self.task_types: List[TaskType] = []
         self.task_types_connector = DefaultConnector
-        self.shots = []
+        self.shots: List[Shot] = []
         self.shots_connector = DefaultConnector
         self.name = ""
         self.name_connector = DefaultConnector
@@ -273,7 +273,6 @@ def __load_production_configuration(context: bpy.types.Context,
     _PRODUCTION = Production(production_path)
     paths = [production_path/"shot-builder"]
     with SystemPathInclude(paths) as _include:
-        # type: ignore
         import config as production_config
         importlib.reload(production_config)
         _PRODUCTION._load_config(production_config)
