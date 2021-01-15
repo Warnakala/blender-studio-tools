@@ -18,8 +18,9 @@
 
 # <pep8 compliant>
 import bpy
-from typing import List
+from typing import *
 from shot_builder.shot import Shot
+from shot_builder.task_type import TaskType
 from shot_builder.connectors.connector import Connector
 import requests
 
@@ -36,7 +37,7 @@ class KitsuPreferences(bpy.types.PropertyGroup):
     backend: bpy.props.StringProperty(
         name="Server URL",
         description="Kitsu server address",
-        default="https://kitsu.blender.cloud/")
+        default="https://kitsu.blender.cloud/api")
     username: bpy.props.StringProperty(
         name="Username",
         description="Username to connect to Kitsu",)
@@ -76,5 +77,32 @@ class KitsuConnector(Connector):
         json_response = response.json()
         self.__jwt_access_token = json_response['access_token']
 
-    def get_shots(self) -> List[Shot]:
+    def __api_get(self, api: str) -> Any:
+        kitsu_pref = self._preferences.kitsu
+        backend = kitsu_pref.backend
+
+        response = requests.get(url=f"{backend}{api}", headers={
+            "Authorization": f"Bearer {self.__jwt_access_token}"
+        })
+        if response.status_code != 200:
+            raise KitsuException(
+                f"unable to call kitsu (api={api}, status code={response.status_code})")
+        return response.json()
+
+    def get_name(self) -> str:
+        project_id = self._production.config['KITSU_PROJECT_ID']
+        production = self.__api_get(f"data/projects/{project_id}")
+        return production['name']
+
+    def get_task_types(self) -> List[TaskType]:
+        task_types = self.__api_get(f"data/task_types/")
+        import pprint
+        pprint.pprint(task_types)
         return []
+
+    def get_shots(self) -> List[Shot]:
+        project_id = self._production.config['KITSU_PROJECT_ID']
+        kitsu_shots = self.__api_get(f"data/projects/{project_id}/shots")
+        return [
+            Shot(kitsu_shot['name']) for kitsu_shot in kitsu_shots
+        ]

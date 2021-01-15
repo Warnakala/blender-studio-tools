@@ -70,7 +70,7 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
         ensure_loaded_production(context)
         production = get_active_production()
         self.production_root = str(production.path)
-        self.production_name = production.name
+        self.production_name = production.get_name(context=context)
 
         return context.window_manager.invoke_props_dialog(self, width=400)
 

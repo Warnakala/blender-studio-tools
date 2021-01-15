@@ -51,9 +51,12 @@ class Production():
 
     def __init__(self, production_path: pathlib.Path):
         self.path = production_path
-        self.task_types = DefaultConnector
-        self.shots = DefaultConnector
-        self.name = DefaultConnector
+        self.task_types = []
+        self.task_types_connector = DefaultConnector
+        self.shots = []
+        self.shots_connector = DefaultConnector
+        self.name = ""
+        self.name_connector = DefaultConnector
         self.config: Dict[str, Any] = {}
 
     def __create_connector(self,
@@ -69,15 +72,13 @@ class Production():
         Get the list of task types items to be used in an item function of a
         `bpy.props.EnumProperty`
         """
-        task_types: Union[List[TaskType], Type[Connector]] = self.task_types
-        if not isinstance(task_types, list):
-            assert(issubclass(task_types, Connector))
-            connector = self.__create_connector(task_types, context=context)
-            task_types = connector.get_task_types()
-
+        if not self.task_types:
+            connector = self.__create_connector(
+                self.task_types_connector, context=context)
+            self.task_types = connector.get_task_types()
         return [
             (task_type.name, task_type.name, task_type.name)
-            for task_type in task_types
+            for task_type in self.task_types
         ]
 
     def get_shot_items(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
@@ -85,16 +86,25 @@ class Production():
         Get the list of shot items to be used in an item function of a
         `bpy.props.EnumProperty`
         """
-        shots: Union[List[Shot], Type[Connector]] = self.shots
-        if not isinstance(shots, list):
-            assert(issubclass(shots, Connector))
-            connector = self.__create_connector(shots, context=context)
-            shots = connector.get_shots()
+        if not self.shots:
+            connector = self.__create_connector(
+                self.shots_connector, context=context)
+            self.shots = connector.get_shots()
 
         return [
             (shot.shot_id, shot.shot_id, shot.shot_id)
-            for shot in shots
+            for shot in self.shots
         ]
+
+    def get_name(self, context: bpy.types.Context) -> str:
+        """
+        Get the name of the production
+        """
+        if not self.name:
+            connector = self.__create_connector(
+                self.name_connector, context=context)
+            self.name = connector.get_name()
+        return self.name
 
     # TODO: Use visitor pattern.
     def __load_name(self, main_config_mod):
@@ -108,7 +118,9 @@ class Production():
             return
 
         if issubclass(name, Connector):
-            self.name = name
+            self.name = ""
+            self.name_connector = name
+            return
 
         logger.warn(
             "Skip loading of production name. Incorrect configuration detected.")
@@ -140,7 +152,9 @@ class Production():
             return
 
         if issubclass(shots, Connector):
-            self.shots = shots
+            self.shots = []
+            self.shots_connector = shots
+            return
 
         logger.warn(
             "Skip loading of shots. Incorrect configuration detected")
@@ -148,9 +162,8 @@ class Production():
     def __load_connector_keys(self, main_config_mod):
         connectors = set()
         for attrname in Production.__ATTRNAMES_SUPPORTING_CONNECTOR:
-            attr = getattr(self, attrname)
-            if isinstance(attr, Type) and issubclass(attr, Connector):
-                connectors.add(attr)
+            connector = getattr(self, f"{attrname}_connector")
+            connectors.add(connector)
 
         connector_keys = set()
         for connector in connectors:
