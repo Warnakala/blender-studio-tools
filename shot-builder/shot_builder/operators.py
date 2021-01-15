@@ -78,7 +78,7 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
         production = get_active_production()
         return {'CANCELLED'}
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context):
         layout = self.layout
         row = layout.row()
         row.enabled = False

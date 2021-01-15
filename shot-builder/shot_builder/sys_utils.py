@@ -22,8 +22,8 @@ import sys
 import pathlib
 from typing import List
 
-class SystemPathInclude:
 
+class SystemPathInclude:
     """
     Resource class to temporary include system paths to `sys.paths`.
 
@@ -37,6 +37,7 @@ class SystemPathInclude:
 
     It is possible to nest multiple SystemPathIncludes.
     """
+
     def __init__(self, paths_to_add: List[pathlib.Path]):
         # TODO: Check if all paths exist and are absolute.
         self.__paths = paths_to_add
@@ -44,6 +45,7 @@ class SystemPathInclude:
 
     def __enter__(self):
         self.__original_sys_path = sys.path
+        new_sys_path = []
         for path_to_add in self.__paths:
             # Do not add paths that are already in the sys path.
             # Report this to the logger as this might indicate wrong usage.
@@ -51,7 +53,9 @@ class SystemPathInclude:
             if path_to_add_str in self.__original_sys_path:
                 logger.warn(f"{path_to_add_str} already added to `sys.path`")
                 continue
-            sys.path.append(path_to_add_str)
-    
+            new_sys_path.append(path_to_add_str)
+        new_sys_path.extend(self.__original_sys_path)
+        sys.path = new_sys_path
+
     def __exit__(self, exc_type, exc_value, exc_traceback):
         sys.path = self.__original_sys_path

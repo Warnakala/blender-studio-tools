@@ -17,13 +17,49 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
+"""
+This module contains the Connector class. It is an abstract base class for concrete connectors.
+"""
+
 from shot_builder.shot import Shot
 from shot_builder.task_type import TaskType
-from typing import List
+from typing import *
 
 
 class Connector:
-    PRODUCTION_KEYS = set()
+    """
+    A Connector is used to retrieve data from a source. This source can be an external system.
+
+    Connectors can be configured for productions in its `shot-builder/config.py` file.
+
+    # Members
+
+    _production: reference to the production that we want to read data for.
+    _preference: reference to the add-on preference to read settings for.
+        Connectors can add settings to the add-on preferences.
+
+    # Class Members
+
+    PRODUCTION_KEYS: Connectors can register production configuration keys that will be loaded from the production config file.
+        When keys are added the content will be read and stored in the production.
+
+    # Usage
+
+    Concrete connectors only overrides methods that they support. All non-overridden methods will raise an
+    NotImplementerError.
+
+
+    Example of using predefined connectors in a production config file:
+        ```shot-builder/config.py
+        from shot_builder.connectors.default import DefaultConnector
+        from shot_builder.connectors.kitsu import KitsuConnector
+
+        PRODUCTION_NAME = DefaultConnector
+        TASK_TYPES = KitsuConnector
+        KITSU_PROJECT_ID = "...."
+        ```
+    """
+    PRODUCTION_KEYS: Set[str] = set()
     # Local imports for type-info
     # TODO: Add type info (shot_builder.project.Production, shot_builder.properties.ShotBuilderPreferences)
 
@@ -32,13 +68,22 @@ class Connector:
         self._preferences = preferences
 
     def get_name(self) -> str:
+        """
+        Retrieve the production name using the connector.
+        """
         raise NotImplementedError(
             f"{self.__class__.__name__} does not support retrieval of production name")
 
     def get_task_types(self) -> List[TaskType]:
+        """
+        Retrieve the task types using the connector.
+        """
         raise NotImplementedError(
             f"{self.__class__.__name__} does not support retrieval of task types")
 
     def get_shots(self) -> List[Shot]:
+        """
+        Retrieve the shots using the connector.
+        """
         raise NotImplementedError(
             f"{self.__class__.__name__} does not support retrieval of shots")

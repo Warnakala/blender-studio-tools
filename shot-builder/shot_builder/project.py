@@ -54,7 +54,7 @@ class Production():
         self.task_types = DefaultConnector
         self.shots = DefaultConnector
         self.name = DefaultConnector
-        self.config = {}
+        self.config: Dict[str, Any] = {}
 
     def __create_connector(self,
                            connector_cls: Type[Connector],
@@ -92,7 +92,7 @@ class Production():
             shots = connector.get_shots()
 
         return [
-            (shot.name, shot.name, shot.name)
+            (shot.shot_id, shot.shot_id, shot.shot_id)
             for shot in shots
         ]
 
@@ -260,6 +260,7 @@ def __load_production_configuration(context: bpy.types.Context,
     _PRODUCTION = Production(production_path)
     paths = [production_path/"shot-builder"]
     with SystemPathInclude(paths) as _include:
+        # type: ignore
         import config as production_config
         importlib.reload(production_config)
         _PRODUCTION._load_config(production_config)

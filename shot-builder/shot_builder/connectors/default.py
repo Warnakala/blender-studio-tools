@@ -24,6 +24,10 @@ from typing import List
 
 
 class DefaultConnector(Connector):
+    """
+    Default connector is a connector that returns the defaults for the shot builder add-on.
+    """
+
     def get_name(self) -> str:
         return "unnamed production"
 
