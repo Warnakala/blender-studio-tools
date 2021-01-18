@@ -18,6 +18,7 @@
 
 # <pep8 compliant>
 from shot_builder.shot import Shot
+from shot_builder.asset import Asset
 from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
 from shot_builder.connectors.connector import Connector
@@ -36,6 +37,12 @@ class DefaultConnector(Connector):
         return []
 
     def get_sequences(self) -> List[ShotSequence]:
+        return []
+
+    def get_assets(self) -> List[Asset]:
+        return []
+
+    def get_assets_for_shot(self, shot: Shot) -> List[Asset]:
         return []
 
     def get_task_types(self) -> List[TaskType]:

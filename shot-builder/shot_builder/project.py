@@ -26,8 +26,10 @@ import bpy
 
 from shot_builder.task_type import *
 from shot_builder.shot import Shot
+from shot_builder.asset import *
 from shot_builder.sequence import ShotSequence
 from shot_builder.sys_utils import *
+
 from shot_builder.connectors.default import DefaultConnector
 from shot_builder.connectors.connector import Connector
 
@@ -49,7 +51,8 @@ class Production():
 
     """
 
-    __ATTRNAMES_SUPPORTING_CONNECTOR = ['task_types', 'shots', 'name']
+    __ATTRNAMES_SUPPORTING_CONNECTOR = [
+        'task_types', 'shots', 'name', 'assets']
 
     def __init__(self, production_path: pathlib.Path):
         self.path = production_path
@@ -57,11 +60,15 @@ class Production():
         self.task_types_connector = DefaultConnector
         self.sequences: List[ShotSequence] = []
         self.shots_connector = DefaultConnector
+        self.assets: List[Asset] = []
+        self.assets_connector = DefaultConnector
         self.name = ""
         self.name_connector = DefaultConnector
         self.config: Dict[str, Any] = {}
         self.__sequence_lookup: Dict[str, ShotSequence] = {}
         self.__shot_lookup: Dict[str, Shot] = {}
+        self.__asset_lookup: Dict[str, Asset] = {}
+        self.__asset_definition_lookup: Dict[str, type] = {}
 
     def __create_connector(self,
                            connector_cls: Type[Connector],
@@ -83,6 +90,11 @@ class Production():
     def __build_shot_lookup(self, shots: List[Shot]) -> None:
         self.__shot_lookup = {
             shot.shot_id: shot for shot in shots
+        }
+
+    def __build_asset_lookup(self) -> None:
+        self.__asset_lookup = {
+            asset.asset_id: asset for asset in self.assets
         }
 
     def __link_shots_with_sequences(self, shots: List[Shot]) -> None:
@@ -125,6 +137,31 @@ class Production():
             self.__build_sequence_lookup()
             self.__build_shot_lookup(shots)
             self.__link_shots_with_sequences(shots)
+
+    def __ensure_assets_loaded(self, context: bpy.types.Context) -> None:
+        if not self.assets:
+            connector = self.__create_connector(
+                self.assets_connector, context=context)
+            assets = connector.get_assets()
+
+            self.assets = assets
+            self.__build_asset_lookup()
+
+    def get_assets_for_shot(self, context: bpy.types.Context, shot: Shot) -> List[Asset]:
+        connector = self.__create_connector(
+            self.shots_connector, context=context)
+
+        assets = connector.get_assets_for_shot(shot)
+        return assets
+
+    def update_asset_definition(self, asset: Asset):
+        config = self.__asset_definition_lookup.get(asset.name)
+        if config:
+            asset.config = config()
+
+    def get_shot(self, context: bpy.types.Context, shot_id: str) -> Shot:
+        self.__ensure_sequences_loaded(context)
+        return self.__shot_lookup[shot_id]
 
     def get_shot_items(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         """
@@ -202,6 +239,19 @@ class Production():
         logger.warn(
             "Skip loading of shots. Incorrect configuration detected")
 
+    def __load_assets(self, main_config_mod: types.ModuleType) -> None:
+        assets = getattr(main_config_mod, "ASSETS", None)
+        if assets is None:
+            return
+
+        if issubclass(assets, Connector):
+            self.assets = []
+            self.assets_connector = assets
+            return
+
+        logger.warn(
+            "Skip loading of assets. Incorrect configuration detected")
+
     def __load_connector_keys(self, main_config_mod: types.ModuleType) -> None:
         connectors = set()
         for attrname in Production.__ATTRNAMES_SUPPORTING_CONNECTOR:
@@ -222,7 +272,18 @@ class Production():
         self.__load_name(main_config_mod)
         self.__load_task_types(main_config_mod)
         self.__load_shots(main_config_mod)
+        self.__load_assets(main_config_mod)
         self.__load_connector_keys(main_config_mod)
+
+    def _load_asset_definitions(self, asset_mod: types.ModuleType) -> None:
+        lookup = {}
+        for module_item_str in dir(asset_mod):
+            module_item = getattr(asset_mod, module_item_str)
+            if not hasattr(module_item, "asset_name"):
+                continue
+            lookup[module_item.asset_name] = module_item
+
+        self.__asset_definition_lookup = lookup
 
 
 _PRODUCTION: Optional[Production] = None
@@ -318,7 +379,10 @@ def __load_production_configuration(context: bpy.types.Context,
         import config as production_config
         importlib.reload(production_config)
         _PRODUCTION._load_config(production_config)
-        pass
+
+        import assets as production_assets
+        importlib.reload(production_assets)
+        _PRODUCTION._load_asset_definitions(production_assets)
 
     return False
 

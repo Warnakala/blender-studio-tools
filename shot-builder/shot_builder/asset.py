@@ -17,16 +17,27 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
+import typing
+import types
+import pathlib
 
-from shot_builder.asset import Asset
-from typing import *
 
-
-class Shot:
-    def __init__(self, parent_id: Union[str, None], shot_id: str, code: str, name: str, description: str):
-        self.shot_id = shot_id
-        self.parent_id = parent_id
+class Asset:
+    def __init__(self, asset_id: str, code: str, name: str, description: str):
+        self.asset_id = asset_id
         self.code = code
         self.name = name
         self.description = description
-        self.assets: List[Asset] = []
+        self.config: typing.Optional[AssetConfig] = None
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class AssetConfig:
+    """
+    Container to hold data where the asset can be located in the production repository.
+
+    path: absolute path to the blend file containing this asset.
+
+    """
