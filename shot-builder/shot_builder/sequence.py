@@ -17,12 +17,15 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
-import bpy
-from typing import *
-from shot_builder.operators import *
+
+from shot_builder.shot import Shot
+from typing import List
 
 
-def topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:
-    layout = self.layout
-    op = layout.operator(
-        SHOTBUILDER_OT_NewShotFile.bl_idname, text="Shot File")
+class ShotSequence:
+    def __init__(self, sequence_id: str, code: str, name: str, description: str):
+        self.sequence_id = sequence_id
+        self.code = code
+        self.name = name
+        self.description = description
+        self.shots: List[Shot] = []

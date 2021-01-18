@@ -21,16 +21,18 @@
 import pathlib
 import logging
 import importlib
-from typing import *
 
 import bpy
 
 from shot_builder.task_type import *
-from shot_builder.shot import *
+from shot_builder.shot import Shot
+from shot_builder.sequence import ShotSequence
 from shot_builder.sys_utils import *
 from shot_builder.connectors.default import DefaultConnector
 from shot_builder.connectors.connector import Connector
 
+from typing import *
+import types
 
 logger = logging.getLogger(__name__)
 
@@ -53,17 +55,48 @@ class Production():
         self.path = production_path
         self.task_types: List[TaskType] = []
         self.task_types_connector = DefaultConnector
-        self.shots: List[Shot] = []
+        self.sequences: List[ShotSequence] = []
         self.shots_connector = DefaultConnector
         self.name = ""
         self.name_connector = DefaultConnector
         self.config: Dict[str, Any] = {}
+        self.__sequence_lookup: Dict[str, ShotSequence] = {}
+        self.__shot_lookup: Dict[str, Shot] = {}
 
     def __create_connector(self,
                            connector_cls: Type[Connector],
                            context: bpy.types.Context) -> Connector:
         preferences = context.preferences.addons[__package__].preferences
         return connector_cls(production=self, preferences=preferences)
+
+    def __format_sequence_name(self, sequence: ShotSequence) -> str:
+        return sequence.name
+
+    def __format_shot_name(self, shot: Shot) -> str:
+        return shot.name
+
+    def __build_sequence_lookup(self) -> None:
+        self.__sequence_lookup = {
+            sequence.sequence_id: sequence for sequence in self.sequences
+        }
+
+    def __build_shot_lookup(self, shots: List[Shot]) -> None:
+        self.__shot_lookup = {
+            shot.shot_id: shot for shot in shots
+        }
+
+    def __link_shots_with_sequences(self, shots: List[Shot]) -> None:
+        """
+        """
+        for shot in shots:
+            parent_id = shot.parent_id
+            if parent_id is None:
+                continue
+            sequence = self.__sequence_lookup.get(str(parent_id))
+            if sequence is None:
+                logger.warn(f"shot {shot} has no sequence")
+                continue
+            sequence.shots.append(shot)
 
     def get_task_type_items(self,
                             context: bpy.types.Context
@@ -81,20 +114,35 @@ class Production():
             for task_type in self.task_types
         ]
 
+    def __ensure_sequences_loaded(self, context: bpy.types.Context) -> None:
+        if not self.sequences:
+            connector = self.__create_connector(
+                self.shots_connector, context=context)
+            sequences = connector.get_sequences()
+            shots = connector.get_shots()
+
+            self.sequences = sequences
+            self.__build_sequence_lookup()
+            self.__build_shot_lookup(shots)
+            self.__link_shots_with_sequences(shots)
+
     def get_shot_items(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         """
         Get the list of shot items to be used in an item function of a
-        `bpy.props.EnumProperty`
+        `bpy.props.EnumProperty` to select a shot.
         """
-        if not self.shots:
-            connector = self.__create_connector(
-                self.shots_connector, context=context)
-            self.shots = connector.get_shots()
+        self.__ensure_sequences_loaded(context)
+        items: List[Tuple[str, str, str]] = []
+        for sequence in self.sequences:
+            if not sequence.shots:
+                continue
+            items.append(("", self.__format_sequence_name(
+                sequence), sequence.name))
+            for shot in sequence.shots:
+                items.append((shot.shot_id, self.__format_shot_name(
+                    shot), shot.name))
 
-        return [
-            (shot.shot_id, shot.shot_id, shot.shot_id)
-            for shot in self.shots
-        ]
+        return items
 
     def get_name(self, context: bpy.types.Context) -> str:
         """
@@ -107,7 +155,7 @@ class Production():
         return self.name
 
     # TODO: Use visitor pattern.
-    def __load_name(self, main_config_mod):
+    def __load_name(self, main_config_mod: types.ModuleType) -> None:
         name = getattr(main_config_mod, "PRODUCTION_NAME", None)
         if name is None:
             return
@@ -125,7 +173,7 @@ class Production():
         logger.warn(
             "Skip loading of production name. Incorrect configuration detected.")
 
-    def __load_task_types(self, main_config_mod):
+    def __load_task_types(self, main_config_mod: types.ModuleType) -> None:
         task_types = getattr(main_config_mod, "TASK_TYPES", None)
         if task_types is None:
             return
@@ -141,25 +189,20 @@ class Production():
         logger.warn(
             "Skip loading of task_types. Incorrect configuration detected.")
 
-    def __load_shots(self, main_config_mod):
+    def __load_shots(self, main_config_mod: types.ModuleType) -> None:
         shots = getattr(main_config_mod, "SHOTS", None)
         if shots is None:
             return
 
-        # Extract task types from a list of strings
-        if isinstance(shots, list):
-            self.shots = [Shot(shot_id) for shot_id in shots]
-            return
-
         if issubclass(shots, Connector):
-            self.shots = []
+            self.sequences = []
             self.shots_connector = shots
             return
 
         logger.warn(
             "Skip loading of shots. Incorrect configuration detected")
 
-    def __load_connector_keys(self, main_config_mod):
+    def __load_connector_keys(self, main_config_mod: types.ModuleType) -> None:
         connectors = set()
         for attrname in Production.__ATTRNAMES_SUPPORTING_CONNECTOR:
             connector = getattr(self, f"{attrname}_connector")
@@ -175,8 +218,7 @@ class Production():
                 self.config[connector_key] = getattr(
                     main_config_mod, connector_key)
 
-    # TODO: what is the typing for a module. Unable to use `: module`
-    def _load_config(self, main_config_mod):
+    def _load_config(self, main_config_mod: types.ModuleType) -> None:
         self.__load_name(main_config_mod)
         self.__load_task_types(main_config_mod)
         self.__load_shots(main_config_mod)

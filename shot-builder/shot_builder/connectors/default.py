@@ -18,9 +18,10 @@
 
 # <pep8 compliant>
 from shot_builder.shot import Shot
+from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
 from shot_builder.connectors.connector import Connector
-from typing import List
+from typing import *
 
 
 class DefaultConnector(Connector):
@@ -32,6 +33,9 @@ class DefaultConnector(Connector):
         return "unnamed production"
 
     def get_shots(self) -> List[Shot]:
+        return []
+
+    def get_sequences(self) -> List[ShotSequence]:
         return []
 
     def get_task_types(self) -> List[TaskType]:

@@ -18,12 +18,13 @@
 
 # <pep8 compliant>
 import bpy
-from typing import *
 from shot_builder.shot import Shot
+from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
 from shot_builder.connectors.connector import Connector
 import requests
 
+import typing
 import logging
 
 logger = logging.getLogger(__name__)
@@ -48,22 +49,82 @@ class KitsuPreferences(bpy.types.PropertyGroup):
         description="Password to connect to Kitsu",
         subtype='PASSWORD',)
 
-    def draw(self, layout: bpy.types.UILayout, context: bpy.types.Context):
+    def draw(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.label(text="Kitsu")
         layout.prop(self, "backend")
         layout.prop(self, "username")
         layout.prop(self, "password")
 
+    def _validate(self):
+        if not (self.backend and self.username and self.password):
+            raise KitsuException(
+                "Kitsu connector has not been configured in the add-on preferences")
+
+
+class KitsuDataContainer():
+    def __init__(self, data: typing.Dict[str, typing.Optional[str]]):
+        self._data = data
+
+    def get_parent_id(self) -> typing.Optional[str]:
+        return self._data['parent_id']
+
+    def get_id(self) -> str:
+        return str(self._data['id'])
+
+    def get_name(self) -> str:
+        return str(self._data['name'])
+
+    def get_code(self) -> typing.Optional[str]:
+        return self._data['code']
+
+    def get_description(self) -> str:
+        result = self._data['description']
+        if result is None:
+            return ""
+        return result
+
+
+class KitsuShotSequence(KitsuDataContainer):
+    def as_sequence(self) -> ShotSequence:
+        sequence_id = self.get_id()
+        name = self.get_name()
+        code = self.get_code()
+        description = self.get_description()
+        sequence_code = str(code) if code is not None else name
+        return ShotSequence(sequence_id=sequence_id, code=sequence_code, name=name, description=description)
+
+
+class KitsuShot(KitsuDataContainer):
+    def as_shot(self) -> Shot:
+        shot_id = self.get_id()
+        parent_id = self.get_parent_id()
+        name = self.get_name()
+        code = self.get_code()
+        description = self.get_description()
+
+        return Shot(
+            shot_id=shot_id,
+            parent_id=parent_id,
+            code=str(code) if code is not None else name,
+            name=name, description=description)
+
 
 class KitsuConnector(Connector):
-    PRODUCTION_KEYS = {'KITSU_BACKEND', 'KITSU_PROJECT_ID'}
+    PRODUCTION_KEYS = {'KITSU_PROJECT_ID'}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.__jwt_access_token = ""
+        self.__validate()
         self.__authorize()
 
-    def __authorize(self):
+    def __validate(self) -> None:
+        self._preferences.kitsu._validate()
+        if not self._production.config.get('KITSU_PROJECT_ID'):
+            raise KitsuException(
+                "KITSU_PROJECT_ID is not configured in config.py")
+
+    def __authorize(self) -> None:
         kitsu_pref = self._preferences.kitsu
         backend = kitsu_pref.backend
         username = kitsu_pref.username
@@ -79,7 +140,7 @@ class KitsuConnector(Connector):
         json_response = response.json()
         self.__jwt_access_token = json_response['access_token']
 
-    def __api_get(self, api: str) -> Any:
+    def __api_get(self, api: str) -> typing.Any:
         kitsu_pref = self._preferences.kitsu
         backend = kitsu_pref.backend
 
@@ -91,20 +152,28 @@ class KitsuConnector(Connector):
                 f"unable to call kitsu (api={api}, status code={response.status_code})")
         return response.json()
 
-    def get_name(self) -> str:
+    def __get_production_data(self) -> typing.Dict[str, typing.Any]:
         project_id = self._production.config['KITSU_PROJECT_ID']
         production = self.__api_get(f"data/projects/{project_id}")
+        return typing.cast(typing.Dict[str, typing.Any], production)
+
+    def get_name(self) -> str:
+        production = self.__get_production_data()
         return str(production['name'])
 
-    def get_task_types(self) -> List[TaskType]:
+    def get_task_types(self) -> typing.List[TaskType]:
         task_types = self.__api_get(f"data/task_types/")
         import pprint
         pprint.pprint(task_types)
         return []
 
-    def get_shots(self) -> List[Shot]:
+    def get_sequences(self) -> typing.List[ShotSequence]:
+        project_id = self._production.config['KITSU_PROJECT_ID']
+        kitsu_sequences = self.__api_get(
+            f"data/projects/{project_id}/sequences")
+        return [KitsuShotSequence(sequence_data).as_sequence() for sequence_data in kitsu_sequences]
+
+    def get_shots(self) -> typing.List[Shot]:
         project_id = self._production.config['KITSU_PROJECT_ID']
         kitsu_shots = self.__api_get(f"data/projects/{project_id}/shots")
-        return [
-            Shot(kitsu_shot['name']) for kitsu_shot in kitsu_shots
-        ]
+        return [KitsuShot(shot_data).as_shot() for shot_data in kitsu_shots]

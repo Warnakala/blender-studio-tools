@@ -22,12 +22,12 @@ import bpy
 from shot_builder.project import *
 
 
-def production_task_type_items(self: SHOTBUILDER_OT_NewShotFile, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+def production_task_type_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
     production = get_active_production()
     return production.get_task_type_items(context=context)
 
 
-def production_shot_id_items(self: SHOTBUILDER_OT_NewShotFile, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+def production_shot_id_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
     production = get_active_production()
     return production.get_shot_items(context=context)
 
@@ -72,13 +72,13 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
         self.production_root = str(production.path)
         self.production_name = production.get_name(context=context)
 
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        return cast(Set[str], context.window_manager.invoke_props_dialog(self, width=400))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         production = get_active_production()
         return {'CANCELLED'}
 
-    def draw(self, context: bpy.types.Context):
+    def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         row = layout.row()
         row.enabled = False

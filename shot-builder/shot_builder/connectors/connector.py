@@ -22,8 +22,14 @@ This module contains the Connector class. It is an abstract base class for concr
 """
 
 from shot_builder.shot import Shot
+from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
+from shot_builder.properties import ShotBuilderPreferences
 from typing import *
+
+
+if TYPE_CHECKING:
+    from shot_builder.project import Production
 
 
 class Connector:
@@ -63,7 +69,7 @@ class Connector:
     # Local imports for type-info
     # TODO: Add type info (shot_builder.project.Production, shot_builder.properties.ShotBuilderPreferences)
 
-    def __init__(self, production, preferences):
+    def __init__(self, production: Production, preferences: ShotBuilderPreferences):
         self._production = production
         self._preferences = preferences
 
@@ -84,6 +90,13 @@ class Connector:
     def get_shots(self) -> List[Shot]:
         """
         Retrieve the shots using the connector.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support retrieval of shots")
+
+    def get_sequences(self) -> List[ShotSequence]:
+        """
+        Retrieve the sequences using the connector.
         """
         raise NotImplementedError(
             f"{self.__class__.__name__} does not support retrieval of shots")

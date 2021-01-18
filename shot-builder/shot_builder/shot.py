@@ -18,7 +18,13 @@
 
 # <pep8 compliant>
 
+from typing import *
+
 
 class Shot:
-    def __init__(self, shot_id: str):
+    def __init__(self, parent_id: Union[str, None], shot_id: str, code: str, name: str, description: str):
         self.shot_id = shot_id
+        self.parent_id = parent_id
+        self.code = code
+        self.name = name
+        self.description = description

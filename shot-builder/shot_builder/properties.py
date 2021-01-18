@@ -42,7 +42,7 @@ class ShotBuilderPreferences(bpy.types.AddonPreferences):
         type=KitsuPreferences
     )
 
-    def draw(self, context: bpy.types.Context):
+    def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
 
         is_valid = is_valid_production_root(pathlib.Path(self.production_path))
