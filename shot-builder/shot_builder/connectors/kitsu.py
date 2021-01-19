@@ -109,10 +109,10 @@ class KitsuShotSequence(KitsuDataContainer):
 
 class KitsuShot(KitsuDataContainer):
     def get_fps(self) -> str:
-        return str(self._data['fps'])
+        return typing.cast(str, self._data['fps'])
 
     def get_nb_frames(self) -> int:
-        return int(self._data['nb_frames'])
+        return int(typing.cast(str, self._data['nb_frames']))
 
     def as_shot(self) -> Shot:
         shot_id = self.get_id()
