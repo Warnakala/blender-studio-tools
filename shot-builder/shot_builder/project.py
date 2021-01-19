@@ -30,6 +30,7 @@ from shot_builder.render_settings import RenderSettings
 from shot_builder.asset import *
 from shot_builder.sequence import ShotSequence
 from shot_builder.sys_utils import *
+from shot_builder.hooks import Hooks, register_hooks
 
 from shot_builder.connectors.default import DefaultConnector
 from shot_builder.connectors.connector import Connector
@@ -71,6 +72,7 @@ class Production():
         self.__shot_lookup: Dict[str, Shot] = {}
         self.__asset_lookup: Dict[str, Asset] = {}
         self.__asset_definition_lookup: Dict[str, type] = {}
+        self.hooks = Hooks()
 
         self.scene_name_format = "{shot.code}.{task_type}"
         self.file_name_format = "{production.path}shots/{shot.code}/{shot.code}.{task_type}.blend"
@@ -407,13 +409,27 @@ def __load_production_configuration(context: bpy.types.Context,
     _PRODUCTION = Production(production_path)
     paths = [production_path/"shot-builder"]
     with SystemPathInclude(paths) as _include:
-        import config as production_config
-        importlib.reload(production_config)
-        _PRODUCTION._load_config(production_config)
+        try:
+            import config as production_config
+            importlib.reload(production_config)
+            _PRODUCTION._load_config(production_config)
+        except ModuleNotFoundError:
+            logger.warning("Production has no `config.py` configuration file")
 
-        import assets as production_assets
-        importlib.reload(production_assets)
-        _PRODUCTION._load_asset_definitions(production_assets)
+        try:
+            import assets as production_assets
+            importlib.reload(production_assets)
+            _PRODUCTION._load_asset_definitions(production_assets)
+        except ModuleNotFoundError:
+            logger.warning("Production has no `assets.py` configuration file")
+
+        try:
+            import hooks as production_hooks
+            importlib.reload(production_hooks)
+            register_hooks(production_hooks)
+        except ModuleNotFoundError:
+            logger.warning("Production has no `hooks.py` configuration file")
+            pass
 
     return False
 

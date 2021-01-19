@@ -4,6 +4,7 @@ from shot_builder.builder.build_step import BuildStep, BuildContext
 from shot_builder.builder.load_asset import LoadAssetStep
 from shot_builder.builder.set_render_settings import SetRenderSettingsStep
 from shot_builder.builder.new_scene import NewSceneStep
+from shot_builder.builder.invoke_hook import InvokeHookStep
 
 import bpy
 
@@ -28,6 +29,9 @@ class ShotBuilder():
         self._steps.append(SetRenderSettingsStep())
 
         production = self.build_context.production
+        for hook in production.hooks.filter(is_global=True):
+            self._steps.append(InvokeHookStep(hook))
+
         context = self.build_context.context
         shot = self.build_context.shot
 
