@@ -30,3 +30,4 @@ class Shot:
         self.name = name
         self.description = description
         self.assets: List[Asset] = []
+        self.frames = 250
