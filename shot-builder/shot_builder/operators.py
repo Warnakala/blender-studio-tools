@@ -21,6 +21,7 @@ from typing import *
 import bpy
 from shot_builder.project import *
 from shot_builder.builder import ShotBuilder
+from shot_builder.task_type import TaskType
 
 
 def production_task_type_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
@@ -77,8 +78,8 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         production = get_active_production()
-        shot_id = self.shot_id
-        shot_builder = ShotBuilder(context, production, shot_id)
+        shot_builder = ShotBuilder(
+            context=context, production=production, shot_id=self.shot_id, task_type=TaskType(self.task_type))
         shot_builder.create_build_steps()
         shot_builder.build()
 

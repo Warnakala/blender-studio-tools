@@ -26,6 +26,7 @@ import bpy
 
 from shot_builder.task_type import *
 from shot_builder.shot import Shot
+from shot_builder.render_settings import RenderSettings
 from shot_builder.asset import *
 from shot_builder.sequence import ShotSequence
 from shot_builder.sys_utils import *
@@ -64,15 +65,20 @@ class Production():
         self.assets_connector = DefaultConnector
         self.name = ""
         self.name_connector = DefaultConnector
+        self.render_settings_connector = DefaultConnector
         self.config: Dict[str, Any] = {}
         self.__sequence_lookup: Dict[str, ShotSequence] = {}
         self.__shot_lookup: Dict[str, Shot] = {}
         self.__asset_lookup: Dict[str, Asset] = {}
         self.__asset_definition_lookup: Dict[str, type] = {}
 
+        self.scene_name_format = "{shot.code}.{task_type}"
+        self.file_name_format = "{production.path}shots/{shot.code}/{shot.code}.{task_type}.blend"
+
     def __create_connector(self,
                            connector_cls: Type[Connector],
                            context: bpy.types.Context) -> Connector:
+        # TODO: Cache connector
         preferences = context.preferences.addons[__package__].preferences
         return connector_cls(production=self, preferences=preferences)
 
@@ -154,7 +160,7 @@ class Production():
         assets = connector.get_assets_for_shot(shot)
         return assets
 
-    def update_asset_definition(self, asset: Asset):
+    def update_asset_definition(self, asset: Asset) -> None:
         config = self.__asset_definition_lookup.get(asset.name)
         if config:
             asset.config = config()
@@ -162,6 +168,11 @@ class Production():
     def get_shot(self, context: bpy.types.Context, shot_id: str) -> Shot:
         self.__ensure_sequences_loaded(context)
         return self.__shot_lookup[shot_id]
+
+    def get_render_settings(self, context: bpy.types.Context, shot: Shot) -> RenderSettings:
+        connector = self.__create_connector(
+            self.shots_connector, context=context)
+        return connector.get_render_settings(shot)
 
     def get_shot_items(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         """
@@ -268,12 +279,32 @@ class Production():
                 self.config[connector_key] = getattr(
                     main_config_mod, connector_key)
 
+    def __load_render_settings(self, main_config_mod: types.ModuleType) -> None:
+        render_settings = getattr(main_config_mod, "RENDER_SETTINGS", None)
+        if render_settings is None:
+            return
+
+        if issubclass(render_settings, Connector):
+            self.render_settings_connector = render_settings
+            return
+
+        logger.warn(
+            "Skip loading of render settings. Incorrect configuration detected")
+
+    def __load_formatting_strings(self, main_config_mod: types.ModuleType) -> None:
+        self.scene_name_format = getattr(
+            main_config_mod, "SCENE_NAME_FORMAT", self.scene_name_format)
+        self.file_name_format = getattr(
+            main_config_mod, "FILE_NAME_FORMAT", self.file_name_format)
+
     def _load_config(self, main_config_mod: types.ModuleType) -> None:
         self.__load_name(main_config_mod)
         self.__load_task_types(main_config_mod)
         self.__load_shots(main_config_mod)
         self.__load_assets(main_config_mod)
         self.__load_connector_keys(main_config_mod)
+        self.__load_render_settings(main_config_mod)
+        self.__load_formatting_strings(main_config_mod)
 
     def _load_asset_definitions(self, asset_mod: types.ModuleType) -> None:
         lookup = {}

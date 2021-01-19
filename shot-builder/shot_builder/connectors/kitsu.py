@@ -22,6 +22,7 @@ from shot_builder.shot import Shot
 from shot_builder.asset import Asset
 from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
+from shot_builder.render_settings import RenderSettings
 from shot_builder.connectors.connector import Connector
 import requests
 
@@ -85,7 +86,18 @@ class KitsuDataContainer():
         return result
 
 
+class KitsuProject(KitsuDataContainer):
+    def get_resolution(self) -> typing.Tuple[int, int]:
+        """
+        Get the resolution and decode it to (width, height)
+        """
+        res_str = str(self._data['resolution'])
+        splitted = res_str.split("x")
+        return (int(splitted[0]), int(splitted[1]))
+
+
 class KitsuShotSequence(KitsuDataContainer):
+
     def as_sequence(self) -> ShotSequence:
         sequence_id = self.get_id()
         name = self.get_name()
@@ -96,6 +108,9 @@ class KitsuShotSequence(KitsuDataContainer):
 
 
 class KitsuShot(KitsuDataContainer):
+    def get_fps(self) -> str:
+        return str(self._data['fps'])
+
     def as_shot(self) -> Shot:
         shot_id = self.get_id()
         parent_id = self.get_parent_id()
@@ -166,14 +181,22 @@ class KitsuConnector(Connector):
                 f"unable to call kitsu (api={api}, status code={response.status_code})")
         return response.json()
 
-    def __get_production_data(self) -> typing.Dict[str, typing.Any]:
+    def __get_production_data(self) -> KitsuProject:
         project_id = self._production.config['KITSU_PROJECT_ID']
         production = self.__api_get(f"data/projects/{project_id}")
-        return typing.cast(typing.Dict[str, typing.Any], production)
+        project = KitsuProject(typing.cast(
+            typing.Dict[str, typing.Any], production))
+        return project
+
+    def __get_shot_data(self, shot: Shot) -> KitsuShot:
+        shot_data = self.__api_get(f"data/shots/{shot.shot_id}")
+        kitsu_shot = KitsuShot(typing.cast(
+            typing.Dict[str, typing.Any], shot_data))
+        return kitsu_shot
 
     def get_name(self) -> str:
         production = self.__get_production_data()
-        return str(production['name'])
+        return production.get_name()
 
     def get_task_types(self) -> typing.List[TaskType]:
         task_types = self.__api_get(f"data/task_types/")
@@ -201,3 +224,14 @@ class KitsuConnector(Connector):
         kitsu_assets = self.__api_get(
             f"data/shots/{shot.shot_id}/assets")
         return [KitsuAsset(asset_data).as_asset() for asset_data in kitsu_assets]
+
+    def get_render_settings(self, shot: Shot) -> RenderSettings:
+        """
+        Retrieve the render settings for the given shot.
+        """
+        kitsu_project = self.__get_production_data()
+        kitsu_shot = self.__get_shot_data(shot)
+
+        resolution = kitsu_project.get_resolution()
+        frames_per_second = float(kitsu_shot.get_fps())
+        return RenderSettings(width=resolution[0], height=resolution[1], frames_per_second=frames_per_second)

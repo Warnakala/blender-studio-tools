@@ -21,6 +21,7 @@ from shot_builder.shot import Shot
 from shot_builder.asset import Asset
 from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
+from shot_builder.render_settings import RenderSettings
 from shot_builder.connectors.connector import Connector
 from typing import *
 
@@ -47,3 +48,9 @@ class DefaultConnector(Connector):
 
     def get_task_types(self) -> List[TaskType]:
         return [TaskType("anim"), TaskType("light")]
+
+    def get_render_settings(self, shot: Shot) -> RenderSettings:
+        """
+        Retrieve the render settings for the given shot.
+        """
+        return RenderSettings(width=1920, height=1080, frames_per_second=24.0)

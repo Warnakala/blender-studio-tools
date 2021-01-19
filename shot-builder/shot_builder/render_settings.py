@@ -18,10 +18,12 @@
 
 # <pep8 compliant>
 
+from shot_builder.asset import Asset
+from typing import *
 
-class TaskType:
-    def __init__(self, task_name: str):
-        self.name = task_name
 
-    def __str__(self) -> str:
-        return self.name
+class RenderSettings:
+    def __init__(self, width: int, height: int, frames_per_second: float):
+        self.width = width
+        self.height = height
+        self.frames_per_second = frames_per_second

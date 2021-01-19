@@ -1,20 +1,11 @@
-PRODUCTION_NAME = "Sprite Fright"
+from shot_builder.connectors.kitsu import KitsuConnector
 
-"""
-    A set of files to read the configuration from.
-"""
-CONFIGURATION_FILES = {
-    "hooks.py"
-    "characters.py",
-    "shots.py"
-}
+PRODUCTION_NAME = KitsuConnector
+SHOTS = KitsuConnector
+ASSETS = KitsuConnector
+RENDER_SETTINGS = KitsuConnector
 
-"""
-    The set of task types.
-"""
-TASK_TYPES = {
-    'anim',
-    'lighting',
-}
+KITSU_PROJECT_ID = "fc77c0b9-bb76-41c3-b843-c9b156f9b3ec"
 
-TASK_FILE_NAME = "shots/{shot_id}/{shot_id}.{task_type}.blend"
+# Formatting rules
+SCENE_NAME_FORMAT = "{shot.code}.{task_type}"

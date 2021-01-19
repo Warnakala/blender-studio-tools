@@ -25,6 +25,7 @@ from shot_builder.shot import Shot
 from shot_builder.asset import Asset
 from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
+from shot_builder.render_settings import RenderSettings
 from typing import *
 
 
@@ -67,11 +68,8 @@ class Connector:
         ```
     """
     PRODUCTION_KEYS: Set[str] = set()
-    # Local imports for type-info
-    # TODO: Add type info (shot_builder.project.Production, shot_builder.properties.ShotBuilderPreferences)
 
-    # def __init__(self, production: Production, preferences: ShotBuilderPreferences):
-    def __init__(self, production, preferences):
+    def __init__(self, production: 'Production', preferences: 'ShotBuilderPreferences'):
         self._production = production
         self._preferences = preferences
 
@@ -116,3 +114,10 @@ class Connector:
         """
         raise NotImplementedError(
             f"{self.__class__.__name__} does not support retrieval of assets for a shot")
+
+    def get_render_settings(self, shot: Shot) -> RenderSettings:
+        """
+        Retrieve the render settings for the given shot.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support retrieval of render settings for a shot")

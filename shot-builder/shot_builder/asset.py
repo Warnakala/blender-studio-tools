@@ -41,3 +41,8 @@ class AssetConfig:
     path: absolute path to the blend file containing this asset.
 
     """
+    asset_type = ""
+    asset_code = ""
+    asset_name = ""
+    path = "{production.path}/lib/{asset.config.asset_type}/{asset.code}/{asset.code}.blend"
+    collection = "{asset.code}"
