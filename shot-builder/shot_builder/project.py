@@ -135,21 +135,16 @@ class Production():
         `bpy.props.EnumProperty` to select a shot.
         """
         result = []
-        # sequences: Dict[str, List[Shot]] = defaultdict(list)
-        # for shot_class in self.shots:
-        #     shot = shot_class()
-        #     sequences[shot.sequence_code].append(shot)
-        # sorted_sequences = sorted(sequences.keys())
-        # for sequence in sorted_sequences:
-        #     result.append(("", sequence, sequence))
-        #     for shot in sorted(sequences[sequence], key=lambda x: x.code):
-        #         result.append((shot.name, self.__format_shot_name(
-        #             shot), shot.name))
-
+        sequences: Dict[str, List[Shot]] = defaultdict(list)
         for shot_class in self.shots:
             shot = shot_class()
-            result.append((shot.name, self.__format_shot_name(
-                shot), shot.name))
+            sequences[shot.sequence_code].append(shot)
+        sorted_sequences = sorted(sequences.keys())
+        for sequence in sorted_sequences:
+            result.append(("", sequence, sequence))
+            for shot in sorted(sequences[sequence], key=lambda x: x.code):
+                result.append((shot.name, self.__format_shot_name(
+                    shot), shot.name))
 
         return result
 
