@@ -29,14 +29,9 @@ def production_task_type_items(self: Any, context: bpy.types.Context) -> List[Tu
     return production.get_task_type_items(context=context)
 
 
-SHOT_ITEMS = []
-
-
 def production_shot_id_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
     production = get_active_production()
-    global SHOT_ITEMS
-    SHOT_ITEMS = production.get_shot_items(context=context)
-    return SHOT_ITEMS
+    return production.get_shot_items(context=context)
 
 
 class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):

@@ -60,10 +60,9 @@ class Production():
         self.path = production_path
         self.task_types: List[TaskType] = []
         self.task_types_connector = DefaultConnector
-        self.sequences: List[ShotSequence] = []
         self.shots_connector = DefaultConnector
         self.assets: List[type] = []
-        self.shots: List[type] = []
+        self.shots: List[Shot] = []
         self.name = ""
         self.name_connector = DefaultConnector
         self.render_settings_connector = DefaultConnector
@@ -114,8 +113,7 @@ class Production():
 
     def get_shot(self, context: bpy.types.Context, shot_name: str) -> Optional[Shot]:
         shot_refs = self.get_shots(context)
-        for shot_class in self.shots:
-            shot = cast(Shot, shot_class())
+        for shot in self.shots:
             if shot.name != shot_name:
                 continue
             for shot_ref in shot_refs:
@@ -136,9 +134,11 @@ class Production():
         """
         result = []
         sequences: Dict[str, List[Shot]] = defaultdict(list)
-        for shot_class in self.shots:
-            shot = shot_class()
+        for shot in self.shots:
+            if shot.name == "":
+                continue
             sequences[shot.sequence_code].append(shot)
+
         sorted_sequences = sorted(sequences.keys())
         for sequence in sorted_sequences:
             result.append(("", sequence, sequence))
@@ -278,7 +278,7 @@ class Production():
             if not hasattr(module_item, "name"):
                 continue
             logger.info(f"loading shot config {module_item}")
-            self.shots.append(module_item)
+            self.shots.append(module_item())
         # TODO: only add shots that are leaves
 
 
