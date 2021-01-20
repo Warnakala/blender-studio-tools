@@ -18,11 +18,9 @@ class LoadAssetStep(BuildStep):
         return f"load asset \"{self.__asset.name}\""
 
     def execute(self, build_context: BuildContext) -> None:
-        config = self.__asset.config
-        assert(config)
         build_context.asset = self.__asset
-        path = config.path.format(**build_context.as_dict())
-        collection = config.collection.format(**build_context.as_dict())
+        path = self.__asset.path.format(**build_context.as_dict())
+        collection = self.__asset.collection.format(**build_context.as_dict())
 
         bpy.ops.wm.link(
             filepath=str(path),

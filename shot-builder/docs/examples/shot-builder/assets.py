@@ -1,80 +1,80 @@
-from shot_builder.asset import AssetConfig
+from shot_builder.asset import Asset
 
 
-class Asset(AssetConfig):
-    path = "{production.path}/lib/{asset.config.asset_type}/{asset.config.asset_code}/{asset.config.asset_code}.blend"
+class SpriteFrightAsset(Asset):
+    path = "{production.path}/lib/{asset.asset_type}/{asset.code}/{asset.code}.blend"
 
 
-class Character(Asset):
+class Character(SpriteFrightAsset):
     asset_type = "char"
-    collection = "CH-{asset.config.asset_code}"
+    collection = "CH-{asset.code}"
 
 
 class Ellie(Character):
-    asset_name = "Ellie"
-    asset_code = "ellie"
+    name = "Ellie"
+    code = "ellie"
 
 
 class Victoria(Character):
-    asset_name = "Victoria"
-    asset_code = "victoria"
+    name = "Victoria"
+    code = "victoria"
 
 
 class Phil(Character):
-    asset_name = "Phil"
-    asset_code = "phil"
+    name = "Phil"
+    code = "phil"
 
 
 class Rex(Character):
-    asset_name = "Rex"
-    asset_code = "rex"
+    name = "Rex"
+    code = "rex"
 
 
 class Jay(Character):
-    asset_name = "Jay"
-    asset_code = "jay"
+    name = "Jay"
+    code = "jay"
 
 
 # class Bird(Character):
-#     asset_name = "Bird"
-#     asset_code = "bird"
+#     name = "Bird"
+#     code = "bird"
 
 
-class Prop(Asset):
+class Prop(SpriteFrightAsset):
     asset_type = "props"
-    collection = "PR-{asset.config.asset_code}"
+    collection = "PR-{asset.code}"
 
 
 class Boombox(Prop):
-    asset_name = "Boombox"
-    asset_code = "boombox"
+    name = "Boombox"
+    code = "boombox"
 
 
 class BBQGrill(Prop):
-    asset_name = "BBQ Grill"
-    asset_code = "bbq_grill"
+    name = "BBQ Grill"
+    code = "bbq_grill"
 
 
 class NotepadAndPencil(Prop):
-    asset_name = "Notepad and pencil"
-    asset_code = "notepad_pencil"
+    name = "Notepad and pencil"
+    code = "notepad_pencil"
 
 
 class Binoculars(Prop):
-    asset_name = "Binoculars (Ellie)"
-    asset_code = "binoculars"
+    name = "Binoculars (Ellie)"
+    code = "binoculars"
 
 
 class Backpack(Prop):
-    asset_name = "Backpack (Phil)"
-    asset_code = "backpack"
+    name = "Backpack (Phil)"
+    code = "backpack"
 
 
-class Set(Asset):
+class Set(SpriteFrightAsset):
     asset_type = "sets"
-    collection = "SE-{asset.config.asset_code}"
+    collection = "SE-{asset.code}"
 
 
 class MushroomGrove(Set):
-    asset_name = "Mushroom grove"
-    asset_code = "mushroom_grove"
+    name = "Mushroom grove"
+    code = "mushroom_grove"

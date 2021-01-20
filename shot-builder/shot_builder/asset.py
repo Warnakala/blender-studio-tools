@@ -17,24 +17,9 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
-import typing
-import types
-import pathlib
 
 
 class Asset:
-    def __init__(self, asset_id: str, code: str, name: str, description: str):
-        self.asset_id = asset_id
-        self.code = code
-        self.name = name
-        self.description = description
-        self.config: typing.Optional[AssetConfig] = None
-
-    def __str__(self) -> str:
-        return self.name
-
-
-class AssetConfig:
     """
     Container to hold data where the asset can be located in the production repository.
 
@@ -42,7 +27,20 @@ class AssetConfig:
 
     """
     asset_type = ""
-    asset_code = ""
-    asset_name = ""
-    path = "{production.path}/lib/{asset.config.asset_type}/{asset.code}/{asset.code}.blend"
+    code = ""
+    name = ""
+    path = "{production.path}/lib/{asset.asset_type}/{asset.code}/{asset.code}.blend"
     collection = "{asset.code}"
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class AssetRef:
+    """
+    Reference to an asset from an external system.
+    """
+
+    def __init__(self, name: str = "", code: str = ""):
+        self.name = name
+        self.code = code

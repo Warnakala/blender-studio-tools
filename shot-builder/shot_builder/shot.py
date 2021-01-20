@@ -19,15 +19,15 @@
 # <pep8 compliant>
 
 from shot_builder.asset import Asset
-from typing import *
+import typing
 
 
 class Shot:
-    def __init__(self, parent_id: Union[str, None], shot_id: str, code: str, name: str, description: str):
+    def __init__(self, parent_id: typing.Optional[str], shot_id: str, code: str, name: str, description: str):
         self.shot_id = shot_id
         self.parent_id = parent_id
         self.code = code
         self.name = name
         self.description = description
-        self.assets: List[Asset] = []
+        self.assets: typing.List[Asset] = []
         self.frames = 250

@@ -27,7 +27,7 @@ import bpy
 from shot_builder.task_type import *
 from shot_builder.shot import Shot
 from shot_builder.render_settings import RenderSettings
-from shot_builder.asset import *
+from shot_builder.asset import Asset, AssetRef
 from shot_builder.sequence import ShotSequence
 from shot_builder.sys_utils import *
 from shot_builder.hooks import Hooks, register_hooks
@@ -54,7 +54,7 @@ class Production():
     """
 
     __ATTRNAMES_SUPPORTING_CONNECTOR = [
-        'task_types', 'shots', 'name', 'assets']
+        'task_types', 'shots', 'name']
 
     def __init__(self, production_path: pathlib.Path):
         self.path = production_path
@@ -62,16 +62,13 @@ class Production():
         self.task_types_connector = DefaultConnector
         self.sequences: List[ShotSequence] = []
         self.shots_connector = DefaultConnector
-        self.assets: List[Asset] = []
-        self.assets_connector = DefaultConnector
+        self.assets: List[type] = []
         self.name = ""
         self.name_connector = DefaultConnector
         self.render_settings_connector = DefaultConnector
         self.config: Dict[str, Any] = {}
         self.__sequence_lookup: Dict[str, ShotSequence] = {}
         self.__shot_lookup: Dict[str, Shot] = {}
-        self.__asset_lookup: Dict[str, Asset] = {}
-        self.__asset_definition_lookup: Dict[str, type] = {}
         self.hooks = Hooks()
 
         self.scene_name_format = "{shot.code}.{task_type}"
@@ -98,11 +95,6 @@ class Production():
     def __build_shot_lookup(self, shots: List[Shot]) -> None:
         self.__shot_lookup = {
             shot.shot_id: shot for shot in shots
-        }
-
-    def __build_asset_lookup(self) -> None:
-        self.__asset_lookup = {
-            asset.asset_id: asset for asset in self.assets
         }
 
     def __link_shots_with_sequences(self, shots: List[Shot]) -> None:
@@ -146,26 +138,11 @@ class Production():
             self.__build_shot_lookup(shots)
             self.__link_shots_with_sequences(shots)
 
-    def __ensure_assets_loaded(self, context: bpy.types.Context) -> None:
-        if not self.assets:
-            connector = self.__create_connector(
-                self.assets_connector, context=context)
-            assets = connector.get_assets()
-
-            self.assets = assets
-            self.__build_asset_lookup()
-
-    def get_assets_for_shot(self, context: bpy.types.Context, shot: Shot) -> List[Asset]:
+    def get_assets_for_shot(self, context: bpy.types.Context, shot: Shot) -> List[AssetRef]:
         connector = self.__create_connector(
             self.shots_connector, context=context)
 
-        assets = connector.get_assets_for_shot(shot)
-        return assets
-
-    def update_asset_definition(self, asset: Asset) -> None:
-        config = self.__asset_definition_lookup.get(asset.name)
-        if config:
-            asset.config = config()
+        return connector.get_assets_for_shot(shot)
 
     def get_shot(self, context: bpy.types.Context, shot_id: str) -> Shot:
         self.__ensure_sequences_loaded(context)
@@ -252,19 +229,6 @@ class Production():
         logger.warn(
             "Skip loading of shots. Incorrect configuration detected")
 
-    def __load_assets(self, main_config_mod: types.ModuleType) -> None:
-        assets = getattr(main_config_mod, "ASSETS", None)
-        if assets is None:
-            return
-
-        if issubclass(assets, Connector):
-            self.assets = []
-            self.assets_connector = assets
-            return
-
-        logger.warn(
-            "Skip loading of assets. Incorrect configuration detected")
-
     def __load_connector_keys(self, main_config_mod: types.ModuleType) -> None:
         connectors = set()
         for attrname in Production.__ATTRNAMES_SUPPORTING_CONNECTOR:
@@ -303,20 +267,26 @@ class Production():
         self.__load_name(main_config_mod)
         self.__load_task_types(main_config_mod)
         self.__load_shots(main_config_mod)
-        self.__load_assets(main_config_mod)
         self.__load_connector_keys(main_config_mod)
         self.__load_render_settings(main_config_mod)
         self.__load_formatting_strings(main_config_mod)
 
     def _load_asset_definitions(self, asset_mod: types.ModuleType) -> None:
-        lookup = {}
+        """
+        Load all assets from the given module.
+        """
+        self.assets = []
         for module_item_str in dir(asset_mod):
             module_item = getattr(asset_mod, module_item_str)
-            if not hasattr(module_item, "asset_name"):
+            if module_item.__class__ != type:
                 continue
-            lookup[module_item.asset_name] = module_item
-
-        self.__asset_definition_lookup = lookup
+            if not issubclass(module_item, Asset):
+                continue
+            if not hasattr(module_item, "name"):
+                continue
+            logger.info(f"loading asset config {module_item}")
+            self.assets.append(module_item)
+        # TODO: only add assets that are leaves
 
 
 _PRODUCTION: Optional[Production] = None

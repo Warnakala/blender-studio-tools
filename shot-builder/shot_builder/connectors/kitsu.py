@@ -19,7 +19,7 @@
 # <pep8 compliant>
 import bpy
 from shot_builder.shot import Shot
-from shot_builder.asset import Asset
+from shot_builder.asset import Asset, AssetRef
 from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
 from shot_builder.render_settings import RenderSettings
@@ -131,19 +131,6 @@ class KitsuShot(KitsuDataContainer):
         return shot
 
 
-class KitsuAsset(KitsuDataContainer):
-    def as_asset(self) -> Asset:
-        asset_id = self.get_id()
-        name = self.get_name()
-        code = self.get_code()
-        description = self.get_description()
-
-        return Asset(
-            asset_id=asset_id,
-            code=str(code) if code is not None else name,
-            name=name, description=description)
-
-
 class KitsuConnector(Connector):
     PRODUCTION_KEYS = {'KITSU_PROJECT_ID'}
 
@@ -221,15 +208,11 @@ class KitsuConnector(Connector):
         kitsu_shots = self.__api_get(f"data/projects/{project_id}/shots")
         return [KitsuShot(shot_data).as_shot() for shot_data in kitsu_shots]
 
-    def get_assets(self) -> typing.List[Asset]:
-        project_id = self._production.config['KITSU_PROJECT_ID']
-        kitsu_assets = self.__api_get(f"data/projects/{project_id}/assets")
-        return [KitsuAsset(asset_data).as_asset() for asset_data in kitsu_assets]
-
-    def get_assets_for_shot(self, shot: Shot) -> typing.List[Asset]:
+    def get_assets_for_shot(self, shot: Shot) -> typing.List[AssetRef]:
         kitsu_assets = self.__api_get(
             f"data/shots/{shot.shot_id}/assets")
-        return [KitsuAsset(asset_data).as_asset() for asset_data in kitsu_assets]
+        return [AssetRef(name=asset_data['name'], code=asset_data['code'])
+                for asset_data in kitsu_assets]
 
     def get_render_settings(self, shot: Shot) -> RenderSettings:
         """

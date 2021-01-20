@@ -1,5 +1,6 @@
 from shot_builder.project import Production
 from shot_builder.task_type import TaskType
+from shot_builder.asset import Asset, AssetRef
 from shot_builder.builder.build_step import BuildStep, BuildContext
 from shot_builder.builder.load_asset import LoadAssetStep
 from shot_builder.builder.set_render_settings import SetRenderSettingsStep
@@ -24,6 +25,14 @@ class ShotBuilder():
         self.build_context = BuildContext(
             context=context, production=production, shot=shot, render_settings=render_settings, task_type=task_type)
 
+    def __find_asset(self, asset_ref: AssetRef) -> typing.Optional[Asset]:
+        for asset_class in self.build_context.production.assets:
+            asset = typing.cast(Asset, asset_class())
+            logger.debug(f"{asset_ref.name}, {asset.name}")
+            if asset_ref.name == asset.name:
+                return asset
+        return None
+
     def create_build_steps(self) -> None:
         self._steps.append(NewSceneStep())
         self._steps.append(SetRenderSettingsStep())
@@ -35,10 +44,10 @@ class ShotBuilder():
         context = self.build_context.context
         shot = self.build_context.shot
 
-        assets = production.get_assets_for_shot(context, shot)
-        for asset in assets:
-            production.update_asset_definition(asset)
-            if asset.config is None:
+        asset_refs = production.get_assets_for_shot(context, shot)
+        for asset_ref in asset_refs:
+            asset = self.__find_asset(asset_ref)
+            if asset is None:
                 logger.warning(f"cannot determine repository data for {asset}")
                 continue
             self._steps.append(LoadAssetStep(asset))
