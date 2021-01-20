@@ -79,7 +79,7 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         production = get_active_production()
         shot_builder = ShotBuilder(
-            context=context, production=production, shot_id=self.shot_id, task_type=TaskType(self.task_type))
+            context=context, production=production, shot_name=self.shot_id, task_type=TaskType(self.task_type))
         shot_builder.create_build_steps()
         shot_builder.build()
 

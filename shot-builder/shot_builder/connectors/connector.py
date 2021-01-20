@@ -21,7 +21,7 @@
 This module contains the Connector class. It is an abstract base class for concrete connectors.
 """
 
-from shot_builder.shot import Shot
+from shot_builder.shot import Shot, ShotRef
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
@@ -87,16 +87,9 @@ class Connector:
         raise NotImplementedError(
             f"{self.__class__.__name__} does not support retrieval of task types")
 
-    def get_shots(self) -> List[Shot]:
+    def get_shots(self) -> List[ShotRef]:
         """
         Retrieve the shots using the connector.
-        """
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not support retrieval of shots")
-
-    def get_sequences(self) -> List[ShotSequence]:
-        """
-        Retrieve the sequences using the connector.
         """
         raise NotImplementedError(
             f"{self.__class__.__name__} does not support retrieval of shots")

@@ -18,7 +18,7 @@
 
 # <pep8 compliant>
 import bpy
-from shot_builder.shot import Shot
+from shot_builder.shot import Shot, ShotRef
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
@@ -107,28 +107,17 @@ class KitsuShotSequence(KitsuDataContainer):
         return ShotSequence(sequence_id=sequence_id, code=sequence_code, name=name, description=description)
 
 
-class KitsuShot(KitsuDataContainer):
-    def get_fps(self) -> str:
-        return typing.cast(str, self._data['fps'])
+class KitsuShotRef(ShotRef):
+    def __init__(self, kitsu_id: str, name: str, code: str, frames: int, frames_per_second: float):
+        super().__init__(name=name, code=code)
+        self.kitsu_id = kitsu_id
+        self.frames = frames
+        self.frames_per_second = frames_per_second
 
-    def get_nb_frames(self) -> int:
-        return int(typing.cast(str, self._data['nb_frames']))
-
-    def as_shot(self) -> Shot:
-        shot_id = self.get_id()
-        parent_id = self.get_parent_id()
-        name = self.get_name()
-        code = self.get_code()
-        description = self.get_description()
-
-        shot = Shot(
-            shot_id=shot_id,
-            parent_id=parent_id,
-            code=str(code) if code is not None else name,
-            name=name, description=description)
-        shot.frames = self.get_nb_frames()
-
-        return shot
+    def sync_data(self, shot: Shot) -> None:
+        shot.kitsu_id = self.kitsu_id
+        shot.frames = self.frames
+        shot.frames_per_second = self.frames_per_second
 
 
 class KitsuConnector(Connector):
@@ -181,12 +170,6 @@ class KitsuConnector(Connector):
             typing.Dict[str, typing.Any], production))
         return project
 
-    def __get_shot_data(self, shot: Shot) -> KitsuShot:
-        shot_data = self.__api_get(f"data/shots/{shot.shot_id}")
-        kitsu_shot = KitsuShot(typing.cast(
-            typing.Dict[str, typing.Any], shot_data))
-        return kitsu_shot
-
     def get_name(self) -> str:
         production = self.__get_production_data()
         return production.get_name()
@@ -203,14 +186,19 @@ class KitsuConnector(Connector):
             f"data/projects/{project_id}/sequences")
         return [KitsuShotSequence(sequence_data).as_sequence() for sequence_data in kitsu_sequences]
 
-    def get_shots(self) -> typing.List[Shot]:
+    def get_shots(self) -> typing.List[ShotRef]:
         project_id = self._production.config['KITSU_PROJECT_ID']
         kitsu_shots = self.__api_get(f"data/projects/{project_id}/shots")
-        return [KitsuShot(shot_data).as_shot() for shot_data in kitsu_shots]
+        return [KitsuShotRef(
+            kitsu_id=shot_data['id'],
+            name=shot_data['name'],
+            code=shot_data['code'],
+            frames_per_second=24.0,
+            frames=int(shot_data['nb_frames'])) for shot_data in kitsu_shots]
 
     def get_assets_for_shot(self, shot: Shot) -> typing.List[AssetRef]:
         kitsu_assets = self.__api_get(
-            f"data/shots/{shot.shot_id}/assets")
+            f"data/shots/{shot.kitsu_id}/assets")
         return [AssetRef(name=asset_data['name'], code=asset_data['code'])
                 for asset_data in kitsu_assets]
 
@@ -219,8 +207,6 @@ class KitsuConnector(Connector):
         Retrieve the render settings for the given shot.
         """
         kitsu_project = self.__get_production_data()
-        kitsu_shot = self.__get_shot_data(shot)
-
         resolution = kitsu_project.get_resolution()
-        frames_per_second = float(kitsu_shot.get_fps())
+        frames_per_second = shot.frames_per_second
         return RenderSettings(width=resolution[0], height=resolution[1], frames_per_second=frames_per_second)

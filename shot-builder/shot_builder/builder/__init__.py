@@ -16,10 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class ShotBuilder():
-    def __init__(self, context: bpy.types.Context, production: Production, task_type: TaskType, shot_id: str):
+    def __init__(self, context: bpy.types.Context, production: Production, task_type: TaskType, shot_name: str):
         self._steps: typing.List[BuildStep] = []
 
-        shot = production.get_shot(context, shot_id)
+        shot = production.get_shot(context, shot_name)
+        assert(shot)
         render_settings = production.get_render_settings(
             context, shot)
         self.build_context = BuildContext(

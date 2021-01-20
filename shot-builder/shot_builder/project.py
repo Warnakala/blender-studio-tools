@@ -21,11 +21,12 @@
 import pathlib
 import logging
 import importlib
+from collections import defaultdict
 
 import bpy
 
 from shot_builder.task_type import *
-from shot_builder.shot import Shot
+from shot_builder.shot import Shot, ShotRef
 from shot_builder.render_settings import RenderSettings
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.sequence import ShotSequence
@@ -63,11 +64,11 @@ class Production():
         self.sequences: List[ShotSequence] = []
         self.shots_connector = DefaultConnector
         self.assets: List[type] = []
+        self.shots: List[type] = []
         self.name = ""
         self.name_connector = DefaultConnector
         self.render_settings_connector = DefaultConnector
         self.config: Dict[str, Any] = {}
-        self.__sequence_lookup: Dict[str, ShotSequence] = {}
         self.__shot_lookup: Dict[str, Shot] = {}
         self.hooks = Hooks()
 
@@ -87,29 +88,6 @@ class Production():
     def __format_shot_name(self, shot: Shot) -> str:
         return shot.name
 
-    def __build_sequence_lookup(self) -> None:
-        self.__sequence_lookup = {
-            sequence.sequence_id: sequence for sequence in self.sequences
-        }
-
-    def __build_shot_lookup(self, shots: List[Shot]) -> None:
-        self.__shot_lookup = {
-            shot.shot_id: shot for shot in shots
-        }
-
-    def __link_shots_with_sequences(self, shots: List[Shot]) -> None:
-        """
-        """
-        for shot in shots:
-            parent_id = shot.parent_id
-            if parent_id is None:
-                continue
-            sequence = self.__sequence_lookup.get(str(parent_id))
-            if sequence is None:
-                logger.warn(f"shot {shot} has no sequence")
-                continue
-            sequence.shots.append(shot)
-
     def get_task_type_items(self,
                             context: bpy.types.Context
                             ) -> List[Tuple[str, str, str]]:
@@ -126,27 +104,32 @@ class Production():
             for task_type in self.task_types
         ]
 
-    def __ensure_sequences_loaded(self, context: bpy.types.Context) -> None:
-        if not self.sequences:
-            connector = self.__create_connector(
-                self.shots_connector, context=context)
-            sequences = connector.get_sequences()
-            shots = connector.get_shots()
-
-            self.sequences = sequences
-            self.__build_sequence_lookup()
-            self.__build_shot_lookup(shots)
-            self.__link_shots_with_sequences(shots)
-
     def get_assets_for_shot(self, context: bpy.types.Context, shot: Shot) -> List[AssetRef]:
         connector = self.__create_connector(
             self.shots_connector, context=context)
 
         return connector.get_assets_for_shot(shot)
 
-    def get_shot(self, context: bpy.types.Context, shot_id: str) -> Shot:
-        self.__ensure_sequences_loaded(context)
-        return self.__shot_lookup[shot_id]
+    def get_shots(self, context: bpy.types.Context) -> List[ShotRef]:
+        connector = self.__create_connector(
+            self.shots_connector, context=context)
+        return connector.get_shots()
+
+    def get_shot(self, context: bpy.types.Context, shot_name: str) -> Optional[Shot]:
+        shot_refs = self.get_shots(context)
+        print(shot_refs)
+        print(self.shots)
+        for shot_class in self.shots:
+            shot = cast(Shot, shot_class())
+            print(shot.name, shot_name)
+            if shot.name != shot_name:
+                continue
+            for shot_ref in shot_refs:
+                print(shot.name, shot_ref.name)
+                if shot.name == shot_ref.name:
+                    shot_ref.sync_data(shot)
+                    return shot
+        return None
 
     def get_render_settings(self, context: bpy.types.Context, shot: Shot) -> RenderSettings:
         connector = self.__create_connector(
@@ -158,18 +141,19 @@ class Production():
         Get the list of shot items to be used in an item function of a
         `bpy.props.EnumProperty` to select a shot.
         """
-        self.__ensure_sequences_loaded(context)
-        items: List[Tuple[str, str, str]] = []
-        for sequence in self.sequences:
-            if not sequence.shots:
-                continue
-            items.append(("", self.__format_sequence_name(
-                sequence), sequence.name))
-            for shot in sequence.shots:
-                items.append((shot.shot_id, self.__format_shot_name(
+        result = []
+        sequences: Dict[str, List[Shot]] = defaultdict(list)
+        for shot_class in self.shots:
+            shot = shot_class()
+            sequences[shot.sequence_code].append(shot)
+        sorted_sequences = sorted(sequences.keys())
+        for sequence in sorted_sequences:
+            result.append(("", sequence, sequence))
+            for shot in sorted(sequences[sequence], key=lambda x: x.code):
+                result.append((shot.name, self.__format_shot_name(
                     shot), shot.name))
 
-        return items
+        return result
 
     def get_name(self, context: bpy.types.Context) -> str:
         """
@@ -216,18 +200,17 @@ class Production():
         logger.warn(
             "Skip loading of task_types. Incorrect configuration detected.")
 
-    def __load_shots(self, main_config_mod: types.ModuleType) -> None:
+    def __load_shots_connector(self, main_config_mod: types.ModuleType) -> None:
         shots = getattr(main_config_mod, "SHOTS", None)
         if shots is None:
             return
 
+        # Extract task types from a list of strings
         if issubclass(shots, Connector):
-            self.sequences = []
             self.shots_connector = shots
-            return
 
         logger.warn(
-            "Skip loading of shots. Incorrect configuration detected")
+            "Skip loading of shots. Incorrect configuration detected.")
 
     def __load_connector_keys(self, main_config_mod: types.ModuleType) -> None:
         connectors = set()
@@ -266,7 +249,7 @@ class Production():
     def _load_config(self, main_config_mod: types.ModuleType) -> None:
         self.__load_name(main_config_mod)
         self.__load_task_types(main_config_mod)
-        self.__load_shots(main_config_mod)
+        self.__load_shots_connector(main_config_mod)
         self.__load_connector_keys(main_config_mod)
         self.__load_render_settings(main_config_mod)
         self.__load_formatting_strings(main_config_mod)
@@ -287,6 +270,23 @@ class Production():
             logger.info(f"loading asset config {module_item}")
             self.assets.append(module_item)
         # TODO: only add assets that are leaves
+
+    def _load_shot_definitions(self, shot_mod: types.ModuleType) -> None:
+        """
+        Load all assets from the given module.
+        """
+        self.shots = []
+        for module_item_str in dir(shot_mod):
+            module_item = getattr(shot_mod, module_item_str)
+            if module_item.__class__ != type:
+                continue
+            if not issubclass(module_item, Shot):
+                continue
+            if not hasattr(module_item, "name"):
+                continue
+            logger.info(f"loading shot config {module_item}")
+            self.shots.append(module_item)
+        # TODO: only add shots that are leaves
 
 
 _PRODUCTION: Optional[Production] = None
@@ -385,6 +385,13 @@ def __load_production_configuration(context: bpy.types.Context,
             _PRODUCTION._load_config(production_config)
         except ModuleNotFoundError:
             logger.warning("Production has no `config.py` configuration file")
+
+        try:
+            import shots as production_shots
+            importlib.reload(production_shots)
+            _PRODUCTION._load_shot_definitions(production_shots)
+        except ModuleNotFoundError:
+            logger.warning("Production has no `shots.py` configuration file")
 
         try:
             import assets as production_assets

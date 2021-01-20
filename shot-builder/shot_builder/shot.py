@@ -18,16 +18,26 @@
 
 # <pep8 compliant>
 
-from shot_builder.asset import Asset
 import typing
 
 
 class Shot:
-    def __init__(self, parent_id: typing.Optional[str], shot_id: str, code: str, name: str, description: str):
-        self.shot_id = shot_id
-        self.parent_id = parent_id
-        self.code = code
+    kitsu_id = ""
+    sequence_code = ""
+    name = ""
+    code = ""
+    frames = 0
+    frames_per_second = 24.0
+
+
+class ShotRef:
+    """
+    Reference to an asset from an external system.
+    """
+
+    def __init__(self, name: str = "", code: str = ""):
         self.name = name
-        self.description = description
-        self.assets: typing.List[Asset] = []
-        self.frames = 250
+        self.code = code
+
+    def sync_data(self, shot: Shot) -> None:
+        pass

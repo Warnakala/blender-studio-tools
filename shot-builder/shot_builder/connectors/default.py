@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
-from shot_builder.shot import Shot
+from shot_builder.shot import Shot, ShotRef
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
@@ -34,10 +34,7 @@ class DefaultConnector(Connector):
     def get_name(self) -> str:
         return "unnamed production"
 
-    def get_shots(self) -> List[Shot]:
-        return []
-
-    def get_sequences(self) -> List[ShotSequence]:
+    def get_shots(self) -> List[ShotRef]:
         return []
 
     def get_assets_for_shot(self, shot: Shot) -> List[AssetRef]:
