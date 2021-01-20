@@ -29,7 +29,6 @@ from shot_builder.task_type import *
 from shot_builder.shot import Shot, ShotRef
 from shot_builder.render_settings import RenderSettings
 from shot_builder.asset import Asset, AssetRef
-from shot_builder.sequence import ShotSequence
 from shot_builder.sys_utils import *
 from shot_builder.hooks import Hooks, register_hooks
 
@@ -72,7 +71,8 @@ class Production():
         self.__shot_lookup: Dict[str, Shot] = {}
         self.hooks = Hooks()
 
-        self.scene_name_format = "{shot.code}.{task_type}"
+        self.scene_name_format = "{shot.sequence_code}_{shot.code}.{task_type}"
+        self.shot_name_format = "{shot.sequence_code}_{shot.code}"
         self.file_name_format = "{production.path}shots/{shot.code}/{shot.code}.{task_type}.blend"
 
     def __create_connector(self,
@@ -82,11 +82,8 @@ class Production():
         preferences = context.preferences.addons[__package__].preferences
         return connector_cls(production=self, preferences=preferences)
 
-    def __format_sequence_name(self, sequence: ShotSequence) -> str:
-        return sequence.name
-
     def __format_shot_name(self, shot: Shot) -> str:
-        return shot.name
+        return self.shot_name_format.format(shot=shot)
 
     def get_task_type_items(self,
                             context: bpy.types.Context
@@ -117,15 +114,11 @@ class Production():
 
     def get_shot(self, context: bpy.types.Context, shot_name: str) -> Optional[Shot]:
         shot_refs = self.get_shots(context)
-        print(shot_refs)
-        print(self.shots)
         for shot_class in self.shots:
             shot = cast(Shot, shot_class())
-            print(shot.name, shot_name)
             if shot.name != shot_name:
                 continue
             for shot_ref in shot_refs:
-                print(shot.name, shot_ref.name)
                 if shot.name == shot_ref.name:
                     shot_ref.sync_data(shot)
                     return shot
@@ -142,16 +135,21 @@ class Production():
         `bpy.props.EnumProperty` to select a shot.
         """
         result = []
-        sequences: Dict[str, List[Shot]] = defaultdict(list)
+        # sequences: Dict[str, List[Shot]] = defaultdict(list)
+        # for shot_class in self.shots:
+        #     shot = shot_class()
+        #     sequences[shot.sequence_code].append(shot)
+        # sorted_sequences = sorted(sequences.keys())
+        # for sequence in sorted_sequences:
+        #     result.append(("", sequence, sequence))
+        #     for shot in sorted(sequences[sequence], key=lambda x: x.code):
+        #         result.append((shot.name, self.__format_shot_name(
+        #             shot), shot.name))
+
         for shot_class in self.shots:
             shot = shot_class()
-            sequences[shot.sequence_code].append(shot)
-        sorted_sequences = sorted(sequences.keys())
-        for sequence in sorted_sequences:
-            result.append(("", sequence, sequence))
-            for shot in sorted(sequences[sequence], key=lambda x: x.code):
-                result.append((shot.name, self.__format_shot_name(
-                    shot), shot.name))
+            result.append((shot.name, self.__format_shot_name(
+                shot), shot.name))
 
         return result
 

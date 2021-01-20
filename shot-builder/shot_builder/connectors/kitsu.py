@@ -20,7 +20,6 @@
 import bpy
 from shot_builder.shot import Shot, ShotRef
 from shot_builder.asset import Asset, AssetRef
-from shot_builder.sequence import ShotSequence
 from shot_builder.task_type import TaskType
 from shot_builder.render_settings import RenderSettings
 from shot_builder.connectors.connector import Connector
@@ -96,17 +95,6 @@ class KitsuProject(KitsuDataContainer):
         return (int(splitted[0]), int(splitted[1]))
 
 
-class KitsuShotSequence(KitsuDataContainer):
-
-    def as_sequence(self) -> ShotSequence:
-        sequence_id = self.get_id()
-        name = self.get_name()
-        code = self.get_code()
-        description = self.get_description()
-        sequence_code = str(code) if code is not None else name
-        return ShotSequence(sequence_id=sequence_id, code=sequence_code, name=name, description=description)
-
-
 class KitsuShotRef(ShotRef):
     def __init__(self, kitsu_id: str, name: str, code: str, frames: int, frames_per_second: float):
         super().__init__(name=name, code=code)
@@ -179,12 +167,6 @@ class KitsuConnector(Connector):
         import pprint
         pprint.pprint(task_types)
         return []
-
-    def get_sequences(self) -> typing.List[ShotSequence]:
-        project_id = self._production.config['KITSU_PROJECT_ID']
-        kitsu_sequences = self.__api_get(
-            f"data/projects/{project_id}/sequences")
-        return [KitsuShotSequence(sequence_data).as_sequence() for sequence_data in kitsu_sequences]
 
     def get_shots(self) -> typing.List[ShotRef]:
         project_id = self._production.config['KITSU_PROJECT_ID']
