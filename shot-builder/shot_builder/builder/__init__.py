@@ -39,7 +39,14 @@ class ShotBuilder():
         self._steps.append(SetRenderSettingsStep())
 
         production = self.build_context.production
-        for hook in production.hooks.filter(is_global=True):
+        task_type = self.build_context.task_type
+
+        # Run global hooks
+        for hook in production.hooks.filter():
+            self._steps.append(InvokeHookStep(hook))
+
+        # Run task specific hooks
+        for hook in production.hooks.filter(match_task_type=task_type.name):
             self._steps.append(InvokeHookStep(hook))
 
         context = self.build_context.context
@@ -49,7 +56,8 @@ class ShotBuilder():
         for asset_ref in asset_refs:
             asset = self.__find_asset(asset_ref)
             if asset is None:
-                logger.warning(f"cannot determine repository data for {asset}")
+                logger.warning(
+                    f"cannot determine repository data for {asset_ref}")
                 continue
             self._steps.append(LoadAssetStep(asset))
 

@@ -68,7 +68,7 @@ class Production():
         self.render_settings_connector = DefaultConnector
         self.config: Dict[str, Any] = {}
         self.__shot_lookup: Dict[str, Shot] = {}
-        self.hooks = Hooks()
+        self.hooks: Hooks = Hooks()
 
         self.scene_name_format = "{shot.sequence_code}_{shot.code}.{task_type}"
         self.shot_name_format = "{shot.sequence_code}_{shot.code}"
@@ -201,6 +201,7 @@ class Production():
         # Extract task types from a list of strings
         if issubclass(shots, Connector):
             self.shots_connector = shots
+            return
 
         logger.warn(
             "Skip loading of shots. Incorrect configuration detected.")

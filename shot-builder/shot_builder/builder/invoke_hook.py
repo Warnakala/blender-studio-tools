@@ -1,4 +1,5 @@
 from shot_builder.builder.build_step import BuildStep, BuildContext
+from shot_builder.hooks import HookFunction
 import bpy
 
 import typing
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class InvokeHookStep(BuildStep):
-    def __init__(self, hook: types.FunctionType):
+    def __init__(self, hook: HookFunction):
         self._hook = hook
 
     def __str__(self) -> str:
@@ -17,4 +18,4 @@ class InvokeHookStep(BuildStep):
 
     def execute(self, build_context: BuildContext) -> None:
         params = build_context.as_dict()
-        self._hook(**params)
+        self._hook(**params)  # type: ignore
