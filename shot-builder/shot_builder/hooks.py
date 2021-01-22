@@ -96,7 +96,23 @@ def register_hooks(module: types.ModuleType) -> None:
         _register_hook(module_item)
 
 
-def hook(match_task_type: MatchCriteriaType = DoNotMatch) -> typing.Callable[[types.FunctionType], types.FunctionType]:
+def global_hook() -> typing.Callable[[types.FunctionType], types.FunctionType]:
+    """
+    Decorator to add custom logic when building a shot.
+
+    Hooks are used to extend the configuration that would be not part of the core logic of the shot builder tool.
+    """
+    rules = {
+        'match_task_type': DoNotMatch,
+    }
+
+    def wrapper(func: types.FunctionType) -> types.FunctionType:
+        setattr(func, '_shot_builder_rules', rules)
+        return func
+    return wrapper
+
+
+def hook(match_task_type: MatchCriteriaType = WildCard) -> typing.Callable[[types.FunctionType], types.FunctionType]:
     """
     Decorator to add custom logic when building a shot.
 
