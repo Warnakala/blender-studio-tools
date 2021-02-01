@@ -52,18 +52,26 @@ class ShotBuilder():
         context = self.build_context.context
         shot = self.build_context.shot
 
+        # Collect assets that should be loaded.
         asset_refs = production.get_assets_for_shot(context, shot)
+        assets = []
         for asset_ref in asset_refs:
             asset = self.__find_asset(asset_ref)
             if asset is None:
                 logger.warning(
                     f"cannot determine repository data for {asset_ref}")
                 continue
+            assets.append(asset)
+
+        # Sort the assets on asset_type and asset.code).
+        assets.sort(key=lambda asset: (asset.asset_type, asset.code))
+
+        # Build asset specific build steps.
+        for asset in assets:
             self._steps.append(InitAssetStep(asset))
             # Add asset specific hooks.
             for hook in production.hooks.filter(match_task_type=task_type.name, match_asset_type=asset.asset_type):
                 self._steps.append(InvokeHookStep(hook))
-
 
     def build(self) -> None:
         num_steps = len(self._steps)
