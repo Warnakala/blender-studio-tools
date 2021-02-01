@@ -3,9 +3,11 @@ from shot_builder.task_type import TaskType
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.builder.build_step import BuildStep, BuildContext
 from shot_builder.builder.init_asset import InitAssetStep
+from shot_builder.builder.init_shot import InitShotStep
 from shot_builder.builder.set_render_settings import SetRenderSettingsStep
 from shot_builder.builder.new_scene import NewSceneStep
 from shot_builder.builder.invoke_hook import InvokeHookStep
+from shot_builder.builder.save_file import SaveFileStep
 
 import bpy
 
@@ -35,6 +37,7 @@ class ShotBuilder():
         return None
 
     def create_build_steps(self) -> None:
+        self._steps.append(InitShotStep())
         self._steps.append(NewSceneStep())
         self._steps.append(SetRenderSettingsStep())
 
@@ -72,6 +75,8 @@ class ShotBuilder():
             # Add asset specific hooks.
             for hook in production.hooks.filter(match_task_type=task_type.name, match_asset_type=asset.asset_type):
                 self._steps.append(InvokeHookStep(hook))
+
+        self._steps.append(SaveFileStep())
 
     def build(self) -> None:
         num_steps = len(self._steps)

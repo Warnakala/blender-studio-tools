@@ -28,6 +28,8 @@ class Shot:
     code = ""
     frames = 0
     frames_per_second = 24.0
+    file_path_format = "{production.path}/shots/{shot.sequence_code}_{shot.code}/{shot.sequence_code}_{shot.code}.{task_type}.blend"
+    file_path = ""
 
 
 class ShotRef:
