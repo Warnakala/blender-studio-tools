@@ -34,7 +34,7 @@ class Jay(Character):
     name = "Jay"
     code = "jay"
 
-
+# TODO: Bird character has no asset file yet.
 # class Bird(Character):
 #     name = "Bird"
 #     code = "bird"
@@ -55,9 +55,11 @@ class BBQGrill(Prop):
     code = "bbq_grill"
 
 
-class NotepadAndPencil(Prop):
-    name = "Notepad and pencil"
-    code = "notepad_pencil"
+# TODO: NotepadAndPencil are stored in a single asset file, and have 2 separate collections.
+# Need to ask how this one should be handled.
+# class NotepadAndPencil(Prop):
+#     name = "Notepad and pencil"
+#     code = "notepad_pencil"
 
 
 class Binoculars(Prop):
