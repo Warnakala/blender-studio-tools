@@ -1,5 +1,6 @@
 import typing
 import types
+from collections.abc import Iterable
 
 import logging
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ The matching parameters can use multiple types to detect how the matching criter
 would work.
 
 * `str`: would perform an exact string match.
-* `typing.List[str]`: would perform an exact string match with any of the given strings.
+* `typing.Iterator[str]`: would perform an exact string match with any of the given strings.
 * `typing.Type[Wildcard]`: would match any type for this parameter. This would be used so a hook
   is called for any value.
 * `typing.Type[DoNotMatch]`: would ignore this hook when matching the hook parameter. This is the default

@@ -1,5 +1,5 @@
 import bpy
-from shot_builder.hooks import hook, global_hook, Wildcard
+from shot_builder.hooks import hook, Wildcard
 from shot_builder.asset import Asset
 
 
@@ -13,7 +13,7 @@ def task_type_anim_set_workbench(scene: bpy.types.Scene, **kwargs):
     scene.render.engine = 'BLENDER_WORKBENCH'
 
 
-@hook(match_task_type='anim', match_asset_type="char,props")
+@hook(match_task_type='anim', match_asset_type=['char', 'props'])
 def link_char_prop_for_anim(scene: bpy.types.Scene, asset: Asset, **kwargs):
     bpy.ops.wm.link(
         filepath=str(asset.path),
