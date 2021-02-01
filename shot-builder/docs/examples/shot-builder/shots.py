@@ -5,10 +5,10 @@ class SpriteFrightShot(Shot):
     pass
 
 
-class Sequence_0001(SpriteFrightShot):
+class Sequence_0002(SpriteFrightShot):
     sequence_code = "0002"
 
 
-class Shot_0001_001_A(Sequence_0001):
+class Shot_0001_0001_A(Sequence_0002):
     name = "001"
-    code = "001"
+    code = "0001"

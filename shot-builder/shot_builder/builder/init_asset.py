@@ -10,20 +10,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class LoadAssetStep(BuildStep):
+class InitAssetStep(BuildStep):
     def __init__(self, asset: Asset):
         self.__asset = asset
 
     def __str__(self) -> str:
-        return f"load asset \"{self.__asset.name}\""
+        return f"init asset \"{self.__asset.name}\""
 
     def execute(self, build_context: BuildContext) -> None:
         build_context.asset = self.__asset
-        path = self.__asset.path.format(**build_context.as_dict())
-        collection = self.__asset.collection.format(**build_context.as_dict())
-
-        bpy.ops.wm.link(
-            filepath=str(path),
-            directory=str(path) + "/Collection",
-            filename=collection,
-        )
+        self.__asset.path = self.__asset.path.format_map(build_context.as_dict())
+        self.__asset.collection = self.__asset.collection.format_map(build_context.as_dict())

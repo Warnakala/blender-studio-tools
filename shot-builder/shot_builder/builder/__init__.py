@@ -2,7 +2,7 @@ from shot_builder.project import Production
 from shot_builder.task_type import TaskType
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.builder.build_step import BuildStep, BuildContext
-from shot_builder.builder.load_asset import LoadAssetStep
+from shot_builder.builder.init_asset import InitAssetStep
 from shot_builder.builder.set_render_settings import SetRenderSettingsStep
 from shot_builder.builder.new_scene import NewSceneStep
 from shot_builder.builder.invoke_hook import InvokeHookStep
@@ -41,11 +41,11 @@ class ShotBuilder():
         production = self.build_context.production
         task_type = self.build_context.task_type
 
-        # Run global hooks
+        # Add global hooks.
         for hook in production.hooks.filter():
             self._steps.append(InvokeHookStep(hook))
 
-        # Run task specific hooks
+        # Add task specific hooks.
         for hook in production.hooks.filter(match_task_type=task_type.name):
             self._steps.append(InvokeHookStep(hook))
 
@@ -59,7 +59,11 @@ class ShotBuilder():
                 logger.warning(
                     f"cannot determine repository data for {asset_ref}")
                 continue
-            self._steps.append(LoadAssetStep(asset))
+            self._steps.append(InitAssetStep(asset))
+            # Add asset specific hooks.
+            for hook in production.hooks.filter(match_task_type=task_type.name, match_asset_type=asset.asset_type):
+                self._steps.append(InvokeHookStep(hook))
+
 
     def build(self) -> None:
         num_steps = len(self._steps)
