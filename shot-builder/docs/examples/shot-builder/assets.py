@@ -55,11 +55,12 @@ class BBQGrill(Prop):
     code = "bbq_grill"
 
 
-# TODO: NotepadAndPencil are stored in a single asset file, and have 2 separate collections.
-# Need to ask how this one should be handled.
-# class NotepadAndPencil(Prop):
-#     name = "Notepad and pencil"
-#     code = "notepad_pencil"
+# NOTE: NotepadAndPencil is a combined asset. In Kitsu it is defined as a single asset. In the production
+# reportitory it is stored as 2 collections in a single file. See `hooks.link_char_prop_for_anim`
+# where this is handled.
+class NotepadAndPencil(Prop):
+    name = "Notepad and pencil"
+    code = "notepad_pencil"
 
 
 class Binoculars(Prop):

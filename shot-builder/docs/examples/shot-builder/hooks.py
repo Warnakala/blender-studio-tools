@@ -27,14 +27,22 @@ def task_type_anim_output_collection(shot: Shot, task_type: str, **kwargs):
 
 @hook(match_task_type='anim', match_asset_type=['char', 'props'])
 def link_char_prop_for_anim(shot: Shot, asset: Asset, **kwargs):
-    if asset.collection not in bpy.data.collections:
-        bpy.ops.wm.link(
-            filepath=str(asset.path),
-            directory=str(asset.path) + "/Collection",
-            filename=asset.collection,
-        )
-    asset_collection = bpy.data.collections[asset.collection]
-    shot.output_collection.children.link(asset_collection)
+    collection_names = []
+    if asset.code == 'notepad_pencil':
+        collection_names.append("PR-pencil")
+        collection_names.append("PR-notepad")
+    else:
+        collection_names.append(asset.collection)
+
+    for collection_name in collection_names:
+        if collection_name not in bpy.data.collections:
+            bpy.ops.wm.link(
+                filepath=str(asset.path),
+                directory=str(asset.path) + "/Collection",
+                filename=collection_name,
+            )
+        asset_collection = bpy.data.collections[collection_name]
+        shot.output_collection.children.link(asset_collection)
 
 
 @hook(match_task_type=Wildcard, match_asset_type='sets')
