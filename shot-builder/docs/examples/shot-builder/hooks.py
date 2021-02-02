@@ -4,8 +4,12 @@ from shot_builder.asset import Asset
 from shot_builder.shot import Shot
 from shot_builder.project import Production
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ---------- Global Hook ----------
+
 
 @hook()
 def set_cycles_render_engine(scene: bpy.types.Scene, **kwargs):
@@ -47,8 +51,13 @@ def _add_camera_rig(
     # Add camera collection to the output collection
     asset_collection = bpy.data.collections[collection_name]
     shot.output_collection.children.link(asset_collection)
+
+    # Make library override.
+    bpy.ops.object.make_override_library()
+
     # Set the camera of the camera rig as active scene camera.
-    scene.camera = bpy.data.objects['CAM-camera']
+    camera = bpy.data.objects['CAM-camera']
+    scene.camera = camera
 
 
 @hook(match_task_type='anim')
@@ -69,7 +78,7 @@ def task_type_anim_output_collection(scene: bpy.types.Scene, production: Product
 
 
 @hook(match_task_type='anim', match_asset_type=['char', 'props'])
-def link_char_prop_for_anim(shot: Shot, asset: Asset, **kwargs):
+def link_char_prop_for_anim(scene: bpy.types.Scene, shot: Shot, asset: Asset, **kwargs):
     """
     Loading a character or prop for an animation file.
     """
@@ -81,14 +90,35 @@ def link_char_prop_for_anim(shot: Shot, asset: Asset, **kwargs):
         collection_names.append(asset.collection)
 
     for collection_name in collection_names:
+        # TODO: hide in shot builder.
         if collection_name not in bpy.data.collections:
+            logger.info("link asset")
             bpy.ops.wm.link(
                 filepath=str(asset.path),
                 directory=str(asset.path) + "/Collection",
                 filename=collection_name,
             )
-        asset_collection = bpy.data.collections[collection_name]
-        shot.output_collection.children.link(asset_collection)
+            asset_collection = bpy.data.collections[collection_name]
+
+            # Make library override.
+            bpy.ops.object.make_override_library()
+
+            # Add overridden collection to the output collection.
+            shot.output_collection.children.link(asset_collection)
+        # else:
+        #     logger.info("asset already loaded, creating a new instance.")
+        #     asset_object = bpy.data.objects.new(
+        #         name=collection_name, object_data=None)
+        #     asset_object.instance_type = 'COLLECTION'
+        #     asset_object.instance_collection = bpy.data.collections[collection_name]
+        #     scene.collection.objects.link(asset_object)
+
+        #     # Make library override.
+        #     bpy.context.view_layer.objects.active = asset_object
+        #     bpy.ops.object.make_override_library()
+
+        #     # Add overridden collection to the output collection.
+        #     shot.output_collection.objects.link(asset_collection)
 
 
 @hook(match_task_type=Wildcard, match_asset_type='sets')
