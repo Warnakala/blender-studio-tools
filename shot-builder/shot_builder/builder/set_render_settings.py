@@ -22,6 +22,6 @@ class SetRenderSettingsStep(BuildStep):
 
         shot = build_context.shot
         logger.debug(f"set duration to {shot.frames}")
-        scene.frame_start = 100
-        scene.frame_current = 100
+        scene.frame_start = 101
+        scene.frame_current = 101
         scene.frame_end = scene.frame_start + shot.frames - 1
