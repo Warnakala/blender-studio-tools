@@ -35,10 +35,10 @@ def _add_camera_rig(
     scene: bpy.types.Scene,
     production: Production,
     shot: Shot,
-
 ):
     """
-    Helper Function to load the camera rig.
+    Function to load the camera rig. The rig will be added to the output collection
+    of the shot and the camera will be set as active camera.
     """
     # Load camera rig.
     path = f"{production.path}/lib/cam/camera_rig.blend"
@@ -48,12 +48,15 @@ def _add_camera_rig(
         directory=path + "/Collection",
         filename=collection_name,
     )
-    # Add camera collection to the output collection
-    asset_collection = bpy.data.collections[collection_name]
-    shot.output_collection.children.link(asset_collection)
+    # Keep the active object name as this would also be the name of the collection after enabling library override.
+    active_object_name = bpy.context.active_object.name
 
     # Make library override.
     bpy.ops.object.make_override_library()
+
+    # Add camera collection to the output collection
+    asset_collection = bpy.data.collections[active_object_name]
+    shot.output_collection.children.link(asset_collection)
 
     # Set the camera of the camera rig as active scene camera.
     camera = bpy.data.objects['CAM-camera']
@@ -69,10 +72,39 @@ def task_type_anim_output_collection(scene: bpy.types.Scene, production: Product
     Also loads the camera rig.
     """
     output_collection = bpy.data.collections.new(
-        name=f"{shot.sequence_code}_{shot.code}.{task_type}.output")
+        name=shot.get_output_collection_name(shot=shot, task_type=task_type))
     shot.output_collection = output_collection
+    output_collection.use_fake_user = True
 
     _add_camera_rig(scene, production, shot)
+
+
+@hook(match_task_type='lighting')
+def link_anim_output_collection(scene: bpy.types.Scene, production: Production, shot: Shot, **kwargs):
+    """
+    Link in the animation output collection from the animation file.
+    """
+    anim_collection = bpy.data.collections.new(name="animation")
+    scene.collection.children.link(anim_collection)
+    anim_file_path = shot.get_anim_file_path(production, shot)
+    anim_output_collection_name = shot.get_output_collection_name(
+        shot=shot, task_type="anim")
+    result = bpy.ops.wm.link(
+        filepath=anim_file_path,
+        directory=anim_file_path + "/Collection",
+        filename=anim_output_collection_name,
+    )
+    assert (result == {'FINISHED'})
+
+    # Move the anim output collection from scene collection to the animation collection.
+    anim_output_collection = bpy.data.objects[anim_output_collection_name]
+    anim_collection.objects.link(anim_output_collection)
+    scene.collection.objects.unlink(anim_output_collection)
+
+    # Use animation camera as active scene camera.
+    camera = bpy.data.objects['CAM-camera']
+    scene.camera = camera
+
 
 # ---------- Asset loading and linking ----------
 
@@ -96,6 +128,7 @@ def link_char_prop_for_anim(scene: bpy.types.Scene, shot: Shot, asset: Asset, **
             directory=str(asset.path) + "/Collection",
             filename=collection_name,
         )
+        # Keep the active object name as this would also be the name of the collection after enabling library override.
         active_object_name = bpy.context.active_object.name
 
         # Make library override.
