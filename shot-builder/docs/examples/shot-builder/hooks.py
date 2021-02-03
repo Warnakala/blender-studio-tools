@@ -90,35 +90,20 @@ def link_char_prop_for_anim(scene: bpy.types.Scene, shot: Shot, asset: Asset, **
         collection_names.append(asset.collection)
 
     for collection_name in collection_names:
-        # TODO: hide in shot builder.
-        if collection_name not in bpy.data.collections:
-            logger.info("link asset")
-            bpy.ops.wm.link(
-                filepath=str(asset.path),
-                directory=str(asset.path) + "/Collection",
-                filename=collection_name,
-            )
-            asset_collection = bpy.data.collections[collection_name]
+        logger.info("link asset")
+        bpy.ops.wm.link(
+            filepath=str(asset.path),
+            directory=str(asset.path) + "/Collection",
+            filename=collection_name,
+        )
+        active_object_name = bpy.context.active_object.name
 
-            # Make library override.
-            bpy.ops.object.make_override_library()
+        # Make library override.
+        bpy.ops.object.make_override_library()
 
-            # Add overridden collection to the output collection.
-            shot.output_collection.children.link(asset_collection)
-        # else:
-        #     logger.info("asset already loaded, creating a new instance.")
-        #     asset_object = bpy.data.objects.new(
-        #         name=collection_name, object_data=None)
-        #     asset_object.instance_type = 'COLLECTION'
-        #     asset_object.instance_collection = bpy.data.collections[collection_name]
-        #     scene.collection.objects.link(asset_object)
-
-        #     # Make library override.
-        #     bpy.context.view_layer.objects.active = asset_object
-        #     bpy.ops.object.make_override_library()
-
-        #     # Add overridden collection to the output collection.
-        #     shot.output_collection.objects.link(asset_collection)
+        # Add overridden collection to the output collection.
+        asset_collection = bpy.data.collections[active_object_name]
+        shot.output_collection.children.link(asset_collection)
 
 
 @hook(match_task_type=Wildcard, match_asset_type='sets')
