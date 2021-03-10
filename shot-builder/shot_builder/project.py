@@ -69,6 +69,7 @@ class Production():
         self.config: Dict[str, Any] = {}
         self.__shot_lookup: Dict[str, Shot] = {}
         self.hooks: Hooks = Hooks()
+        self.shot_data_synced = False
 
         self.scene_name_format = "{shot.sequence_code}_{shot.code}.{task_type}"
         self.shot_name_format = "{shot.sequence_code}_{shot.code}"
@@ -112,15 +113,21 @@ class Production():
         return connector.get_shots()
 
     def get_shot(self, context: bpy.types.Context, shot_name: str) -> Optional[Shot]:
+        self._ensure_shot_data(context)
+        for shot in self.shots:
+            if shot.name == shot_name:
+                return shot
+        return None
+
+    def _ensure_shot_data(self, context: bpy.types.Context) -> None:
+        if self.shot_data_synced:
+            return
         shot_refs = self.get_shots(context)
         for shot in self.shots:
-            if shot.name != shot_name:
-                continue
             for shot_ref in shot_refs:
                 if shot.name == shot_ref.name:
                     shot_ref.sync_data(shot)
-                    return shot
-        return None
+        self.shot_data_synced = True
 
     def get_render_settings(self, context: bpy.types.Context, shot: Shot) -> RenderSettings:
         connector = self.__create_connector(
@@ -133,9 +140,10 @@ class Production():
         `bpy.props.EnumProperty` to select a shot.
         """
         result = []
+        self._ensure_shot_data(context)
         sequences: Dict[str, List[Shot]] = defaultdict(list)
         for shot in self.shots:
-            if shot.name == "":
+            if not shot.is_valid():
                 continue
             sequences[shot.sequence_code].append(shot)
 
@@ -235,6 +243,8 @@ class Production():
             "Skip loading of render settings. Incorrect configuration detected")
 
     def __load_formatting_strings(self, main_config_mod: types.ModuleType) -> None:
+        self.shot_name_format = getattr(
+            main_config_mod, "SHOT_NAME_FORMAT", self.scene_name_format)
         self.scene_name_format = getattr(
             main_config_mod, "SCENE_NAME_FORMAT", self.scene_name_format)
         self.file_name_format = getattr(
@@ -280,7 +290,6 @@ class Production():
                 continue
             logger.info(f"loading shot config {module_item}")
             self.shots.append(module_item())
-        # TODO: only add shots that are leaves
 
 
 _PRODUCTION: Optional[Production] = None

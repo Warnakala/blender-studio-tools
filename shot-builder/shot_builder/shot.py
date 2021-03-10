@@ -28,8 +28,23 @@ class Shot:
     code = ""
     frames = 0
     frames_per_second = 24.0
-    file_path_format = "{production.path}/shots/{shot.sequence_code}_{shot.code}/{shot.sequence_code}_{shot.code}.{task_type}.blend"
+    file_path_format = "{production.path}/shots/{shot.sequence_code}/{shot.name}/{shot.name}.{task_type}.blend"
     file_path = ""
+
+    def is_valid(self) -> bool:
+        """
+        Check if this shot contains all data so it could be selected
+        for shot building.
+
+        When not valid it won't be shown in the shot selection field.
+        """
+        if not self.name:
+            return False
+
+        if self.frames == 0:
+            return False
+
+        return True
 
 
 class ShotRef:

@@ -176,7 +176,7 @@ class KitsuConnector(Connector):
             name=shot_data['name'],
             code=shot_data['code'],
             frames_per_second=24.0,
-            frames=int(shot_data['nb_frames'])) for shot_data in kitsu_shots]
+            frames=int(shot_data['nb_frames'] or 0)) for shot_data in kitsu_shots]
 
     def get_assets_for_shot(self, shot: Shot) -> typing.List[AssetRef]:
         kitsu_assets = self.__api_get(
