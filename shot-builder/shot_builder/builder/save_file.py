@@ -19,5 +19,11 @@ class SaveFileStep(BuildStep):
         shot = build_context.shot
         file_path = pathlib.Path(shot.file_path)
         file_path.mkdir(parents=True, exist_ok=True)
+
         logger.info(f"save file {shot.file_path}")
         bpy.ops.wm.save_mainfile(filepath=shot.file_path)
+
+        logger.debug(f"make paths relative")
+        bpy.ops.file.make_paths_relative()
+        logger.debug(f"save with relative paths")
+        bpy.ops.wm.save_mainfile()
