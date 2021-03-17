@@ -77,6 +77,12 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
         return cast(Set[str], context.window_manager.invoke_props_dialog(self, width=400))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        if not self.production_root:
+            self.report(
+                {'ERROR'}, "Shot builder can only be started from the File menu. Shortcuts like CTRL-N don't work")
+            return {'CANCELLED'}
+
+        ensure_loaded_production(context)
         production = get_active_production()
         shot_builder = ShotBuilder(
             context=context, production=production, shot_name=self.shot_id, task_type=TaskType(self.task_type))
