@@ -22,6 +22,7 @@ import typing
 
 
 class Shot:
+    is_generic = False
     kitsu_id = ""
     sequence_code = ""
     name = ""

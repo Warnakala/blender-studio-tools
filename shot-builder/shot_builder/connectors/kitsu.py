@@ -95,17 +95,30 @@ class KitsuProject(KitsuDataContainer):
         return (int(splitted[0]), int(splitted[1]))
 
 
+class KitsuSequenceRef(ShotRef):
+    def __init__(self, kitsu_id: str, name: str, code: str):
+        super().__init__(name=name, code=code)
+        self.kitsu_id = kitsu_id
+
+    def sync_data(self, shot: Shot) -> None:
+        shot.sequence_code = self.name
+
+
 class KitsuShotRef(ShotRef):
-    def __init__(self, kitsu_id: str, name: str, code: str, frames: int, frames_per_second: float):
+    def __init__(self, kitsu_id: str, name: str, code: str, frames: int, frames_per_second: float, sequence: KitsuSequenceRef):
         super().__init__(name=name, code=code)
         self.kitsu_id = kitsu_id
         self.frames = frames
         self.frames_per_second = frames_per_second
+        self.sequence = sequence
 
     def sync_data(self, shot: Shot) -> None:
+        shot.name = self.name
+        shot.code = self.code
         shot.kitsu_id = self.kitsu_id
         shot.frames = self.frames
         shot.frames_per_second = self.frames_per_second
+        self.sequence.sync_data(shot)
 
 
 class KitsuConnector(Connector):
@@ -170,13 +183,21 @@ class KitsuConnector(Connector):
 
     def get_shots(self) -> typing.List[ShotRef]:
         project_id = self._production.config['KITSU_PROJECT_ID']
+        kitsu_sequences = self.__api_get(f"data/projects/{project_id}/sequences")
+        sequence_lookup = {sequence_data['id']: KitsuSequenceRef(
+            kitsu_id=sequence_data['id'],
+            name=sequence_data['name'],
+            code=sequence_data['code'],
+        ) for sequence_data in kitsu_sequences}
+
         kitsu_shots = self.__api_get(f"data/projects/{project_id}/shots")
         return [KitsuShotRef(
             kitsu_id=shot_data['id'],
             name=shot_data['name'],
             code=shot_data['code'],
             frames_per_second=24.0,
-            frames=int(shot_data['nb_frames'] or 0)) for shot_data in kitsu_shots]
+            frames=int(shot_data['nb_frames'] or 0),
+            sequence=sequence_lookup[shot_data['parent_id']]) for shot_data in kitsu_shots]
 
     def get_assets_for_shot(self, shot: Shot) -> typing.List[AssetRef]:
         kitsu_assets = self.__api_get(

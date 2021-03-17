@@ -122,11 +122,31 @@ class Production():
     def _ensure_shot_data(self, context: bpy.types.Context) -> None:
         if self.shot_data_synced:
             return
-        shot_refs = self.get_shots(context)
+        # Find a generic shot definition. This class will be used as template
+        # when no specific shot definition could be found.
+        generic_shot_class = None
         for shot in self.shots:
-            for shot_ref in shot_refs:
+            if shot.is_generic:
+                generic_shot_class = shot.__class__
+                break
+
+        shot_refs = self.get_shots(context)
+        for shot_ref in shot_refs:
+            logger.debug(f"Finding shot definition for {shot_ref.name}")
+            for shot in self.shots:
                 if shot.name == shot_ref.name:
+                    logger.debug(f"Shot definition found for {shot_ref.name}")
                     shot_ref.sync_data(shot)
+                    break;
+            else:
+                logger.info(f"No shot definition found for {shot_ref.name}")
+                if generic_shot_class:
+                    logger.info(f"Using generic shot class")
+                    shot = generic_shot_class()
+                    shot_ref.sync_data(shot)
+                    shot.is_generic = False
+                    self.shots.append(shot)
+
         self.shot_data_synced = True
 
     def get_render_settings(self, context: bpy.types.Context, shot: Shot) -> RenderSettings:
@@ -150,7 +170,7 @@ class Production():
         sorted_sequences = sorted(sequences.keys())
         for sequence in sorted_sequences:
             result.append(("", sequence, sequence))
-            for shot in sorted(sequences[sequence], key=lambda x: x.code):
+            for shot in sorted(sequences[sequence], key=lambda x: x.name):
                 result.append((shot.name, self.__format_shot_name(
                     shot), shot.name))
 
