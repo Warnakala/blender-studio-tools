@@ -1,7 +1,6 @@
 import bpy 
 from .z_auth import ZSession
-from .bz_core import bz_prefs_clear_properties
-
+from .bz_util import zprefs_get
 class BZPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
@@ -38,6 +37,15 @@ class BZPreferences(bpy.types.AddonPreferences):
         box.row().prop(self, 'host')
         box.row().prop(self, 'email')
         box.row().prop(self, 'passwd')
+
+def bz_prefs_clear_properties(context):
+    zprefs = zprefs_get(context)
+
+    #id properties
+    zprefs['project_active'] = {}
+    zprefs['sequence_active'] = {}
+    zprefs['sqe_track_props'] = {'test' : 'something'}
+    print('Bzpref Clear ran!')
 
 # ---------REGISTER ----------
 
