@@ -122,9 +122,7 @@ class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        #update preferences 
         z_prefs = zprefs_get(context) 
-        # active_project = ZProject(z_prefs['project_active']['name'])
 
         #clear old prefs
         z_prefs['sqe_track_props'] = {}
@@ -171,7 +169,6 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
         return False 
 
     def execute(self, context):
-        #update preferences 
         z_prefs = zprefs_get(context) 
         active_project = ZProject(z_prefs['project_active']['name'])
         track_props = z_prefs['sqe_track_props']
@@ -181,14 +178,19 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
             return {'FINISHED'}
 
         logger.info(f'Pushing data to: {z_prefs.host}')
+        #TODO: add popup confirmation dialog before syncin
+        #TODO: build update behavior if seq/shot already exists (update frame ranges etc)
         for seq_name in track_props:
             #push seq 
             zsequence = active_project.create_sequence(seq_name)
             logger.info(f'Pushed sequence: {seq_name}')
 
             for shot_name in track_props[seq_name]['shots']:
+                frame_in = track_props[seq_name]['shots'][shot_name]['frame_in']
+                frame_out = track_props[seq_name]['shots'][shot_name]['frame_out']
+                
                 #push shot
-                active_project.create_shot(shot_name, zsequence)
+                active_project.create_shot(shot_name, zsequence, frame_in=frame_in, frame_out=frame_out)
                 logger.info(f'Pushed shot: {shot_name}')
 
         return {'FINISHED'}
