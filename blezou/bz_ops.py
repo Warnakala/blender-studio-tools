@@ -82,7 +82,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         z_prefs = zprefs_get(context)
         active_project = ZProject(z_prefs['project_active']['name'])
 
-        enum_list = [(s.name.lower(), s.name, s.description if s.description else '') for s in active_project.get_sequences_all()]
+        enum_list = [(s.id, s.name, s.description if s.description else '') for s in active_project.get_sequences_all()]
         return enum_list 
 
     enum_prop: bpy.props.EnumProperty(items=_get_sequences)
@@ -102,8 +102,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         z_prefs = zprefs_get(context) 
         active_project = ZProject(z_prefs['project_active']['name'])
 
-        #TODO: get sequence by id and set pref to 
-        z_prefs['sequence_active'] = ZSequence(active_project, self.enum_prop).zdict
+        z_prefs['sequence_active'] = ZSequence(self.enum_prop).zdict
         ui_redraw()
         return {'FINISHED'}
 
@@ -179,19 +178,37 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
 
         logger.info(f'Pushing data to: {z_prefs.host}')
         #TODO: add popup confirmation dialog before syncin
-        #TODO: build update behavior if seq/shot already exists (update frame ranges etc)
+
         for seq_name in track_props:
-            #push seq 
-            zsequence = active_project.create_sequence(seq_name)
-            logger.info(f'Pushed sequence: {seq_name}')
+            #check if seq already exists 
+            existing_seq = active_project.get_sequence_by_name(seq_name) #returns None if not existent
+            if existing_seq: 
+                zsequence = existing_seq
+                logger.info(f'Sequence already exists: {seq_name}. Skip.')
+            else:
+                #push new seq 
+                zsequence = active_project.create_sequence(seq_name)
+                logger.info(f'Pushed new sequence: {seq_name}')
 
             for shot_name in track_props[seq_name]['shots']:
                 frame_in = track_props[seq_name]['shots'][shot_name]['frame_in']
                 frame_out = track_props[seq_name]['shots'][shot_name]['frame_out']
-                
-                #push shot
-                active_project.create_shot(shot_name, zsequence, frame_in=frame_in, frame_out=frame_out)
-                logger.info(f'Pushed shot: {shot_name}')
+
+                #update shot if already exists
+                existing_shot = active_project.get_shot_by_name(zsequence, shot_name) #returns None if not existent
+                if existing_shot: 
+                    existing_shot.data['frame_in'] = frame_in
+                    existing_shot.zdict['data']['frame_in'] = frame_in #TODO: resolve this in ZObject
+
+                    existing_shot.data['frame_out'] = frame_out
+                    existing_shot.zdict['data']['frame_out'] = frame_out #TODO: resolve this in ZObject
+
+                    active_project.update_shot(existing_shot)
+                    logger.info(f'Pushed update to shot: {shot_name}')
+                else:
+                    #push shot
+                    active_project.create_shot(shot_name, zsequence, frame_in=frame_in, frame_out=frame_out, data={})
+                    logger.info(f'Pushed new shot: {shot_name}')
 
         return {'FINISHED'}
 

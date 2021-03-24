@@ -12,6 +12,8 @@ class ZObject():
     _zdict: dict
 
     def _init_from_dict(self, dictionary) -> bool:
+        #TODO: big issue i just realized if we update an attribute lets say: object.name = 'test' 
+        # it's not reflected in object.zdict, how to solve this programmatically? 
         if not isinstance(dictionary, dict):
             logger.exception(f'Failed to init {self} from dict. Input is of type: {type(dictionary)}')
             return False
@@ -49,22 +51,26 @@ class ZProject(ZObject):
     def __init__(self, name):
         self._zdict = gazu.project.get_project_by_name(name)
         self._init_from_dict(self._zdict)
+
+    def get_sequence(self, seq_id):
+        return ZSequence(seq_id)
     
+    def get_sequence_by_name(self, seq_name, episode=None):
+        return ZSequence.by_name(self, seq_name, episode=episode)
+
     def get_sequences_all(self):
-        zsequences = [ZSequence(self, s['name']) for s in gazu.shot.all_sequences_for_project(self.zdict)]
+        zsequences = [ZSequence.by_dict(s) for s in gazu.shot.all_sequences_for_project(self.zdict)]
         return zsequences
 
-    def get_sequence(self, name='', seq_id=''):
-        if not name and not seq_id:
-            raise ValueError('Please provide either a name or a seq_id')
-        if seq_id:
-            gazu.shot.get_sequence(seq_id)
-            return None 
-            # return ZSequence(seq_id)
+    def get_shot(self, shot_id):
+        return ZShot(shot_id)
+
+    def get_shot_by_name(self, zsequence, name):
+        return ZShot.by_name(zsequence, name)
 
     def create_shot(self, shot_name: str, zsequence, frame_in: int = None, frame_out: int = None, data: dict = {}):
         # this function returns a shot dict even if shot already exists, it does not override 
-        shot = gazu.shot.new_shot(
+        shot_dict = gazu.shot.new_shot(
             self.zdict, 
             zsequence.zdict, 
             shot_name, 
@@ -72,49 +78,51 @@ class ZProject(ZObject):
             frame_out=frame_out, 
             data=data
         )
-        return ZShot(zsequence, shot['name']) 
+        return ZShot.by_dict(shot_dict)
 
     def create_sequence(self, sequence_name: str):
         # this function returns a seq dict even if seq already exists, it does not override 
-        sequence = gazu.shot.new_sequence(self.zdict, sequence_name, episode=None)
-        return ZSequence(self, sequence['name'], episode=None)
+        seq_dict = gazu.shot.new_sequence(self.zdict, sequence_name, episode=None)
+        return ZSequence.by_dict(seq_dict)
         
+    def update_shot(self, zshot):
+        return gazu.shot.update_shot(zshot.zdict)
+
 class ZSequence(ZObject):
-    def __init__(self, zproject, name, episode=None):
-        self._zdict = gazu.shot.get_sequence_by_name(zproject.zdict, name, episode=episode)
+    def __init__(self, seq_id):
+        #TODO: what happens on invalid id 
+        self._zdict = gazu.shot.get_sequence(seq_id)
         self._init_from_dict(self._zdict)
 
-    '''
-    #TODO: alternative constructor with id 
     @classmethod
-    def fromid(cls, seq_id):
-        return 
-    '''
+    def by_name(cls, zproject, name, episode=None):
+        #returns None if not existent 
+        seq_dict = gazu.shot.get_sequence_by_name(zproject.zdict, name, episode=episode)
+        if not seq_dict: 
+            return None 
+        return cls(seq_dict['id'])
 
-    '''
-    #TODO: alternative constructor with dict
     @classmethod
-    def fromdict(cls, seq_id):
-        return 
-    '''
+    def by_dict(cls, seq_dict):
+        return cls(seq_dict['id'])
 
 class ZShot(ZObject):
-    def __init__(self, zsequence, name):
-        self._zdict = gazu.shot.get_shot_by_name(zsequence.zdict, name)
+    def __init__(self, shot_id):
+        #TODO: what happens on invalid id 
+        self._zdict = gazu.shot.get_shot(shot_id)
         self._init_from_dict(self._zdict)
 
-    '''
-    #TODO: alternative constructor with id 
     @classmethod
-    def fromid(cls, shot_id):
-        return 
-    '''
+    def by_name(cls, zsequence, name):
+        #returns None if not existent 
+        shot_dict = gazu.shot.get_shot_by_name(zsequence.zdict, name)
+        if not shot_dict: 
+            return None 
+        return cls(shot_dict['id'])
 
-    '''
-    #TODO: alternative constructor with dict
     @classmethod
-    def fromdict(cls, shot_id):
-        return 
-    '''
+    def by_dict(cls, shot_dict):
+        return cls(shot_dict['id'])
+    
 
 
