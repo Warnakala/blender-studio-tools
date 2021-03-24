@@ -95,10 +95,10 @@ class BZ_PT_SQE_context(bpy.types.Panel):
         row = box.row(align=True)
         row.operator('blezou.productions_load', text=prod_load_text, icon='DOWNARROW_HLT')
 
-class BZ_PT_SQE_shot(bpy.types.Panel):
-    bl_idname = 'panel.bz_sqe_shot'
+class BZ_PT_SQE_strip_props(bpy.types.Panel):
+    bl_idname = 'panel.bz_sqe_strip_props'
     bl_category = "Blezou"
-    bl_label = "Shot"
+    bl_label = "Strip Properties"
     bl_space_type = 'SEQUENCE_EDITOR'
     bl_region_type = 'UI'
     bl_order = 20
@@ -150,7 +150,7 @@ classes = [
     BZ_PT_vi3d_auth,
     BZ_PT_vi3d_context,
     BZ_PT_SQE_context,
-    BZ_PT_SQE_shot,
+    BZ_PT_SQE_strip_props,
     BZ_PT_SQE_sync
 ]
 
