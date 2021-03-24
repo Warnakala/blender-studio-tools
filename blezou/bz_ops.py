@@ -109,6 +109,47 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         context.window_manager.invoke_search_popup(self)
         return {'FINISHED'}
 
+class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
+    """Select the tree context from the list"""
+    bl_idname = 'blezou.sqe_scan_track_properties'
+    bl_label = "SQE Scan Track Properties"
+    bl_options = {'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        #update preferences 
+        z_prefs = zprefs_get(context) 
+        # active_project = ZProject(z_prefs['project_active']['name'])
+
+        #clear old prefs
+        z_prefs['sqe_track_props'] = {}
+        seq_dict = {}
+        
+        seq_editor = context.scene.sequence_editor
+        
+        for strip in seq_editor.sequences_all:
+            strip_seq = strip.blezou.sequence
+            strip_shot = strip.blezou.shot
+
+            if strip_seq and strip_shot:
+                #create seq if not exists 
+                if strip_seq not in seq_dict: 
+                    seq_dict[strip_seq] = {'shots':{}}
+
+                shot_dict = {'sequence_name': strip_seq, 'frame_in': strip.frame_final_start, 'frame_out': strip.frame_final_end}
+
+                #update seq dict with shot 
+                seq_dict[strip_seq]['shots'][strip_shot] = shot_dict
+
+                #TODO order dictionary 
+
+        z_prefs['sqe_track_props'] = seq_dict 
+        # ui_redraw()
+        return {'FINISHED'}
+
 
 # ---------REGISTER ----------
 
@@ -116,7 +157,8 @@ classes = [
     BZ_OT_SessionStart, 
     BZ_OT_SessionEnd, 
     BZ_OT_ProductionsLoad,
-    BZ_OT_SequencesLoad
+    BZ_OT_SequencesLoad,
+    BZ_OT_SQE_ScanTrackProps
 ]
 
 def register():

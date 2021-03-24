@@ -69,8 +69,8 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
             # seq_load_text = 'Select Sequence'
         row.operator('blezou.sequences_load', text=seq_load_text, icon='DOWNARROW_HLT')
 
-class BZ_PT_seq_context(bpy.types.Panel):
-    bl_idname = 'panel.bz_seq_context'
+class BZ_PT_SQE_context(bpy.types.Panel):
+    bl_idname = 'panel.bz_sqe_context'
     bl_category = "Blezou"
     bl_label = "Context"
     bl_space_type = 'SEQUENCE_EDITOR'
@@ -95,8 +95,8 @@ class BZ_PT_seq_context(bpy.types.Panel):
         row = box.row(align=True)
         row.operator('blezou.productions_load', text=prod_load_text, icon='DOWNARROW_HLT')
 
-class BZ_PT_seq_shot(bpy.types.Panel):
-    bl_idname = 'panel.bz_seq_context'
+class BZ_PT_SQE_shot(bpy.types.Panel):
+    bl_idname = 'panel.bz_sqe_shot'
     bl_category = "Blezou"
     bl_label = "Shot"
     bl_space_type = 'SEQUENCE_EDITOR'
@@ -117,14 +117,38 @@ class BZ_PT_seq_shot(bpy.types.Panel):
         row = box.row(align=True)
         row.prop(active_strip, 'shot')
 
+class BZ_PT_SQE_sync(bpy.types.Panel):
+    bl_idname = 'panel.bz_sqe_sync'
+    bl_category = "Blezou"
+    bl_label = "Sync"
+    bl_space_type = 'SEQUENCE_EDITOR'
+    bl_region_type = 'UI'
+    bl_order = 30
 
+    @classmethod
+    def poll(cls, context):
+        return zsession_auth(context)
+
+    def draw(self, context):
+        bz_prefs = zprefs_get(context)
+
+        layout = self.layout
+        row = layout.row(align=True)
+        row.operator('blezou.sqe_scan_track_properties', text='Scan Sequence Editor')
+
+        '''
+        box = layout.box()
+        row = box.row(align=True)
+        row.prop(bz_prefs, 'sqe_track_props') #TODO: Dosn"t work blender complaints it does not exist, manualli in script editr i can retrieve it
+        '''
 # ---------REGISTER ----------
 
 classes = [
     BZ_PT_vi3d_auth,
     BZ_PT_vi3d_context,
-    BZ_PT_seq_context,
-    BZ_PT_seq_shot
+    BZ_PT_SQE_context,
+    BZ_PT_SQE_shot,
+    BZ_PT_SQE_sync
 ]
 
 def register():
