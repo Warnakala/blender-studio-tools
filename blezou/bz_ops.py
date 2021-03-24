@@ -2,7 +2,9 @@ import bpy
 from .z_types import ZProductions, ZProject, ZSequence
 from .bz_util import zsession_auth, zprefs_get, zsession_get
 from .bz_core import ui_redraw
+from .logger import ZLoggerFactory
 
+logger = ZLoggerFactory.getLogger(__name__)
 class BZ_OT_SessionStart(bpy.types.Operator):
     bl_idname = 'blezou.session_start'
     bl_label = 'Start Gazou Session'
@@ -144,11 +146,53 @@ class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
                 #update seq dict with shot 
                 seq_dict[strip_seq]['shots'][strip_shot] = shot_dict
 
-                #TODO order dictionary 
+                #TODO: order dictionary 
 
         z_prefs['sqe_track_props'] = seq_dict 
+        logger.info(f'Result of scan: \n{seq_dict}')
+
         # ui_redraw()
         return {'FINISHED'}
+
+class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
+    """Select the tree context from the list"""
+    bl_idname = 'blezou.sqe_sync_track_properties'
+    bl_label = "SQE Sync Track Properties"
+    bl_options = {'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        z_prefs = zprefs_get(context)
+        active_project = z_prefs['project_active']
+
+        if zsession_auth(context):
+            if active_project:
+                return True 
+        return False 
+
+    def execute(self, context):
+        #update preferences 
+        z_prefs = zprefs_get(context) 
+        active_project = ZProject(z_prefs['project_active']['name'])
+        track_props = z_prefs['sqe_track_props']
+
+        if not track_props: 
+            logger.exception(f'No data to push to: {z_prefs.host}')
+            return {'FINISHED'}
+
+        logger.info(f'Pushing data to: {z_prefs.host}')
+        for seq_name in track_props:
+            #push seq 
+            zsequence = active_project.create_sequence(seq_name)
+            logger.info(f'Pushed sequence: {seq_name}')
+
+            for shot_name in track_props[seq_name]['shots']:
+                #push shot
+                active_project.create_shot(shot_name, zsequence)
+                logger.info(f'Pushed shot: {shot_name}')
+
+        return {'FINISHED'}
+
 
 
 # ---------REGISTER ----------
@@ -158,7 +202,8 @@ classes = [
     BZ_OT_SessionEnd, 
     BZ_OT_ProductionsLoad,
     BZ_OT_SequencesLoad,
-    BZ_OT_SQE_ScanTrackProps
+    BZ_OT_SQE_ScanTrackProps,
+    BZ_OT_SQE_SyncTrackProps
 ]
 
 def register():

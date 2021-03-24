@@ -63,6 +63,7 @@ class ZProject(ZObject):
             # return ZSequence(seq_id)
 
     def create_shot(self, shot_name: str, zsequence, frame_in: int = None, frame_out: int = None, data: dict = {}):
+        # this function returns a shot dict even if shot already exists, it does not override 
         shot = gazu.shot.new_shot(
             self.zdict, 
             zsequence.zdict, 
@@ -71,11 +72,12 @@ class ZProject(ZObject):
             frame_out=frame_out, 
             data=data
         )
-        return shot 
+        return ZShot(zsequence, shot['name']) 
 
     def create_sequence(self, sequence_name: str):
+        # this function returns a seq dict even if seq already exists, it does not override 
         sequence = gazu.shot.new_sequence(self.zdict, sequence_name, episode=None)
-        return sequence
+        return ZSequence(self, sequence['name'], episode=None)
         
 class ZSequence(ZObject):
     def __init__(self, zproject, name, episode=None):
@@ -83,8 +85,36 @@ class ZSequence(ZObject):
         self._init_from_dict(self._zdict)
 
     '''
+    #TODO: alternative constructor with id 
     @classmethod
     def fromid(cls, seq_id):
         return 
     '''
+
+    '''
+    #TODO: alternative constructor with dict
+    @classmethod
+    def fromdict(cls, seq_id):
+        return 
+    '''
+
+class ZShot(ZObject):
+    def __init__(self, zsequence, name):
+        self._zdict = gazu.shot.get_shot_by_name(zsequence.zdict, name)
+        self._init_from_dict(self._zdict)
+
+    '''
+    #TODO: alternative constructor with id 
+    @classmethod
+    def fromid(cls, shot_id):
+        return 
+    '''
+
+    '''
+    #TODO: alternative constructor with dict
+    @classmethod
+    def fromdict(cls, shot_id):
+        return 
+    '''
+
 
