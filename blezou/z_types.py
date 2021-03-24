@@ -61,6 +61,21 @@ class ZProject(ZObject):
             gazu.shot.get_sequence(seq_id)
             return None 
             # return ZSequence(seq_id)
+
+    def create_shot(self, shot_name: str, zsequence, frame_in: int = None, frame_out: int = None, data: dict = {}):
+        shot = gazu.shot.new_shot(
+            self.zdict, 
+            zsequence.zdict, 
+            shot_name, 
+            frame_in=frame_in, 
+            frame_out=frame_out, 
+            data=data
+        )
+        return shot 
+
+    def create_sequence(self, sequence_name: str):
+        sequence = gazu.shot.new_sequence(self.zdict, sequence_name, episode=None)
+        return sequence
         
 class ZSequence(ZObject):
     def __init__(self, zproject, name, episode=None):
