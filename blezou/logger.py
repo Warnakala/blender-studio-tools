@@ -2,6 +2,10 @@ import logging
 import sys
 
 class ZLoggerFactory():
+
+    '''
+    Utility class to streamline logger creation 
+    '''
         
     @classmethod
     def getLogger(cls, name=""): 

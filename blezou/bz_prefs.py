@@ -2,6 +2,10 @@ import bpy
 from .z_auth import ZSession
 from .bz_util import zprefs_get
 class BZPreferences(bpy.types.AddonPreferences):
+    '''
+    Addon preferences to blezou. Holds variables that are important for authentification. 
+    During runtime new attributes are created that get initialized in: bz_prefs_init_properties()
+    '''
     bl_idname = __package__
 
     host: bpy.props.StringProperty(
@@ -38,8 +42,11 @@ class BZPreferences(bpy.types.AddonPreferences):
         box.row().prop(self, 'email')
         box.row().prop(self, 'passwd')
 
-def bz_prefs_clear_properties(context):
+def bz_prefs_init_properties(context):
     zprefs = zprefs_get(context)
+
+    #TODO: is this the correct way to initialize dynamic properties? 
+    # we need properties that can hold dicts/nested dicts as value
 
     #id properties
     zprefs['project_active'] = {}
@@ -58,7 +65,7 @@ def register():
         bpy.utils.register_class(cls)
 
     #additional setup
-    bz_prefs_clear_properties(bpy.context)
+    bz_prefs_init_properties(bpy.context)
 
 def unregister():
     for cls in reversed(classes):

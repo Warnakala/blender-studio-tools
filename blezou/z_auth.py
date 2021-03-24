@@ -7,6 +7,12 @@ logger = ZLoggerFactory.getLogger(__name__)
 
 
 class ZSession(): 
+
+    '''
+    Class that will be instanced to blezou addon preferences. 
+    It's used to authenticate user against backend. 
+    If instance gets deleted authentication will be lost. 
+    '''
      
     def __init__(self, email: str = '', passwd: str = '', host: str = '') -> None:
         self._email = email
@@ -125,13 +131,4 @@ class ZSession():
         return self._session
 
     def __del__(self) -> None: 
-        self.end() 
-
-def tmp_login() -> dict: 
-    args = {"host": "http://192.168.178.80/api", "email": "paulgolter.de@gmail.com","passwd": "password"}
-    session = ZSession(**args)
-    session.start()    
-    return session 
-
-if __name__ == "__main__":
-    tmp_login() 
+        self.end()

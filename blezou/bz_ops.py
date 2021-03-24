@@ -6,6 +6,11 @@ from .logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(__name__)
 class BZ_OT_SessionStart(bpy.types.Operator):
+    '''
+    Starts the ZSession, which  is stored in Blezou addon preferences.
+    Authenticates user with backend until session ends. 
+    Host, email and password are retrieved from Blezou addon preferences. 
+    '''
     bl_idname = 'blezou.session_start'
     bl_label = 'Start Gazou Session'
     bl_options = {'INTERNAL'}
@@ -13,7 +18,7 @@ class BZ_OT_SessionStart(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return True 
-        #TODO
+        #TODO: zsession.valid_config() seems to have update issues 
         zsession = zsession_get(context)
         return zsession.valid_config()
 
@@ -29,6 +34,9 @@ class BZ_OT_SessionStart(bpy.types.Operator):
         return {'email': bz_prefs.email, 'host': bz_prefs.host, 'passwd': bz_prefs.passwd}
 
 class BZ_OT_SessionEnd(bpy.types.Operator):
+    '''
+    Ends the ZSession which is stored in Blezou addon preferences.
+    '''
     bl_idname = 'blezou.session_end'
     bl_label = 'End Gazou Session'
     bl_options = {'INTERNAL'}
@@ -43,7 +51,9 @@ class BZ_OT_SessionEnd(bpy.types.Operator):
         return {'FINISHED'}
 
 class BZ_OT_ProductionsLoad(bpy.types.Operator):
-    """Select the tree context from the list"""
+    '''
+    Gets all productions that are available in backend and let's user select. Invokes a search Popup (enum_prop) on click. 
+    '''
     bl_idname = 'blezou.productions_load'
     bl_label = "Productions Load"
     bl_options = {'INTERNAL'}
@@ -72,7 +82,9 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         return {'FINISHED'}
 
 class BZ_OT_SequencesLoad(bpy.types.Operator):
-    """Select the tree context from the list"""
+    '''
+    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click. 
+    '''
     bl_idname = 'blezou.sequences_load'
     bl_label = "Sequences Load"
     bl_options = {'INTERNAL'}
@@ -111,7 +123,9 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         return {'FINISHED'}
 
 class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
-    """Select the tree context from the list"""
+    '''
+    Composes a dictionary data structure to be pushed to backend and saves it in preferences of blezou addon.
+    '''
     bl_idname = 'blezou.sqe_scan_track_properties'
     bl_label = "SQE Scan Track Properties"
     bl_options = {'INTERNAL'}
@@ -152,7 +166,9 @@ class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
         return {'FINISHED'}
 
 class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
-    """Select the tree context from the list"""
+    '''
+    Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary. 
+    '''
     bl_idname = 'blezou.sqe_sync_track_properties'
     bl_label = "SQE Sync Track Properties"
     bl_options = {'INTERNAL'}

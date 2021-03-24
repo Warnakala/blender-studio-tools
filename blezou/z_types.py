@@ -27,6 +27,9 @@ class ZObject():
         return self._zdict
 
 class ZProductions(ZObject):
+    '''
+    Class to get object oriented representation of backend productions data structure. 
+    '''
     def __init__(self):
         self._projects = []
         self._zdict = gazu.project.all_projects()
@@ -48,6 +51,10 @@ class ZProductions(ZObject):
             self._projects.append(ZProject(p['name']))
 
 class ZProject(ZObject):
+    '''
+    Class to get object oriented representation of backend project data structure. 
+    Can shortcut some functions from gazu api because active project is given through class instance. 
+    '''
     def __init__(self, name):
         self._zdict = gazu.project.get_project_by_name(name)
         self._init_from_dict(self._zdict)
@@ -89,6 +96,11 @@ class ZProject(ZObject):
         return gazu.shot.update_shot(zshot.zdict)
 
 class ZSequence(ZObject):
+    '''
+    Class to get object oriented representation of backend sequence data structure. 
+    Has multiple constructor functions (by_name, by_dict, init>by id)
+    '''
+
     def __init__(self, seq_id):
         #TODO: what happens on invalid id 
         self._zdict = gazu.shot.get_sequence(seq_id)
@@ -107,6 +119,10 @@ class ZSequence(ZObject):
         return cls(seq_dict['id'])
 
 class ZShot(ZObject):
+    '''
+    Class to get object oriented representation of backend shot data structure. 
+    Has multiple constructor functions (by_name, by_dict, init>by id)
+    '''
     def __init__(self, shot_id):
         #TODO: what happens on invalid id 
         self._zdict = gazu.shot.get_shot(shot_id)

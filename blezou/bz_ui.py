@@ -2,6 +2,9 @@ import bpy
 from .bz_util import zprefs_get, zsession_get, zsession_auth
 
 class BZ_PT_vi3d_auth(bpy.types.Panel):
+    '''
+    Panel in 3dview that displays email, password and login operator. 
+    '''
     bl_idname = 'panel.bz_auth'
     bl_category = "Blezou"
     bl_label = "Kitsu Login"
@@ -27,6 +30,11 @@ class BZ_PT_vi3d_auth(bpy.types.Panel):
             row.operator('blezou.session_end', text='Logout')
 
 class BZ_PT_vi3d_context(bpy.types.Panel):
+    '''
+    Panel in 3dview that enables browsing through backend data structure. 
+    Thought of as a menu to setup a context by selecting active production
+    active sequence, shot etc.  
+    '''
     bl_idname = 'panel.bz_vi3d_context'
     bl_category = "Blezou"
     bl_label = "Context"
@@ -70,6 +78,9 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         row.operator('blezou.sequences_load', text=seq_load_text, icon='DOWNARROW_HLT')
 
 class BZ_PT_SQE_context(bpy.types.Panel):
+    '''
+    Panel in sequence editor that only shows active production browser operator.  
+    '''
     bl_idname = 'panel.bz_sqe_context'
     bl_category = "Blezou"
     bl_label = "Context"
@@ -96,6 +107,9 @@ class BZ_PT_SQE_context(bpy.types.Panel):
         row.operator('blezou.productions_load', text=prod_load_text, icon='DOWNARROW_HLT')
 
 class BZ_PT_SQE_strip_props(bpy.types.Panel):
+    '''
+    Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
+    '''
     bl_idname = 'panel.bz_sqe_strip_props'
     bl_category = "Blezou"
     bl_label = "Strip Properties"
@@ -118,6 +132,9 @@ class BZ_PT_SQE_strip_props(bpy.types.Panel):
         row.prop(active_strip, 'shot')
 
 class BZ_PT_SQE_sync(bpy.types.Panel):
+    '''
+    Panel that shows operator to sync sequence editor metadata with backend. 
+    '''
     bl_idname = 'panel.bz_sqe_sync'
     bl_category = "Blezou"
     bl_label = "Sync"
