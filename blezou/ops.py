@@ -1,8 +1,10 @@
+from dataclasses import asdict
 import bpy
 from .types import ZProductions, ZProject, ZSequence, ZShot
 from .util import zsession_auth, prefs_get, zsession_get
 from .core import ui_redraw
 from .logger import ZLoggerFactory
+from .gazu import gazu
 
 logger = ZLoggerFactory.getLogger(__name__)
 
@@ -73,7 +75,7 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
     def _get_productions(self, context):
         zproductions = ZProductions()
         enum_list = [
-            (p.name.lower(), p.name, p.description if p.description else "")
+            (p.id, p.name, p.description if p.description else "")
             for p in zproductions.projects
         ]
         return enum_list
@@ -91,7 +93,7 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         prev_project_active = prefs["project_active"].to_dict()
 
         # update prefs
-        prefs["project_active"] = ZProject(self.enum_prop).zdict
+        prefs["project_active"] = asdict(ZProject.by_id(self.enum_prop))
 
         # clear active shot when sequence changes
         if prev_project_active:
@@ -121,7 +123,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
 
     def _get_sequences(self, context):
         prefs = prefs_get(context)
-        active_project = ZProject(prefs["project_active"]["name"])
+        active_project = ZProject(**prefs["project_active"].to_dict())
 
         enum_list = [
             (s.id, s.name, s.description if s.description else "")
@@ -148,7 +150,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         prev_sequence_active = prefs["sequence_active"].to_dict()
 
         # update preferences
-        prefs["sequence_active"] = ZSequence(self.enum_prop).zdict
+        prefs["sequence_active"] = asdict(ZSequence.by_id(self.enum_prop))
 
         # clear active shot when sequence changes
         if prev_sequence_active:
@@ -177,8 +179,8 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
 
     def _get_shots(self, context):
         prefs = prefs_get(context)
-        active_sequence = ZSequence.by_dict(
-            prefs["sequence_active"].to_dict()
+        active_sequence = ZSequence(
+            **prefs["sequence_active"].to_dict()
         )  # is of type IDProperty
 
         enum_list = [
@@ -203,7 +205,7 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
     def execute(self, context):
         # update preferences
         prefs = prefs_get(context)
-        prefs["shot_active"] = ZShot(self.enum_prop).zdict
+        prefs["shot_active"] = asdict(ZShot.by_id(self.enum_prop))
         ui_redraw()
         return {"FINISHED"}
 
@@ -282,14 +284,14 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
 
     def execute(self, context):
         prefs = prefs_get(context)
-        active_project = ZProject(prefs["project_active"]["name"])
+        active_project = ZProject(**prefs["project_active"].to_dict())
         track_props = prefs["sqe_track_props"]
 
         if not track_props:
             logger.exception("No data to push to: %s" % prefs.host)
             return {"FINISHED"}
 
-        logger.info("Pushing data to: %s" % host)
+        logger.info("Pushing data to: %s" % prefs.host)
         # TODO: add popup confirmation dialog before syncin
 
         for seq_name in track_props:
@@ -315,15 +317,7 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
                 )  # returns None if not existent
                 if existing_shot:
                     existing_shot.data["frame_in"] = frame_in
-                    existing_shot.zdict["data"][
-                        "frame_in"
-                    ] = frame_in  # TODO: resolve this in ZObject
-
                     existing_shot.data["frame_out"] = frame_out
-                    existing_shot.zdict["data"][
-                        "frame_out"
-                    ] = frame_out  # TODO: resolve this in ZObject
-
                     active_project.update_shot(existing_shot)
                     logger.info("Pushed update to shot: %s" % shot_name)
                 else:
