@@ -101,10 +101,14 @@ class ZSequence(ZObject):
     Has multiple constructor functions (by_name, by_dict, init>by id)
     '''
 
-    def __init__(self, seq_id):
+    def __init__(self, seq_id, zdict={}):
         #TODO: what happens on invalid id 
-        self._zdict = gazu.shot.get_sequence(seq_id)
-        self._init_from_dict(self._zdict)
+        if zdict: 
+            self._zdict = zdict
+            self._init_from_dict(self._zdict)
+        else:
+            self._zdict = gazu.shot.get_sequence(seq_id)
+            self._init_from_dict(self._zdict)
 
     @classmethod
     def by_name(cls, zproject, name, episode=None):
@@ -116,17 +120,25 @@ class ZSequence(ZObject):
 
     @classmethod
     def by_dict(cls, seq_dict):
-        return cls(seq_dict['id'])
+        return cls(seq_dict['id'], zdict=seq_dict)
+
+    def get_all_shots(self):
+        # [ZShot]
+        shots = gazu.shot.all_shots_for_sequence(self.zdict)
 
 class ZShot(ZObject):
     '''
     Class to get object oriented representation of backend shot data structure. 
     Has multiple constructor functions (by_name, by_dict, init>by id)
     '''
-    def __init__(self, shot_id):
+    def __init__(self, shot_id, zdict={}):
         #TODO: what happens on invalid id 
-        self._zdict = gazu.shot.get_shot(shot_id)
-        self._init_from_dict(self._zdict)
+        if zdict: 
+            self._zdict = zdict
+            self._init_from_dict(self._zdict)
+        else:
+            self._zdict = gazu.shot.get_shot(shot_id)
+            self._init_from_dict(self._zdict)
 
     @classmethod
     def by_name(cls, zsequence, name):
@@ -138,7 +150,7 @@ class ZShot(ZObject):
 
     @classmethod
     def by_dict(cls, shot_dict):
-        return cls(shot_dict['id'])
+        return cls(shot_dict['id'], zdict=shot_dict)
     
 
 
