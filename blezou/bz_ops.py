@@ -71,9 +71,20 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         return zsession_auth(context)
 
     def execute(self, context):
-        #update preferences 
         z_prefs = zprefs_get(context)
+
+        #store vars to check if project / seq / shot changed
+        prev_project_active = z_prefs['project_active'].to_dict()
+
+        #update prefs 
         z_prefs['project_active'] = ZProject(self.enum_prop).zdict
+
+        #clear active shot when sequence changes 
+        if prev_project_active:
+            if z_prefs['project_active'].to_dict()['id'] != prev_project_active['id']:
+                z_prefs['sequence_active'] = {}
+                z_prefs['shot_active'] = {}
+
         ui_redraw()
         return {'FINISHED'}
 
@@ -112,11 +123,19 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         return False 
 
     def execute(self, context):
-        #update preferences 
         z_prefs = zprefs_get(context) 
-        active_project = ZProject(z_prefs['project_active']['name'])
 
+        #store vars to check if project / seq / shot changed
+        prev_sequence_active = z_prefs['sequence_active'].to_dict() 
+
+        #update preferences 
         z_prefs['sequence_active'] = ZSequence(self.enum_prop).zdict
+
+        #clear active shot when sequence changes 
+        if prev_sequence_active:
+            if z_prefs['sequence_active'].to_dict()['id'] != prev_sequence_active['id']:
+                z_prefs['shot_active'] = {}
+
         ui_redraw()
         return {'FINISHED'}
 
