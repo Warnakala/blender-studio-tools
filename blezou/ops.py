@@ -255,7 +255,7 @@ class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
                 # TODO: order dictionary
 
         prefs["sqe_track_props"] = seq_dict
-        logger.info(f"Result of scan: \n{seq_dict}")
+        logger.info("Result of scan: \n %s" % seq_dict)
 
         # ui_redraw()
         return {"FINISHED"}
@@ -286,10 +286,10 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
         track_props = prefs["sqe_track_props"]
 
         if not track_props:
-            logger.exception(f"No data to push to: {prefs.host}")
+            logger.exception("No data to push to: %s" % prefs.host)
             return {"FINISHED"}
 
-        logger.info(f"Pushing data to: {prefs.host}")
+        logger.info("Pushing data to: %s" % host)
         # TODO: add popup confirmation dialog before syncin
 
         for seq_name in track_props:
@@ -299,11 +299,11 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
             )  # returns None if not existent
             if existing_seq:
                 zsequence = existing_seq
-                logger.info(f"Sequence already exists: {seq_name}. Skip.")
+                logger.info("Sequence already exists: %s. Skip." % seq_name)
             else:
                 # push new seq
                 zsequence = active_project.create_sequence(seq_name)
-                logger.info(f"Pushed new sequence: {seq_name}")
+                logger.info("Pushed new sequence: %s" % seq_name)
 
             for shot_name in track_props[seq_name]["shots"]:
                 frame_in = track_props[seq_name]["shots"][shot_name]["frame_in"]
@@ -325,7 +325,7 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
                     ] = frame_out  # TODO: resolve this in ZObject
 
                     active_project.update_shot(existing_shot)
-                    logger.info(f"Pushed update to shot: {shot_name}")
+                    logger.info("Pushed update to shot: %s" % shot_name)
                 else:
                     # push shot
                     active_project.create_shot(
@@ -335,7 +335,7 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
                         frame_out=frame_out,
                         data={},
                     )
-                    logger.info(f"Pushed new shot: {shot_name}")
+                    logger.info("Pushed new shot: %s" % shot_name)
 
         return {"FINISHED"}
 
