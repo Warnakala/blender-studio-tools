@@ -1,7 +1,7 @@
 import bpy
-from .z_types import ZProductions, ZProject, ZSequence, ZShot
-from .bz_util import zsession_auth, zprefs_get, zsession_get
-from .bz_core import ui_redraw
+from .types import ZProductions, ZProject, ZSequence, ZShot
+from .util import zsession_auth, prefs_get, zsession_get
+from .core import ui_redraw
 from .logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(__name__)
@@ -33,11 +33,11 @@ class BZ_OT_SessionStart(bpy.types.Operator):
         return {"FINISHED"}
 
     def get_config(self, context):
-        bz_prefs = zprefs_get(context)
+        prefs = prefs_get(context)
         return {
-            "email": bz_prefs.email,
-            "host": bz_prefs.host,
-            "passwd": bz_prefs.passwd,
+            "email": prefs.email,
+            "host": prefs.host,
+            "passwd": prefs.passwd,
         }
 
 
@@ -85,19 +85,19 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         return zsession_auth(context)
 
     def execute(self, context):
-        z_prefs = zprefs_get(context)
+        prefs = prefs_get(context)
 
         # store vars to check if project / seq / shot changed
-        prev_project_active = z_prefs["project_active"].to_dict()
+        prev_project_active = prefs["project_active"].to_dict()
 
         # update prefs
-        z_prefs["project_active"] = ZProject(self.enum_prop).zdict
+        prefs["project_active"] = ZProject(self.enum_prop).zdict
 
         # clear active shot when sequence changes
         if prev_project_active:
-            if z_prefs["project_active"].to_dict()["id"] != prev_project_active["id"]:
-                z_prefs["sequence_active"] = {}
-                z_prefs["shot_active"] = {}
+            if prefs["project_active"].to_dict()["id"] != prev_project_active["id"]:
+                prefs["sequence_active"] = {}
+                prefs["shot_active"] = {}
 
         ui_redraw()
         return {"FINISHED"}
@@ -120,8 +120,8 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
 
     def _get_sequences(self, context):
-        z_prefs = zprefs_get(context)
-        active_project = ZProject(z_prefs["project_active"]["name"])
+        prefs = prefs_get(context)
+        active_project = ZProject(prefs["project_active"]["name"])
 
         enum_list = [
             (s.id, s.name, s.description if s.description else "")
@@ -133,8 +133,8 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        z_prefs = zprefs_get(context)
-        active_project = z_prefs["project_active"]
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
 
         if zsession_auth(context):
             if active_project:
@@ -142,18 +142,18 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         return False
 
     def execute(self, context):
-        z_prefs = zprefs_get(context)
+        prefs = prefs_get(context)
 
         # store vars to check if project / seq / shot changed
-        prev_sequence_active = z_prefs["sequence_active"].to_dict()
+        prev_sequence_active = prefs["sequence_active"].to_dict()
 
         # update preferences
-        z_prefs["sequence_active"] = ZSequence(self.enum_prop).zdict
+        prefs["sequence_active"] = ZSequence(self.enum_prop).zdict
 
         # clear active shot when sequence changes
         if prev_sequence_active:
-            if z_prefs["sequence_active"].to_dict()["id"] != prev_sequence_active["id"]:
-                z_prefs["shot_active"] = {}
+            if prefs["sequence_active"].to_dict()["id"] != prev_sequence_active["id"]:
+                prefs["shot_active"] = {}
 
         ui_redraw()
         return {"FINISHED"}
@@ -176,9 +176,9 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
     # TODO: reduce api request to one, we request in _get_shots and also in execute to set active shot
 
     def _get_shots(self, context):
-        z_prefs = zprefs_get(context)
+        prefs = prefs_get(context)
         active_sequence = ZSequence.by_dict(
-            z_prefs["sequence_active"].to_dict()
+            prefs["sequence_active"].to_dict()
         )  # is of type IDProperty
 
         enum_list = [
@@ -192,9 +192,9 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         # only if session is auth active_project and active sequence selected
-        z_prefs = zprefs_get(context)
-        active_project = z_prefs["project_active"]
-        active_sequence = z_prefs["sequence_active"]
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+        active_sequence = prefs["sequence_active"]
 
         if zsession_auth(context) and active_project and active_sequence:
             return True
@@ -202,8 +202,8 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
 
     def execute(self, context):
         # update preferences
-        z_prefs = zprefs_get(context)
-        z_prefs["shot_active"] = ZShot(self.enum_prop).zdict
+        prefs = prefs_get(context)
+        prefs["shot_active"] = ZShot(self.enum_prop).zdict
         ui_redraw()
         return {"FINISHED"}
 
@@ -226,10 +226,10 @@ class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        z_prefs = zprefs_get(context)
+        prefs = prefs_get(context)
 
         # clear old prefs
-        z_prefs["sqe_track_props"] = {}
+        prefs["sqe_track_props"] = {}
         seq_dict = {}
 
         seq_editor = context.scene.sequence_editor
@@ -254,7 +254,7 @@ class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
 
                 # TODO: order dictionary
 
-        z_prefs["sqe_track_props"] = seq_dict
+        prefs["sqe_track_props"] = seq_dict
         logger.info(f"Result of scan: \n{seq_dict}")
 
         # ui_redraw()
@@ -272,8 +272,8 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        z_prefs = zprefs_get(context)
-        active_project = z_prefs["project_active"]
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
 
         if zsession_auth(context):
             if active_project:
@@ -281,15 +281,15 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
         return False
 
     def execute(self, context):
-        z_prefs = zprefs_get(context)
-        active_project = ZProject(z_prefs["project_active"]["name"])
-        track_props = z_prefs["sqe_track_props"]
+        prefs = prefs_get(context)
+        active_project = ZProject(prefs["project_active"]["name"])
+        track_props = prefs["sqe_track_props"]
 
         if not track_props:
-            logger.exception(f"No data to push to: {z_prefs.host}")
+            logger.exception(f"No data to push to: {prefs.host}")
             return {"FINISHED"}
 
-        logger.info(f"Pushing data to: {z_prefs.host}")
+        logger.info(f"Pushing data to: {prefs.host}")
         # TODO: add popup confirmation dialog before syncin
 
         for seq_name in track_props:

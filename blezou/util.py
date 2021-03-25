@@ -5,11 +5,11 @@ def zsession_get(context: bpy.types.Context):
     """
     shortcut to get zsession from blezou addon preferences
     """
-    bz_prefs = context.preferences.addons["blezou"].preferences
-    return bz_prefs.session
+    prefs = context.preferences.addons["blezou"].preferences
+    return prefs.session
 
 
-def zprefs_get(context: bpy.types.Context):
+def prefs_get(context: bpy.types.Context):
     """
     shortcut to get blezou addon preferences
     """

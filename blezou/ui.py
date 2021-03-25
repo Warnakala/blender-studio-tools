@@ -1,5 +1,5 @@
 import bpy
-from .bz_util import zprefs_get, zsession_get, zsession_auth
+from .util import prefs_get, zsession_get, zsession_auth
 
 
 class BZ_PT_vi3d_auth(bpy.types.Panel):
@@ -15,15 +15,15 @@ class BZ_PT_vi3d_auth(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context):
-        bz_prefs = context.preferences.addons["blezou"].preferences
-        zsession = bz_prefs.session
+        prefs = context.preferences.addons["blezou"].preferences
+        zsession = prefs.session
 
         layout = self.layout
 
         box = layout.box()
-        # box.row().prop(bz_prefs, 'host')
-        box.row().prop(bz_prefs, "email")
-        box.row().prop(bz_prefs, "passwd")
+        # box.row().prop(prefs, 'host')
+        box.row().prop(prefs, "email")
+        box.row().prop(prefs, "passwd")
 
         row = layout.row(align=True)
         if not zsession.is_auth():
@@ -52,14 +52,14 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         return zsession_auth(context)
 
     def draw(self, context):
-        bz_prefs = zprefs_get(context)
+        prefs = prefs_get(context)
         layout = self.layout
 
         # Production
-        if not bz_prefs["project_active"]:
+        if not prefs["project_active"]:
             prod_load_text = "Select Production"
         else:
-            prod_load_text = bz_prefs["project_active"]["name"]
+            prod_load_text = prefs["project_active"]["name"]
 
         box = layout.box()
         row = box.row(align=True)
@@ -69,27 +69,27 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
 
         # Category
         row = box.row(align=True)
-        if not bz_prefs["project_active"]:
+        if not prefs["project_active"]:
             row.enabled = False
-        row.prop(bz_prefs, "category", expand=True)
+        row.prop(prefs, "category", expand=True)
 
         # Sequence
         row = box.row(align=True)
         seq_load_text = "Select Sequence"
-        if not bz_prefs["project_active"]:
+        if not prefs["project_active"]:
             row.enabled = False
-        elif bz_prefs["sequence_active"]:
-            seq_load_text = bz_prefs["sequence_active"]["name"]
+        elif prefs["sequence_active"]:
+            seq_load_text = prefs["sequence_active"]["name"]
             # seq_load_text = 'Select Sequence'
         row.operator("blezou.sequences_load", text=seq_load_text, icon="DOWNARROW_HLT")
 
         # Shot
         row = box.row(align=True)
         shot_load_text = "Select Shot"
-        if not bz_prefs["project_active"] and bz_prefs["sequence_active"]:
+        if not prefs["project_active"] and prefs["sequence_active"]:
             row.enabled = False
-        elif bz_prefs["shot_active"]:
-            shot_load_text = bz_prefs["shot_active"]["name"]
+        elif prefs["shot_active"]:
+            shot_load_text = prefs["shot_active"]["name"]
             # seq_load_text = 'Select Sequence'
         row.operator("blezou.shots_load", text=shot_load_text, icon="DOWNARROW_HLT")
 
@@ -111,14 +111,14 @@ class BZ_PT_SQE_context(bpy.types.Panel):
         return zsession_auth(context)
 
     def draw(self, context):
-        bz_prefs = zprefs_get(context)
+        prefs = prefs_get(context)
         layout = self.layout
 
         # Production
-        if not bz_prefs["project_active"]:
+        if not prefs["project_active"]:
             prod_load_text = "Select Production"
         else:
-            prod_load_text = bz_prefs["project_active"]["name"]
+            prod_load_text = prefs["project_active"]["name"]
 
         box = layout.box()
         row = box.row(align=True)
@@ -171,7 +171,7 @@ class BZ_PT_SQE_sync(bpy.types.Panel):
         return zsession_auth(context)
 
     def draw(self, context):
-        bz_prefs = zprefs_get(context)
+        prefs = prefs_get(context)
 
         layout = self.layout
         row = layout.row(align=True)
@@ -180,12 +180,10 @@ class BZ_PT_SQE_sync(bpy.types.Panel):
         """
         box = layout.box()
         row = box.row(align=True)
-        row.prop(bz_prefs, 'sqe_track_props') #TODO: Dosn"t work blender complaints it does not exist, manualli in script editr i can retrieve it
+        row.prop(prefs, 'sqe_track_props') #TODO: Dosn"t work blender complaints it does not exist, manualli in script editr i can retrieve it
         """
         row = layout.row(align=True)
-        row.operator(
-            "blezou.sqe_sync_track_properties", text=f"Push to: {bz_prefs.host}"
-        )
+        row.operator("blezou.sqe_sync_track_properties", text=f"Push to: {prefs.host}")
 
 
 # ---------REGISTER ----------
