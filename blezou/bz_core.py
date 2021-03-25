@@ -1,5 +1,6 @@
 import bpy
 
+
 def ui_redraw():
     """
     Forces blender to redraw the UI.
