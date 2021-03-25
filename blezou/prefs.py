@@ -67,5 +67,12 @@ def register():
 
 
 def unregister():
+    # additional setup
+    bz_prefs_init_properties(bpy.context)
+
+    # log user out
+    prefs = prefs_get(bpy.context)
+    prefs.session.end()
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

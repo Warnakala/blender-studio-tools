@@ -18,6 +18,17 @@ bl_info = {
     "category": "Generic",
 }
 
+_need_reload = "operators" in locals()
+if _need_reload:
+    # TODO: never gets executed, _need_reload seems to be false always
+    import importlib
+
+    print("RELAODING BELZOU")
+    props = importlib.reload(props)
+    prefs = importlib.reload(prefs)
+    ops = importlib.reload(ops)
+    ui = importlib.reload(ui)
+
 
 def register():
     props.register()
