@@ -51,7 +51,8 @@ def bz_prefs_init_properties(context):
     #id properties
     zprefs['project_active'] = {}
     zprefs['sequence_active'] = {}
-    zprefs['sqe_track_props'] = {'test' : 'something'}
+    zprefs['shot_active'] = {}
+    zprefs['sqe_track_props'] = {}
     print('Bzpref Clear ran!')
 
 # ---------REGISTER ----------

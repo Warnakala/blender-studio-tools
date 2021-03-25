@@ -77,6 +77,17 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
             # seq_load_text = 'Select Sequence'
         row.operator('blezou.sequences_load', text=seq_load_text, icon='DOWNARROW_HLT')
 
+        #Shot 
+        row = box.row(align=True)
+        shot_load_text = 'Select Shot'
+        if not bz_prefs['project_active'] and bz_prefs['sequence_active'] :
+            row.enabled = False
+        elif bz_prefs['shot_active']:
+            shot_load_text = bz_prefs['shot_active']['name'] 
+            # seq_load_text = 'Select Sequence'
+        row.operator('blezou.shots_load', text=shot_load_text, icon='DOWNARROW_HLT')
+
+
 class BZ_PT_SQE_context(bpy.types.Panel):
     '''
     Panel in sequence editor that only shows active production browser operator.  

@@ -1,5 +1,5 @@
 import bpy 
-from .z_types import ZProductions, ZProject, ZSequence
+from .z_types import ZProductions, ZProject, ZSequence, ZShot
 from .bz_util import zsession_auth, zprefs_get, zsession_get
 from .bz_core import ui_redraw
 from .logger import ZLoggerFactory
@@ -90,6 +90,8 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     bl_property = "enum_prop"
 
+    #TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active 
+
     def _get_sequences(self, context):
         z_prefs = zprefs_get(context)
         active_project = ZProject(z_prefs['project_active']['name'])
@@ -115,6 +117,48 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         active_project = ZProject(z_prefs['project_active']['name'])
 
         z_prefs['sequence_active'] = ZSequence(self.enum_prop).zdict
+        ui_redraw()
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {'FINISHED'}
+
+class BZ_OT_ShotsLoad(bpy.types.Operator):
+    '''
+    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click. 
+    '''
+    bl_idname = 'blezou.shots_load'
+    bl_label = "Shots Load"
+    bl_options = {'INTERNAL'}
+    bl_property = "enum_prop"
+
+    #TODO: reduce api request to one, we request in _get_shots and also in execute to set active shot 
+
+    def _get_shots(self, context):
+        z_prefs = zprefs_get(context)
+        active_sequence = ZSequence.by_dict(z_prefs['sequence_active'].to_dict()) #is of type IDProperty 
+
+        enum_list = [(s.id, s.name, s.description if s.description else '') for s in active_sequence.get_all_shots()]
+        return enum_list 
+
+    enum_prop: bpy.props.EnumProperty(items=_get_shots)
+
+    @classmethod
+    def poll(cls, context):
+        #only if session is auth active_project and active sequence selected 
+        z_prefs = zprefs_get(context)
+        active_project = z_prefs['project_active']
+        active_sequence = z_prefs['sequence_active']
+
+        if zsession_auth(context) and active_project and active_sequence: 
+            return True 
+        return False 
+
+    def execute(self, context):
+        #update preferences 
+        z_prefs = zprefs_get(context) 
+        z_prefs['shot_active'] = ZShot(self.enum_prop).zdict
         ui_redraw()
         return {'FINISHED'}
 
@@ -237,6 +281,7 @@ classes = [
     BZ_OT_SessionEnd, 
     BZ_OT_ProductionsLoad,
     BZ_OT_SequencesLoad,
+    BZ_OT_ShotsLoad,
     BZ_OT_SQE_ScanTrackProps,
     BZ_OT_SQE_SyncTrackProps
 ]

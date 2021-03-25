@@ -123,8 +123,8 @@ class ZSequence(ZObject):
         return cls(seq_dict['id'], zdict=seq_dict)
 
     def get_all_shots(self):
-        # [ZShot]
         shots = gazu.shot.all_shots_for_sequence(self.zdict)
+        return [ZShot.by_dict(shot) for shot in shots]
 
 class ZShot(ZObject):
     '''
