@@ -1,4 +1,5 @@
 import bpy
+from typing import Optional
 from .util import prefs_get, zsession_get, zsession_auth
 
 
@@ -140,18 +141,18 @@ class BZ_PT_SQE_strip_props(bpy.types.Panel):
     bl_order = 20
 
     @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        return True
+    def poll(cls, context: bpy.types.Context) -> Optional[bpy.types.Sequence]:
+        return context.scene.sequence_editor.active_strip
 
     def draw(self, context: bpy.types.Context) -> None:
-        active_strip = context.scene.sequence_editor.active_strip.blezou
+        active_strip_prop = context.scene.sequence_editor.active_strip.blezou
 
         layout = self.layout
         box = layout.box()
         row = box.row(align=True)
-        row.prop(active_strip, "sequence")
+        row.prop(active_strip_prop, "sequence")
         row = box.row(align=True)
-        row.prop(active_strip, "shot")
+        row.prop(active_strip_prop, "shot")
 
 
 class BZ_PT_SQE_sync(bpy.types.Panel):
