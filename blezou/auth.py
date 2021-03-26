@@ -1,4 +1,6 @@
-from typing import Union, Tuple, Dict, Any
+from __future__ import annotations
+from typing import Union, Tuple, Dict, Any, Optional
+from dataclasses import dataclass, asdict, field
 from .gazu import gazu
 from .logger import ZLoggerFactory
 
@@ -17,12 +19,12 @@ class ZSession:
         self._email = email
         self._passwd = passwd
         self._host = self.get_host_api_url(host)
-        self._session: Dict[str, Any] = {}
+        self._session: ZSessionInfo = ZSessionInfo()
 
         if self._host:
             gazu.client.set_host(self._host)
 
-    def start(self) -> Union[bool, Dict[str, Any]]:
+    def start(self) -> Optional[ZSessionInfo]:
         # clear all data
         gazu.cache.disable()
         gazu.cache.clear_all()
@@ -31,25 +33,24 @@ class ZSession:
         gazu.cache.enable()
 
         if not self._is_host_up():
-            return False
+            return None
 
-        session = self._login()
-        if not session:
-            return False
+        if not self._login():
+            return None
 
         logger.info("Session started with user: %s" % self.email)
-        return session
+        return self._session
 
-    def end(self) -> Union[Dict, bool]:
+    def end(self) -> bool:
         try:
-            self._session = gazu.log_out()  # returns empty dict
+            self._session = ZSessionInfo(gazu.log_out())  # returns empty dict
         except:
             logger.info("Faild to log out. Session not started yet? ")
             return False
 
         gazu.cache.clear_all()
         logger.info("Session ended.")
-        return self._session
+        return True
 
     def _is_host_up(self) -> bool:
         if gazu.client.host_is_up():
@@ -59,27 +60,30 @@ class ZSession:
             logger.exception("Failed to reach host at: %s" % self.host)
             return False
 
-    def _login(self) -> Dict[str, Any]:
+    def _login(self) -> bool:
         try:
-            self._session = gazu.log_in(self._email, self._passwd)  # returns dict
+            session_dict = gazu.log_in(self._email, self._passwd)
         except:
             logger.exception("Failed to login. Credentials maybe incorrect?")
-            return {}
+            return False
+
         logger.info("Login was succesfull")
-        return self._session
+        self._session.update(session_dict)
+        return True
 
     def is_auth(self) -> bool:
-        if self._session:
-            return True
-        else:
-            return False
+        return self._session.login
 
     def set_credentials(self, email: str, passwd: str) -> None:
         self.email = email
         self.passwd = passwd
 
     def get_config(self) -> Dict[str, str]:
-        return {"email": self.email, "passwd": self._passwd, "host": self.host}
+        return {
+            "email": self.email,
+            "passwd": self._passwd,
+            "host": self.host,
+        }  # TODO: save those in ZSessionInfo
 
     def set_config(self, config: Dict[str, str]) -> None:
         email = config.get("email", "")
@@ -90,7 +94,7 @@ class ZSession:
         self.host = host
 
     def valid_config(self) -> bool:
-        if "" in {elf.email, self._passwd, self.host}:
+        if "" in {self.email, self._passwd, self.host}:
             return False
         else:
             return True
@@ -129,8 +133,21 @@ class ZSession:
         self._email = email
 
     @property
-    def session(self) -> Dict[str, Any]:
+    def session(self) -> ZSessionInfo:
         return self._session
 
     def __del__(self) -> None:
         self.end()
+
+
+@dataclass
+class ZSessionInfo:
+    login: bool = False
+    user: Dict[str, str] = field(default_factory=dict)
+    ldap: bool = False
+    access_token: str = ""
+    refresh_token: str = ""
+
+    def update(self, data_dict: Dict[str, Union[str, Dict[str, str]]]) -> None:
+        for k, v in data_dict.items():
+            setattr(self, k, v)
