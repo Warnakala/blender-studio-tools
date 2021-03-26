@@ -1,34 +1,48 @@
 import bpy
 
-from . import bz_props
-from . import bz_prefs 
-from . import bz_ops 
-from . import bz_ui
+from . import props
+from . import prefs
+from . import ops
+from . import ui
 
 bl_info = {
-    "name" : "Blezou",
-    "author" : "Paul Golter",
-    "description" : "Blender addon to interact with gazou data base",
-    "blender" : (2, 93, 0),
-    "version" : (0, 1, 0),
-    "location" : "View3D",
-    "warning" : "",
+    "name": "Blezou",
+    "author": "Paul Golter",
+    "description": "Blender addon to interact with gazou data base",
+    "blender": (2, 93, 0),
+    "version": (0, 1, 0),
+    "location": "View3D",
+    "warning": "",
     "doc_url": "",
     "tracker_url": "",
-    "category" : "Generic"
+    "category": "Generic",
 }
 
+_need_reload = "operators" in locals()
+if _need_reload:
+    # TODO: never gets executed, _need_reload seems to be false always
+    import importlib
+
+    print("RELAODING BELZOU")
+    props = importlib.reload(props)
+    prefs = importlib.reload(prefs)
+    ops = importlib.reload(ops)
+    ui = importlib.reload(ui)
+
+
 def register():
-    bz_props.register()
-    bz_prefs.register()
-    bz_ops.register()
-    bz_ui.register()
-    
+    props.register()
+    prefs.register()
+    ops.register()
+    ui.register()
+
+
 def unregister():
-    bz_ui.unregister()
-    bz_ops.unregister()
-    bz_prefs.unregister()
-    bz_props.unregister()
+    ui.unregister()
+    ops.unregister()
+    prefs.unregister()
+    props.unregister()
+
 
 if __name__ == "__main__":
-    register() 
+    register()

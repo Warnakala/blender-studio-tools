@@ -1,24 +1,20 @@
-import bpy 
+import bpy
+
 
 class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
-    '''
+    """
     Property group that will be registered on sequence strips.
-    They hold metadata that will be used to compose a data structure that can 
-    be pushed to backend. 
-    '''
-    shot: bpy.props.StringProperty(
-        name='Shot',
-        default=''
-    )
+    They hold metadata that will be used to compose a data structure that can
+    be pushed to backend.
+    """
 
-    sequence: bpy.props.StringProperty(
-        name='Seq',
-        default=''
-    )
+    shot: bpy.props.StringProperty(name="Shot", default="")
 
-classes = [
-    BZ_PopertyGroup_VSEQ_Shot
-]
+    sequence: bpy.props.StringProperty(name="Seq", default="")
+
+
+classes = [BZ_PopertyGroup_VSEQ_Shot]
+
 
 def register():
 
@@ -30,6 +26,7 @@ def register():
         type=BZ_PopertyGroup_VSEQ_Shot,
         description="Metadata that is required for blezou",
     )
+
 
 def unregister():
     for cls in reversed(classes):
