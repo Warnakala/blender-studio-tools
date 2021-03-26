@@ -11,18 +11,18 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
 
     bl_idname = __package__
 
-    host: bpy.props.StringProperty(
+    host: bpy.props.StringProperty(  # type: ignore
         name="host", default="", options={"HIDDEN", "SKIP_SAVE"}
     )
 
-    email: bpy.props.StringProperty(
+    email: bpy.props.StringProperty(  # type: ignore
         name="email", default="", options={"HIDDEN", "SKIP_SAVE"}
     )
 
-    passwd: bpy.props.StringProperty(
+    passwd: bpy.props.StringProperty(  # type: ignore
         name="passwd", default="", options={"HIDDEN", "SKIP_SAVE"}, subtype="PASSWORD"
     )
-    category: bpy.props.EnumProperty(
+    category: bpy.props.EnumProperty(  # type: ignore
         items=(
             ("ASSETS", "Assets", "Asset related tasks", "FILE_3D", 0),
             ("SHOTS", "Shots", "Shot related tasks", "FILE_MOVIE", 1),

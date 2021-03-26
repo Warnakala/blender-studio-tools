@@ -125,7 +125,7 @@ class ZProject:
         return ZSequence(**seq_dict)
 
     def update_shot(self, zshot: ZShot) -> Dict[str, Any]:
-        return gazu.shot.update_shot(asdict(zshot))
+        return gazu.shot.update_shot(asdict(zshot))  # type: ignore
 
 
 @dataclass

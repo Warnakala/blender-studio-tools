@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import Set, Dict, Union, List, Tuple
+from typing import Set, Dict, Union, List, Tuple, Any
 import bpy
 from .types import ZProductions, ZProject, ZSequence, ZShot
 from .util import zsession_auth, prefs_get, zsession_get
@@ -83,7 +83,7 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         ]
         return enum_list
 
-    enum_prop: bpy.props.EnumProperty(items=_get_productions)
+    enum_prop: bpy.props.EnumProperty(items=_get_productions)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -134,7 +134,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         ]
         return enum_list
 
-    enum_prop: bpy.props.EnumProperty(items=_get_sequences)
+    enum_prop: bpy.props.EnumProperty(items=_get_sequences)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -192,7 +192,7 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
         ]
         return enum_list
 
-    enum_prop: bpy.props.EnumProperty(items=_get_shots)
+    enum_prop: bpy.props.EnumProperty(items=_get_shots)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -235,7 +235,7 @@ class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
 
         # clear old prefs
         prefs["sqe_track_props"] = {}
-        seq_dict: Dict[str, Dict] = {}
+        seq_dict: Dict[str, Dict[str, Any]] = {}
 
         seq_editor = context.scene.sequence_editor
 
