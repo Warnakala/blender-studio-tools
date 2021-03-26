@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from typing import Set, Dict, Union, List, Tuple
 import bpy
 from .types import ZProductions, ZProject, ZSequence, ZShot
 from .util import zsession_auth, prefs_get, zsession_get
@@ -21,20 +22,20 @@ class BZ_OT_SessionStart(bpy.types.Operator):
     bl_options = {"INTERNAL"}
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return True
         # TODO: zsession.valid_config() seems to have update issues
         zsession = zsession_get(context)
         return zsession.valid_config()
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         zsession = zsession_get(context)
 
         zsession.set_config(self.get_config(context))
         zsession.start()
         return {"FINISHED"}
 
-    def get_config(self, context):
+    def get_config(self, context: bpy.types.Context) -> Dict[str, str]:
         prefs = prefs_get(context)
         return {
             "email": prefs.email,
@@ -53,10 +54,10 @@ class BZ_OT_SessionEnd(bpy.types.Operator):
     bl_options = {"INTERNAL"}
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return zsession_auth(context)
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         zsession = zsession_get(context)
         zsession.end()
         return {"FINISHED"}
@@ -72,7 +73,9 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    def _get_productions(self, context):
+    def _get_productions(
+        self, context: bpy.types.Context
+    ) -> List[Tuple[str, str, str]]:
         zproductions = ZProductions()
         enum_list = [
             (p.id, p.name, p.description if p.description else "")
@@ -83,10 +86,10 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
     enum_prop: bpy.props.EnumProperty(items=_get_productions)
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return zsession_auth(context)
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         prefs = prefs_get(context)
 
         # store vars to check if project / seq / shot changed
@@ -104,7 +107,7 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         ui_redraw()
         return {"FINISHED"}
 
-    def invoke(self, context, event):
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         context.window_manager.invoke_search_popup(self)
         return {"FINISHED"}
 
@@ -121,7 +124,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
 
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
 
-    def _get_sequences(self, context):
+    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         prefs = prefs_get(context)
         active_project = ZProject(**prefs["project_active"].to_dict())
 
@@ -134,7 +137,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
     enum_prop: bpy.props.EnumProperty(items=_get_sequences)
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
 
@@ -143,7 +146,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
                 return True
         return False
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         prefs = prefs_get(context)
 
         # store vars to check if project / seq / shot changed
@@ -160,7 +163,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         ui_redraw()
         return {"FINISHED"}
 
-    def invoke(self, context, event):
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         context.window_manager.invoke_search_popup(self)
         return {"FINISHED"}
 
@@ -177,7 +180,7 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
 
     # TODO: reduce api request to one, we request in _get_shots and also in execute to set active shot
 
-    def _get_shots(self, context):
+    def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         prefs = prefs_get(context)
         active_sequence = ZSequence(
             **prefs["sequence_active"].to_dict()
@@ -192,7 +195,7 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
     enum_prop: bpy.props.EnumProperty(items=_get_shots)
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         # only if session is auth active_project and active sequence selected
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
@@ -202,14 +205,14 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
             return True
         return False
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         # update preferences
         prefs = prefs_get(context)
         prefs["shot_active"] = asdict(ZShot.by_id(self.enum_prop))
         ui_redraw()
         return {"FINISHED"}
 
-    def invoke(self, context, event):
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         context.window_manager.invoke_search_popup(self)
         return {"FINISHED"}
 
@@ -224,15 +227,15 @@ class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
     bl_options = {"INTERNAL"}
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return True
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         prefs = prefs_get(context)
 
         # clear old prefs
         prefs["sqe_track_props"] = {}
-        seq_dict = {}
+        seq_dict: Dict[str, Dict] = {}
 
         seq_editor = context.scene.sequence_editor
 
@@ -273,7 +276,7 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
     bl_options = {"INTERNAL"}
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
 
@@ -282,7 +285,7 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
                 return True
         return False
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         prefs = prefs_get(context)
         active_project = ZProject(**prefs["project_active"].to_dict())
         track_props = prefs["sqe_track_props"]

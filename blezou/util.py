@@ -1,7 +1,9 @@
 import bpy
+from .auth import ZSession
+from typing import Dict, Any
 
 
-def zsession_get(context: bpy.types.Context):
+def zsession_get(context: bpy.types.Context) -> ZSession:
     """
     shortcut to get zsession from blezou addon preferences
     """
@@ -9,7 +11,7 @@ def zsession_get(context: bpy.types.Context):
     return prefs.session
 
 
-def prefs_get(context: bpy.types.Context):
+def prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """
     shortcut to get blezou addon preferences
     """

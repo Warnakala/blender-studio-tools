@@ -14,7 +14,7 @@ class BZ_PT_vi3d_auth(bpy.types.Panel):
     bl_region_type = "UI"
     bl_order = 10
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
         prefs = context.preferences.addons["blezou"].preferences
         zsession = prefs.session
 
@@ -48,10 +48,10 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
     bl_order = 20
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return zsession_auth(context)
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
         prefs = prefs_get(context)
         layout = self.layout
 
@@ -107,10 +107,10 @@ class BZ_PT_SQE_context(bpy.types.Panel):
     bl_order = 10
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return zsession_auth(context)
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
         prefs = prefs_get(context)
         layout = self.layout
 
@@ -140,10 +140,10 @@ class BZ_PT_SQE_strip_props(bpy.types.Panel):
     bl_order = 20
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return True
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
         active_strip = context.scene.sequence_editor.active_strip.blezou
 
         layout = self.layout
@@ -167,10 +167,10 @@ class BZ_PT_SQE_sync(bpy.types.Panel):
     bl_order = 30
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return zsession_auth(context)
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
         prefs = prefs_get(context)
 
         layout = self.layout

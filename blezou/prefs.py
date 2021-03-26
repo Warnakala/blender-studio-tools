@@ -31,7 +31,7 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
     )
     session: ZSession = ZSession()
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         layout.label(text="Preferences for Blezou Addon")
         box = layout.box()
@@ -40,7 +40,7 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         box.row().prop(self, "passwd")
 
 
-def bz_prefs_init_properties(context):
+def bz_prefs_init_properties(context: bpy.types.Context) -> None:
     prefs = prefs_get(context)
 
     # TODO: is this the correct way to initialize dynamic properties?
