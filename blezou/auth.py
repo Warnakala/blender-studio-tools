@@ -57,7 +57,7 @@ class ZSession:
             logger.info("Host is up and running at: %s" % self.host)
             return True
         else:
-            logger.exception("Failed to reach host at: %s" % self.host)
+            logger.error("Failed to reach host at: %s" % self.host)
             return False
 
     def _login(self) -> bool:
@@ -120,7 +120,7 @@ class ZSession:
             self._host = self.get_host_api_url(host)
             gazu.client.set_host(self._host)
             if not gazu.client.host_is_valid():
-                logger.exception("Host is not valid: %s" % host)
+                logger.error("Host is not valid: %s" % host)
                 self._host = host_backup
                 gazu.client.set_host(self._host)
 

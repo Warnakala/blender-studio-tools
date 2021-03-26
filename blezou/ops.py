@@ -291,7 +291,7 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
         track_props = prefs["sqe_track_props"]
 
         if not track_props:
-            logger.exception("No data to push to: %s" % prefs.host)
+            logger.info("No data to push to: %s" % prefs.host)
             return {"FINISHED"}
 
         logger.info("Pushing data to: %s" % prefs.host)
