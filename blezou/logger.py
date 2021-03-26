@@ -1,11 +1,16 @@
-import logging 
+import logging
 import sys
 
-class ZLoggerFactory():
-        
+
+class ZLoggerFactory:
+
+    """
+    Utility class to streamline logger creation
+    """
+
     @classmethod
-    def getLogger(cls, name=""): 
-        name = name 
+    def getLogger(cls, name=""):
+        name = name
         formatter = logging.Formatter("%(levelname)s:%(name)s: %(message)s")
         consoleHandler = logging.StreamHandler(sys.stdout)
         consoleHandler.setFormatter(formatter)
