@@ -80,6 +80,9 @@ class ZProject:
         project_dict = gazu.project.get_project(project_id)
         return cls(**project_dict)
 
+    # SEQUENCES
+    # ---------------
+
     def get_sequence(self, seq_id: str) -> ZSequence:
         return ZSequence.by_id(seq_id)
 
@@ -93,6 +96,14 @@ class ZProject:
             ZSequence(**s) for s in gazu.shot.all_sequences_for_project(asdict(self))
         ]
         return zsequences
+
+    def create_sequence(self, sequence_name: str) -> ZSequence:
+        # this function returns a seq dict even if seq already exists, it does not override
+        seq_dict = gazu.shot.new_sequence(asdict(self), sequence_name, episode=None)
+        return ZSequence(**seq_dict)
+
+    # SHOT
+    # ---------------
 
     def get_shot(self, shot_id: str) -> ZShot:
         return ZShot.by_id(shot_id)
@@ -119,13 +130,40 @@ class ZProject:
         )
         return ZShot(**shot_dict)
 
-    def create_sequence(self, sequence_name: str) -> ZSequence:
-        # this function returns a seq dict even if seq already exists, it does not override
-        seq_dict = gazu.shot.new_sequence(asdict(self), sequence_name, episode=None)
-        return ZSequence(**seq_dict)
-
     def update_shot(self, zshot: ZShot) -> Dict[str, Any]:
         return gazu.shot.update_shot(asdict(zshot))  # type: ignore
+
+    # ASSET TYPES
+    # ---------------
+
+    def get_all_asset_types(self) -> List[ZAssetType]:
+        zassettypes = [
+            ZAssetType(**at)
+            for at in gazu.asset.all_asset_types_for_project(asdict(self))
+        ]
+        return zassettypes
+
+    def get_asset_type_by_name(self, asset_type_name: str) -> Optional[ZAssetType]:
+        return ZAssetType.by_name(asset_type_name)
+
+    # ASSETS
+    # ---------------
+
+    def get_all_assets(self) -> List[ZAsset]:
+        zassets = [ZAsset(**a) for a in gazu.asset.all_assets_for_project(asdict(self))]
+        return zassets
+
+    def get_asset_by_name(self, asset_name: str) -> Optional[ZAsset]:
+        return ZAsset.by_name(self, asset_name)
+
+    def get_all_assets_for_type(self, zassettype) -> List[ZAsset]:
+        zassets = [
+            ZAsset(**a)
+            for a in gazu.asset.all_assets_for_project_and_type(
+                asdict(self), asdict(zassettype)
+            )
+        ]
+        return zassets
 
 
 @dataclass
@@ -179,6 +217,33 @@ class ZSequence:
 
 
 @dataclass
+class ZAssetType:
+    id: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+    name: str = ""
+    type: str = ""
+
+    """
+    Class to get object oriented representation of backend sequence data structure.
+    Has multiple constructor functions (by_name, by_dict, init>by id)
+    """
+
+    @classmethod
+    def by_name(cls, asset_type_name: str) -> Optional[ZAssetType]:
+        # can return None if seq does not exist
+        tpye_dict = gazu.asset.get_asset_type_by_name(asset_type_name)
+        if tpye_dict:
+            return cls(**tpye_dict)
+        return None
+
+    @classmethod
+    def by_id(cls, type_id: str) -> ZAssetType:
+        tpye_dict = gazu.asset.get_asset_type(type_id)
+        return cls(**tpye_dict)
+
+
+@dataclass
 class ZShot:
     """
     Class to get object oriented representation of backend shot data structure.
@@ -223,3 +288,61 @@ class ZShot:
     def by_id(cls, shot_id: str) -> ZShot:
         shot_dict = gazu.shot.get_shot(shot_id)
         return cls(**shot_dict)
+
+
+@dataclass
+class ZAsset:
+    id: str
+    created_at: str = ""
+    updated_at: str = ""
+    name: str = ""
+    code: Optional[str] = None
+    description: str = ""
+    shotgun_id: Optional[str] = None
+    canceled: bool = False
+    project_id: str = ""
+    entity_type_id: str = ""
+    parent_id: Optional[str] = None
+    preview_file_id: str = ""
+    type: str = ""
+    project_name: str = ""
+    asset_type_id: str = ""
+    source_id: str = ""
+    asset_type_name: str = ""
+    episode_id: str = ""
+    nb_frames: Optional[int] = None
+    data: Dict[str, Any] = field(default_factory=dict)
+    entities_out: List[Any] = field(default_factory=list)
+    instance_casting: List[Any] = field(default_factory=list)
+    entities_in: List[str] = field(default_factory=list)
+    tasks: List[Dict[str, Any]] = field(default_factory=list)
+
+    """
+    Class to get object oriented representation of backend sequence data structure.
+    Has multiple constructor functions (by_name, by_dict, init>by id)
+    """
+
+    @classmethod
+    def by_name(
+        cls,
+        project: ZProject,
+        asset_name: str,
+        asset_type: Optional[ZAssetType] = None,
+    ) -> Optional[ZAsset]:
+
+        # convert args to dict for api call
+        project_dict = asdict(project)
+        asset_type_dict = asdict(asset_type) if asset_type else asset_type
+
+        # can return None if seq does not exist
+        asset_dict = gazu.asset.get_asset_by_name(
+            project_dict, asset_name, asset_type=asset_type_dict
+        )
+        if asset_dict:
+            return cls(**asset_dict)
+        return None
+
+    @classmethod
+    def by_id(cls, asset_id: str) -> ZAsset:
+        asset_dict = gazu.asset.get_asset(asset_id)
+        return cls(**asset_dict)

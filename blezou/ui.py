@@ -55,6 +55,17 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
         prefs = prefs_get(context)
         layout = self.layout
+        category = prefs.category  # can be either 'SHOTS' or 'ASSETS'
+        item_group_data = {
+            "name": "Sequence",
+            "pref_name": "sequence_active",
+            "operator": "blezou.sequences_load",
+        }
+        item_data = {
+            "name": "Shot",
+            "pref_name": "shot_active",
+            "operator": "blezou.shots_load",
+        }
 
         # Production
         if not prefs["project_active"]:
@@ -74,25 +85,35 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
             row.enabled = False
         row.prop(prefs, "category", expand=True)
 
-        # Sequence
+        # Sequence / AssetType
+        if category == "ASSETS":
+            item_group_data["name"] = "AssetType"
+            item_group_data["pref_name"] = "asset_type_active"
+            item_group_data["operator"] = "blezou.asset_types_load"
+
         row = box.row(align=True)
-        seq_load_text = "Select Sequence"
+        item_group_text = f"Select {item_group_data['name']}"
         if not prefs["project_active"]:
             row.enabled = False
-        elif prefs["sequence_active"]:
-            seq_load_text = prefs["sequence_active"]["name"]
-            # seq_load_text = 'Select Sequence'
-        row.operator("blezou.sequences_load", text=seq_load_text, icon="DOWNARROW_HLT")
+        elif prefs[item_group_data["pref_name"]]:
+            item_group_text = prefs[item_group_data["pref_name"]]["name"]
+        row.operator(
+            item_group_data["operator"], text=item_group_text, icon="DOWNARROW_HLT"
+        )
 
-        # Shot
+        # Shot / Asset
+        if category == "ASSETS":
+            item_data["name"] = "Asset"
+            item_data["pref_name"] = "asset_active"
+            item_data["operator"] = "blezou.assets_load"
+
         row = box.row(align=True)
-        shot_load_text = "Select Shot"
-        if not prefs["project_active"] and prefs["sequence_active"]:
+        item_text = f"Select {item_data['name']}"
+        if not prefs["project_active"] and prefs[item_group_data["pref_name"]]:
             row.enabled = False
-        elif prefs["shot_active"]:
-            shot_load_text = prefs["shot_active"]["name"]
-            # seq_load_text = 'Select Sequence'
-        row.operator("blezou.shots_load", text=shot_load_text, icon="DOWNARROW_HLT")
+        elif prefs[item_data["pref_name"]]:
+            item_text = prefs[item_data["pref_name"]]["name"]
+        row.operator(item_data["operator"], text=item_text, icon="DOWNARROW_HLT")
 
 
 class BZ_PT_SQE_context(bpy.types.Panel):

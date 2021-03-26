@@ -50,6 +50,8 @@ def bz_prefs_init_properties(context: bpy.types.Context) -> None:
     prefs["project_active"] = {}
     prefs["sequence_active"] = {}
     prefs["shot_active"] = {}
+    prefs["asset_active"] = {}
+    prefs["asset_type_active"] = {}
     prefs["sqe_track_props"] = {}
 
 

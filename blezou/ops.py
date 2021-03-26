@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from typing import Set, Dict, Union, List, Tuple, Any
 import bpy
-from .types import ZProductions, ZProject, ZSequence, ZShot
+from .types import ZProductions, ZProject, ZSequence, ZShot, ZAssetType, ZAsset
 from .util import zsession_auth, prefs_get, zsession_get
 from .core import ui_redraw
 from .logger import ZLoggerFactory
@@ -217,6 +217,107 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BZ_OT_AssetTypesLoad(bpy.types.Operator):
+    """
+    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    """
+
+    bl_idname = "blezou.asset_types_load"
+    bl_label = "Assettyes Load"
+    bl_options = {"INTERNAL"}
+    bl_property = "enum_prop"
+
+    # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
+
+    def _get_assetypes(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+        prefs = prefs_get(context)
+        active_project = ZProject(**prefs["project_active"].to_dict())
+
+        enum_list = [
+            (at.id, at.name, "") for at in active_project.get_all_asset_types()
+        ]
+        return enum_list
+
+    enum_prop: bpy.props.EnumProperty(items=_get_assetypes)  # type: ignore
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+
+        if zsession_auth(context) and active_project:
+            return True
+        return False
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        prefs = prefs_get(context)
+
+        # store vars to check if project / seq / shot changed
+        prev_a_type_active = prefs["asset_type_active"].to_dict()
+
+        # update preferences
+        prefs["asset_type_active"] = asdict(ZAssetType.by_id(self.enum_prop))
+
+        # clear active shot when sequence changes
+        if prev_a_type_active:
+            if prefs["asset_type_active"].to_dict()["id"] != prev_a_type_active["id"]:
+                prefs["asset_active"] = {}
+
+        ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        context.window_manager.invoke_search_popup(self)
+        return {"FINISHED"}
+
+
+class BZ_OT_AssetsLoad(bpy.types.Operator):
+    """
+    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    """
+
+    bl_idname = "blezou.assets_load"
+    bl_label = "Assets Load"
+    bl_options = {"INTERNAL"}
+    bl_property = "enum_prop"
+
+    # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
+
+    def _get_assets(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+        prefs = prefs_get(context)
+        active_project = ZProject(**prefs["project_active"].to_dict())
+        active_asset_type = ZAssetType(**prefs["asset_type_active"].to_dict())
+
+        enum_list = [
+            (a.id, a.name, a.description if a.description else "")
+            for a in active_project.get_all_assets_for_type(active_asset_type)
+        ]
+        return enum_list
+
+    enum_prop: bpy.props.EnumProperty(items=_get_assets)  # type: ignore
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+        active_asset_type = prefs["asset_type_active"]
+
+        if zsession_auth(context) and active_project and active_asset_type:
+            return True
+        return False
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        # update preferences
+        prefs = prefs_get(context)
+        prefs["asset_active"] = asdict(ZAsset.by_id(self.enum_prop))
+        ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        context.window_manager.invoke_search_popup(self)
+        return {"FINISHED"}
+
+
 class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
     """
     Composes a dictionary data structure to be pushed to backend and saves it in preferences of blezou addon.
@@ -345,6 +446,8 @@ classes = [
     BZ_OT_ProductionsLoad,
     BZ_OT_SequencesLoad,
     BZ_OT_ShotsLoad,
+    BZ_OT_AssetTypesLoad,
+    BZ_OT_AssetsLoad,
     BZ_OT_SQE_ScanTrackProps,
     BZ_OT_SQE_SyncTrackProps,
 ]
