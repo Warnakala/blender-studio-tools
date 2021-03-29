@@ -1,4 +1,6 @@
 from dataclasses import asdict
+from pathlib import Path
+import contextlib
 from typing import Set, Dict, Union, List, Tuple, Any
 import bpy
 from .types import ZProductions, ZProject, ZSequence, ZShot, ZAssetType, ZAsset
@@ -437,6 +439,79 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
 
         return {"FINISHED"}
 
+    def get_thumbnail_path(self, frame):
+        # thumbnails have the frame number as file_name
+        # which is == strip.frame_final_start OR track_props[seq_name]["shots"][shot_name]["frame_in"]
+        prefs = prefs_get(context)
+        thumbnail_path = Path(prefs.folder_thumbnail) / frame / ".jpg"
+        return thumbnail_path
+
+
+class BZ_OT_SQE_CreateStripThumbnail(bpy.types.Operator):
+    """
+    Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
+    """
+
+    bl_idname = "blezou.sqe_create_strip_thumbnail"
+    bl_label = "SQE Create Strip Thumbnail"
+    bl_options = {"INTERNAL"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        scene = context.scene
+        seq_editor = context.scene.sequence_editor
+
+        with self.override_render_settings(context):
+            for strip in seq_editor.sequences_all:
+                # setting current frame to first frame of strip
+                scene.frame_current = strip.frame_final_start
+                bpy.ops.render.render()
+                file_name = f"{str(context.scene.frame_current)}.jpg"
+                self.save_render(bpy.data.images["Render Result"], file_name)
+
+        return {"FINISHED"}
+
+    def save_render(self, datablock: bpy.types.Image, file_name: str) -> None:
+        """Save the current render image to disk"""
+
+        prefs = prefs_get(bpy.context)
+        folder_name = prefs.folder_thumbnail
+
+        # Ensure folder exists
+        folder_path = Path(folder_name)
+        folder_path.mkdir(parents=True, exist_ok=True)
+
+        path = folder_path.joinpath(file_name)
+        datablock.save_render(str(path))
+
+    @contextlib.contextmanager
+    def override_render_settings(self, context, thumbnail_width=256):
+        """Overrides the render settings for thumbnail size in a 'with' block scope."""
+
+        rd = context.scene.render
+
+        # Remember current render settings in order to restore them later.
+        orig_percentage = rd.resolution_percentage
+        orig_file_format = rd.image_settings.file_format
+        orig_quality = rd.image_settings.quality
+
+        try:
+            # Set the render settings to thumbnail size.
+            # Update resolution % instead of the actual resolution to scale text strips properly.
+            rd.resolution_percentage = round(thumbnail_width * 100 / rd.resolution_x)
+            rd.image_settings.file_format = "JPEG"
+            rd.image_settings.quality = 80
+            yield
+
+        finally:
+            # Return the render settings to normal.
+            rd.resolution_percentage = orig_percentage
+            rd.image_settings.file_format = orig_file_format
+            rd.image_settings.quality = orig_quality
+
 
 # ---------REGISTER ----------
 
@@ -450,6 +525,7 @@ classes = [
     BZ_OT_AssetsLoad,
     BZ_OT_SQE_ScanTrackProps,
     BZ_OT_SQE_SyncTrackProps,
+    BZ_OT_SQE_CreateStripThumbnail,
 ]
 
 

@@ -200,6 +200,11 @@ class BZ_PT_SQE_sync(bpy.types.Panel):
         row.prop(prefs, 'sqe_track_props') #TODO: Dosn"t work blender complaints it does not exist, manualli in script editr i can retrieve it
         """
         row = layout.row(align=True)
+        row.operator(
+            "blezou.sqe_create_strip_thumbnail", text=f"Create thumbnails from strips"
+        )
+
+        row = layout.row(align=True)
         row.operator("blezou.sqe_sync_track_properties", text=f"Push to: {prefs.host}")
 
 
