@@ -439,38 +439,55 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def get_thumbnail_path(self, frame):
-        # thumbnails have the frame number as file_name
-        # which is == strip.frame_final_start OR track_props[seq_name]["shots"][shot_name]["frame_in"]
-        prefs = prefs_get(context)
-        thumbnail_path = Path(prefs.folder_thumbnail) / frame / ".jpg"
-        return thumbnail_path
 
-
-class BZ_OT_SQE_CreateStripThumbnail(bpy.types.Operator):
+class BZ_OT_SQE_MakeStripThumbnail(bpy.types.Operator):
     """
     Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
     """
 
-    bl_idname = "blezou.sqe_create_strip_thumbnail"
+    bl_idname = "blezou.sqe_make_strip_thumbnail"
     bl_label = "SQE Create Strip Thumbnail"
     bl_options = {"INTERNAL"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return True
+        return bool(context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        scene = context.scene
-        seq_editor = context.scene.sequence_editor
+
+        nr_of_strips = len(context.selected_sequences)
+        do_multishot = nr_of_strips > 1
+        # The multishot and singleshot branches do pretty much the same thing,
+        # but report differently to the user.
 
         with self.override_render_settings(context):
-            for strip in seq_editor.sequences_all:
-                # setting current frame to first frame of strip
-                scene.frame_current = strip.frame_final_start
-                bpy.ops.render.render()
-                file_name = f"{str(context.scene.frame_current)}.jpg"
-                self.save_render(bpy.data.images["Render Result"], file_name)
+            with self.temporary_current_frame(context) as original_curframe:
+                # if user has multiple strips selected, make thumbnail for each of them, use middle frame
+                if do_multishot:
+                    self.report(
+                        {"INFO"},
+                        "Rendering thumbnails for %i selected shots." % nr_of_strips,
+                    )
+                    for strip in context.selected_sequences:
+                        self.set_middle_frame(context, strip)
+                        self.make_thumbnail(context, strip)
+
+                else:
+                    # if user has one strip selected, make thumbnail
+                    strip = context.scene.sequence_editor.active_strip
+                    # if active strip is not contained in the current frame, use middle frame of active strip
+                    if not self.strip_contains(strip, original_curframe):
+                        self.report(
+                            {"WARNING"},
+                            "Rendering middle frame as thumbnail for active shot.",
+                        )
+                        self.set_middle_frame(context, strip)
+                    else:
+                        self.report(
+                            {"INFO"},
+                            "Rendering current frame as thumbnail for active shot.",
+                        )
+                    self.make_thumbnail(context, strip)
 
         return {"FINISHED"}
 
@@ -486,6 +503,13 @@ class BZ_OT_SQE_CreateStripThumbnail(bpy.types.Operator):
 
         path = folder_path.joinpath(file_name)
         datablock.save_render(str(path))
+
+    def make_thumbnail(
+        self, context: bpy.types.Context, strip: bpy.types.Sequence
+    ) -> None:
+        bpy.ops.render.render()
+        file_name = f"{str(context.scene.frame_current)}.jpg"  # TODO filename should be ID of shot
+        self.save_render(bpy.data.images["Render Result"], file_name)
 
     @contextlib.contextmanager
     def override_render_settings(self, context, thumbnail_width=256):
@@ -512,6 +536,34 @@ class BZ_OT_SQE_CreateStripThumbnail(bpy.types.Operator):
             rd.image_settings.file_format = orig_file_format
             rd.image_settings.quality = orig_quality
 
+    @contextlib.contextmanager
+    def temporary_current_frame(self, context):
+        """Allows the context to set the scene current frame, restores it on exit.
+
+        Yields the initial current frame, so it can be used for reference in the context.
+        """
+        current_frame = context.scene.frame_current
+        try:
+            yield current_frame
+        finally:
+            context.scene.frame_current = current_frame
+
+    @staticmethod
+    def set_middle_frame(
+        context: bpy.types.Context,
+        strip: bpy.types.Sequence,
+    ) -> int:
+        """Sets the current frame to the middle frame of the strip."""
+
+        middle = round((strip.frame_final_start + strip.frame_final_end) / 2)
+        context.scene.frame_set(middle)
+        return middle
+
+    @staticmethod
+    def strip_contains(strip: bpy.types.Sequence, framenr: int) -> bool:
+        """Returns True if the strip covers the given frame number"""
+        return int(strip.frame_final_start) <= framenr <= int(strip.frame_final_end)
+
 
 # ---------REGISTER ----------
 
@@ -525,7 +577,7 @@ classes = [
     BZ_OT_AssetsLoad,
     BZ_OT_SQE_ScanTrackProps,
     BZ_OT_SQE_SyncTrackProps,
-    BZ_OT_SQE_CreateStripThumbnail,
+    BZ_OT_SQE_MakeStripThumbnail,
 ]
 
 
