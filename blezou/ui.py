@@ -8,7 +8,6 @@ class BZ_PT_vi3d_auth(bpy.types.Panel):
     Panel in 3dview that displays email, password and login operator.
     """
 
-    bl_idname = "panel.bz_auth"
     bl_category = "Blezou"
     bl_label = "Kitsu Login"
     bl_space_type = "VIEW_3D"
@@ -40,7 +39,6 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
     active sequence, shot etc.
     """
 
-    bl_idname = "panel.bz_vi3d_context"
     bl_category = "Blezou"
     bl_label = "Context"
     bl_space_type = "VIEW_3D"
@@ -121,7 +119,6 @@ class BZ_PT_SQE_context(bpy.types.Panel):
     Panel in sequence editor that only shows active production browser operator.
     """
 
-    bl_idname = "panel.bz_sqe_context"
     bl_category = "Blezou"
     bl_label = "Context"
     bl_space_type = "SEQUENCE_EDITOR"
@@ -154,7 +151,6 @@ class BZ_PT_SQE_strip_props(bpy.types.Panel):
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
 
-    bl_idname = "panel.bz_sqe_strip_props"
     bl_category = "Blezou"
     bl_label = "Strip Properties"
     bl_space_type = "SEQUENCE_EDITOR"
@@ -181,7 +177,6 @@ class BZ_PT_SQE_sync(bpy.types.Panel):
     Panel that shows operator to sync sequence editor metadata with backend.
     """
 
-    bl_idname = "panel.bz_sqe_sync"
     bl_category = "Blezou"
     bl_label = "Sync"
     bl_space_type = "SEQUENCE_EDITOR"
