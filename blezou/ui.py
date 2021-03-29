@@ -163,14 +163,19 @@ class BZ_PT_SQE_strip_props(bpy.types.Panel):
         return context.scene.sequence_editor.active_strip
 
     def draw(self, context: bpy.types.Context) -> None:
-        active_strip_prop = context.scene.sequence_editor.active_strip.blezou
+        strip_types = {"MOVIE", "IMAGE", "META", "COLOR"}
+        strip = context.scene.sequence_editor.active_strip
 
-        layout = self.layout
-        box = layout.box()
-        row = box.row(align=True)
-        row.prop(active_strip_prop, "sequence")
-        row = box.row(align=True)
-        row.prop(active_strip_prop, "shot")
+        if strip and strip.type in strip_types and strip.blezou.z_id:
+            # strip is initialized and props can be displayed
+            layout = self.layout
+            box = layout.box()
+            row = box.row(align=True)
+            row.prop(strip.blezou, "z_id")
+            row = box.row(align=True)
+            row.prop(strip.blezou, "sequence")
+            row = box.row(align=True)
+            row.prop(strip.blezou, "shot")
 
 
 class BZ_PT_SQE_sync(bpy.types.Panel):
