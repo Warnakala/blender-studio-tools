@@ -440,6 +440,25 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BZ_OT_SQE_new_shot(bpy.types.Operator):
+    bl_idname = "blezou.sqe_new_shot"
+    bl_label = "New Shot"
+    bl_description = "Adds required shot metadata to selecetd strip"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(context.selected_sequences)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        for strip in context.selected_sequences:
+            pass
+        return {"FINISHED"}
+
+    def new_shot(self, strip):
+        z_id = getattr(strip, "z_id", None)
+        pass
+
+
 class BZ_OT_SQE_MakeStripThumbnail(bpy.types.Operator):
     """
     Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
