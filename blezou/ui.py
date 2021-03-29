@@ -1,6 +1,7 @@
 import bpy
 from typing import Optional
 from .util import prefs_get, zsession_get, zsession_auth
+from .ops import BZ_OT_SQE_MakeStripThumbnail
 
 
 class BZ_PT_vi3d_auth(bpy.types.Panel):
@@ -189,10 +190,16 @@ class BZ_PT_SQE_sync(bpy.types.Panel):
 
     def draw(self, context: bpy.types.Context) -> None:
         prefs = prefs_get(context)
+        selshots = context.selected_sequences
+
+        if len(selshots) > 1:
+            noun = "%i Shots" % len(selshots)
+        else:
+            noun = "This Shot"
 
         layout = self.layout
-        row = layout.row(align=True)
-        row.operator("blezou.sqe_scan_track_properties", text="Scan Sequence Editor")
+        # row = layout.row(align=True)
+        # row.operator("blezou.sqe_scan_track_properties", text="Scan Sequence Editor")
 
         """
         box = layout.box()
@@ -201,11 +208,12 @@ class BZ_PT_SQE_sync(bpy.types.Panel):
         """
         row = layout.row(align=True)
         row.operator(
-            "blezou.sqe_create_strip_thumbnail", text=f"Create thumbnails from strips"
+            BZ_OT_SQE_MakeStripThumbnail.bl_idname,
+            text=f"Create Thumbnail for {noun}",
         )
 
-        row = layout.row(align=True)
-        row.operator("blezou.sqe_sync_track_properties", text=f"Push to: {prefs.host}")
+        # row = layout.row(align=True)
+        # row.operator("blezou.sqe_sync_track_properties", text=f"Push to: {prefs.host}")
 
 
 # ---------REGISTER ----------
