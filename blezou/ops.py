@@ -443,20 +443,129 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
 class BZ_OT_SQE_new_shot(bpy.types.Operator):
     bl_idname = "blezou.sqe_new_shot"
     bl_label = "New Shot"
-    bl_description = "Adds required shot metadata to selecetd strip"
+    bl_description = "Adds required shot metadata to selecetd strips"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+        return bool(
+            context.selected_sequences and zsession_auth(context) and active_project
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        nr_of_strips = len(context.selected_sequences)
+
+        self.report(
+            {"INFO"},
+            "Initializing %i selected shots." % nr_of_strips,
+        )
+        for strip in context.selected_sequences:
+            if not hasattr(strip, "blezou"):
+                logger.error(
+                    f"Failed to initialize strip: {strip.name}. Missing blezou attributes."
+                )
+                continue
+            if strip.blezou.initialized:
+                logger.info(f"{strip.name} already initialized.")
+                continue
+            strip.blezou.initialized = True
+
+        return {"FINISHED"}
+
+
+class BZ_OT_SQE_link_shot(bpy.types.Operator):
+    bl_idname = "blezou.sqe_link_shot"
+    bl_label = "Link Shot"
+    bl_description = (
+        "Adds required shot metadata to selecetd strip based on data from gazou."
+    )
+    bl_property = "enum_prop"
+
+    def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+        zproject = ZProject(**prefs["project_active"].to_dict())
+
+        enum_list = []
+        all_sequences = zproject.get_sequences_all()
+        for seq in all_sequences:
+            all_shots = seq.get_all_shots()
+            if len(all_shots) > 0:
+                enum_list.append(
+                    ("", seq.name, seq.description if seq.description else "")
+                )
+                for shot in all_shots:
+                    enum_list.append(
+                        (
+                            shot.id,
+                            shot.name,
+                            shot.description if shot.description else "",
+                        )
+                    )
+        return enum_list
+
+    enum_prop: bpy.props.EnumProperty(items=_get_shots)  # type: ignore
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+        return bool(
+            context.scene.sequence_editor.active_strip
+            and zsession_auth(context)
+            and active_project
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        active_strip = context.scene.sequence_editor.active_strip
+
+        if self.enum_prop:  # returns 0 for organisational item
+            zshot = ZShot.by_id(self.enum_prop)
+            active_strip.blezou.id = zshot.id
+            active_strip.blezou.shot = zshot.name
+            active_strip.blezou.sequence = zshot.sequence_name
+            active_strip.blezou.description = (
+                zshot.description if zshot.description else ""
+            )
+            active_strip.blezou.initialized = True
+
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+
+class BZ_OT_SQE_del_shot(bpy.types.Operator):
+    bl_idname = "blezou.sqe_del_shot"
+    bl_label = "Del Shot"
+    bl_description = "Removes shot metadata from selecetd strips. Only affects SQE."
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        for strip in context.selected_sequences:
-            pass
-        return {"FINISHED"}
 
-    def new_shot(self, strip):
-        z_id = getattr(strip, "z_id", None)
-        pass
+        nr_of_strips = len(context.selected_sequences)
+
+        self.report(
+            {"INFO"},
+            "Removing metadata of %i selected shots." % nr_of_strips,
+        )
+        for strip in context.selected_sequences:
+            if not hasattr(strip, "blezou"):
+                logger.error(
+                    f"Failed to remove shot metadata from strip: {strip.name}. Missing blezou attributes."
+                )
+                continue
+            if not strip.blezou.initialized:
+                logger.info(f"{strip.name} has not metadata.")
+                continue
+            strip.blezou.initialized = False
+
+        return {"FINISHED"}
 
 
 class BZ_OT_SQE_MakeStripThumbnail(bpy.types.Operator):
@@ -595,7 +704,9 @@ classes = [
     BZ_OT_AssetTypesLoad,
     BZ_OT_AssetsLoad,
     BZ_OT_SQE_ScanTrackProps,
-    BZ_OT_SQE_SyncTrackProps,
+    BZ_OT_SQE_del_shot,
+    BZ_OT_SQE_new_shot,
+    BZ_OT_SQE_link_shot,
     BZ_OT_SQE_MakeStripThumbnail,
 ]
 
