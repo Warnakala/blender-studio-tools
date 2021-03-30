@@ -380,60 +380,57 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
+        # needs to be logged in, active project
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
         return bool(zsession_auth(context) and active_project.to_dict())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        nr_of_strips = len(context.selected_sequences)
+        do_multishot = nr_of_strips > 1
+
+        succeeded = []
+        failed = []
+        for strip in context.selected_sequences:
+            # only if strip is linked to gazou
+            if not strip.blezou.linked:
+                self.report(
+                    {"WARNING"},
+                    f"Skip strip: {strip}. Not linked yet.",
+                )
+                failed.append(strip)
+                continue
+
+            # check if shot is still available by id
+            zshot = ZShot.by_id(strip.blezou.id)
+            if not zshot:
+                self.report(
+                    {"WARNING"},
+                    f"Failed strip: {strip}. Not existent in gazou (Id: {strip.blezou.id}).",
+                )
+                failed.append(strip)
+                continue
+
+            # push update to shot
+            self._update_shot_by_strip(context, zshot, strip)
+            succeeded.append(strip)
+
+        self.report(
+            {"INFO"},
+            f"Pushed Metadata of {len(succeeded)} Shots.",
+        )
+        return {"FINISHED"}
+
+    def _update_shot_by_strip(self, context, zshot, strip):
         prefs = prefs_get(context)
         active_project = ZProject(**prefs["project_active"].to_dict())
-        track_props = prefs["sqe_track_props"]
 
-        if not track_props:
-            logger.info("No data to push to: %s" % prefs.host)
-            return {"FINISHED"}
-
-        logger.info("Pushing data to: %s" % prefs.host)
-        # TODO: add popup confirmation dialog before syncin
-
-        for seq_name in track_props:
-            # check if seq already exists
-            existing_seq = active_project.get_sequence_by_name(
-                seq_name
-            )  # returns None if not existent
-            if existing_seq:
-                zsequence = existing_seq
-                logger.info("Sequence already exists: %s. Skip." % seq_name)
-            else:
-                # push new seq
-                zsequence = active_project.create_sequence(seq_name)
-                logger.info("Pushed new sequence: %s" % seq_name)
-
-            for shot_name in track_props[seq_name]["shots"]:
-                frame_in = track_props[seq_name]["shots"][shot_name]["frame_in"]
-                frame_out = track_props[seq_name]["shots"][shot_name]["frame_out"]
-
-                # update shot if already exists
-                existing_shot = active_project.get_shot_by_name(
-                    zsequence, shot_name
-                )  # returns None if not existent
-                if existing_shot:
-                    existing_shot.data["frame_in"] = frame_in
-                    existing_shot.data["frame_out"] = frame_out
-                    active_project.update_shot(existing_shot)
-                    logger.info("Pushed update to shot: %s" % shot_name)
-                else:
-                    # push shot
-                    active_project.create_shot(
-                        shot_name,
-                        zsequence,
-                        frame_in=frame_in,
-                        frame_out=frame_out,
-                        data={},
-                    )
-                    logger.info("Pushed new shot: %s" % shot_name)
-
-        return {"FINISHED"}
+        zshot.name = strip.blezou.shot
+        zshot.description = strip.blezou.description
+        zshot.data["frame_in"] = strip.frame_final_start
+        zshot.data["frame_out"] = strip.frame_final_end
+        active_project.update_shot(zshot)
+        logger.info("Pushed update to shot: %s" % zshot.name)
 
 
 class BZ_OT_SQE_InitShot(bpy.types.Operator):
