@@ -495,27 +495,25 @@ class BZ_OT_SQE_DelShot(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         selshots = context.selected_sequences
-
-        if len(selshots) > 1:
-            noun = "%i selected Shots" % len(selshots)
-        else:
-            noun = "Active Shot"
-
-        self.report({"INFO"}, f"Removing metadata of {noun}.")
+        failed: List[bpy.types.Sequence] = []
+        succeeded: List[bpy.types.Sequence] = []
 
         for strip in context.selected_sequences:
-            if not hasattr(strip, "blezou"):
-                logger.error(
-                    f"Failed to remove shot metadata from strip: {strip.name}. Missing blezou attributes."
-                )
-                continue
             if not strip.blezou.initialized:
-                logger.info(f"{strip.name} has not metadata.")
+                logger.info(f"Failed to delete shot. {strip.name} is not initialized.")
+                failed.append(strip)
                 continue
 
             # clear blezou properties
             strip.blezou.clear()
+            succeeded.append(strip)
 
+        if len(selshots) > 1:
+            noun = f" {len(succeeded)} selected Shots"
+        else:
+            noun = "Active Shot"
+
+        self.report({"INFO"}, f"Removed metadata of {noun}.")
         return {"FINISHED"}
 
 

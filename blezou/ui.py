@@ -260,14 +260,13 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         # shot
         col.prop(strip.blezou, "shot")
 
-        col.enabled = False if not strip.blezou.initialized else True
-
-        col = box.column(align=True)
-        col.enabled = False
         # description
         col.prop(strip.blezou, "description")
+        col.enabled = False if not strip.blezou.initialized else True
 
         # id
+        col = box.column(align=True)
+        col.enabled = False
         col.prop(strip.blezou, "id")
         col.prop(strip.blezou, "linked")
 
