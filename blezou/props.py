@@ -8,10 +8,11 @@ class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
     be pushed to backend.
     """
 
-    z_id: bpy.props.StringProperty(name="ID")
+    id: bpy.props.StringProperty(name="ID")
     shot: bpy.props.StringProperty(name="Shot", default="")
     sequence: bpy.props.StringProperty(name="Seq", default="")
     description: bpy.props.StringProperty(name="Desciption", default="")
+    initialized: bpy.props.BoolProperty(name="Is Blezou shot", default=False)
 
 
 classes = [BZ_PopertyGroup_VSEQ_Shot]
