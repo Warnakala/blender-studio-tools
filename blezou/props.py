@@ -19,6 +19,14 @@ class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
         name="Linked", default=False, description="Is linked to an ID in gazou"
     )
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.shot,
+            "sequence_name": self.sequence,
+            "description": self.description,
+        }
+
 
 classes = [BZ_PopertyGroup_VSEQ_Shot]
 
