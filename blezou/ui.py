@@ -3,9 +3,10 @@ from typing import Optional
 from .util import prefs_get, zsession_get, zsession_auth
 from .ops import (
     BZ_OT_SQE_MakeStripThumbnail,
-    BZ_OT_SQE_new_shot,
-    BZ_OT_SQE_del_shot,
-    BZ_OT_SQE_link_shot,
+    BZ_OT_SQE_InitShot,
+    BZ_OT_SQE_DelShot,
+    BZ_OT_SQE_LinkShot,
+    BZ_OT_SQE_PushShotMeta,
 )
 
 
@@ -54,7 +55,7 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return zsession_auth(context)
+        return True
 
     def draw(self, context: bpy.types.Context) -> None:
         prefs = prefs_get(context)
@@ -72,7 +73,7 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         }
 
         # Production
-        if not prefs["project_active"]:
+        if not prefs["project_active"].to_dict():
             prod_load_text = "Select Production"
         else:
             prod_load_text = prefs["project_active"]["name"]
@@ -85,9 +86,9 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
 
         # Category
         row = box.row(align=True)
-        if not prefs["project_active"]:
-            row.enabled = False
         row.prop(prefs, "category", expand=True)
+        if not zsession_auth(context) or not prefs["project_active"].to_dict():
+            row.enabled = False
 
         # Sequence / AssetType
         if category == "ASSETS":
@@ -97,7 +98,7 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
 
         row = box.row(align=True)
         item_group_text = f"Select {item_group_data['name']}"
-        if not prefs["project_active"]:
+        if not prefs["project_active"].to_dict():
             row.enabled = False
         elif prefs[item_group_data["pref_name"]]:
             item_group_text = prefs[item_group_data["pref_name"]]["name"]
@@ -113,11 +114,43 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
 
         row = box.row(align=True)
         item_text = f"Select {item_data['name']}"
-        if not prefs["project_active"] and prefs[item_group_data["pref_name"]]:
+        if (
+            not prefs["project_active"].to_dict()
+            and prefs[item_group_data["pref_name"]]
+        ):
             row.enabled = False
         elif prefs[item_data["pref_name"]]:
             item_text = prefs[item_data["pref_name"]]["name"]
         row.operator(item_data["operator"], text=item_text, icon="DOWNARROW_HLT")
+
+
+class BZ_PT_SQE_auth(bpy.types.Panel):
+    """
+    Panel in sequence editor that displays email, password and login operator.
+    """
+
+    bl_category = "Blezou"
+    bl_label = "Kitsu Login"
+    bl_space_type = "SEQUENCE_EDITOR"
+    bl_region_type = "UI"
+    bl_order = 10
+
+    def draw(self, context: bpy.types.Context) -> None:
+        prefs = context.preferences.addons["blezou"].preferences
+        zsession = prefs.session
+
+        layout = self.layout
+
+        box = layout.box()
+        # box.row().prop(prefs, 'host')
+        box.row().prop(prefs, "email")
+        box.row().prop(prefs, "passwd")
+
+        row = layout.row(align=True)
+        if not zsession.is_auth():
+            row.operator("blezou.session_start", text="Login")
+        else:
+            row.operator("blezou.session_end", text="Logout")
 
 
 class BZ_PT_SQE_context(bpy.types.Panel):
@@ -129,11 +162,11 @@ class BZ_PT_SQE_context(bpy.types.Panel):
     bl_label = "Context"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
-    bl_order = 10
+    bl_order = 20
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return zsession_auth(context)
+        return True
 
     def draw(self, context: bpy.types.Context) -> None:
         prefs = prefs_get(context)
@@ -157,15 +190,16 @@ class BZ_PT_SQE_shot_tools(bpy.types.Panel):
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
 
+    bl_idname = "blezou.pt_sqe_shot_tools"
     bl_category = "Blezou"
     bl_label = "Shot Tools"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
-    bl_order = 20
+    bl_order = 30
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.scene.sequence_editor.active_strip)
+        return True
 
     def draw(self, context: bpy.types.Context) -> None:
         strip_types = {"MOVIE", "IMAGE", "META", "COLOR"}
@@ -180,15 +214,15 @@ class BZ_PT_SQE_shot_tools(bpy.types.Panel):
         if not strip.blezou.initialized:
             layout = self.layout
             row = layout.row(align=True)
+            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS")
             row.operator(
-                BZ_OT_SQE_new_shot.bl_idname, text=f"Create {noun}", icon="PLUS"
+                BZ_OT_SQE_LinkShot.bl_idname, text="Link Active Shot", icon="LINKED"
             )
-            row.operator(BZ_OT_SQE_link_shot.bl_idname, text="Link Shot", icon="LINKED")
 
         else:
             # strip is initialized and props can be displayed
             layout = self.layout
-
+            layout.label(text="Metadata for active shot")
             box = layout.box()
             col = box.column(align=True)
             # sequence
@@ -203,23 +237,24 @@ class BZ_PT_SQE_shot_tools(bpy.types.Panel):
             col.prop(strip.blezou, "id")
 
             # dangerous ops
-            row = layout.row(BZ_OT_SQE_del_shot.bl_idname, "Del Shot")
+            row = layout.row(BZ_OT_SQE_DelShot.bl_idname, "Del Shot")
 
 
-class BZ_PT_SQE_sync(bpy.types.Panel):
+class BZ_PT_SQE_push(bpy.types.Panel):
     """
     Panel that shows operator to sync sequence editor metadata with backend.
     """
 
+    bl_parent_id = "blezou.pt_sqe_shot_tools"
     bl_category = "Blezou"
-    bl_label = "Sync"
+    bl_label = "Push"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
-    bl_order = 30
+    bl_order = 10
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return zsession_auth(context)
+        return True
 
     def draw(self, context: bpy.types.Context) -> None:
         prefs = prefs_get(context)
@@ -228,35 +263,35 @@ class BZ_PT_SQE_sync(bpy.types.Panel):
         if len(selshots) > 1:
             noun = "%i Shots" % len(selshots)
         else:
-            noun = "This Shot"
+            noun = "Active Shot"
 
         layout = self.layout
-        # row = layout.row(align=True)
-        # row.operator("blezou.sqe_scan_track_properties", text="Scan Sequence Editor")
 
-        """
-        box = layout.box()
-        row = box.row(align=True)
-        row.prop(prefs, 'sqe_track_props') #TODO: Dosn"t work blender complaints it does not exist, manualli in script editr i can retrieve it
-        """
-        row = layout.row(align=True)
+        # not_linked = [s for s in selshots if not s.blezou.linked] - warn in operator if shot is missing link
+        row = layout.row()
         row.operator(
-            BZ_OT_SQE_MakeStripThumbnail.bl_idname,
-            text=f"Create Thumbnail for {noun}",
+            BZ_OT_SQE_PushShotMeta.bl_idname,
+            text=f"Push Metadata for {noun}",
+            icon="EXPORT",
         )
 
-        # row = layout.row(align=True)
-        # row.operator("blezou.sqe_sync_track_properties", text=f"Push to: {prefs.host}")
+        row = layout.row()
+        row.operator(
+            BZ_OT_SQE_MakeStripThumbnail.bl_idname,
+            text=f"Push Thumbnail for {noun}",
+            icon="EXPORT",
+        )
 
 
 # ---------REGISTER ----------
 
 classes = [
     BZ_PT_vi3d_auth,
+    BZ_PT_SQE_auth,
     BZ_PT_vi3d_context,
     BZ_PT_SQE_context,
     BZ_PT_SQE_shot_tools,
-    BZ_PT_SQE_sync,
+    BZ_PT_SQE_push,
 ]
 
 

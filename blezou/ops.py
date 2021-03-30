@@ -369,24 +369,20 @@ class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
+class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
     """
     Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
     """
 
-    bl_idname = "blezou.sqe_sync_track_properties"
-    bl_label = "SQE Sync Track Properties"
+    bl_idname = "blezou.sqe_push_shot_meta"
+    bl_label = "SQE Push Shot"
     bl_options = {"INTERNAL"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
-
-        if zsession_auth(context):
-            if active_project:
-                return True
-        return False
+        return bool(zsession_auth(context) and active_project.to_dict())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         prefs = prefs_get(context)
@@ -440,7 +436,7 @@ class BZ_OT_SQE_SyncTrackProps(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_new_shot(bpy.types.Operator):
+class BZ_OT_SQE_InitShot(bpy.types.Operator):
     bl_idname = "blezou.sqe_new_shot"
     bl_label = "New Shot"
     bl_description = "Adds required shot metadata to selecetd strips"
@@ -475,7 +471,7 @@ class BZ_OT_SQE_new_shot(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_link_shot(bpy.types.Operator):
+class BZ_OT_SQE_LinkShot(bpy.types.Operator):
     bl_idname = "blezou.sqe_link_shot"
     bl_label = "Link Shot"
     bl_description = (
@@ -537,7 +533,7 @@ class BZ_OT_SQE_link_shot(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
-class BZ_OT_SQE_del_shot(bpy.types.Operator):
+class BZ_OT_SQE_DelShot(bpy.types.Operator):
     bl_idname = "blezou.sqe_del_shot"
     bl_label = "Del Shot"
     bl_description = "Removes shot metadata from selecetd strips. Only affects SQE."
@@ -579,7 +575,9 @@ class BZ_OT_SQE_MakeStripThumbnail(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.selected_sequences)
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+        return bool(zsession_auth(context) and active_project.to_dict())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -704,9 +702,10 @@ classes = [
     BZ_OT_AssetTypesLoad,
     BZ_OT_AssetsLoad,
     BZ_OT_SQE_ScanTrackProps,
-    BZ_OT_SQE_del_shot,
-    BZ_OT_SQE_new_shot,
-    BZ_OT_SQE_link_shot,
+    BZ_OT_SQE_PushShotMeta,
+    BZ_OT_SQE_DelShot,
+    BZ_OT_SQE_InitShot,
+    BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_MakeStripThumbnail,
 ]
 
