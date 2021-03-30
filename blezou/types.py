@@ -46,7 +46,7 @@ class ZProject:
     updated_at: str = ""
     name: str = ""
     code: Optional[str] = None
-    description: str = ""
+    description: Optional[str] = ""
     shotgun_id: Optional[str] = None
     data: None = None
     has_avatar: bool = False
@@ -96,7 +96,7 @@ class ZProject:
         zsequences = [
             ZSequence(**s) for s in gazu.shot.all_sequences_for_project(asdict(self))
         ]
-        return zsequences
+        return sorted(zsequences, key=lambda x: x.name)
 
     def create_sequence(self, sequence_name: str) -> ZSequence:
         # this function returns a seq dict even if seq already exists, it does not override
@@ -108,6 +108,10 @@ class ZProject:
 
     def get_shot(self, shot_id: str) -> ZShot:
         return ZShot.by_id(shot_id)
+
+    def get_shots_all(self) -> List[ZShot]:
+        shots = [ZShot(**s) for s in gazu.shot.all_shots_for_project(asdict(self))]
+        return sorted(shots, key=lambda x: x.name)
 
     def get_shot_by_name(self, zsequence: ZSequence, name: str) -> Optional[ZShot]:
         return ZShot.by_name(zsequence, name)
@@ -142,7 +146,7 @@ class ZProject:
             ZAssetType(**at)
             for at in gazu.asset.all_asset_types_for_project(asdict(self))
         ]
-        return zassettypes
+        return sorted(zassettypes, key=lambda x: x.name)
 
     def get_asset_type_by_name(self, asset_type_name: str) -> Optional[ZAssetType]:
         return ZAssetType.by_name(asset_type_name)
@@ -152,7 +156,7 @@ class ZProject:
 
     def get_all_assets(self) -> List[ZAsset]:
         zassets = [ZAsset(**a) for a in gazu.asset.all_assets_for_project(asdict(self))]
-        return zassets
+        return sorted(zassets, key=lambda x: x.name)
 
     def get_asset_by_name(self, asset_name: str) -> Optional[ZAsset]:
         return ZAsset.by_name(self, asset_name)
@@ -164,7 +168,7 @@ class ZProject:
                 asdict(self), asdict(zassettype)
             )
         ]
-        return zassets
+        return sorted(zassets, key=lambda x: x.name)
 
 
 @dataclass
@@ -179,7 +183,7 @@ class ZSequence:
     updated_at: str = ""
     name: str = ""
     code: Optional[str] = None
-    description: Optional[str] = None
+    description: Optional[str] = ""
     shotgun_id: Optional[str] = None
     canceled: bool = False
     nb_frames: Optional[int] = None
@@ -213,8 +217,10 @@ class ZSequence:
         return cls(**seq_dict)
 
     def get_all_shots(self) -> List[ZShot]:
-        shots = gazu.shot.all_shots_for_sequence(asdict(self))
-        return [ZShot(**shot) for shot in shots]
+        shots = [
+            ZShot(**shot) for shot in gazu.shot.all_shots_for_sequence(asdict(self))
+        ]
+        return sorted(shots, key=lambda x: x.name)
 
 
 @dataclass
@@ -257,7 +263,7 @@ class ZShot:
     name: str = ""
     canceled: bool = False
     code: Optional[str] = None
-    description: str = ""
+    description: Optional[str] = ""
     entity_type_id: str = ""
     episode_id: Optional[str] = None
     episode_name: str = ""
@@ -303,7 +309,7 @@ class ZAsset:
     updated_at: str = ""
     name: str = ""
     code: Optional[str] = None
-    description: str = ""
+    description: Optional[str] = ""
     shotgun_id: Optional[str] = None
     canceled: bool = False
     project_id: str = ""
@@ -399,7 +405,7 @@ class ZTask:
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
-    description: Optional[str] = None
+    description: Optional[str] = ""
     priority: int = 0
     duration: int = 0
     estimation: int = 0
