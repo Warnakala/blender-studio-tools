@@ -27,6 +27,14 @@ class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
             "description": self.description,
         }
 
+    def clear(self):
+        self.id = ""
+        self.shot = ""
+        self.sequence = ""
+        self.description = ""
+        self.initialized = False
+        self.linked = False
+
 
 classes = [BZ_PopertyGroup_VSEQ_Shot]
 

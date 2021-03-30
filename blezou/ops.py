@@ -474,7 +474,9 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
                 zshot.description if zshot.description else ""
             )
             active_strip.blezou.initialized = True
+            active_strip.blezou.linked = True
 
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
@@ -492,12 +494,15 @@ class BZ_OT_SQE_DelShot(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
-        nr_of_strips = len(context.selected_sequences)
+        selshots = context.selected_sequences
 
-        self.report(
-            {"INFO"},
-            "Removing metadata of %i selected shots." % nr_of_strips,
-        )
+        if len(selshots) > 1:
+            noun = "%i selected Shots" % len(selshots)
+        else:
+            noun = "Active Shot"
+
+        self.report({"INFO"}, f"Removing metadata of {noun}.")
+
         for strip in context.selected_sequences:
             if not hasattr(strip, "blezou"):
                 logger.error(
@@ -507,7 +512,9 @@ class BZ_OT_SQE_DelShot(bpy.types.Operator):
             if not strip.blezou.initialized:
                 logger.info(f"{strip.name} has not metadata.")
                 continue
-            strip.blezou.initialized = False
+
+            # clear blezou properties
+            strip.blezou.clear()
 
         return {"FINISHED"}
 

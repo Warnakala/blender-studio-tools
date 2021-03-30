@@ -202,14 +202,14 @@ class BZ_PT_SQE_shot_tools(bpy.types.Panel):
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
-        strip_types = {"MOVIE", "IMAGE", "META", "COLOR"}
-        strip = context.scene.sequence_editor.active_strip
 
+        strip = context.scene.sequence_editor.active_strip
         selshots = context.selected_sequences
+
         if len(selshots) > 1:
             noun = "%i Shots" % len(selshots)
         else:
-            noun = "Shot"
+            noun = "Active Shot"
 
         if not strip.blezou.initialized:
             layout = self.layout
@@ -220,24 +220,56 @@ class BZ_PT_SQE_shot_tools(bpy.types.Panel):
             )
 
         else:
-            # strip is initialized and props can be displayed
+            # strip is initialized
             layout = self.layout
-            layout.label(text="Metadata for active shot")
-            box = layout.box()
-            col = box.column(align=True)
-            # sequence
-            col.prop(strip.blezou, "sequence")
-            # shot
-            col.prop(strip.blezou, "shot")
-            # description
-            col = box.column(align=True)
-            col.prop(strip.blezou, "description")
-            # id
-            col.enabled = False
-            col.prop(strip.blezou, "id")
+            # delete operator
+            row = layout.row(align=True)
+            row.operator(BZ_OT_SQE_DelShot.bl_idname, text=f"Del {noun}", icon="CANCEL")
+            row.operator(
+                BZ_OT_SQE_LinkShot.bl_idname, text="Relink Active Shot", icon="LINKED"
+            )
 
-            # dangerous ops
-            row = layout.row(BZ_OT_SQE_DelShot.bl_idname, "Del Shot")
+
+class BZ_PT_SQE_shot_meta(bpy.types.Panel):
+    """
+    Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
+    """
+
+    bl_parent_id = "blezou.pt_sqe_shot_tools"
+    bl_category = "Blezou"
+    bl_label = "Metadata Active Shot"
+    bl_space_type = "SEQUENCE_EDITOR"
+    bl_region_type = "UI"
+    bl_order = 10
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def draw(self, context: bpy.types.Context) -> None:
+        strip = context.scene.sequence_editor.active_strip
+
+        # strip is initialized and props can be displayed
+        layout = self.layout
+        box = layout.box()
+        col = box.column(align=True)
+
+        # sequence
+        col.prop(strip.blezou, "sequence")
+
+        # shot
+        col.prop(strip.blezou, "shot")
+
+        col.enabled = False if not strip.blezou.initialized else True
+
+        col = box.column(align=True)
+        col.enabled = False
+        # description
+        col.prop(strip.blezou, "description")
+
+        # id
+        col.prop(strip.blezou, "id")
+        col.prop(strip.blezou, "linked")
 
 
 class BZ_PT_SQE_push(bpy.types.Panel):
@@ -250,7 +282,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
     bl_label = "Push"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
-    bl_order = 10
+    bl_order = 20
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -291,6 +323,7 @@ classes = [
     BZ_PT_vi3d_context,
     BZ_PT_SQE_context,
     BZ_PT_SQE_shot_tools,
+    BZ_PT_SQE_shot_meta,
     BZ_PT_SQE_push,
 ]
 
