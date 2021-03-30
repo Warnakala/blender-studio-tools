@@ -320,55 +320,6 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_ScanTrackProps(bpy.types.Operator):
-    """
-    Composes a dictionary data structure to be pushed to backend and saves it in preferences of blezou addon.
-    """
-
-    bl_idname = "blezou.sqe_scan_track_properties"
-    bl_label = "SQE Scan Track Properties"
-    bl_options = {"INTERNAL"}
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        return True
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        prefs = prefs_get(context)
-
-        # clear old prefs
-        prefs["sqe_track_props"] = {}
-        seq_dict: Dict[str, Dict[str, Any]] = {}
-
-        seq_editor = context.scene.sequence_editor
-
-        for strip in seq_editor.sequences_all:
-            strip_seq = strip.blezou.sequence
-            strip_shot = strip.blezou.shot
-
-            if strip_seq and strip_shot:
-                # create seq if not exists
-                if strip_seq not in seq_dict:
-                    seq_dict[strip_seq] = {"shots": {}}
-
-                shot_dict = {
-                    "sequence_name": strip_seq,
-                    "frame_in": strip.frame_final_start,
-                    "frame_out": strip.frame_final_end,
-                }
-
-                # update seq dict with shot
-                seq_dict[strip_seq]["shots"][strip_shot] = shot_dict
-
-                # TODO: order dictionary
-
-        prefs["sqe_track_props"] = seq_dict
-        logger.info("Result of scan: \n %s" % seq_dict)
-
-        # ui_redraw()
-        return {"FINISHED"}
-
-
 class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
     """
     Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
@@ -698,7 +649,6 @@ classes = [
     BZ_OT_ShotsLoad,
     BZ_OT_AssetTypesLoad,
     BZ_OT_AssetsLoad,
-    BZ_OT_SQE_ScanTrackProps,
     BZ_OT_SQE_PushShotMeta,
     BZ_OT_SQE_DelShot,
     BZ_OT_SQE_InitShot,
