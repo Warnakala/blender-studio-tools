@@ -172,24 +172,35 @@ class BZ_PT_SQE_shot_tools(bpy.types.Panel):
         strip = context.scene.sequence_editor.active_strip
 
         selshots = context.selected_sequences
+        if len(selshots) > 1:
+            noun = "%i Shots" % len(selshots)
+        else:
+            noun = "Shot"
 
         if not strip.blezou.initialized:
             layout = self.layout
-            box = layout.box()
-            row = box.operator(BZ_OT_SQE_new_shot.bl_idname, text="Create Shot")
-            row = box.operator(BZ_OT_SQE_link_shot.bl_idname, text="Link Shot")
+            row = layout.row(align=True)
+            row.operator(
+                BZ_OT_SQE_new_shot.bl_idname, text=f"Create {noun}", icon="PLUS"
+            )
+            row.operator(BZ_OT_SQE_link_shot.bl_idname, text="Link Shot", icon="LINKED")
 
         else:
             # strip is initialized and props can be displayed
             layout = self.layout
 
             box = layout.box()
-            row = box.row(align=True)
-            row.prop(strip.blezou, "sequence")
-            row.prop(strip.blezou, "shot")
-
-            row = box.row(align=True)
-            row.prop(strip.blezou, "id")
+            col = box.column(align=True)
+            # sequence
+            col.prop(strip.blezou, "sequence")
+            # shot
+            col.prop(strip.blezou, "shot")
+            # description
+            col = box.column(align=True)
+            col.prop(strip.blezou, "description")
+            # id
+            col.enabled = False
+            col.prop(strip.blezou, "id")
 
             # dangerous ops
             row = layout.row(BZ_OT_SQE_del_shot.bl_idname, "Del Shot")
