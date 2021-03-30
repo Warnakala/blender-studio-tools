@@ -450,7 +450,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
                     )
         return enum_list
 
-    enum_prop: bpy.props.EnumProperty(items=_get_shots)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=_get_shots, name="Shot")  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
