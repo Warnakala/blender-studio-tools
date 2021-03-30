@@ -384,6 +384,112 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         logger.info("Pushed update to shot: %s" % zshot.name)
 
 
+class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
+    """
+    Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
+    """
+
+    bl_idname = "blezou.sqe_push_new_shot"
+    bl_label = "SQE Push New Shot"
+    bl_options = {"INTERNAL"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        # needs to be logged in, active project
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+        return bool(zsession_auth(context) and active_project.to_dict())
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        prefs = prefs_get(context)
+        zproject = ZProject(**prefs["project_active"].to_dict())
+
+        succeeded = []
+        failed = []
+        # report = []
+
+        for strip in context.selected_sequences:
+
+            # check if strip is already linked to gazou
+            if strip.blezou.linked:
+                t = f"Skip strip: {strip.name}. Already linked to shot."
+                self.report({"WARNING"}, t)
+                failed.append(strip)
+                # report.append(t)
+                continue
+
+            # check if user initialized shot
+            if not strip.blezou.initialized:
+                t = f"Skip strip: {strip.name}. Not initialized."
+                self.report({"WARNING"}, t)
+                failed.append(strip)
+                # report.append(t)
+                continue
+
+            # check if user provided enough info
+            seq = strip.blezou.sequence
+            shot = strip.blezou.shot
+            if not bool(seq and shot):
+                t = f"Skip strip: {strip.name}. Missing metadata."
+                self.report({"WARNING"}, t)
+                failed.append(strip)
+                # report.append(t)
+                continue
+
+            # check if seq already on gazou > create it
+            zseq = zproject.get_sequence_by_name(seq)
+            if not zseq:
+                zseq = self._new_sequence_by_strip(zproject, strip)
+            else:
+                t = f"Skip creation of sequence {zseq.name}. Already exists in gazou (Id: {zseq.id})."
+                self.report({"WARNING"}, t)
+                # report.append(t)
+
+            # check if shot already on gazou > create it
+            zshot = ZShot.by_name(zseq, shot)
+            if not zshot:
+                # push update to shot
+                zshot = self._new_shot_by_strip(zproject, zseq, strip)
+                # TODO: refactor this in function
+                strip.blezou.id = zshot.id
+                strip.blezou.linked = True
+                succeeded.append(strip)
+            else:
+                t = f"Skip creation of shot {zshot.name}. Shot already exists in gazou (Id: {zshot.id})."
+                self.report({"WARNING"}, t)
+                failed.append(strip)
+                # report.append(t)
+                continue
+
+        self.report(
+            {"INFO"},
+            f"Created {len(succeeded)} new Shots.",
+        )
+        return {"FINISHED"}
+
+    def _new_shot_by_strip(
+        self, zproject: ZProject, zsequence: ZSequence, strip: bpy.types.Sequence
+    ) -> ZShot:
+        # TODO: description not pushed yet
+        zshot = zproject.create_shot(
+            strip.blezou.shot,
+            zsequence,
+            frame_in=strip.frame_final_start,
+            frame_out=strip.frame_final_end,
+        )
+        self.report({"INFO"}, f"Pushed create shot: {zshot.name}")
+        return zshot
+
+    def _new_sequence_by_strip(
+        self, zproject: ZProject, strip: bpy.types.Sequence
+    ) -> ZSequence:
+        zsequence = zproject.create_sequence(
+            strip.blezou.sequence,
+        )
+        self.report({"INFO"}, f"Pushed create shot: {zsequence.name}")
+        return zsequence
+
+
 class BZ_OT_SQE_InitShot(bpy.types.Operator):
     bl_idname = "blezou.sqe_new_shot"
     bl_label = "New Shot"
@@ -466,6 +572,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         active_strip = context.scene.sequence_editor.active_strip
 
         if self.enum_prop:  # returns 0 for organisational item
+            # TODO: refactor this in function
             zshot = ZShot.by_id(self.enum_prop)
             active_strip.blezou.id = zshot.id
             active_strip.blezou.shot = zshot.name
@@ -654,6 +761,7 @@ classes = [
     BZ_OT_ShotsLoad,
     BZ_OT_AssetTypesLoad,
     BZ_OT_AssetsLoad,
+    BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushShotMeta,
     BZ_OT_SQE_DelShot,
     BZ_OT_SQE_InitShot,

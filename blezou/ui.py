@@ -6,6 +6,7 @@ from .ops import (
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_DelShot,
     BZ_OT_SQE_LinkShot,
+    BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushShotMeta,
 )
 
@@ -299,6 +300,12 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         layout = self.layout
 
         # not_linked = [s for s in selshots if not s.blezou.linked] - warn in operator if shot is missing link
+        row = layout.row()
+        row.operator(
+            BZ_OT_SQE_PushNewShot.bl_idname,
+            text=f"Push New for {noun}",
+            icon="EXPORT",
+        )
         row = layout.row()
         row.operator(
             BZ_OT_SQE_PushShotMeta.bl_idname,
