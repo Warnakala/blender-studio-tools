@@ -1,7 +1,12 @@
 import bpy
 from typing import Optional
 from .util import prefs_get, zsession_get, zsession_auth
-from .ops import BZ_OT_SQE_MakeStripThumbnail
+from .ops import (
+    BZ_OT_SQE_MakeStripThumbnail,
+    BZ_OT_SQE_new_shot,
+    BZ_OT_SQE_del_shot,
+    BZ_OT_SQE_link_shot,
+)
 
 
 class BZ_PT_vi3d_auth(bpy.types.Panel):
@@ -147,35 +152,47 @@ class BZ_PT_SQE_context(bpy.types.Panel):
         )
 
 
-class BZ_PT_SQE_strip_props(bpy.types.Panel):
+class BZ_PT_SQE_shot_tools(bpy.types.Panel):
     """
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
 
     bl_category = "Blezou"
-    bl_label = "Strip Properties"
+    bl_label = "Shot Tools"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 20
 
     @classmethod
-    def poll(cls, context: bpy.types.Context) -> Optional[bpy.types.Sequence]:
-        return context.scene.sequence_editor.active_strip
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(context.scene.sequence_editor.active_strip)
 
     def draw(self, context: bpy.types.Context) -> None:
         strip_types = {"MOVIE", "IMAGE", "META", "COLOR"}
         strip = context.scene.sequence_editor.active_strip
 
-        if strip and strip.type in strip_types and strip.blezou.z_id:
-            # strip is initialized and props can be displayed
+        selshots = context.selected_sequences
+
+        if not strip.blezou.initialized:
             layout = self.layout
             box = layout.box()
-            row = box.row(align=True)
-            row.prop(strip.blezou, "z_id")
+            row = box.operator(BZ_OT_SQE_new_shot.bl_idname, text="Create Shot")
+            row = box.operator(BZ_OT_SQE_link_shot.bl_idname, text="Link Shot")
+
+        else:
+            # strip is initialized and props can be displayed
+            layout = self.layout
+
+            box = layout.box()
             row = box.row(align=True)
             row.prop(strip.blezou, "sequence")
-            row = box.row(align=True)
             row.prop(strip.blezou, "shot")
+
+            row = box.row(align=True)
+            row.prop(strip.blezou, "id")
+
+            # dangerous ops
+            row = layout.row(BZ_OT_SQE_del_shot.bl_idname, "Del Shot")
 
 
 class BZ_PT_SQE_sync(bpy.types.Panel):
@@ -227,7 +244,7 @@ classes = [
     BZ_PT_vi3d_auth,
     BZ_PT_vi3d_context,
     BZ_PT_SQE_context,
-    BZ_PT_SQE_strip_props,
+    BZ_PT_SQE_shot_tools,
     BZ_PT_SQE_sync,
 ]
 
