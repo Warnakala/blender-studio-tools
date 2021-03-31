@@ -3,7 +3,17 @@ from pathlib import Path
 import contextlib
 from typing import Set, Dict, Union, List, Tuple, Any
 import bpy
-from .types import ZProductions, ZProject, ZSequence, ZShot, ZAssetType, ZAsset
+from .types import (
+    ZProductions,
+    ZProject,
+    ZSequence,
+    ZShot,
+    ZAssetType,
+    ZAsset,
+    ZTask,
+    ZTaskType,
+    ZTaskStatus,
+)
 from .util import zsession_auth, prefs_get, zsession_get
 from .core import ui_redraw
 from .logger import ZLoggerFactory
@@ -337,6 +347,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         return bool(zsession_auth(context) and active_project.to_dict())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        # TODO: refactor in functions
         nr_of_strips = len(context.selected_sequences)
         do_multishot = nr_of_strips > 1
 
@@ -401,6 +412,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         return bool(zsession_auth(context) and active_project.to_dict())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        # TODO: refactor in functions
         prefs = prefs_get(context)
         zproject = ZProject(**prefs["project_active"].to_dict())
 
@@ -607,6 +619,7 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         return bool(zsession_auth(context) and active_project.to_dict())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        # TODO: refactor in functions
         succeeded = []
         failed = []
         for strip in context.selected_sequences:
@@ -682,13 +695,13 @@ class BZ_OT_SQE_DelShot(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_MakeStripThumbnail(bpy.types.Operator):
+class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
     """
     Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
     """
 
-    bl_idname = "blezou.sqe_make_strip_thumbnail"
-    bl_label = "SQE Create Strip Thumbnail"
+    bl_idname = "blezou.sqe_push_thumbnail"
+    bl_label = "Push Thumbnail"
     bl_options = {"INTERNAL"}
 
     @classmethod
@@ -698,62 +711,151 @@ class BZ_OT_SQE_MakeStripThumbnail(bpy.types.Operator):
         return bool(zsession_auth(context) and active_project.to_dict())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        # TODO: refactor in functions
 
-        nr_of_strips = len(context.selected_sequences)
-        do_multishot = nr_of_strips > 1
+        nr_of_strips: int = len(context.selected_sequences)
+        do_multishot: bool = nr_of_strips > 1
+        failed = []
+        succeeded = []
+        upload_queue: List[Path] = []
         # The multishot and singleshot branches do pretty much the same thing,
         # but report differently to the user.
-
         with self.override_render_settings(context):
             with self.temporary_current_frame(context) as original_curframe:
                 # if user has multiple strips selected, make thumbnail for each of them, use middle frame
                 if do_multishot:
                     self.report(
                         {"INFO"},
-                        "Rendering thumbnails for %i selected shots." % nr_of_strips,
+                        "Creating thumbnails for %i selected shots." % nr_of_strips,
                     )
                     for strip in context.selected_sequences:
-                        self.set_middle_frame(context, strip)
-                        self.make_thumbnail(context, strip)
+                        # only if strip is linked to gazou
+                        if not strip.blezou.linked:
+                            self.report(
+                                {"WARNING"},
+                                f"Skip creating thumbnail for strip: {strip.name}. Not linked yet.",
+                            )
+                            failed.append(strip)
+                            continue
 
+                        # check if shot is still available by id
+                        zshot = ZShot.by_id(strip.blezou.id)
+                        if not zshot:
+                            self.report(
+                                {"WARNING"},
+                                f"Skip creating thumbnail for strip {strip.name}. Not existent in gazou (Id: {strip.blezou.id}).",
+                            )
+                            failed.append(strip)
+                            continue
+
+                        self.set_middle_frame(context, strip)
+                        path = self.make_thumbnail(context, strip)
+                        upload_queue.append(path)
                 else:
                     # if user has one strip selected, make thumbnail
                     strip = context.scene.sequence_editor.active_strip
+                    # only if strip is linked to gazou
+                    if not strip.blezou.linked:
+                        self.report(
+                            {"WARNING"},
+                            f"Failed to create thumbnail for strip: {strip.name}. Not linked yet.",
+                        )
+                        failed.append(strip)
+                        return {"CANCELLED"}
+
+                    # check if shot is still available by id
+                    zshot = ZShot.by_id(strip.blezou.id)
+                    if not zshot:
+                        self.report(
+                            {"WARNING"},
+                            f"Failed to create thumbnail for strip {strip.name}. Not existent in gazou (Id: {strip.blezou.id}).",
+                        )
+                        failed.append(strip)
+                        return {"CANCELLED"}
+
                     # if active strip is not contained in the current frame, use middle frame of active strip
                     if not self.strip_contains(strip, original_curframe):
                         self.report(
                             {"WARNING"},
-                            "Rendering middle frame as thumbnail for active shot.",
+                            "Creating middle frame as thumbnail for active shot.",
                         )
                         self.set_middle_frame(context, strip)
                     else:
                         self.report(
                             {"INFO"},
-                            "Rendering current frame as thumbnail for active shot.",
+                            "Creating current frame as thumbnail for active shot.",
                         )
-                    self.make_thumbnail(context, strip)
+                    path = self.make_thumbnail(context, strip)
+                    upload_queue.append(path)
 
+                # process thumbnail queue
+                self._upload_thumbnails(upload_queue)
+        self.report({"INFO"}, f"Created thumbnails for {len(upload_queue)} Shots")
         return {"FINISHED"}
 
-    def save_render(self, datablock: bpy.types.Image, file_name: str) -> None:
+    def make_thumbnail(
+        self, context: bpy.types.Context, strip: bpy.types.Sequence
+    ) -> Path:
+        bpy.ops.render.render()
+        file_name = f"{strip.blezou.id}_{str(context.scene.frame_current)}.jpg"
+        path = self._save_render(bpy.data.images["Render Result"], file_name)
+        logger.info(f"Saved thumbnail of shot {strip.blezou.shot} to {path.as_posix()}")
+        return path
+
+    def _save_render(self, datablock: bpy.types.Image, file_name: str) -> Path:
         """Save the current render image to disk"""
 
         prefs = prefs_get(bpy.context)
         folder_name = prefs.folder_thumbnail
 
         # Ensure folder exists
-        folder_path = Path(folder_name)
+        folder_path = Path(folder_name).absolute()
         folder_path.mkdir(parents=True, exist_ok=True)
 
         path = folder_path.joinpath(file_name)
         datablock.save_render(str(path))
+        return path.absolute()
 
-    def make_thumbnail(
-        self, context: bpy.types.Context, strip: bpy.types.Sequence
-    ) -> None:
-        bpy.ops.render.render()
-        file_name = f"{str(context.scene.frame_current)}.jpg"  # TODO filename should be ID of shot
-        self.save_render(bpy.data.images["Render Result"], file_name)
+    def _upload_thumbnails(self, upload_queue: List[Path]) -> None:
+        for filepath in upload_queue:
+
+            # get shot by id which is in filename of thumbnail
+            shot_id = filepath.name.split("_")[0]
+            zshot = ZShot.by_id(shot_id)
+
+            # get task status 'wip' and task type 'Animation'
+            ztask_status = ZTaskStatus.by_short_name("wip")
+            ztask_type = ZTaskType.by_name("Animation")
+
+            if not ztask_status:
+                raise RuntimeError(
+                    "Failed to upload thumbnails. Task Status: 'wip' is missing."
+                )
+            if not ztask_type:
+                raise RuntimeError(
+                    "Failed to upload thumbnails. Task Type: 'Animation' is missing."
+                )
+
+            # find / get latest task
+            # turns out a entitiy in gazou can have 0 tasks even tough task types exist
+            # you have to create a task first before being able to upload a thumbnail
+            ztasks = zshot.get_all_tasks()  # list of ztasks
+            if not ztasks:
+                ztask = ZTask.new_task(zshot, ztask_type, ztask_status=ztask_status)
+            else:
+                ztask = ztasks[-1]
+
+            # create a comment, e.G 'set main thumbnail'
+            zcomment = ztask.add_comment(ztask_status, comment="set main thumbnail")
+
+            # add_preview_to_comment
+            zpreview = ztask.add_preview_to_comment(zcomment, filepath.as_posix())
+
+            # preview.set_main_preview()
+            zpreview.set_main_preview()
+            logger.info(
+                f"Uploaded thumbnail for shot: {zshot.name} under: {ztask_type.name}"
+            )
 
     @contextlib.contextmanager
     def override_render_settings(self, context, thumbnail_width=256):
@@ -824,7 +926,7 @@ classes = [
     BZ_OT_SQE_DelShot,
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_LinkShot,
-    BZ_OT_SQE_MakeStripThumbnail,
+    BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_PullShotMeta,
 ]
 

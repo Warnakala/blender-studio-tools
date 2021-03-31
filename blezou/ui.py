@@ -2,7 +2,7 @@ import bpy
 from typing import Optional
 from .util import prefs_get, zsession_get, zsession_auth
 from .ops import (
-    BZ_OT_SQE_MakeStripThumbnail,
+    BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_DelShot,
     BZ_OT_SQE_LinkShot,
@@ -316,7 +316,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
 
         row = layout.row()
         row.operator(
-            BZ_OT_SQE_MakeStripThumbnail.bl_idname,
+            BZ_OT_SQE_PushThumbnail.bl_idname,
             text=f"Push Thumbnail for {noun}",
             icon="EXPORT",
         )
