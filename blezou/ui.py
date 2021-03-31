@@ -8,6 +8,7 @@ from .ops import (
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushShotMeta,
+    BZ_OT_SQE_PullShotMeta,
 )
 
 
@@ -321,6 +322,40 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         )
 
 
+class BZ_PT_SQE_pull(bpy.types.Panel):
+    """
+    Panel that shows operator to sync sequence editor metadata with backend.
+    """
+
+    bl_parent_id = "blezou.pt_sqe_shot_tools"
+    bl_category = "Blezou"
+    bl_label = "Pull"
+    bl_space_type = "SEQUENCE_EDITOR"
+    bl_region_type = "UI"
+    bl_order = 30
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def draw(self, context: bpy.types.Context) -> None:
+        prefs = prefs_get(context)
+        selshots = context.selected_sequences
+
+        if len(selshots) > 1:
+            noun = "%i Shots" % len(selshots)
+        else:
+            noun = "Active Shot"
+
+        layout = self.layout
+        row = layout.row()
+        row.operator(
+            BZ_OT_SQE_PullShotMeta.bl_idname,
+            text=f"Pull Metadata for {noun}",
+            icon="IMPORT",
+        )
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -331,6 +366,7 @@ classes = [
     BZ_PT_SQE_shot_tools,
     BZ_PT_SQE_shot_meta,
     BZ_PT_SQE_push,
+    BZ_PT_SQE_pull,
 ]
 
 

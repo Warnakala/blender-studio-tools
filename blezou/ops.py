@@ -326,7 +326,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
     """
 
     bl_idname = "blezou.sqe_push_shot_meta"
-    bl_label = "SQE Push Shot"
+    bl_label = "Push Shot meta"
     bl_options = {"INTERNAL"}
 
     @classmethod
@@ -390,7 +390,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
     """
 
     bl_idname = "blezou.sqe_push_new_shot"
-    bl_label = "SQE Push New Shot"
+    bl_label = "Push New Shot"
     bl_options = {"INTERNAL"}
 
     @classmethod
@@ -590,6 +590,64 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=400)
 
 
+class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
+    """
+    Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
+    """
+
+    bl_idname = "blezou.sqe_pull_shot_meta"
+    bl_label = "Pull Shot Meta"
+    bl_options = {"INTERNAL"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        # needs to be logged in, active project
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+        return bool(zsession_auth(context) and active_project.to_dict())
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        succeeded = []
+        failed = []
+        for strip in context.selected_sequences:
+            # only if strip is linked to gazou
+            if not strip.blezou.linked:
+                self.report(
+                    {"WARNING"},
+                    f"Skip pulling meta for strip: {strip.name}. Not linked yet.",
+                )
+                failed.append(strip)
+                continue
+
+            # check if shot is still available by id
+            zshot = ZShot.by_id(strip.blezou.id)
+            if not zshot:
+                self.report(
+                    {"WARNING"},
+                    f"Failed to pull meta for strip: {strip.name}. Not existent in gazou (Id: {strip.blezou.id}).",
+                )
+                failed.append(strip)
+                continue
+
+            # push update to shot
+            self._pull_shot_update(context, strip, zshot)
+            succeeded.append(strip)
+
+        self.report(
+            {"INFO"},
+            f"Pulled Metadata for {len(succeeded)} Shots.",
+        )
+        return {"FINISHED"}
+
+    def _pull_shot_update(self, context, strip, zshot):
+        strip.blezou.shot = zshot.name
+        strip.blezou.description = zshot.description
+        strip.blezou.sequence = zshot.sequence_name
+        # strip.frame_final_start = zshot.data["frame_in"]
+        # strip.frame_final_end = zshot.data["frame_out"]
+        logger.info(f"Pulled meta update for shot: {zshot.name}")
+
+
 class BZ_OT_SQE_DelShot(bpy.types.Operator):
     bl_idname = "blezou.sqe_del_shot"
     bl_label = "Del Shot"
@@ -767,6 +825,7 @@ classes = [
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_MakeStripThumbnail,
+    BZ_OT_SQE_PullShotMeta,
 ]
 
 
