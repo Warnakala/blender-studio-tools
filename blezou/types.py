@@ -170,6 +170,9 @@ class ZProject:
         ]
         return sorted(zassets, key=lambda x: x.name)
 
+    # TASKS
+    # ---------------
+
 
 @dataclass
 class ZSequence:
@@ -222,6 +225,14 @@ class ZSequence:
         ]
         return sorted(shots, key=lambda x: x.name)
 
+    def get_all_task_types(self) -> List[ZTaskType]:
+        return [
+            ZTaskType(**t) for t in gazu.task.all_task_types_for_sequence(asdict(self))
+        ]
+
+    def get_all_tasks(self) -> List[ZTask]:
+        return [ZTask(**t) for t in gazu.task.all_tasks_for_sequence(asdict(self))]
+
 
 @dataclass
 class ZAssetType:
@@ -254,7 +265,7 @@ class ZAssetType:
 class ZShot:
     """
     Class to get object oriented representation of backend shot data structure.
-    Has multiple constructor functions (by_name, by_id, init>by_dict)
+    Has multiple constructor functions (by_name, by_id, init>by_dict
     """
 
     id: str
@@ -295,6 +306,15 @@ class ZShot:
     def by_id(cls, shot_id: str) -> ZShot:
         shot_dict = gazu.shot.get_shot(shot_id)
         return cls(**shot_dict)
+
+    def get_all_task_types(self) -> List[ZTaskType]:
+        return [ZTaskType(**t) for t in gazu.task.all_task_types_for_shot(asdict(self))]
+
+    def get_all_tasks(self) -> List[ZTask]:
+        return [ZTask(**t) for t in gazu.task.all_tasks_for_shot(asdict(self))]
+
+    def get_sequence(self) -> ZSequence:
+        return ZSequence(**gazu.shot.get_sequence_from_shot(asdict(self)))
 
 
 @dataclass
@@ -354,14 +374,24 @@ class ZAsset:
         asset_dict = gazu.asset.get_asset(asset_id)
         return cls(**asset_dict)
 
+    def get_all_task_types(self) -> List[ZTaskType]:
+        return [
+            ZTaskType(**t) for t in gazu.task.all_task_types_for_asset(asdict(self))
+        ]
+
+    def get_all_tasks(self) -> List[ZTask]:
+        return [ZTask(**t) for t in gazu.task.all_tasks_for_asset(asdict(self))]
+
 
 @dataclass
 class ZTaskType:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
+    TaksType is the 'category' a single task belongs to. e.G 'Animation'
     """
 
+    id: str
     pid: str = ""
     created_at: str = ""
     updated_at: str = ""
@@ -377,10 +407,7 @@ class ZTaskType:
     type: str = ""
 
     @classmethod
-    def by_name(
-        cls,
-        task_type_name: str = "main",
-    ) -> Optional[ZTaskType]:
+    def by_name(cls, task_type_name: str) -> Optional[ZTaskType]:
         # can return None if seq does not exist
         task_type_dict = gazu.task.get_task_type_by_name(task_type_name)
 
@@ -393,15 +420,21 @@ class ZTaskType:
         task_type_dict = gazu.task.get_task_type(task_type_id)
         return cls(**task_type_dict)
 
+    @classmethod
+    def all_task_types(cls):
+        return [cls(**t) for t in gazu.task.all_task_types()]
+
 
 @dataclass
 class ZTask:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
+    A Task is a specific task that belongs to a TaskType. e.G Animation of shA1010 would be a task
+    with the TaskType 'Animation'
     """
 
-    id: str = ""
+    id: str
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
@@ -435,6 +468,13 @@ class ZTask:
     assigner: Dict[str, Any] = field(default_factory=dict)  # assiger dict
     sequence: Dict[str, Any] = field(default_factory=dict)  # sequence dict
 
+    # if you call with all_tasks_for_shot you get these extra
+    project_name: str = ""
+    task_type_name: str = ""
+    task_status_name: str = ""
+    entity_type_name: str = ""
+    entity_name: str = ""
+
     @classmethod
     def by_name(
         cls,
@@ -458,3 +498,229 @@ class ZTask:
     def by_id(cls, task_id: str) -> ZTask:
         task_dict = gazu.task.get_task(task_id)
         return cls(**task_dict)
+
+    @classmethod
+    def new_task(
+        cls,
+        zentity: Any,
+        ztask_type: ZTaskType,
+        name: str = "main",
+        ztask_status: Optional[ZTaskStatus] = None,
+        zassigner: Optional[ZUser] = None,
+        zassignees: Optional[List[ZUser]] = None,
+    ) -> ZTask:
+
+        # convert args
+        assigner = asdict(zassigner) if zassigner else zassigner
+        task_status = asdict(ztask_status) if ztask_status else ztask_status
+        assignees = asdict(zassignees) if zassignees else zassignees
+
+        task_dict = gazu.task.new_task(
+            asdict(zentity),
+            asdict(ztask_type),
+            name=name,
+            task_status=task_status,
+            assigner=assigner,
+            assignees=assignees,
+        )
+        return cls(**task_dict)
+
+    @classmethod
+    def all_tasks_for_entity_and_task_type(
+        cls, zentity: Any, ztask_type: ZTaskType
+    ) -> List[ZTask]:
+        task_list = gazu.task.all_tasks_for_entity_and_task_type(
+            asdict(zentity), asdict(ztask_type)
+        )
+        return [cls(**t) for t in task_list]
+
+    @classmethod
+    def all_tasks_for_task_type(
+        cls, zproject: ZProject, ztask_type: ZTaskType
+    ) -> List[ZTask]:
+        task_list = gazu.task.all_tasks_for_task_type(
+            asdict(zproject), asdict(ztask_type)
+        )
+        return [cls(**t) for t in task_list]
+
+    def get_last_comment(self) -> ZComment:
+        comment_dict = gazu.task.get_last_comment_for_task(asdict(self))
+        return ZComment(**comment_dict)
+
+    def get_all_comments(self) -> List[ZComment]:
+        return [ZComment(**c) for c in gazu.task.all_comments_for_task(asdict(self))]
+
+    def add_comment(
+        self,
+        ztask_status: ZTaskStatus,
+        comment: str = "",
+        zuser: Optional[ZUser] = None,
+        checklist: List[Dict[str, Any]] = [],
+        attachments: List[Dict[str, Any]] = [],
+        # i think equal to attachment_files in ZComment
+        created_at: Optional[str] = None,
+    ) -> ZComment:
+
+        # convert args
+        person = asdict(zuser) if zuser else zuser
+
+        comment_dict = gazu.task.add_comment(
+            asdict(self),
+            asdict(ztask_status),
+            comment=comment,
+            person=person,
+            checklist=checklist,
+            attachments=attachments,
+            created_at=created_at,
+        )
+        zcomment = ZComment(**comment_dict)
+        return zcomment
+
+    def add_preview_to_comment(
+        self, zcomment: ZComment, preview_file_path: str
+    ) -> ZPreview:
+        preview_dict = gazu.task.add_preview(
+            asdict(self), asdict(zcomment), preview_file_path
+        )
+        return ZPreview(**preview_dict)
+
+
+@dataclass
+class ZTaskStatus:
+    """
+    Class to get object oriented representation of backend sequence data structure.
+    Has multiple constructor functions (by_name, by_id, init>by_dict)
+    """
+
+    id: str
+    created_at: str = ""
+    updated_at: str = ""
+    name: str = ""
+    short_name: str = ""
+    color: str = ""
+    is_done: bool = False
+    is_artist_allowed: bool = True
+    is_client_allowed: bool = True
+    is_retake: bool = False
+    shotgun_id: Optional[str] = None
+    is_reviewable: bool = True
+    type: str = ""
+
+    @classmethod
+    def by_short_name(cls, short_name: str) -> Optional[ZTaskStatus]:
+
+        # can return None if seq does not exist
+        task_status_dict = gazu.task.get_task_status_by_short_name(short_name)
+
+        if task_status_dict:
+            return cls(**task_status_dict)
+        return None
+
+    @classmethod
+    def by_name(cls, name: str) -> Optional[ZTaskStatus]:
+
+        # can return None if seq does not exist
+        task_status_dict = gazu.task.get_task_status_by_name(name)
+
+        if task_status_dict:
+            return cls(**task_status_dict)
+        return None
+
+    @classmethod
+    def by_id(cls, task_status_id: str) -> ZTaskStatus:
+        task_status_dict = gazu.task.get_task_status(task_status_id)
+        return cls(**task_status_dict)
+
+
+@dataclass
+class ZComment:
+    """
+    Class to get object oriented representation of backend sequence data structure.
+    Has multiple constructor functions (by_name, by_id, init>by_dict)
+    """
+
+    id: str
+    created_at: str = ""
+    updated_at: str = ""
+    shotgun_id: Optional[str] = None
+    object_id: str = ""
+    object_type: str = ""
+    text: str = ""  # actual comment text
+    data: Optional[Dict[str, Any]] = None  # not sure
+    checklist: List[Dict[str, Any]] = field(default_factory=list)
+    pinned: Optional[bool] = None
+    task_status_id: str = ""
+    person_id: str = ""
+    preview_file_id: Optional[str] = None
+    type: str = ""
+    person: Dict[str, Any] = field(default_factory=dict)
+    task_status: Dict[str, Any] = field(default_factory=dict)
+    acknowledgements: List[str] = field(default_factory=list)
+    previews: List[Dict[str, Any]] = field(default_factory=list)
+    mentions: List[str] = field(default_factory=list)
+    attachment_files: List[Dict[str, Any]] = field(default_factory=list)
+
+
+@dataclass
+class ZPreview:
+    """
+    Class to get object oriented representation of backend sequence data structure.
+    Has multiple constructor functions (by_name, by_id, init>by_dict)
+    """
+
+    id: str
+    created_at: str = ""
+    updated_at: str = ""
+    name: str = ""
+    original_name: Optional[str] = None
+    revision: int = 2
+    position: int = 2
+    extension: str = ""
+    description: Optional[str] = None
+    path: Optional[str] = None
+    source: str = ""
+    file_size: int = 0
+    status: str = ""
+    annotations: List[Dict[str, Any]] = field(default_factory=list)
+    task_id: str = ""
+    person_id: str = ""
+    source_file_id: Optional[str] = None
+    shotgun_id: Optional[str] = None
+    is_movie: bool = False
+    url: Optional[str] = None
+    uploaded_movie_url: Optional[str] = None
+    uploaded_movie_name: Optional[str] = None
+    type: str = ""
+
+    def set_main_preview(self):
+        gazu.task.set_main_preview(asdict(self))
+
+
+@dataclass
+class ZUser:
+    """
+    Class to get object oriented representation of backend sequence data structure.
+    Has multiple constructor functions (by_name, by_id, init>by_dict)
+    """
+
+    id: str
+    created_at: str = ""
+    updated_at: str = ""
+    first_name: str = ""
+    last_name: str = ""
+    email: str = ""
+    phone: str = ""
+    active: bool = True
+    last_presence: Optional[str] = None
+    desktop_login: str = ""
+    shotgun_id: Optional[str] = None
+    timezone: str = ""
+    locale: str = ""
+    data: Optional[Dict[str, Any]] = None
+    role: str = ""
+    has_avatar: bool = False
+    notifications_enabled: bool = False
+    notifications_slack_enabled: bool = False
+    notifications_slack_userid: str = ""
+    type: str = "Person"
+    full_name: str = ""
