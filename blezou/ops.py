@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from pathlib import Path
 import contextlib
-from typing import Set, Dict, Union, List, Tuple, Any
+from typing import Set, Dict, Union, List, Tuple, Any, Optional
 import bpy
 from .types import (
     ZProductions,
@@ -330,10 +330,143 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class Sync:
+    """TODO: write doc """
+
+    @staticmethod
+    def strip_by_shot(strip: bpy.types.Sequence, zshot: ZShot) -> None:
+        seq_name = zshot.sequence_name
+        if seq_name:  # TODO: is sometimtes None
+            strip.blezou.sequence = seq_name
+        strip.blezou.shot = zshot.name
+        strip.blezou.description = zshot.description if zshot.description else ""
+        strip.blezou.id = zshot.id
+        strip.blezou.initialized = True
+        strip.blezou.linked = True
+        # strip.frame_final_start = zshot.data["frame_in"]
+        # strip.frame_final_end = zshot.data["frame_out"]
+        logger.info(
+            "Pulled update from shot: %s to strip: %s" % (zshot.name, strip.name)
+        )
+
+    @staticmethod
+    def shot_by_strip(
+        zshot: ZShot, strip: bpy.types.Sequence, zproject: Optional[ZProject] = None
+    ) -> None:
+        zshot.name = strip.blezou.shot
+        zshot.description = strip.blezou.description
+        zshot.data["frame_in"] = strip.frame_final_start
+        zshot.data["frame_out"] = strip.frame_final_end
+        # update in gazou
+        if not zproject:
+            zproject = ZProject.by_id(zshot.project_id)
+        zproject.update_shot(zshot)
+        logger.info("Pushed update to shot: %s" % zshot.name)
+
+
+class CheckStrip:
+    """TODO: write doc """
+
+    @staticmethod
+    def initialized(strip: bpy.types.Sequence) -> bool:
+        """Returns True if strip.blezou.initialized is True else False"""
+        if not strip.blezou.initialized:
+            logger.info("Strip: %s. Not initialized." % strip.name)
+            return False
+        else:
+            logger.info("Strip: %s. Is initialized." % strip.name)
+            return True
+
+    @staticmethod
+    def linked(strip: bpy.types.Sequence) -> bool:
+        """Returns True if strip.blezou.linked is True else False"""
+        if not strip.blezou.linked:
+            logger.info("Strip: %s. Not linked yet." % strip.name)
+            return False
+        else:
+            logger.info(
+                "Strip: %s. Is linked to ID: %s." % (strip.name, strip.blezou.id)
+            )
+            return True
+
+    @staticmethod
+    def has_meta(strip: bpy.types.Sequence) -> bool:
+        """Returns True if strip.blezou.shot and strip.blezou.sequence is Truethy else False"""
+        seq = strip.blezou.sequence
+        shot = strip.blezou.shot
+        if not bool(seq and shot):
+            logger.info("Strip: %s. Missing metadata." % strip.name)
+            return False
+        else:
+            logger.info(
+                "Strip: %s. Has metadata (Sequence: %s, Shot: %s)."
+                % (strip.name, seq, shot)
+            )
+            return True
+
+    @staticmethod
+    def shot_exists_by_id(strip: bpy.types.Sequence) -> Optional[ZShot]:
+        """Returns ZShot instance if shot with strip.blezou.id exists else None"""
+        zshot = ZShot.by_id(strip.blezou.id)
+        if zshot:
+            logger.info(
+                "Strip: %s. Shot %s exists in gazou, ID: %s)."
+                % (strip.name, zshot.name, zshot.id)
+            )
+            return zshot
+        else:
+            logger.info(
+                "Strip: %s. Shot %s does not exist in gazou. ID: %s not found."
+                % (strip.name, zshot.name, strip.blezou.id)
+            )
+            return None
+
+    @staticmethod
+    def seq_exists_by_name(
+        strip: bpy.types.Sequence, zproject: ZProject
+    ) -> Optional[ZSequence]:
+        """Returns ZSequence instance if strip.blezou.sequence exists in gazou, else None"""
+        zseq = zproject.get_sequence_by_name(strip.blezou.sequence)
+        if zseq:
+            logger.info(
+                "Strip: %s. Sequence %s exists in gazou, ID: %s)."
+                % (strip.name, zseq.name, zseq.id)
+            )
+            return zseq
+        else:
+            logger.info(
+                "Strip: %s. Sequence %s does not exist in gazou."
+                % (strip.name, strip.blezou.sequence)
+            )
+            return None
+
+    @staticmethod
+    def shot_exists_by_name(
+        strip: bpy.types.Sequence, zproject: ZProject, zsequence: ZSequence
+    ) -> Optional[ZShot]:
+        """Returns ZShot instance if strip.blezou.shot exists in gazou, else None."""
+        zshot = zproject.get_shot_by_name(zsequence, strip.blezou.shot)
+        if zshot:
+            logger.info(
+                "Strip: %s. Shot already existent in gazou, ID: %s)."
+                % (strip.name, zshot.id)
+            )
+            return zshot
+        else:
+            logger.info(
+                "Strip: %s. Shot %s does not exist in gazou."
+                % (strip.name, strip.blezou.shot)
+            )
+            return None
+
+    @staticmethod
+    def contains(strip: bpy.types.Sequence, framenr: int) -> bool:
+        """Returns True if the strip covers the given frame number"""
+        return int(strip.frame_final_start) <= framenr <= int(strip.frame_final_end)
+
+
 class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
-    """
-    Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
-    """
+    """TODO: write doc """
 
     bl_idname = "blezou.sqe_push_shot_meta"
     bl_label = "Push Shot meta"
@@ -344,61 +477,45 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         # needs to be logged in, active project
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
-        return bool(zsession_auth(context) and active_project.to_dict())
+        return bool(
+            zsession_auth(context)
+            and active_project.to_dict()
+            and context.selected_sequences
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # TODO: refactor in functions
-        nr_of_strips = len(context.selected_sequences)
-        do_multishot = nr_of_strips > 1
-
+        prefs = prefs_get(context)
+        zproject = ZProject(**prefs["project_active"].to_dict())
         succeeded = []
         failed = []
+        logger.info("-START- Blezou Pushing Metadata")
         for strip in context.selected_sequences:
+
             # only if strip is linked to gazou
-            if not strip.blezou.linked:
-                self.report(
-                    {"WARNING"},
-                    f"Skip strip: {strip}. Not linked yet.",
-                )
+            if not CheckStrip.linked(strip):
                 failed.append(strip)
                 continue
 
             # check if shot is still available by id
-            zshot = ZShot.by_id(strip.blezou.id)
+            zshot = CheckStrip.shot_exists_by_id(strip)
             if not zshot:
-                self.report(
-                    {"WARNING"},
-                    f"Failed strip: {strip}. Not existent in gazou (Id: {strip.blezou.id}).",
-                )
                 failed.append(strip)
                 continue
 
             # push update to shot
-            self._update_shot_by_strip(context, zshot, strip)
+            Sync.shot_by_strip(zshot, strip, zproject)
             succeeded.append(strip)
 
         self.report(
             {"INFO"},
-            f"Pushed Metadata of {len(succeeded)} Shots.",
+            f"Pushed Metadata of {len(succeeded)} Shots | Failed: {len(failed)}.",
         )
+        logger.info("-END- Blezou Pushing Metadata")
         return {"FINISHED"}
-
-    def _update_shot_by_strip(self, context, zshot, strip):
-        prefs = prefs_get(context)
-        active_project = ZProject(**prefs["project_active"].to_dict())
-
-        zshot.name = strip.blezou.shot
-        zshot.description = strip.blezou.description
-        zshot.data["frame_in"] = strip.frame_final_start
-        zshot.data["frame_out"] = strip.frame_final_end
-        active_project.update_shot(zshot)
-        logger.info("Pushed update to shot: %s" % zshot.name)
 
 
 class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
-    """
-    Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
-    """
+    """TODO: write doc """
 
     bl_idname = "blezou.sqe_push_new_shot"
     bl_label = "Push New Shot"
@@ -409,135 +526,121 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         # needs to be logged in, active project
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
-        return bool(zsession_auth(context) and active_project.to_dict())
+        return bool(
+            zsession_auth(context)
+            and active_project.to_dict()
+            and context.selected_sequences
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # TODO: refactor in functions
         prefs = prefs_get(context)
         zproject = ZProject(**prefs["project_active"].to_dict())
-
         succeeded = []
         failed = []
-        # report = []
-
+        logger.info("-START- Blezou Pushing New shots")
         for strip in context.selected_sequences:
 
             # check if strip is already linked to gazou
-            if strip.blezou.linked:
-                t = f"Skip strip: {strip.name}. Already linked to shot."
-                self.report({"WARNING"}, t)
+            if CheckStrip.linked(strip):
                 failed.append(strip)
-                # report.append(t)
                 continue
 
             # check if user initialized shot
-            if not strip.blezou.initialized:
-                t = f"Skip strip: {strip.name}. Not initialized."
-                self.report({"WARNING"}, t)
+            if not CheckStrip.initialized(strip):
                 failed.append(strip)
-                # report.append(t)
                 continue
 
             # check if user provided enough info
-            seq = strip.blezou.sequence
-            shot = strip.blezou.shot
-            if not bool(seq and shot):
-                t = f"Skip strip: {strip.name}. Missing metadata."
-                self.report({"WARNING"}, t)
+            if not CheckStrip.has_meta(strip):
                 failed.append(strip)
-                # report.append(t)
                 continue
 
             # check if seq already on gazou > create it
-            zseq = zproject.get_sequence_by_name(seq)
+            zseq = CheckStrip.seq_exists_by_name(strip, zproject)
+            # TODO: does not log?
             if not zseq:
                 zseq = self._new_sequence_by_strip(zproject, strip)
-            else:
-                t = f"Skip creation of sequence {zseq.name}. Already exists in gazou (Id: {zseq.id})."
-                self.report({"WARNING"}, t)
-                # report.append(t)
 
             # check if shot already on gazou > create it
-            zshot = ZShot.by_name(zseq, shot)
-            if not zshot:
-                # push update to shot
-                zshot = self._new_shot_by_strip(zproject, zseq, strip)
-                # TODO: refactor this in function
-                strip.blezou.id = zshot.id
-                strip.blezou.linked = True
-                succeeded.append(strip)
-            else:
-                t = f"Skip creation of shot {zshot.name}. Shot already exists in gazou (Id: {zshot.id})."
-                self.report({"WARNING"}, t)
+            zshot = CheckStrip.shot_exists_by_name(strip, zproject, zseq)
+            # TODO: does not log?
+            if zshot:
                 failed.append(strip)
-                # report.append(t)
                 continue
+
+            # push update to shot
+            zshot = self._new_shot_by_strip(strip, zproject, zseq)
+            Sync.strip_by_shot(strip, zshot)
+            succeeded.append(strip)
 
         self.report(
             {"INFO"},
-            f"Created {len(succeeded)} new Shots.",
+            f"Created {len(succeeded)} new Shots | Failed: {len(failed)}",
         )
+        logger.info("-END- Blezou Pushing New shots")
         return {"FINISHED"}
 
     def _new_shot_by_strip(
-        self, zproject: ZProject, zsequence: ZSequence, strip: bpy.types.Sequence
+        self, strip: bpy.types.Sequence, zproject: ZProject, zsequence: ZSequence
     ) -> ZShot:
         # TODO: description not pushed yet
+        # TODO: refactor in staticmethod class
         zshot = zproject.create_shot(
             strip.blezou.shot,
             zsequence,
             frame_in=strip.frame_final_start,
             frame_out=strip.frame_final_end,
         )
-        self.report({"INFO"}, f"Pushed create shot: {zshot.name}")
+        logger.info("Pushed create shot: %s" % zshot.name)
         return zshot
 
     def _new_sequence_by_strip(
         self, zproject: ZProject, strip: bpy.types.Sequence
     ) -> ZSequence:
+        # TODO: refactor in staticmethod class
         zsequence = zproject.create_sequence(
             strip.blezou.sequence,
         )
-        self.report({"INFO"}, f"Pushed create shot: {zsequence.name}")
+        logger.info("Pushed create sequence: %s" % zsequence.name)
         return zsequence
 
 
 class BZ_OT_SQE_InitShot(bpy.types.Operator):
+    """TODO: write doc """
+
     bl_idname = "blezou.sqe_new_shot"
     bl_label = "New Shot"
     bl_description = "Adds required shot metadata to selecetd strips"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
-        return bool(
-            context.selected_sequences and zsession_auth(context) and active_project
-        )
+        return bool(context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        succeeded = []
+        failed = []
+        logger.info("-START- Initializing Shots")
 
-        nr_of_strips = len(context.selected_sequences)
+        for strip in context.selected_sequences:
+            if strip.blezou.initialized:
+                logger.info("%s already initialized." % strip.name)
+                failed.append(strip)
+                continue
+
+            strip.blezou.initialized = True
+            succeeded.append(strip)
 
         self.report(
             {"INFO"},
-            "Initializing %i selected shots." % nr_of_strips,
+            f"Initialized {len(succeeded)} Shots | Failed: {len(failed)}.",
         )
-        for strip in context.selected_sequences:
-            if not hasattr(strip, "blezou"):
-                logger.error(
-                    f"Failed to initialize strip: {strip.name}. Missing blezou attributes."
-                )
-                continue
-            if strip.blezou.initialized:
-                logger.info(f"{strip.name} already initialized.")
-                continue
-            strip.blezou.initialized = True
-
+        logger.info("-END- Initializing Shots")
         return {"FINISHED"}
 
 
 class BZ_OT_SQE_LinkShot(bpy.types.Operator):
+    """TODO: write doc """
+
     bl_idname = "blezou.sqe_link_shot"
     bl_label = "Link Shot"
     bl_description = (
@@ -547,7 +650,6 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
 
     def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         prefs = prefs_get(context)
-        active_project = prefs["project_active"]
         zproject = ZProject(**prefs["project_active"].to_dict())
 
         enum_list = []
@@ -575,25 +677,15 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
         return bool(
-            context.scene.sequence_editor.active_strip
-            and zsession_auth(context)
-            and active_project
+            zsession_auth(context) and active_project and context.selected_sequences
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        active_strip = context.scene.sequence_editor.active_strip
+        strip = context.scene.sequence_editor.active_strip
 
         if self.enum_prop:  # returns 0 for organisational item
-            # TODO: refactor this in function
             zshot = ZShot.by_id(self.enum_prop)
-            active_strip.blezou.id = zshot.id
-            active_strip.blezou.shot = zshot.name
-            active_strip.blezou.sequence = zshot.sequence_name
-            active_strip.blezou.description = (
-                zshot.description if zshot.description else ""
-            )
-            active_strip.blezou.initialized = True
-            active_strip.blezou.linked = True
+            Sync.strip_by_shot(strip, zshot)
 
         ui_redraw()
         return {"FINISHED"}
@@ -603,9 +695,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
 
 
 class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
-    """
-    Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
-    """
+    """TODO: write doc """
 
     bl_idname = "blezou.sqe_pull_shot_meta"
     bl_label = "Pull Shot Meta"
@@ -616,49 +706,39 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         # needs to be logged in, active project
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
-        return bool(zsession_auth(context) and active_project.to_dict())
+        return bool(
+            zsession_auth(context)
+            and active_project.to_dict()
+            and context.selected_sequences
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # TODO: refactor in functions
         succeeded = []
         failed = []
+        logger.info("-START- Pulling Shot Metadata")
         for strip in context.selected_sequences:
+
             # only if strip is linked to gazou
-            if not strip.blezou.linked:
-                self.report(
-                    {"WARNING"},
-                    f"Skip pulling meta for strip: {strip.name}. Not linked yet.",
-                )
+            if not CheckStrip.linked(strip):
                 failed.append(strip)
                 continue
 
             # check if shot is still available by id
-            zshot = ZShot.by_id(strip.blezou.id)
+            zshot = CheckStrip.shot_exists_by_id(strip)
             if not zshot:
-                self.report(
-                    {"WARNING"},
-                    f"Failed to pull meta for strip: {strip.name}. Not existent in gazou (Id: {strip.blezou.id}).",
-                )
                 failed.append(strip)
                 continue
 
             # push update to shot
-            self._pull_shot_update(context, strip, zshot)
+            Sync.strip_by_shot(strip, zshot)
             succeeded.append(strip)
 
         self.report(
             {"INFO"},
-            f"Pulled Metadata for {len(succeeded)} Shots.",
+            f"Pulled Metadata for {len(succeeded)} Shots | Failed: {len(failed)}.",
         )
+        logger.info("-END- Pulling Shot Metadata")
         return {"FINISHED"}
-
-    def _pull_shot_update(self, context, strip, zshot):
-        strip.blezou.shot = zshot.name
-        strip.blezou.description = zshot.description
-        strip.blezou.sequence = zshot.sequence_name
-        # strip.frame_final_start = zshot.data["frame_in"]
-        # strip.frame_final_end = zshot.data["frame_out"]
-        logger.info(f"Pulled meta update for shot: {zshot.name}")
 
 
 class BZ_OT_SQE_DelShot(bpy.types.Operator):
@@ -671,14 +751,12 @@ class BZ_OT_SQE_DelShot(bpy.types.Operator):
         return bool(context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
-        selshots = context.selected_sequences
         failed: List[bpy.types.Sequence] = []
         succeeded: List[bpy.types.Sequence] = []
+        logger.info("-START- Deleting Shot Metadata")
 
         for strip in context.selected_sequences:
-            if not strip.blezou.initialized:
-                logger.info(f"Failed to delete shot. {strip.name} is not initialized.")
+            if not CheckStrip.initialized(strip):
                 failed.append(strip)
                 continue
 
@@ -686,12 +764,11 @@ class BZ_OT_SQE_DelShot(bpy.types.Operator):
             strip.blezou.clear()
             succeeded.append(strip)
 
-        if len(selshots) > 1:
-            noun = f" {len(succeeded)} selected Shots"
-        else:
-            noun = "Active Shot"
-
-        self.report({"INFO"}, f"Removed metadata of {noun}.")
+        self.report(
+            {"INFO"},
+            f"Removed metadata of {len(succeeded)} Shots | Failed: {len(failed)}.",
+        )
+        logger.info("-END- Deleting Shot Metadata")
         return {"FINISHED"}
 
 
@@ -708,89 +785,54 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
-        return bool(zsession_auth(context) and active_project.to_dict())
+        return bool(
+            zsession_auth(context)
+            and active_project.to_dict()
+            and context.selected_sequences
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # TODO: refactor in functions
-
         nr_of_strips: int = len(context.selected_sequences)
         do_multishot: bool = nr_of_strips > 1
         failed = []
-        succeeded = []
-        upload_queue: List[Path] = []
-        # The multishot and singleshot branches do pretty much the same thing,
-        # but report differently to the user.
+        upload_queue: List[Path] = []  # will be used as successed list
+
+        logger.info("-START- Pushing Shot Thumbnails")
         with self.override_render_settings(context):
             with self.temporary_current_frame(context) as original_curframe:
-                # if user has multiple strips selected, make thumbnail for each of them, use middle frame
-                if do_multishot:
-                    self.report(
-                        {"INFO"},
-                        "Creating thumbnails for %i selected shots." % nr_of_strips,
-                    )
-                    for strip in context.selected_sequences:
-                        # only if strip is linked to gazou
-                        if not strip.blezou.linked:
-                            self.report(
-                                {"WARNING"},
-                                f"Skip creating thumbnail for strip: {strip.name}. Not linked yet.",
-                            )
-                            failed.append(strip)
-                            continue
+                for strip in context.selected_sequences:
 
-                        # check if shot is still available by id
-                        zshot = ZShot.by_id(strip.blezou.id)
-                        if not zshot:
-                            self.report(
-                                {"WARNING"},
-                                f"Skip creating thumbnail for strip {strip.name}. Not existent in gazou (Id: {strip.blezou.id}).",
-                            )
-                            failed.append(strip)
-                            continue
-
-                        self.set_middle_frame(context, strip)
-                        path = self.make_thumbnail(context, strip)
-                        upload_queue.append(path)
-                else:
-                    # if user has one strip selected, make thumbnail
-                    strip = context.scene.sequence_editor.active_strip
                     # only if strip is linked to gazou
-                    if not strip.blezou.linked:
-                        self.report(
-                            {"WARNING"},
-                            f"Failed to create thumbnail for strip: {strip.name}. Not linked yet.",
-                        )
+                    if not CheckStrip.linked(strip):
                         failed.append(strip)
-                        return {"CANCELLED"}
+                        continue
 
                     # check if shot is still available by id
-                    zshot = ZShot.by_id(strip.blezou.id)
+                    zshot = CheckStrip.shot_exists_by_id(strip)
                     if not zshot:
-                        self.report(
-                            {"WARNING"},
-                            f"Failed to create thumbnail for strip {strip.name}. Not existent in gazou (Id: {strip.blezou.id}).",
-                        )
                         failed.append(strip)
-                        return {"CANCELLED"}
+                        continue
 
-                    # if active strip is not contained in the current frame, use middle frame of active strip
-                    if not self.strip_contains(strip, original_curframe):
-                        self.report(
-                            {"WARNING"},
-                            "Creating middle frame as thumbnail for active shot.",
-                        )
-                        self.set_middle_frame(context, strip)
+                    # if only one strip is selected,
+                    if not do_multishot:
+                        # if active strip is not contained in the current frame, use middle frame of active strip
+                        # otherwise don't change frame and use current one
+                        if not CheckStrip.contains(strip, original_curframe):
+                            self.set_middle_frame(context, strip)
                     else:
-                        self.report(
-                            {"INFO"},
-                            "Creating current frame as thumbnail for active shot.",
-                        )
+                        self.set_middle_frame(context, strip)
+
                     path = self.make_thumbnail(context, strip)
                     upload_queue.append(path)
 
                 # process thumbnail queue
                 self._upload_thumbnails(upload_queue)
-        self.report({"INFO"}, f"Created thumbnails for {len(upload_queue)} Shots")
+
+        self.report(
+            {"INFO"},
+            f"Created thumbnails for {len(upload_queue)} Shots | Failed: {len(failed)}",
+        )
+        logger.info("-END- Pushing Shot Thumbnails")
         return {"FINISHED"}
 
     def make_thumbnail(
@@ -904,11 +946,6 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
         middle = round((strip.frame_final_start + strip.frame_final_end) / 2)
         context.scene.frame_set(middle)
         return middle
-
-    @staticmethod
-    def strip_contains(strip: bpy.types.Sequence, framenr: int) -> bool:
-        """Returns True if the strip covers the given frame number"""
-        return int(strip.frame_final_start) <= framenr <= int(strip.frame_final_end)
 
 
 # ---------REGISTER ----------
