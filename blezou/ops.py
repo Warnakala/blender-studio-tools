@@ -330,11 +330,11 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class Sync:
-    """TODO: write doc """
+class Pull:
+    """Class that contains staticmethods to pull data from gazou data base into Blender"""
 
     @staticmethod
-    def strip_by_shot(strip: bpy.types.Sequence, zshot: ZShot) -> None:
+    def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
         seq_name = zshot.sequence_name
         if seq_name:  # TODO: is sometimtes None
             strip.blezou.sequence = seq_name
@@ -345,13 +345,15 @@ class Sync:
         strip.blezou.linked = True
         # strip.frame_final_start = zshot.data["frame_in"]
         # strip.frame_final_end = zshot.data["frame_out"]
-        logger.info(
-            "Pulled update from shot: %s to strip: %s" % (zshot.name, strip.name)
-        )
+        logger.info("Pulled meta from shot: %s to strip: %s" % (zshot.name, strip.name))
+
+
+class Push:
+    """Class that contains staticmethods to push data from blender to gazou data base"""
 
     @staticmethod
-    def shot_by_strip(
-        zshot: ZShot, strip: bpy.types.Sequence, zproject: Optional[ZProject] = None
+    def shot_meta(
+        strip: bpy.types.Sequence, zshot: ZShot, zproject: Optional[ZProject] = None
     ) -> None:
         zshot.name = strip.blezou.shot
         zshot.description = strip.blezou.description
@@ -361,11 +363,37 @@ class Sync:
         if not zproject:
             zproject = ZProject.by_id(zshot.project_id)
         zproject.update_shot(zshot)
-        logger.info("Pushed update to shot: %s" % zshot.name)
+        logger.info("Pushed meta to shot: %s from strip: %s" % (zshot.name, strip.name))
+
+    @staticmethod
+    def new_shot(
+        strip: bpy.types.Sequence,
+        zsequence: ZSequence,
+        zproject: ZProject,
+    ) -> ZShot:
+        zshot = zproject.create_shot(
+            strip.blezou.shot,
+            zsequence,
+            frame_in=strip.frame_final_start,
+            frame_out=strip.frame_final_end,
+        )
+        if strip.blezou.description:
+            zshot.description = strip.blezou.description
+            zshot.update_shot()
+        logger.info("Pushed create shot: %s" % zshot.name)
+        return zshot
+
+    @staticmethod
+    def new_sequence(strip: bpy.types.Sequence, zproject: ZProject) -> ZSequence:
+        zsequence = zproject.create_sequence(
+            strip.blezou.sequence,
+        )
+        logger.info("Pushed create sequence: %s" % zsequence.name)
+        return zsequence
 
 
 class CheckStrip:
-    """TODO: write doc """
+    """Class that contains various static methods to perform checks on sequence strips"""
 
     @staticmethod
     def initialized(strip: bpy.types.Sequence) -> bool:
@@ -466,7 +494,10 @@ class CheckStrip:
 
 
 class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
-    """TODO: write doc """
+    """
+    Operator that pushes metadata of all selected sequencce strips to gazou
+    after performing various checks. Metadata is saved in strip.blezou.
+    """
 
     bl_idname = "blezou.sqe_push_shot_meta"
     bl_label = "Push Shot meta"
@@ -503,7 +534,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
                 continue
 
             # push update to shot
-            Sync.shot_by_strip(zshot, strip, zproject)
+            Push.shot_meta(strip, zshot, zproject)
             succeeded.append(strip)
 
         self.report(
@@ -515,7 +546,10 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
 
 
 class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
-    """TODO: write doc """
+    """
+    Operator that creates a new shot based on all selected sequencce strips to gazou
+    after performing various checks. Does not create shot if already exists on gazou.
+    """
 
     bl_idname = "blezou.sqe_push_new_shot"
     bl_label = "Push New Shot"
@@ -559,7 +593,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             zseq = CheckStrip.seq_exists_by_name(strip, zproject)
             # TODO: does not log?
             if not zseq:
-                zseq = self._new_sequence_by_strip(zproject, strip)
+                zseq = Push.new_sequence(strip, zproject)
 
             # check if shot already on gazou > create it
             zshot = CheckStrip.shot_exists_by_name(strip, zproject, zseq)
@@ -569,8 +603,8 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
                 continue
 
             # push update to shot
-            zshot = self._new_shot_by_strip(strip, zproject, zseq)
-            Sync.strip_by_shot(strip, zshot)
+            zshot = Push.new_shot(strip, zseq, zproject)
+            Pull.shot_meta(strip, zshot)
             succeeded.append(strip)
 
         self.report(
@@ -580,33 +614,13 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         logger.info("-END- Blezou Pushing New shots")
         return {"FINISHED"}
 
-    def _new_shot_by_strip(
-        self, strip: bpy.types.Sequence, zproject: ZProject, zsequence: ZSequence
-    ) -> ZShot:
-        # TODO: description not pushed yet
-        # TODO: refactor in staticmethod class
-        zshot = zproject.create_shot(
-            strip.blezou.shot,
-            zsequence,
-            frame_in=strip.frame_final_start,
-            frame_out=strip.frame_final_end,
-        )
-        logger.info("Pushed create shot: %s" % zshot.name)
-        return zshot
-
-    def _new_sequence_by_strip(
-        self, zproject: ZProject, strip: bpy.types.Sequence
-    ) -> ZSequence:
-        # TODO: refactor in staticmethod class
-        zsequence = zproject.create_sequence(
-            strip.blezou.sequence,
-        )
-        logger.info("Pushed create sequence: %s" % zsequence.name)
-        return zsequence
-
 
 class BZ_OT_SQE_InitShot(bpy.types.Operator):
-    """TODO: write doc """
+    """
+    Operator that initializes a regular sequence strip to a 'blezou' shot.
+    Only sets strip.blezou.initialized = True. But this is required for further
+    operations and to  differentiate between regular sequence strip and blezou shot strip.
+    """
 
     bl_idname = "blezou.sqe_new_shot"
     bl_label = "New Shot"
@@ -639,7 +653,11 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
 
 
 class BZ_OT_SQE_LinkShot(bpy.types.Operator):
-    """TODO: write doc """
+    """
+    Operator that invokes ui which shows user all available shots in gazou.
+    It is used to 'link' a seqeunce strip to an alredy existent shot in gazou.
+    Fills out all metadata after selecting shot.
+    """
 
     bl_idname = "blezou.sqe_link_shot"
     bl_label = "Link Shot"
@@ -685,7 +703,11 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
 
         if self.enum_prop:  # returns 0 for organisational item
             zshot = ZShot.by_id(self.enum_prop)
-            Sync.strip_by_shot(strip, zshot)
+            Pull.shot_meta(strip, zshot)
+            logger.info(
+                "Linked strip: %s to shot: %s with ID: %s"
+                % (strip.name, zshot.name, zshot.id)
+            )
 
         ui_redraw()
         return {"FINISHED"}
@@ -695,7 +717,10 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
 
 
 class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
-    """TODO: write doc """
+    """
+    Operator that pulls metadata of all selected sequencce strips from gazou
+    after performing various checks. Metadata will be saved in strip.blezou.
+    """
 
     bl_idname = "blezou.sqe_pull_shot_meta"
     bl_label = "Pull Shot Meta"
@@ -730,7 +755,7 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
                 continue
 
             # push update to shot
-            Sync.strip_by_shot(strip, zshot)
+            Pull.shot_meta(strip, zshot)
             succeeded.append(strip)
 
         self.report(
@@ -738,10 +763,16 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
             f"Pulled Metadata for {len(succeeded)} Shots | Failed: {len(failed)}.",
         )
         logger.info("-END- Pulling Shot Metadata")
+        ui_redraw()
         return {"FINISHED"}
 
 
 class BZ_OT_SQE_DelShot(bpy.types.Operator):
+    """
+    Operator that deletes all  metadata of all selected sequencce strips
+    after performing various checks. It does NOT change anything in gazou.
+    """
+
     bl_idname = "blezou.sqe_del_shot"
     bl_label = "Del Shot"
     bl_description = "Removes shot metadata from selecetd strips. Only affects SQE."
@@ -774,7 +805,9 @@ class BZ_OT_SQE_DelShot(bpy.types.Operator):
 
 class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
     """
-    Pushes data structure which is saved in blezou addon prefs to backend. Performs updates if necessary.
+    Operator that takes thumbnail of all selected sequencce strips and saves them
+    in tmp directory. Loops through all thumbnails and uploads them to gazou.
+    uses Animation task type to create task and set main thumbnail in wip state.
     """
 
     bl_idname = "blezou.sqe_push_thumbnail"
