@@ -376,7 +376,9 @@ class Push:
         if strip.blezou.description:
             zshot.description = strip.blezou.description
             zshot.update()
-        logger.info("Pushed create shot: %s" % zshot.name)
+        logger.info(
+            "Pushed create shot: %s for project: %s" % (zshot.name, zproject.name)
+        )
         return zshot
 
     @staticmethod
@@ -384,7 +386,10 @@ class Push:
         zsequence = zproject.create_sequence(
             strip.blezou.sequence,
         )
-        logger.info("Pushed create sequence: %s" % zsequence.name)
+        logger.info(
+            "Pushed create sequence: %s for project: %s"
+            % (zsequence.name, zproject.name)
+        )
         return zsequence
 
 
@@ -501,10 +506,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(
-            zsession_auth(context)
-            and context.selected_sequences
-        )
+        return bool(zsession_auth(context) and context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -561,7 +563,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         zproject = ZProject(**prefs["project_active"].to_dict())
         succeeded = []
         failed = []
-        logger.info("-START- Blezou Pushing New shots")
+        logger.info("-START- Blezou pushing new Shots to: %s" % zproject.name)
         for strip in context.selected_sequences:
 
             # check if strip is already linked to gazou
@@ -601,7 +603,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             {"INFO"},
             f"Created {len(succeeded)} new Shots | Failed: {len(failed)}",
         )
-        logger.info("-END- Blezou Pushing New shots")
+        logger.info("-END- Blezou pushing new Shots to: %s" % zproject.name)
         return {"FINISHED"}
 
 
@@ -718,10 +720,7 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(
-            zsession_auth(context)
-            and context.selected_sequences
-        )
+        return bool(zsession_auth(context) and context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -802,10 +801,7 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(
-            zsession_auth(context)
-            and context.selected_sequences
-        )
+        return bool(zsession_auth(context) and context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         nr_of_strips: int = len(context.selected_sequences)
