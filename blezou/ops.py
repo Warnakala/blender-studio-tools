@@ -2,7 +2,7 @@ from dataclasses import asdict
 from pathlib import Path
 import copy
 import contextlib
-from typing import Set, Dict, Union, List, Tuple, Any, Optional
+from typing import Set, Dict, Union, List, Tuple, Any, Optional, cast
 import bpy
 from .types import (
     ZProductions,
@@ -121,8 +121,7 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        context.window_manager.invoke_search_popup(self)
-        return {"FINISHED"}
+        return cast(Set[str], context.window_manager.invoke_search_popup(self))
 
 
 class BZ_OT_SequencesLoad(bpy.types.Operator):
@@ -177,8 +176,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        context.window_manager.invoke_search_popup(self)
-        return {"FINISHED"}
+        return cast(Set[str], context.window_manager.invoke_search_popup(self))
 
 
 class BZ_OT_ShotsLoad(bpy.types.Operator):
@@ -226,8 +224,7 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        context.window_manager.invoke_search_popup(self)
-        return {"FINISHED"}
+        return cast(Set[str], context.window_manager.invoke_search_popup(self))
 
 
 class BZ_OT_AssetTypesLoad(bpy.types.Operator):
@@ -280,8 +277,7 @@ class BZ_OT_AssetTypesLoad(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        context.window_manager.invoke_search_popup(self)
-        return {"FINISHED"}
+        return cast(Set[str], context.window_manager.invoke_search_popup(self))
 
 
 class BZ_OT_AssetsLoad(bpy.types.Operator):
@@ -327,8 +323,7 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        context.window_manager.invoke_search_popup(self)
-        return {"FINISHED"}
+        return cast(Set[str], context.window_manager.invoke_search_popup(self))
 
 
 class Pull:
@@ -733,7 +728,9 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        return cast(
+            Set[str], context.window_manager.invoke_props_dialog(self, width=400)
+        )
 
 
 class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
@@ -1079,7 +1076,7 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
             strip.select = True
         return {"FINISHED"}
 
-    def invoke(self, context, event):
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         if context.selected_sequences:
             items = [(s.name, s.name, s.name) for s in context.selected_sequences]
             bpy.types.Scene.strip_cache = bpy.props.EnumProperty(
@@ -1093,7 +1090,7 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
             bpy.types.Scene.strip_cache = bpy.props.EnumProperty(
                 items=items, name="blezou_strips_cache"
             )
-        return context.window_manager.invoke_props_popup(self, event)
+        return cast(Set[str], context.window_manager.invoke_props_popup(self, event))
 
 
 class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
@@ -1107,11 +1104,11 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
     def _get_not_linked(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         """get all strips that are initialized but not linked yet"""
         enum_list = []
-        sequences = [
+        strips = [
             context.scene.sequence_editor.sequences_all[item.identifier]
             for item in context.scene.bl_rna.properties["strip_cache"].enum_items
         ]
-        for strip in sequences:
+        for strip in strips:
             if strip.blezou.initialized and not strip.blezou.linked:
                 enum_list.append((strip.name, strip.name, ""))
         return enum_list
@@ -1132,22 +1129,22 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
             strip.select = True
         return {"FINISHED"}
 
-    def invoke(self, context, event):
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        # register a enumproperty on types.scene that holds items which represent names of sequence strips
+        # if selection exists use it
         if context.selected_sequences:
-            items = [(s.name, s.name, s.name) for s in context.selected_sequences]
-            bpy.types.Scene.strip_cache = bpy.props.EnumProperty(
-                items=items, name="blezou_strips_cache"
-            )
+            items = [(s.name, s.name, "") for s in context.selected_sequences]
+
+        # if not use all strips in sequence editor
         else:
             items = [
-                (s.name, s.name, s.name)
+                (s.name, s.name, "")
                 for s in context.scene.sequence_editor.sequences_all
             ]
-            bpy.types.Scene.strip_cache = bpy.props.EnumProperty(
-                items=items, name="blezou_strips_cache"
-            )
-
-        return context.window_manager.invoke_props_popup(self, event)
+        bpy.types.Scene.strip_cache = bpy.props.EnumProperty(
+            items=items, name="blezou_strips_cache"
+        )
+        return cast(Set[str], context.window_manager.invoke_props_popup(self, event))
 
 
 # ---------REGISTER ----------
