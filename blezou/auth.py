@@ -42,12 +42,11 @@ class ZSession:
         return self._session
 
     def end(self) -> bool:
-        try:
-            self._session = ZSessionInfo(gazu.log_out())  # returns empty dict
-        except:
-            logger.info("Failed to log out. Session not started yet? ")
+        if not self._session.login:
+            logger.info("Failed to log out. Session not started yet.")
             return False
 
+        self._session = ZSessionInfo(gazu.log_out())  # returns empty dict
         gazu.cache.clear_all()
         logger.info("Session ended.")
         return True

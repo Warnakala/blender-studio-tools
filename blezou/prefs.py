@@ -96,7 +96,8 @@ def unregister():
 
     # log user out
     prefs = prefs_get(bpy.context)
-    prefs.session.end()
+    if prefs.session.is_auth():
+        prefs.session.end()
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
