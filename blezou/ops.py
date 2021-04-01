@@ -352,17 +352,13 @@ class Push:
     """Class that contains staticmethods to push data from blender to gazou data base"""
 
     @staticmethod
-    def shot_meta(
-        strip: bpy.types.Sequence, zshot: ZShot, zproject: Optional[ZProject] = None
-    ) -> None:
+    def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
         zshot.name = strip.blezou.shot
         zshot.description = strip.blezou.description
         zshot.data["frame_in"] = strip.frame_final_start
         zshot.data["frame_out"] = strip.frame_final_end
         # update in gazou
-        if not zproject:
-            zproject = ZProject.by_id(zshot.project_id)
-        zproject.update_shot(zshot)
+        zshot.update()
         logger.info("Pushed meta to shot: %s from strip: %s" % (zshot.name, strip.name))
 
     @staticmethod
@@ -379,7 +375,7 @@ class Push:
         )
         if strip.blezou.description:
             zshot.description = strip.blezou.description
-            zshot.update_shot()
+            zshot.update()
         logger.info("Pushed create shot: %s" % zshot.name)
         return zshot
 
@@ -505,18 +501,12 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        # needs to be logged in, active project
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
         return bool(
             zsession_auth(context)
-            and active_project.to_dict()
             and context.selected_sequences
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        prefs = prefs_get(context)
-        zproject = ZProject(**prefs["project_active"].to_dict())
         succeeded = []
         failed = []
         logger.info("-START- Blezou Pushing Metadata")
@@ -534,7 +524,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
                 continue
 
             # push update to shot
-            Push.shot_meta(strip, zshot, zproject)
+            Push.shot_meta(strip, zshot)
             succeeded.append(strip)
 
         self.report(
@@ -728,12 +718,8 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        # needs to be logged in, active project
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
         return bool(
             zsession_auth(context)
-            and active_project.to_dict()
             and context.selected_sequences
         )
 
@@ -816,11 +802,8 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
         return bool(
             zsession_auth(context)
-            and active_project.to_dict()
             and context.selected_sequences
         )
 
