@@ -436,7 +436,14 @@ class CheckStrip:
     @staticmethod
     def shot_exists_by_id(strip: bpy.types.Sequence) -> Optional[ZShot]:
         """Returns ZShot instance if shot with strip.blezou.id exists else None"""
-        zshot = ZShot.by_id(strip.blezou.id)
+        try:
+            zshot = ZShot.by_id(strip.blezou.id)
+        except gazu.exception.RouteNotFoundException:
+            logger.error(
+                "Strip: %s. Shot ID: %s not found in gazou anymore. Was maybe deleted?"
+                % (strip.name, strip.blezou.id)
+            )
+            return None
         if zshot:
             logger.info(
                 "Strip: %s. Shot %s exists in gazou, ID: %s)."
