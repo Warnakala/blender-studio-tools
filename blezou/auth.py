@@ -45,7 +45,7 @@ class ZSession:
         try:
             self._session = ZSessionInfo(gazu.log_out())  # returns empty dict
         except:
-            logger.info("Faild to log out. Session not started yet? ")
+            logger.info("Failed to log out. Session not started yet? ")
             return False
 
         gazu.cache.clear_all()

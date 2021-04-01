@@ -8,9 +8,32 @@ class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
     be pushed to backend.
     """
 
+    id: bpy.props.StringProperty(name="ID")
     shot: bpy.props.StringProperty(name="Shot", default="")
-
     sequence: bpy.props.StringProperty(name="Seq", default="")
+    description: bpy.props.StringProperty(name="Description", default="")
+    initialized: bpy.props.BoolProperty(
+        name="Initialized", default=False, description="Is Blezou shot"
+    )
+    linked: bpy.props.BoolProperty(
+        name="Linked", default=False, description="Is linked to an ID in gazou"
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.shot,
+            "sequence_name": self.sequence,
+            "description": self.description,
+        }
+
+    def clear(self):
+        self.id = ""
+        self.shot = ""
+        self.sequence = ""
+        self.description = ""
+        self.initialized = False
+        self.linked = False
 
 
 classes = [BZ_PopertyGroup_VSEQ_Shot]

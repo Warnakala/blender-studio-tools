@@ -1,9 +1,12 @@
 import bpy
 
+from .logger import ZLoggerFactory
 from . import props
 from . import prefs
 from . import ops
 from . import ui
+
+logger = ZLoggerFactory.getLogger(__name__)
 
 bl_info = {
     "name": "Blezou",
@@ -18,12 +21,12 @@ bl_info = {
     "category": "Generic",
 }
 
-_need_reload = "operators" in locals()
+_need_reload = "ops" in locals()
+
 if _need_reload:
-    # TODO: never gets executed, _need_reload seems to be false always
     import importlib
 
-    print("RELAODING BELZOU")
+    logger.info("RELAODING BELZOU")
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)
     ops = importlib.reload(ops)
