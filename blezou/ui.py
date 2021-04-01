@@ -9,6 +9,8 @@ from .ops import (
     BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushShotMeta,
     BZ_OT_SQE_PullShotMeta,
+    BZ_OT_SQE_DebugDuplicates,
+    BZ_OT_SQE_DebugNotLinked,
 )
 
 
@@ -187,14 +189,14 @@ class BZ_PT_SQE_context(bpy.types.Panel):
         )
 
 
-class BZ_PT_SQE_shot_tools(bpy.types.Panel):
+class BZ_PT_SQE_tools(bpy.types.Panel):
     """
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
 
-    bl_idname = "blezou.pt_sqe_shot_tools"
+    bl_idname = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
-    bl_label = "Shot Tools"
+    bl_label = "SEQ Editor Tools"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 30
@@ -206,6 +208,9 @@ class BZ_PT_SQE_shot_tools(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
 
         strip = context.scene.sequence_editor.active_strip
+        if not strip:
+            return None
+
         selshots = context.selected_sequences
 
         if len(selshots) > 1:
@@ -228,7 +233,9 @@ class BZ_PT_SQE_shot_tools(bpy.types.Panel):
             row = layout.row(align=True)
             row.operator(BZ_OT_SQE_DelShot.bl_idname, text=f"Del {noun}", icon="CANCEL")
             row.operator(
-                BZ_OT_SQE_LinkShot.bl_idname, text="Relink Active Shot", icon="LINKED"
+                BZ_OT_SQE_LinkShot.bl_idname,
+                text="Relink Active Shot",
+                icon="LINKED",
             )
 
 
@@ -237,7 +244,7 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
 
-    bl_parent_id = "blezou.pt_sqe_shot_tools"
+    bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
     bl_label = "Metadata Active Shot"
     bl_space_type = "SEQUENCE_EDITOR"
@@ -250,6 +257,9 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
 
     def draw(self, context: bpy.types.Context) -> None:
         strip = context.scene.sequence_editor.active_strip
+
+        if not strip:
+            return None
 
         # strip is initialized and props can be displayed
         layout = self.layout
@@ -278,7 +288,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
     Panel that shows operator to sync sequence editor metadata with backend.
     """
 
-    bl_parent_id = "blezou.pt_sqe_shot_tools"
+    bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
     bl_label = "Push"
     bl_space_type = "SEQUENCE_EDITOR"
@@ -290,8 +300,9 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = prefs_get(context)
         selshots = context.selected_sequences
+        if not selshots:
+            return None
 
         if len(selshots) > 1:
             noun = "%i Shots" % len(selshots)
@@ -327,7 +338,7 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
     Panel that shows operator to sync sequence editor metadata with backend.
     """
 
-    bl_parent_id = "blezou.pt_sqe_shot_tools"
+    bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
     bl_label = "Pull"
     bl_space_type = "SEQUENCE_EDITOR"
@@ -339,8 +350,10 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = prefs_get(context)
+
         selshots = context.selected_sequences
+        if not selshots:
+            return None
 
         if len(selshots) > 1:
             noun = "%i Shots" % len(selshots)
@@ -356,6 +369,47 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
         )
 
 
+class BZ_PT_SQE_debug(bpy.types.Panel):
+    """
+    Panel that shows operator to open a debug ui
+    """
+
+    bl_parent_id = "BZ_PT_SQE_tools"
+    bl_category = "Blezou"
+    bl_label = "Debug"
+    bl_space_type = "SEQUENCE_EDITOR"
+    bl_region_type = "UI"
+    bl_order = 40
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def draw(self, context: bpy.types.Context) -> None:
+        selshots = context.selected_sequences
+        if not selshots:
+            return None
+
+        if len(selshots) > 1:
+            noun = "%i Shots" % len(selshots)
+        else:
+            noun = "Active Shot"
+
+        layout = self.layout
+        row = layout.row()
+        row.operator(
+            BZ_OT_SQE_DebugDuplicates.bl_idname,
+            text=f"Debug {noun} for Duplicates",
+            icon="MODIFIER_ON",
+        )
+        row = layout.row()
+        row.operator(
+            BZ_OT_SQE_DebugNotLinked.bl_idname,
+            text=f"Debug {noun} for not Linked",
+            icon="MODIFIER_ON",
+        )
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -363,10 +417,11 @@ classes = [
     BZ_PT_SQE_auth,
     BZ_PT_vi3d_context,
     BZ_PT_SQE_context,
-    BZ_PT_SQE_shot_tools,
+    BZ_PT_SQE_tools,
     BZ_PT_SQE_shot_meta,
     BZ_PT_SQE_push,
     BZ_PT_SQE_pull,
+    BZ_PT_SQE_debug,
 ]
 
 
