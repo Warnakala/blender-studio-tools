@@ -316,7 +316,7 @@ class ZShot:
     def get_sequence(self) -> ZSequence:
         return ZSequence(**gazu.shot.get_sequence_from_shot(asdict(self)))
 
-    def update_shot(self) -> ZShot:
+    def update(self) -> ZShot:
         gazu.shot.update_shot(asdict(self))
         return self
 
