@@ -512,7 +512,12 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         succeeded = []
         failed = []
         logger.info("-START- Blezou Pushing Metadata")
-        for strip in context.selected_sequences:
+        # begin progress update
+        selected_sequences = context.selected_sequences
+        context.window_manager.progress_begin(0, len(selected_sequences))
+
+        for idx, strip in selected_sequences:
+            context.window_manager.progress_update(idx)
 
             # only if strip is linked to gazou
             if not CheckStrip.linked(strip):
@@ -528,6 +533,10 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
             # push update to shot
             Push.shot_meta(strip, zshot)
             succeeded.append(strip)
+
+        # end progress update
+        context.window_manager.progress_update(len(selected_sequences))
+        context.window_manager.progress_end()
 
         self.report(
             {"INFO"},
@@ -564,7 +573,13 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         succeeded = []
         failed = []
         logger.info("-START- Blezou pushing new Shots to: %s" % zproject.name)
-        for strip in context.selected_sequences:
+
+        # begin progress update
+        selected_sequences = context.selected_sequences
+        context.window_manager.progress_begin(0, len(selected_sequences))
+
+        for idx, strip in enumerate(selected_sequences):
+            context.window_manager.progress_update(idx)
 
             # check if strip is already linked to gazou
             if CheckStrip.linked(strip):
@@ -598,6 +613,10 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             zshot = Push.new_shot(strip, zseq, zproject)
             Pull.shot_meta(strip, zshot)
             succeeded.append(strip)
+
+        # end progress update
+        context.window_manager.progress_update(len(selected_sequences))
+        context.window_manager.progress_end()
 
         self.report(
             {"INFO"},
@@ -726,7 +745,13 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         succeeded = []
         failed = []
         logger.info("-START- Pulling Shot Metadata")
-        for strip in context.selected_sequences:
+
+        # begin progress update
+        selected_sequences = context.selected_sequences
+        context.window_manager.progress_begin(0, len(selected_sequences))
+
+        for idx, strip in enumerate(selected_sequences):
+            context.window_manager.progress_update(idx)
 
             # only if strip is linked to gazou
             if not CheckStrip.linked(strip):
@@ -743,6 +768,9 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
             Pull.shot_meta(strip, zshot)
             succeeded.append(strip)
 
+        # end progress update
+        context.window_manager.progress_update(len(selected_sequences))
+        context.window_manager.progress_end()
         self.report(
             {"INFO"},
             f"Pulled Metadata for {len(succeeded)} Shots | Failed: {len(failed)}.",
@@ -808,11 +836,18 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
         do_multishot: bool = nr_of_strips > 1
         failed = []
         upload_queue: List[Path] = []  # will be used as successed list
-
         logger.info("-START- Pushing Shot Thumbnails")
         with self.override_render_settings(context):
             with self.temporary_current_frame(context) as original_curframe:
-                for strip in context.selected_sequences:
+
+                # ----RENDER AND SAVE THUMBNAILS ------
+
+                # begin first progress update
+                selected_sequences = context.selected_sequences
+                context.window_manager.progress_begin(0, len(selected_sequences))
+
+                for idx, strip in enumerate(selected_sequences):
+                    context.window_manager.progress_update(idx)
 
                     # only if strip is linked to gazou
                     if not CheckStrip.linked(strip):
@@ -837,8 +872,23 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
                     path = self.make_thumbnail(context, strip)
                     upload_queue.append(path)
 
+                # end first progress update
+                context.window_manager.progress_update(len(upload_queue))
+                context.window_manager.progress_end()
+
+                # ----ULPOAD THUMBNAILS ------
+
+                # begin second progress update
+                context.window_manager.progress_begin(0, len(upload_queue))
+
                 # process thumbnail queue
-                self._upload_thumbnails(upload_queue)
+                for idx, filepath in enumerate(upload_queue):
+                    context.window_manager.progress_update(idx)
+                    self._upload_thumbnail(filepath)
+
+                # end second progress update
+                context.window_manager.progress_update(len(upload_queue))
+                context.window_manager.progress_end()
 
         self.report(
             {"INFO"},
@@ -870,46 +920,44 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
         datablock.save_render(str(path))
         return path.absolute()
 
-    def _upload_thumbnails(self, upload_queue: List[Path]) -> None:
-        for filepath in upload_queue:
+    def _upload_thumbnail(self, filepath: Path) -> None:
+        # get shot by id which is in filename of thumbnail
+        shot_id = filepath.name.split("_")[0]
+        zshot = ZShot.by_id(shot_id)
 
-            # get shot by id which is in filename of thumbnail
-            shot_id = filepath.name.split("_")[0]
-            zshot = ZShot.by_id(shot_id)
+        # get task status 'wip' and task type 'Animation'
+        ztask_status = ZTaskStatus.by_short_name("wip")
+        ztask_type = ZTaskType.by_name("Animation")
 
-            # get task status 'wip' and task type 'Animation'
-            ztask_status = ZTaskStatus.by_short_name("wip")
-            ztask_type = ZTaskType.by_name("Animation")
-
-            if not ztask_status:
-                raise RuntimeError(
-                    "Failed to upload thumbnails. Task Status: 'wip' is missing."
-                )
-            if not ztask_type:
-                raise RuntimeError(
-                    "Failed to upload thumbnails. Task Type: 'Animation' is missing."
-                )
-
-            # find / get latest task
-            # turns out a entitiy in gazou can have 0 tasks even tough task types exist
-            # you have to create a task first before being able to upload a thumbnail
-            ztasks = zshot.get_all_tasks()  # list of ztasks
-            if not ztasks:
-                ztask = ZTask.new_task(zshot, ztask_type, ztask_status=ztask_status)
-            else:
-                ztask = ztasks[-1]
-
-            # create a comment, e.G 'set main thumbnail'
-            zcomment = ztask.add_comment(ztask_status, comment="set main thumbnail")
-
-            # add_preview_to_comment
-            zpreview = ztask.add_preview_to_comment(zcomment, filepath.as_posix())
-
-            # preview.set_main_preview()
-            zpreview.set_main_preview()
-            logger.info(
-                f"Uploaded thumbnail for shot: {zshot.name} under: {ztask_type.name}"
+        if not ztask_status:
+            raise RuntimeError(
+                "Failed to upload thumbnails. Task Status: 'wip' is missing."
             )
+        if not ztask_type:
+            raise RuntimeError(
+                "Failed to upload thumbnails. Task Type: 'Animation' is missing."
+            )
+
+        # find / get latest task
+        # turns out a entitiy in gazou can have 0 tasks even tough task types exist
+        # you have to create a task first before being able to upload a thumbnail
+        ztasks = zshot.get_all_tasks()  # list of ztasks
+        if not ztasks:
+            ztask = ZTask.new_task(zshot, ztask_type, ztask_status=ztask_status)
+        else:
+            ztask = ztasks[-1]
+
+        # create a comment, e.G 'set main thumbnail'
+        zcomment = ztask.add_comment(ztask_status, comment="set main thumbnail")
+
+        # add_preview_to_comment
+        zpreview = ztask.add_preview_to_comment(zcomment, filepath.as_posix())
+
+        # preview.set_main_preview()
+        zpreview.set_main_preview()
+        logger.info(
+            f"Uploaded thumbnail for shot: {zshot.name} under: {ztask_type.name}"
+        )
 
     @contextlib.contextmanager
     def override_render_settings(self, context, thumbnail_width=256):
