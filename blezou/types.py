@@ -320,6 +320,9 @@ class ZShot:
         gazu.shot.update_shot(asdict(self))
         return self
 
+    def remove(self, force: bool = False) -> str:
+        return gazu.shot.remove_shot(asdict(self), force=force)
+
 
 @dataclass
 class ZAsset:
