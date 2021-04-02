@@ -671,7 +671,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text= "Project: %s - Create %s for on gazou?. Will skip shot, if already exists."
+            text="Project: %s - Create %s for on gazou?. Will skip shot, if already exists."
             % (zproject.name, noun),
         )
 
@@ -1119,13 +1119,15 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
             )
 
         # find / get latest task
-        # turns out a entitiy in gazou can have 0 tasks even tough task types exist
-        # you have to create a task first before being able to upload a thumbnail
-        ztasks = zshot.get_all_tasks()  # list of ztasks
-        if not ztasks:
-            ztask = ZTask.new_task(zshot, ztask_type, ztask_status=ztask_status)
-        else:
-            ztask = ztasks[-1]
+        ztask = ZTask.by_name(zshot, ztask_type)
+        if not ztask:
+            # turns out a entitiy in gazou can have 0 tasks even tough task types exist
+            # you have to create a task first before being able to upload a thumbnail
+            ztasks = zshot.get_all_tasks()  # list of ztasks
+            if not ztasks:
+                ztask = ZTask.new_task(zshot, ztask_type, ztask_status=ztask_status)
+            else:
+                ztask = ztasks[-1]
 
         # create a comment, e.G 'set main thumbnail'
         zcomment = ztask.add_comment(ztask_status, comment="set main thumbnail")
