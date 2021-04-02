@@ -731,3 +731,9 @@ class ZUser:
     notifications_slack_userid: str = ""
     type: str = "Person"
     full_name: str = ""
+
+
+class ZCache:
+    @classmethod
+    def clear_all(cls):
+        return gazu.cache.clear_all()

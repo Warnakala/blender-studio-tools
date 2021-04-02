@@ -15,6 +15,7 @@ from .types import (
     ZTask,
     ZTaskType,
     ZTaskStatus,
+    ZCache,
 )
 from .util import zsession_auth, prefs_get, zsession_get
 from .core import ui_redraw
@@ -338,6 +339,8 @@ class Pull:
 
     @staticmethod
     def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
+        # clear cache before pulling
+        ZCache.clear_all()
         seq_name = zshot.sequence_name
         if seq_name:  # TODO: is sometimtes None
             strip.blezou.sequence = seq_name
@@ -397,8 +400,9 @@ class Push:
 
     @staticmethod
     def delete_shot(strip: bpy.types.Sequence, zshot: ZShot) -> str:
-        zshot.remove()
+        result = zshot.remove()
         strip.blezou.clear()
+        return result
 
 
 class CheckStrip:
@@ -444,6 +448,9 @@ class CheckStrip:
     @staticmethod
     def shot_exists_by_id(strip: bpy.types.Sequence) -> Optional[ZShot]:
         """Returns ZShot instance if shot with strip.blezou.id exists else None"""
+
+        ZCache.clear_all()
+
         try:
             zshot = ZShot.by_id(strip.blezou.id)
         except gazu.exception.RouteNotFoundException:
@@ -470,6 +477,9 @@ class CheckStrip:
         strip: bpy.types.Sequence, zproject: ZProject
     ) -> Optional[ZSequence]:
         """Returns ZSequence instance if strip.blezou.sequence exists in gazou, else None"""
+
+        ZCache.clear_all()
+
         zseq = zproject.get_sequence_by_name(strip.blezou.sequence)
         if zseq:
             logger.info(
@@ -489,6 +499,9 @@ class CheckStrip:
         strip: bpy.types.Sequence, zproject: ZProject, zsequence: ZSequence
     ) -> Optional[ZShot]:
         """Returns ZShot instance if strip.blezou.shot exists in gazou, else None."""
+
+        ZCache.clear_all()
+
         zshot = zproject.get_shot_by_name(zsequence, strip.blezou.shot)
         if zshot:
             logger.info(
