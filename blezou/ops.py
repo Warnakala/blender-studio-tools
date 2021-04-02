@@ -574,6 +574,8 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
     bl_label = "Push New Shot"
     bl_options = {"INTERNAL"}
 
+    confirm: bpy.props.BoolProperty(name="confirm")
+
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # needs to be logged in, active project
@@ -582,6 +584,11 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         return bool(zsession_auth(context) and active_project.to_dict())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        if not self.confirm:
+            self.report({"WARNING"}, "Push New aborted.")
+            return {"CANCELLED"}
+
         prefs = prefs_get(context)
         zproject = ZProject(**prefs["project_active"].to_dict())
         succeeded = []
@@ -640,6 +647,33 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         logger.info("-END- Blezou pushing new Shots to: %s" % zproject.name)
         ui_redraw()
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        self.confirm = False
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+    def draw(self, context):
+        prefs = prefs_get(context)
+        zproject = ZProject(**prefs["project_active"].to_dict())
+
+        layout = self.layout
+        col = layout.column()
+
+        selected_sequences = context.selected_sequences
+        if not selected_sequences:
+            selected_sequences = context.scene.sequence_editor.sequences_all
+
+        if len(selected_sequences) > 1:
+            noun = "%i shots" % len(selected_sequences)
+        else:
+            noun = "this shot"
+
+        col.prop(
+            self,
+            "confirm",
+            text= "Project: %s - Create %s for on gazou?. Will skip shot, if already exists."
+            % (zproject.name, noun),
+        )
 
 
 class BZ_OT_SQE_InitShot(bpy.types.Operator):
