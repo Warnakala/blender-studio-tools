@@ -514,7 +514,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(zsession_auth(context) and context.selected_sequences)
+        return bool(zsession_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -522,6 +522,9 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         logger.info("-START- Blezou Pushing Metadata")
         # begin progress update
         selected_sequences = context.selected_sequences
+        if not selected_sequences:
+            selected_sequences = context.scene.sequence_editor.sequences_all
+
         context.window_manager.progress_begin(0, len(selected_sequences))
 
         for idx, strip in enumerate(selected_sequences):
@@ -569,11 +572,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         # needs to be logged in, active project
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
-        return bool(
-            zsession_auth(context)
-            and active_project.to_dict()
-            and context.selected_sequences
-        )
+        return bool(zsession_auth(context) and active_project.to_dict())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         prefs = prefs_get(context)
@@ -584,6 +583,9 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
 
         # begin progress update
         selected_sequences = context.selected_sequences
+        if not selected_sequences:
+            selected_sequences = context.scene.sequence_editor.sequences_all
+
         context.window_manager.progress_begin(0, len(selected_sequences))
 
         for idx, strip in enumerate(selected_sequences):
@@ -647,14 +649,18 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.selected_sequences)
+        return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
         failed = []
         logger.info("-START- Initializing Shots")
 
-        for strip in context.selected_sequences:
+        selected_sequences = context.selected_sequences
+        if not selected_sequences:
+            selected_sequences = context.scene.sequence_editor.sequences_all
+
+        for strip in selected_sequences:
             if strip.blezou.initialized:
                 logger.info("%s already initialized." % strip.name)
                 failed.append(strip)
@@ -715,7 +721,9 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
         return bool(
-            zsession_auth(context) and active_project and context.selected_sequences
+            zsession_auth(context)
+            and active_project
+            and context.scene.sequence_editor.active_strip
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -749,7 +757,7 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(zsession_auth(context) and context.selected_sequences)
+        return bool(zsession_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -758,6 +766,9 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
 
         # begin progress update
         selected_sequences = context.selected_sequences
+        if not selected_sequences:
+            selected_sequences = context.scene.sequence_editor.sequences_all
+
         context.window_manager.progress_begin(0, len(selected_sequences))
 
         for idx, strip in enumerate(selected_sequences):
@@ -840,7 +851,7 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(zsession_auth(context) and context.selected_sequences)
+        return bool(zsession_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         nr_of_strips: int = len(context.selected_sequences)
@@ -855,6 +866,9 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
 
                 # begin first progress update
                 selected_sequences = context.selected_sequences
+                if not selected_sequences:
+                    selected_sequences = context.scene.sequence_editor.sequences_all
+
                 context.window_manager.progress_begin(0, len(selected_sequences))
 
                 for idx, strip in enumerate(selected_sequences):
@@ -1068,7 +1082,7 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.selected_sequences)
+        return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         strip_name = self.duplicates
@@ -1122,7 +1136,7 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.selected_sequences)
+        return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         strip_name = self.not_linked

@@ -14,6 +14,18 @@ from .ops import (
 )
 
 
+def get_selshots_noun(context: bpy.types.Context) -> str:
+    selshots = context.selected_sequences
+    if not selshots:
+        noun = "All"
+    elif len(selshots) == 1:
+        noun = "Active Shot"
+    else:
+        noun = "%i Shots" % len(selshots)
+
+    return noun
+
+
 class BZ_PT_vi3d_auth(bpy.types.Panel):
     """
     Panel in 3dview that displays email, password and login operator.
@@ -208,35 +220,39 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
 
         strip = context.scene.sequence_editor.active_strip
+        noun = get_selshots_noun(context)
+
+        layout = self.layout
+        row = layout.row(align=True)
+        row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS")
+
         if not strip:
-            return None
+            # link operator
+            row.operator(
+                BZ_OT_SQE_LinkShot.bl_idname, text="Link Active Shot", icon="LINKED"
+            )
+        else:
+            if not strip.blezou.initialized:
+                # link operator
+                row.operator(
+                    BZ_OT_SQE_LinkShot.bl_idname, text="Link Active Shot", icon="LINKED"
+                )
+            else:
+                # relink operator
+                row.operator(
+                    BZ_OT_SQE_LinkShot.bl_idname,
+                    text="Relink Active Shot",
+                    icon="LINKED",
+                )
 
+        # delete operator
         selshots = context.selected_sequences
-
         if len(selshots) > 1:
             noun = "%i Shots" % len(selshots)
         else:
             noun = "Active Shot"
-
-        if not strip.blezou.initialized:
-            layout = self.layout
-            row = layout.row(align=True)
-            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS")
-            row.operator(
-                BZ_OT_SQE_LinkShot.bl_idname, text="Link Active Shot", icon="LINKED"
-            )
-
-        else:
-            # strip is initialized
-            layout = self.layout
-            # delete operator
-            row = layout.row(align=True)
-            row.operator(BZ_OT_SQE_DelShot.bl_idname, text=f"Del {noun}", icon="CANCEL")
-            row.operator(
-                BZ_OT_SQE_LinkShot.bl_idname,
-                text="Relink Active Shot",
-                icon="LINKED",
-            )
+        row = layout.row(align=True)
+        row.operator(BZ_OT_SQE_DelShot.bl_idname, text=f"Del {noun}", icon="CANCEL")
 
 
 class BZ_PT_SQE_shot_meta(bpy.types.Panel):
@@ -253,15 +269,11 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return True
+        return bool(context.scene.sequence_editor.active_strip)
 
     def draw(self, context: bpy.types.Context) -> None:
+
         strip = context.scene.sequence_editor.active_strip
-
-        if not strip:
-            return None
-
-        # strip is initialized and props can be displayed
         layout = self.layout
         box = layout.box()
         col = box.column(align=True)
@@ -300,14 +312,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
-        selshots = context.selected_sequences
-        if not selshots:
-            return None
-
-        if len(selshots) > 1:
-            noun = "%i Shots" % len(selshots)
-        else:
-            noun = "Active Shot"
+        noun = get_selshots_noun(context)
 
         layout = self.layout
 
@@ -350,15 +355,7 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
-
-        selshots = context.selected_sequences
-        if not selshots:
-            return None
-
-        if len(selshots) > 1:
-            noun = "%i Shots" % len(selshots)
-        else:
-            noun = "Active Shot"
+        noun = get_selshots_noun(context)
 
         layout = self.layout
         row = layout.row()
@@ -386,14 +383,7 @@ class BZ_PT_SQE_debug(bpy.types.Panel):
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
-        selshots = context.selected_sequences
-        if not selshots:
-            return None
-
-        if len(selshots) > 1:
-            noun = "%i Shots" % len(selshots)
-        else:
-            noun = "Active Shot"
+        noun = get_selshots_noun(context)
 
         layout = self.layout
         row = layout.row()
