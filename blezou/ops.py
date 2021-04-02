@@ -122,7 +122,7 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         ui_redraw()
         return {"FINISHED"}
 
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+    def invoke(self, context, event):
         context.window_manager.invoke_search_popup(self)
         return {"FINISHED"}
 
@@ -178,7 +178,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         ui_redraw()
         return {"FINISHED"}
 
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+    def invoke(self, context, event):
         context.window_manager.invoke_search_popup(self)
         return {"FINISHED"}
 
@@ -227,7 +227,7 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
         ui_redraw()
         return {"FINISHED"}
 
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+    def invoke(self, context, event):
         context.window_manager.invoke_search_popup(self)
         return {"FINISHED"}
 
@@ -281,7 +281,7 @@ class BZ_OT_AssetTypesLoad(bpy.types.Operator):
         ui_redraw()
         return {"FINISHED"}
 
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+    def invoke(self, context, event):
         context.window_manager.invoke_search_popup(self)
         return {"FINISHED"}
 
@@ -328,7 +328,7 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
         ui_redraw()
         return {"FINISHED"}
 
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+    def invoke(self, context, event):
         context.window_manager.invoke_search_popup(self)
         return {"FINISHED"}
 
@@ -748,8 +748,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        context.window_manager.invoke_props_dialog(self, width=400)
-        return {"FINISHED"}
+        return context.window_manager.invoke_props_dialog(self, width=500)
 
 
 class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
@@ -852,7 +851,7 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
 
     def invoke(self, context, event):
         self.confirm = False
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):
         layout = self.layout
@@ -943,7 +942,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
 
     def invoke(self, context, event):
         self.confirm = False
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):
         layout = self.layout
@@ -1188,8 +1187,7 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         opsdata._SQE_DUPLCIATES[:] = opsdata._sqe_update_duplicates(context)
-        context.window_manager.invoke_props_popup(self, event)
-        return {"FINISHED"}
+        return context.window_manager.invoke_props_popup(self, event)
 
 
 class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
@@ -1226,8 +1224,7 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         opsdata._SQE_NOT_LINKED[:] = opsdata._sqe_update_not_linked(context)
-        context.window_manager.invoke_props_popup(self, event)
-        return {"FINISHED"}
+        return context.window_manager.invoke_props_popup(self, event)
 
 
 # ---------REGISTER ----------
