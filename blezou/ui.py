@@ -307,7 +307,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
 
     bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
-    bl_label = "Push"
+    bl_label = "PUSH"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 20
@@ -321,38 +321,37 @@ class BZ_PT_SQE_push(bpy.types.Panel):
 
         layout = self.layout
 
-        # not_linked = [s for s in selshots if not s.blezou.linked] - warn in operator if shot is missing link
         row = layout.row()
-        row.operator(
-            BZ_OT_SQE_PushNewShot.bl_idname,
-            text=f"Push NEW for {noun}",
-            icon="EXPORT",
-        )
-        row = layout.row()
-        row.operator(
+        col = row.column(align=True)
+        col.operator(
             BZ_OT_SQE_PushShotMeta.bl_idname,
             text=f"Push METADATA for {noun}",
-            icon="EXPORT",
+            icon="SEQ_STRIP_META",
+        )
+
+        col.operator(
+            BZ_OT_SQE_PushThumbnail.bl_idname,
+            text=f"Push THUMBNAIL for {noun}",
+            icon="IMAGE_DATA",
         )
 
         row = layout.row()
-        row.operator(
-            BZ_OT_SQE_PushThumbnail.bl_idname,
-            text=f"Push THUMBNAIL for {noun}",
-            icon="EXPORT",
+        col = row.column(align=True)
+        col.operator(
+            BZ_OT_SQE_PushNewShot.bl_idname,
+            text=f"Push NEW for {noun}",
+            icon="ADD",
         )
-
         # delete operator
         selshots = context.selected_sequences
         if len(selshots) > 1:
             noun = "%i Shots" % len(selshots)
         else:
             noun = "Active Shot"
-        row = layout.row()
-        row.operator(
+        col.operator(
             BZ_OT_SQE_PushDeleteShot.bl_idname,
             text=f"Push DELETE for {noun}",
-            icon="CANCEL",
+            icon="KEYTYPE_EXTREME_VEC",
         )
 
 
@@ -363,7 +362,7 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
 
     bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
-    bl_label = "Pull"
+    bl_label = "PULL"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 30
@@ -380,7 +379,7 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
         row.operator(
             BZ_OT_SQE_PullShotMeta.bl_idname,
             text=f"Pull Metadata for {noun}",
-            icon="IMPORT",
+            icon="SEQ_STRIP_META",
         )
 
 
