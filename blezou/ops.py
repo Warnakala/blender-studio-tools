@@ -4,6 +4,7 @@ import copy
 import contextlib
 from typing import Set, Dict, Union, List, Tuple, Any, Optional, cast
 import bpy
+from importlib import reload
 from .types import (
     ZProductions,
     ZProject,
@@ -19,6 +20,7 @@ from .util import zsession_auth, prefs_get, zsession_get
 from .core import ui_redraw
 from .logger import ZLoggerFactory
 from .gazu import gazu
+from . import opsdata
 
 logger = ZLoggerFactory.getLogger(__name__)
 
@@ -1041,44 +1043,9 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_property = "duplicates"
 
-    def _get_duplicates(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        """get all strips that are initialized but not linked yet"""
-        enum_list = []
-        data_dict = {}
-        strips = [
-            context.scene.sequence_editor.sequences_all[item.identifier]
-            for item in context.scene.bl_rna.properties["strip_cache"].enum_items
-        ]
-
-        # create data dict that holds all shots ids and the corresponding strips that are linked to it
-        for i in range(len(strips)):
-
-            if strips[i].blezou.linked:
-                # get shot_id, shot_name, create entry in data_dict if id not existent
-                shot_id = strips[i].blezou.id
-                shot_name = strips[i].blezou.shot
-                if shot_id not in data_dict:
-                    data_dict[shot_id] = {"name": shot_name, "strips": []}
-
-                # append i to strips list
-                if strips[i] not in set(data_dict[shot_id]["strips"]):
-                    data_dict[shot_id]["strips"].append(strips[i])
-
-                # comparet to all other strip
-                for j in range(i + 1, len(strips)):
-                    if shot_id == strips[j].blezou.id:
-                        data_dict[shot_id]["strips"].append(strips[j])
-
-        # convert in data strucutre for enum property
-        for shot_id, data in data_dict.items():
-            if len(data["strips"]) > 1:
-                enum_list.append(("", data["name"], shot_id))
-                for strip in data["strips"]:
-                    enum_list.append((strip.name, strip.name, ""))
-
-        return enum_list
-
-    duplicates: bpy.props.EnumProperty(items=_get_duplicates, name="Duplicates")
+    duplicates: bpy.props.EnumProperty(
+        items=opsdata._sqe_get_duplicates, name="Duplicates"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1086,28 +1053,20 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         strip_name = self.duplicates
-        if strip_name:
-            # deselect all if something is selected
-            if context.selected_sequences:
-                bpy.ops.sequencer.select_all()
-            strip = context.scene.sequence_editor.sequences_all[strip_name]
-            strip.select = True
+
+        if not strip_name:
+            return {"CANCELED"}
+
+        # deselect all if something is selected
+        if context.selected_sequences:
+            bpy.ops.sequencer.select_all()
+
+        strip = context.scene.sequence_editor.sequences_all[strip_name]
+        strip.select = True
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        if context.selected_sequences:
-            items = [(s.name, s.name, s.name) for s in context.selected_sequences]
-            bpy.types.Scene.strip_cache = bpy.props.EnumProperty(
-                items=items, name="blezou_strips_cache"
-            )
-        else:
-            items = [
-                (s.name, s.name, s.name)
-                for s in context.scene.sequence_editor.sequences_all
-            ]
-            bpy.types.Scene.strip_cache = bpy.props.EnumProperty(
-                items=items, name="blezou_strips_cache"
-            )
+        opsdata._SQE_DUPLCIATES[:] = opsdata._sqe_update_duplicates(context)
         context.window_manager.invoke_props_popup(self, event)
         return {"FINISHED"}
 
@@ -1120,19 +1079,9 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_property = "not_linked"
 
-    def _get_not_linked(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        """get all strips that are initialized but not linked yet"""
-        enum_list = []
-        strips = [
-            context.scene.sequence_editor.sequences_all[item.identifier]
-            for item in context.scene.bl_rna.properties["strip_cache"].enum_items
-        ]
-        for strip in strips:
-            if strip.blezou.initialized and not strip.blezou.linked:
-                enum_list.append((strip.name, strip.name, ""))
-        return enum_list
-
-    not_linked: bpy.props.EnumProperty(items=_get_not_linked, name="Not Linked")
+    not_linked: bpy.props.EnumProperty(
+        items=opsdata._sqe_get_not_linked, name="Not Linked"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1140,29 +1089,21 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         strip_name = self.not_linked
-        if strip_name:
-            # deselect all if something is selected
-            if context.selected_sequences:
-                bpy.ops.sequencer.select_all()
-            strip = context.scene.sequence_editor.sequences_all[strip_name]
-            strip.select = True
+
+        if not strip_name:
+            return {"CANCELLED"}
+
+        # deselect all if something is selected
+        if context.selected_sequences:
+            bpy.ops.sequencer.select_all()
+
+        strip = context.scene.sequence_editor.sequences_all[strip_name]
+        strip.select = True
+
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        # register a enumproperty on types.scene that holds items which represent names of sequence strips
-        # if selection exists use it
-        if context.selected_sequences:
-            items = [(s.name, s.name, "") for s in context.selected_sequences]
-
-        # if not use all strips in sequence editor
-        else:
-            items = [
-                (s.name, s.name, "")
-                for s in context.scene.sequence_editor.sequences_all
-            ]
-        bpy.types.Scene.strip_cache = bpy.props.EnumProperty(
-            items=items, name="blezou_strips_cache"
-        )
+        opsdata._SQE_NOT_LINKED[:] = opsdata._sqe_update_not_linked(context)
         context.window_manager.invoke_props_popup(self, event)
         return {"FINISHED"}
 
