@@ -671,7 +671,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text="Project: %s - Create %s for on gazou?. Will skip shot, if already exists."
+            text="Project: %s - Create %s on gazou? Will skip shots if already exists."
             % (zproject.name, noun),
         )
 
