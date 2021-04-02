@@ -979,6 +979,8 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):
+        prefs = prefs_get(context)
+        zproject = ZProject(**prefs["project_active"].to_dict())
         layout = self.layout
         col = layout.column()
 
@@ -989,7 +991,10 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
             noun = "this shot"
 
         col.prop(
-            self, "confirm", text="I hereby confirm: delete %s from The Edit." % noun
+            self,
+            "confirm",
+            text="Project: %s - I hereby confirm: delete %s from gazou."
+            % (zproject.name, noun),
         )
 
 
