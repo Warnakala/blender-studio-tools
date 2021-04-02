@@ -395,6 +395,11 @@ class Push:
         )
         return zsequence
 
+    @staticmethod
+    def delete_shot(strip: bpy.types.Sequence, zshot: ZShot) -> str:
+        zshot.remove()
+        strip.blezou.clear()
+
 
 class CheckStrip:
     """Class that contains various static methods to perform checks on sequence strips"""
@@ -610,13 +615,11 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
 
             # check if seq already on gazou > create it
             zseq = CheckStrip.seq_exists_by_name(strip, zproject)
-            # TODO: does not log?
             if not zseq:
                 zseq = Push.new_sequence(strip, zproject)
 
             # check if shot already on gazou > create it
             zshot = CheckStrip.shot_exists_by_name(strip, zproject, zseq)
-            # TODO: does not log?
             if zshot:
                 failed.append(strip)
                 continue
@@ -635,6 +638,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             f"Created {len(succeeded)} new Shots | Failed: {len(failed)}",
         )
         logger.info("-END- Blezou pushing new Shots to: %s" % zproject.name)
+        ui_redraw()
         return {"FINISHED"}
 
 
@@ -677,6 +681,7 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
             f"Initialized {len(succeeded)} Shots | Failed: {len(failed)}.",
         )
         logger.info("-END- Initializing Shots")
+        ui_redraw()
         return {"FINISHED"}
 
 
@@ -803,21 +808,26 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_DelShot(bpy.types.Operator):
+class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything in gazou.
     """
 
-    bl_idname = "blezou.sqe_del_shot"
-    bl_label = "Del Shot"
-    bl_description = "Removes shot metadata from selecetd strips. Only affects SQE."
+    bl_idname = "blezou.sqe_del_shot_meta"
+    bl_label = "Delete Shot Metadata"
+    bl_description = "Cleares shot metadata of selecetd strips. Link to shot in gazou will be lost. Only affects SQE."
+    confirm: bpy.props.BoolProperty(name="confirm")
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        if not self.confirm:
+            self.report({"WARNING"}, "Clearing Metadata aborted.")
+            return {"CANCELLED"}
+
         failed: List[bpy.types.Sequence] = []
         succeeded: List[bpy.types.Sequence] = []
         logger.info("-START- Deleting Shot Metadata")
@@ -834,10 +844,120 @@ class BZ_OT_SQE_DelShot(bpy.types.Operator):
 
         self.report(
             {"INFO"},
-            f"Removed metadata of {len(succeeded)} Shots | Failed: {len(failed)}.",
+            f"Cleared metadata of {len(succeeded)} Shots | Failed: {len(failed)}.",
         )
         logger.info("-END- Deleting Shot Metadata")
+        ui_redraw()
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        self.confirm = False
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+
+        selshots = context.selected_sequences
+        if len(selshots) > 1:
+            noun = "%i shots" % len(selshots)
+        else:
+            noun = "this shot"
+
+        col.prop(
+            self,
+            "confirm",
+            text="Delete Metadata of %s . Link to gazou will be lost. Only affects Sequence Editor."
+            % noun,
+        )
+
+
+class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
+    """
+    Operator that deletes all  metadata of all selected sequencce strips
+    after performing various checks. It does NOT change anything in gazou.
+    """
+
+    bl_idname = "blezou.sqe_push_del_shot"
+    bl_label = "Del Shot"
+    bl_description = "Deletes Shot on gazou and clears metadata of selected strips."
+
+    confirm: bpy.props.BoolProperty(name="confirm")
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        # needs to be logged in, active project
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+        return bool(
+            zsession_auth(context)
+            and active_project.to_dict()
+            and context.selected_sequences
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        if not self.confirm:
+            self.report({"WARNING"}, "Push Delete aborted.")
+            return {"CANCELLED"}
+
+        prefs = prefs_get(context)
+        zproject = ZProject(**prefs["project_active"].to_dict())
+        succeeded = []
+        failed = []
+        logger.info("-START- Blezou deleting Shots of: %s" % zproject.name)
+
+        # begin progress update
+        selected_sequences = context.selected_sequences
+
+        context.window_manager.progress_begin(0, len(selected_sequences))
+
+        for idx, strip in enumerate(selected_sequences):
+            context.window_manager.progress_update(idx)
+
+            # check if strip is already linked to gazou
+            if not CheckStrip.linked(strip):
+                failed.append(strip)
+                continue
+
+            # check if shot already on gazou > create it
+            zshot = CheckStrip.shot_exists_by_id(strip)
+            if not zshot:
+                failed.append(strip)
+                continue
+
+            # delete shot
+            Push.delete_shot(strip, zshot)
+            succeeded.append(strip)
+
+        # end progress update
+        context.window_manager.progress_update(len(selected_sequences))
+        context.window_manager.progress_end()
+
+        self.report(
+            {"INFO"},
+            f"Deleted {len(succeeded)} Shots | Failed: {len(failed)}",
+        )
+        logger.info("-START- Blezou deleting Shots of: %s" % zproject.name)
+        ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        self.confirm = False
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+
+        selshots = context.selected_sequences
+        if len(selshots) > 1:
+            noun = "%i shots" % len(selshots)
+        else:
+            noun = "this shot"
+
+        col.prop(
+            self, "confirm", text="I hereby confirm: delete %s from The Edit." % noun
+        )
 
 
 class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
@@ -1063,6 +1183,7 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
 
         strip = context.scene.sequence_editor.sequences_all[strip_name]
         strip.select = True
+        bpy.ops.sequencer.select()
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
@@ -1099,6 +1220,7 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
 
         strip = context.scene.sequence_editor.sequences_all[strip_name]
         strip.select = True
+        bpy.ops.sequencer.select()
 
         return {"FINISHED"}
 
@@ -1120,10 +1242,11 @@ classes = [
     BZ_OT_AssetsLoad,
     BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushShotMeta,
-    BZ_OT_SQE_DelShot,
+    BZ_OT_SQE_DelShotMeta,
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_PushThumbnail,
+    BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PullShotMeta,
     BZ_OT_SQE_DebugDuplicates,
     BZ_OT_SQE_DebugNotLinked,

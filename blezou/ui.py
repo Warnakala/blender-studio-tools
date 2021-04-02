@@ -4,9 +4,10 @@ from .util import prefs_get, zsession_get, zsession_auth
 from .ops import (
     BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_InitShot,
-    BZ_OT_SQE_DelShot,
+    BZ_OT_SQE_DelShotMeta,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_PushNewShot,
+    BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PushShotMeta,
     BZ_OT_SQE_PullShotMeta,
     BZ_OT_SQE_DebugDuplicates,
@@ -224,7 +225,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
 
         layout = self.layout
         row = layout.row(align=True)
-        row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS")
+        row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"INIT {noun}", icon="PLUS")
 
         if not strip:
             # link operator
@@ -252,7 +253,11 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         else:
             noun = "Active Shot"
         row = layout.row(align=True)
-        row.operator(BZ_OT_SQE_DelShot.bl_idname, text=f"Del {noun}", icon="CANCEL")
+        row.operator(
+            BZ_OT_SQE_DelShotMeta.bl_idname,
+            text=f"Delete Metadata {noun}",
+            icon="CANCEL",
+        )
 
 
 class BZ_PT_SQE_shot_meta(bpy.types.Panel):
@@ -320,21 +325,34 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         row = layout.row()
         row.operator(
             BZ_OT_SQE_PushNewShot.bl_idname,
-            text=f"Push New for {noun}",
+            text=f"Push NEW for {noun}",
             icon="EXPORT",
         )
         row = layout.row()
         row.operator(
             BZ_OT_SQE_PushShotMeta.bl_idname,
-            text=f"Push Metadata for {noun}",
+            text=f"Push METADATA for {noun}",
             icon="EXPORT",
         )
 
         row = layout.row()
         row.operator(
             BZ_OT_SQE_PushThumbnail.bl_idname,
-            text=f"Push Thumbnail for {noun}",
+            text=f"Push THUMBNAIL for {noun}",
             icon="EXPORT",
+        )
+
+        # delete operator
+        selshots = context.selected_sequences
+        if len(selshots) > 1:
+            noun = "%i Shots" % len(selshots)
+        else:
+            noun = "Active Shot"
+        row = layout.row()
+        row.operator(
+            BZ_OT_SQE_PushDeleteShot.bl_idname,
+            text=f"Push DELETE for {noun}",
+            icon="CANCEL",
         )
 
 
@@ -389,13 +407,13 @@ class BZ_PT_SQE_debug(bpy.types.Panel):
         row = layout.row()
         row.operator(
             BZ_OT_SQE_DebugDuplicates.bl_idname,
-            text=f"Debug {noun} for Duplicates",
+            text=f"Debug Duplicates {noun}",
             icon="MODIFIER_ON",
         )
         row = layout.row()
         row.operator(
             BZ_OT_SQE_DebugNotLinked.bl_idname,
-            text=f"Debug {noun} for not Linked",
+            text=f"Debug not Linked {noun}",
             icon="MODIFIER_ON",
         )
 
