@@ -361,8 +361,11 @@ class Push:
     def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
         zshot.name = strip.blezou.shot
         zshot.description = strip.blezou.description
-        zshot.data["frame_in"] = strip.frame_final_start
-        zshot.data["frame_out"] = strip.frame_final_end
+        frame_range = Push._remap_frame_range(
+            strip.frame_final_start, strip.frame_final_end
+        )
+        zshot.data["frame_in"] = frame_range[0]
+        zshot.data["frame_out"] = frame_range[1]
         # update in gazou
         zshot.update()
         logger.info("Pushed meta to shot: %s from strip: %s" % (zshot.name, strip.name))
@@ -403,6 +406,12 @@ class Push:
         result = zshot.remove()
         strip.blezou.clear()
         return result
+
+    @staticmethod
+    def _remap_frame_range(frame_in, frame_out):
+        start_frame = 1001
+        nb_of_frames = frame_out - frame_in
+        return (start_frame, start_frame + nb_of_frames)
 
 
 class CheckStrip:
