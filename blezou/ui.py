@@ -19,6 +19,7 @@ from .ops import (
     BZ_OT_SQE_PullShotMeta,
     BZ_OT_SQE_DebugDuplicates,
     BZ_OT_SQE_DebugNotLinked,
+    BZ_OT_SQE_LinkSequence,
 )
 
 
@@ -291,7 +292,9 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         col = box.column(align=True)
 
         # sequence
-        col.prop(strip.blezou, "sequence")
+        sub_row = col.row(align=True)
+        sub_row.prop(strip.blezou, "sequence")
+        sub_row.operator(BZ_OT_SQE_LinkSequence.bl_idname, text="", icon="LINKED")
 
         # shot
         col.prop(strip.blezou, "shot")

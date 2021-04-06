@@ -10,11 +10,10 @@ Blezou is a Blender addon to interact with the gazou data base from within Blend
     - Push metadata for shot to kitsu (shotname, description, frame in, frame out)
     - Push create a new shot to (create)
     - Push delete a shot to kitsu
-
     - Pull Metadadata of shot from kitsu
-
     - Debug initialized shots that are not linked yet
     - Debug shots that are linked to multiple sequence strips
+
 ## Prerequisite
 ------------
 The following tools are needed for installation
