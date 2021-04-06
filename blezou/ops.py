@@ -404,6 +404,10 @@ class Push:
     @staticmethod
     def delete_shot(strip: bpy.types.Sequence, zshot: ZShot) -> str:
         result = zshot.remove()
+        logger.info(
+            "Pushed delete shot: %s for project: %s"
+            % (zshot.name, zshot.project_name if zshot.project_name else "Unknown")
+        )
         strip.blezou.clear()
         return result
 
@@ -678,9 +682,6 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         prefs = prefs_get(context)
         zproject = ZProject(**prefs["project_active"].to_dict())
 
-        layout = self.layout
-        col = layout.column()
-
         selected_sequences = context.selected_sequences
         if not selected_sequences:
             selected_sequences = context.scene.sequence_editor.sequences_all
@@ -690,6 +691,21 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         else:
             noun = "this shot"
 
+        if not prefs["project_active"].to_dict():
+            prod_load_text = "Select Production"
+        else:
+            prod_load_text = prefs["project_active"]["name"]
+
+        # UI
+        layout = self.layout
+        row = layout.row()
+
+        # Production
+        row.operator(
+            BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
+        )
+        # confirm dialog
+        col = layout.column()
         col.prop(
             self,
             "confirm",
@@ -944,22 +960,16 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         # needs to be logged in, active project
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
-        return bool(
-            zsession_auth(context)
-            and active_project.to_dict()
-            and context.selected_sequences
-        )
+        return bool(zsession_auth(context) and context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.confirm:
             self.report({"WARNING"}, "Push Delete aborted.")
             return {"CANCELLED"}
 
-        prefs = prefs_get(context)
-        zproject = ZProject(**prefs["project_active"].to_dict())
         succeeded = []
         failed = []
-        logger.info("-START- Blezou deleting Shots of: %s" % zproject.name)
+        logger.info("-START- Blezou deleting Shots")
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -974,7 +984,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
                 failed.append(strip)
                 continue
 
-            # check if shot already on gazou > create it
+            # check if shot still exists on gazou
             zshot = CheckStrip.shot_exists_by_id(strip)
             if not zshot:
                 failed.append(strip)
@@ -992,7 +1002,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
             {"INFO"},
             f"Deleted {len(succeeded)} Shots | Failed: {len(failed)}",
         )
-        logger.info("-START- Blezou deleting Shots of: %s" % zproject.name)
+        logger.info("-END- Blezou deleting Shots")
         ui_redraw()
         return {"FINISHED"}
 
@@ -1001,8 +1011,6 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):
-        prefs = prefs_get(context)
-        zproject = ZProject(**prefs["project_active"].to_dict())
         layout = self.layout
         col = layout.column()
 
@@ -1015,8 +1023,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text="Project: %s - I hereby confirm: delete %s from gazou."
-            % (zproject.name, noun),
+            text="!DANGER!: I hereby confirm: Delete %s from gazou." % noun,
         )
 
 
