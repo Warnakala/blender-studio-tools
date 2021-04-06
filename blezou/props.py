@@ -18,6 +18,7 @@ class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
     linked: bpy.props.BoolProperty(
         name="Linked", default=False, description="Is linked to an ID in gazou"
     )
+    project: bpy.props.StringProperty(name="Project", default="")
 
     def to_dict(self):
         return {

@@ -349,6 +349,7 @@ class Pull:
         strip.blezou.id = zshot.id
         strip.blezou.initialized = True
         strip.blezou.linked = True
+        strip.blezou.project = zshot.project_name
         # strip.frame_final_start = zshot.data["frame_in"]
         # strip.frame_final_end = zshot.data["frame_out"]
         logger.info("Pulled meta from shot: %s to strip: %s" % (zshot.name, strip.name))
@@ -361,8 +362,11 @@ class Push:
     def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
         zshot.name = strip.blezou.shot
         zshot.description = strip.blezou.description
-        zshot.data["frame_in"] = strip.frame_final_start
-        zshot.data["frame_out"] = strip.frame_final_end
+        frame_range = Push._remap_frame_range(
+            strip.frame_final_start, strip.frame_final_end
+        )
+        zshot.data["frame_in"] = frame_range[0]
+        zshot.data["frame_out"] = frame_range[1]
         # update in gazou
         zshot.update()
         logger.info("Pushed meta to shot: %s from strip: %s" % (zshot.name, strip.name))
@@ -379,9 +383,13 @@ class Push:
             frame_in=strip.frame_final_start,
             frame_out=strip.frame_final_end,
         )
+        # update description, no option to pass that on create
         if strip.blezou.description:
             zshot.description = strip.blezou.description
             zshot.update()
+
+        # set project name locally, will be available on next pull
+        zshot.project_name = zproject.name
         logger.info(
             "Pushed create shot: %s for project: %s" % (zshot.name, zproject.name)
         )
@@ -401,8 +409,18 @@ class Push:
     @staticmethod
     def delete_shot(strip: bpy.types.Sequence, zshot: ZShot) -> str:
         result = zshot.remove()
+        logger.info(
+            "Pushed delete shot: %s for project: %s"
+            % (zshot.name, zshot.project_name if zshot.project_name else "Unknown")
+        )
         strip.blezou.clear()
         return result
+
+    @staticmethod
+    def _remap_frame_range(frame_in, frame_out):
+        start_frame = 1001
+        nb_of_frames = frame_out - frame_in
+        return (start_frame, start_frame + nb_of_frames)
 
 
 class CheckStrip:
@@ -669,9 +687,6 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         prefs = prefs_get(context)
         zproject = ZProject(**prefs["project_active"].to_dict())
 
-        layout = self.layout
-        col = layout.column()
-
         selected_sequences = context.selected_sequences
         if not selected_sequences:
             selected_sequences = context.scene.sequence_editor.sequences_all
@@ -681,6 +696,21 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         else:
             noun = "this shot"
 
+        if not prefs["project_active"].to_dict():
+            prod_load_text = "Select Production"
+        else:
+            prod_load_text = prefs["project_active"]["name"]
+
+        # UI
+        layout = self.layout
+        row = layout.row()
+
+        # Production
+        row.operator(
+            BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
+        )
+        # confirm dialog
+        col = layout.column()
         col.prop(
             self,
             "confirm",
@@ -935,22 +965,16 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         # needs to be logged in, active project
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
-        return bool(
-            zsession_auth(context)
-            and active_project.to_dict()
-            and context.selected_sequences
-        )
+        return bool(zsession_auth(context) and context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.confirm:
             self.report({"WARNING"}, "Push Delete aborted.")
             return {"CANCELLED"}
 
-        prefs = prefs_get(context)
-        zproject = ZProject(**prefs["project_active"].to_dict())
         succeeded = []
         failed = []
-        logger.info("-START- Blezou deleting Shots of: %s" % zproject.name)
+        logger.info("-START- Blezou deleting Shots")
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -965,7 +989,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
                 failed.append(strip)
                 continue
 
-            # check if shot already on gazou > create it
+            # check if shot still exists on gazou
             zshot = CheckStrip.shot_exists_by_id(strip)
             if not zshot:
                 failed.append(strip)
@@ -983,7 +1007,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
             {"INFO"},
             f"Deleted {len(succeeded)} Shots | Failed: {len(failed)}",
         )
-        logger.info("-START- Blezou deleting Shots of: %s" % zproject.name)
+        logger.info("-END- Blezou deleting Shots")
         ui_redraw()
         return {"FINISHED"}
 
@@ -992,8 +1016,6 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):
-        prefs = prefs_get(context)
-        zproject = ZProject(**prefs["project_active"].to_dict())
         layout = self.layout
         col = layout.column()
 
@@ -1006,8 +1028,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text="Project: %s - I hereby confirm: delete %s from gazou."
-            % (zproject.name, noun),
+            text="!DANGER!: I hereby confirm: Delete %s from gazou." % noun,
         )
 
 
