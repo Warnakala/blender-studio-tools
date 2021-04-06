@@ -349,6 +349,7 @@ class Pull:
         strip.blezou.id = zshot.id
         strip.blezou.initialized = True
         strip.blezou.linked = True
+        strip.blezou.project = zshot.project_name
         # strip.frame_final_start = zshot.data["frame_in"]
         # strip.frame_final_end = zshot.data["frame_out"]
         logger.info("Pulled meta from shot: %s to strip: %s" % (zshot.name, strip.name))
@@ -382,9 +383,13 @@ class Push:
             frame_in=strip.frame_final_start,
             frame_out=strip.frame_final_end,
         )
+        # update description, no option to pass that on create
         if strip.blezou.description:
             zshot.description = strip.blezou.description
             zshot.update()
+
+        # set project name locally, will be available on next pull
+        zshot.project_name = zproject.name
         logger.info(
             "Pushed create shot: %s for project: %s" % (zshot.name, zproject.name)
         )

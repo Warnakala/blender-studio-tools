@@ -303,6 +303,7 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         col.enabled = False
         col.prop(strip.blezou, "id")
         col.prop(strip.blezou, "linked")
+        col.prop(strip.blezou, "project")
 
 
 class BZ_PT_SQE_push(bpy.types.Panel):
