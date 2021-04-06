@@ -293,6 +293,11 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         col.prop(strip.blezou, "description")
         col.enabled = False if not strip.blezou.initialized else True
 
+        # initialized
+        col = box.column(align=True)
+        col.prop(strip.blezou, "initialized")
+        col.enabled = False
+
         # id
         col = box.column(align=True)
         col.enabled = False
