@@ -13,13 +13,14 @@ from .ops import (
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_DelShotMeta,
     BZ_OT_SQE_LinkShot,
+    BZ_OT_SQE_LinkSequence,
     BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PushShotMeta,
     BZ_OT_SQE_PullShotMeta,
     BZ_OT_SQE_DebugDuplicates,
     BZ_OT_SQE_DebugNotLinked,
-    BZ_OT_SQE_LinkSequence,
+    BZ_OT_SQE_DebugMultiProjects,
 )
 
 
@@ -429,6 +430,12 @@ class BZ_PT_SQE_debug(bpy.types.Panel):
         row.operator(
             BZ_OT_SQE_DebugNotLinked.bl_idname,
             text=f"Debug not Linked {noun}",
+            icon="MODIFIER_ON",
+        )
+        row = layout.row()
+        row.operator(
+            BZ_OT_SQE_DebugMultiProjects.bl_idname,
+            text=f"Debug multi Projects {noun}",
             icon="MODIFIER_ON",
         )
 

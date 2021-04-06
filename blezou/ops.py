@@ -4,7 +4,7 @@ import copy
 import contextlib
 from typing import Set, Dict, Union, List, Tuple, Any, Optional, cast
 import bpy
-from importlib import reload
+import importlib
 from .types import (
     ZProductions,
     ZProject,
@@ -1345,6 +1345,43 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
         return context.window_manager.invoke_props_popup(self, event)
 
 
+class BZ_OT_SQE_DebugMultiProjects(bpy.types.Operator):
+    """"""
+
+    bl_idname = "blezou.sqe_debug_multi_project"
+    bl_label = "Debug Not Linked"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_property = "multi_project"
+
+    multi_project: bpy.props.EnumProperty(
+        items=opsdata._sqe_get_multi_project, name="Multi Project"
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        strip_name = self.multi_project
+
+        if not strip_name:
+            return {"CANCELLED"}
+
+        # deselect all if something is selected
+        if context.selected_sequences:
+            bpy.ops.sequencer.select_all()
+
+        strip = context.scene.sequence_editor.sequences_all[strip_name]
+        strip.select = True
+        bpy.ops.sequencer.select()
+
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        opsdata._SQE_MULTI_PROJECT[:] = opsdata._sqe_update_multi_project(context)
+        return context.window_manager.invoke_props_popup(self, event)
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -1360,16 +1397,18 @@ classes = [
     BZ_OT_SQE_DelShotMeta,
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_LinkShot,
+    BZ_OT_SQE_LinkSequence,
     BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PullShotMeta,
     BZ_OT_SQE_DebugDuplicates,
     BZ_OT_SQE_DebugNotLinked,
-    BZ_OT_SQE_LinkSequence,
+    BZ_OT_SQE_DebugMultiProjects,
 ]
 
 
 def register():
+    importlib.reload(opsdata)
     for cls in classes:
         bpy.utils.register_class(cls)
 
