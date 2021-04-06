@@ -2,6 +2,13 @@ import bpy
 from typing import Optional
 from .util import prefs_get, zsession_get, zsession_auth
 from .ops import (
+    BZ_OT_SessionStart,
+    BZ_OT_SessionEnd,
+    BZ_OT_ProductionsLoad,
+    BZ_OT_SequencesLoad,
+    BZ_OT_ShotsLoad,
+    BZ_OT_AssetsLoad,
+    BZ_OT_AssetTypesLoad,
     BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_DelShotMeta,
@@ -51,9 +58,9 @@ class BZ_PT_vi3d_auth(bpy.types.Panel):
 
         row = layout.row(align=True)
         if not zsession.is_auth():
-            row.operator("blezou.session_start", text="Login")
+            row.operator(BZ_OT_SessionStart.bl_idname, text="Login")
         else:
-            row.operator("blezou.session_end", text="Logout")
+            row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout")
 
 
 class BZ_PT_vi3d_context(bpy.types.Panel):
@@ -81,12 +88,12 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         item_group_data = {
             "name": "Sequence",
             "pref_name": "sequence_active",
-            "operator": "blezou.sequences_load",
+            "operator": BZ_OT_SequencesLoad.bl_idname,
         }
         item_data = {
             "name": "Shot",
             "pref_name": "shot_active",
-            "operator": "blezou.shots_load",
+            "operator": BZ_OT_ShotsLoad.bl_idname,
         }
 
         # Production
@@ -98,7 +105,7 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         box = layout.box()
         row = box.row(align=True)
         row.operator(
-            "blezou.productions_load", text=prod_load_text, icon="DOWNARROW_HLT"
+            BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
         )
 
         # Category
@@ -111,7 +118,7 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         if category == "ASSETS":
             item_group_data["name"] = "AssetType"
             item_group_data["pref_name"] = "asset_type_active"
-            item_group_data["operator"] = "blezou.asset_types_load"
+            item_group_data["operator"] = BZ_OT_AssetTypesLoad.bl_idname
 
         row = box.row(align=True)
         item_group_text = f"Select {item_group_data['name']}"
@@ -127,7 +134,7 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         if category == "ASSETS":
             item_data["name"] = "Asset"
             item_data["pref_name"] = "asset_active"
-            item_data["operator"] = "blezou.assets_load"
+            item_data["operator"] = BZ_OT_AssetsLoad.bl_idname
 
         row = box.row(align=True)
         item_text = f"Select {item_data['name']}"
@@ -165,9 +172,9 @@ class BZ_PT_SQE_auth(bpy.types.Panel):
 
         row = layout.row(align=True)
         if not zsession.is_auth():
-            row.operator("blezou.session_start", text="Login")
+            row.operator(BZ_OT_SessionStart.bl_idname, text="Login")
         else:
-            row.operator("blezou.session_end", text="Logout")
+            row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout")
 
 
 class BZ_PT_SQE_context(bpy.types.Panel):
@@ -198,7 +205,7 @@ class BZ_PT_SQE_context(bpy.types.Panel):
         box = layout.box()
         row = box.row(align=True)
         row.operator(
-            "blezou.productions_load", text=prod_load_text, icon="DOWNARROW_HLT"
+            BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
         )
 
 
