@@ -301,10 +301,11 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(
-            context.scene.sequence_editor.active_strip
-            and len(context.selected_sequences) == 1
-        )
+        nr_of_shots = len(context.selected_sequences)
+        strip = context.scene.sequence_editor.active_strip
+        if nr_of_shots == 1:
+            return strip.blezou.initialized
+        return False
 
     def draw(self, context: bpy.types.Context) -> None:
 
@@ -349,6 +350,12 @@ class BZ_PT_SQE_push(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
+        # if only one strip is selected and it is not init then hide panel
+        nr_of_shots = len(context.selected_sequences)
+        strip = context.scene.sequence_editor.active_strip
+        if nr_of_shots == 1:
+            return strip.blezou.initialized
+
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -403,6 +410,11 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
+        # if only one strip is selected and it is not init then hide panel
+        nr_of_shots = len(context.selected_sequences)
+        strip = context.scene.sequence_editor.active_strip
+        if nr_of_shots == 1:
+            return strip.blezou.initialized
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
