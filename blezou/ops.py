@@ -558,54 +558,6 @@ class CheckStrip:
         return int(strip.frame_final_start) <= framenr <= int(strip.frame_final_end)
 
 
-class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
-    """
-    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click.
-    """
-
-    bl_idname = "blezou.sqe_link_sequence"
-    bl_label = "Link Sequence"
-    bl_options = {"INTERNAL"}
-    bl_property = "enum_prop"
-
-    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        prefs = prefs_get(context)
-        active_project = ZProject(**prefs["project_active"].to_dict())
-
-        enum_list = [
-            (s.id, s.name, s.description if s.description else "")
-            for s in active_project.get_sequences_all()
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_sequences)  # type: ignore
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
-        strip = context.scene.sequence_editor.active_strip
-        return bool(zsession_auth(context) and active_project and strip)
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        strip = context.scene.sequence_editor.active_strip
-        sequence_id = self.enum_prop
-        if not sequence_id:
-            return {"CANCELED"}
-
-        # set sequence properties
-        zseq = ZSequence.by_id(sequence_id)
-        strip.blezou.sequence_name = zseq.name
-        strip.blezou.sequence_id = zseq.id
-
-        ui_redraw()
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.invoke_search_popup(self)
-        return {"FINISHED"}
-
-
 class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
     """
     Operator that pushes metadata of all selected sequencce strips to gazou
@@ -828,6 +780,63 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
+    """
+    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    """
+
+    bl_idname = "blezou.sqe_link_sequence"
+    bl_label = "Link Sequence"
+    bl_options = {"INTERNAL"}
+    bl_property = "enum_prop"
+
+    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+        prefs = prefs_get(context)
+        zproject_dict = prefs["project_active"].to_dict()
+
+        if not zproject_dict:
+            return []
+
+        active_project = ZProject(**zproject_dict)
+        enum_list = [
+            (s.id, s.name, s.description if s.description else "")
+            for s in active_project.get_sequences_all()
+        ]
+        return enum_list
+
+    enum_prop: bpy.props.EnumProperty(items=_get_sequences)  # type: ignore
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        prefs = prefs_get(context)
+        active_project = prefs["project_active"]
+        strip = context.scene.sequence_editor.active_strip
+        return bool(
+            zsession_auth(context)
+            and active_project
+            and strip
+            and context.selected_sequences
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        strip = context.scene.sequence_editor.active_strip
+        sequence_id = self.enum_prop
+        if not sequence_id:
+            return {"CANCELED"}
+
+        # set sequence properties
+        zseq = ZSequence.by_id(sequence_id)
+        strip.blezou.sequence_name = zseq.name
+        strip.blezou.sequence_id = zseq.id
+
+        ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"FINISHED"}
+
+
 class BZ_OT_SQE_LinkShot(bpy.types.Operator):
     """
     Operator that invokes ui which shows user all available shots in gazou.
@@ -844,8 +853,12 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
 
     def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         prefs = prefs_get(context)
-        zproject = ZProject(**prefs["project_active"].to_dict())
+        zproject_dict = prefs["project_active"].to_dict()
 
+        if not zproject_dict:
+            return []
+
+        zproject = ZProject(**zproject_dict)
         enum_list = []
         all_sequences = zproject.get_sequences_all()
         for seq in all_sequences:
@@ -874,6 +887,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
             zsession_auth(context)
             and active_project
             and context.scene.sequence_editor.active_strip
+            and context.selected_sequences
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
