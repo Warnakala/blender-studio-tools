@@ -125,6 +125,10 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
     def _get_productions(
         self, context: bpy.types.Context
     ) -> List[Tuple[str, str, str]]:
+
+        if not zsession_auth(context):
+            return []
+
         zproductions = ZProductions()
         enum_list = [
             (p.id, p.name, p.description if p.description else "")
@@ -633,6 +637,16 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # needs to be logged in, active project
+        nr_of_shots = len(context.selected_sequences)
+        if nr_of_shots == 1:
+            strip = context.scene.sequence_editor.active_strip
+            return bool(
+                zsession_auth(context)
+                and zproject_active_get()
+                and strip.blezou.sequence_name
+                and strip.blezou.shot_name
+            )
+
         return bool(zsession_auth(context) and zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:

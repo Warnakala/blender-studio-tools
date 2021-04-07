@@ -241,7 +241,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         if nr_of_shots == 0:
             row = layout.row(align=True)
             # init all
-            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"INIT {noun}", icon="PLUS")
+            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS")
 
         elif nr_of_shots == 1:
             row = layout.row(align=True)
@@ -249,7 +249,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
             if not strip.blezou.initialized:
                 # init active
                 row.operator(
-                    BZ_OT_SQE_InitShot.bl_idname, text=f"INIT {noun}", icon="PLUS"
+                    BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS"
                 )
                 # link active
                 row.operator(
@@ -277,7 +277,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
             row = layout.row(align=True)
 
             # init all
-            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"INIT {noun}", icon="PLUS")
+            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS")
             # unlink all
             row = layout.row(align=True)
             row.operator(
@@ -362,6 +362,21 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         noun = get_selshots_noun(context)
         nr_of_shots = len(context.selected_sequences)
         layout = self.layout
+        strip = context.scene.sequence_editor.active_strip
+
+        # special case if one shot is selected and it is init but not linked
+        if nr_of_shots == 1 and not strip.blezou.linked:
+            # new operator
+            row = layout.row()
+            col = row.column(align=True)
+            col.operator(
+                BZ_OT_SQE_PushNewShot.bl_idname,
+                text=f"New {noun}",
+                icon="ADD",
+            )
+            return
+
+        # either way no selection one selection but linked or multiple
 
         # metadata operator
         row = layout.row()
@@ -379,14 +394,15 @@ class BZ_PT_SQE_push(bpy.types.Panel):
             icon="IMAGE_DATA",
         )
 
-        # new operator
+        # new operator only if not linked when once is active
         row = layout.row()
         col = row.column(align=True)
-        col.operator(
-            BZ_OT_SQE_PushNewShot.bl_idname,
-            text=f"New {noun}",
-            icon="ADD",
-        )
+        if nr_of_shots != 1 or not strip.blezou.linked:
+            col.operator(
+                BZ_OT_SQE_PushNewShot.bl_idname,
+                text=f"New {noun}",
+                icon="ADD",
+            )
         # delete operator
         if nr_of_shots > 0:
             col.operator(
@@ -414,7 +430,7 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
         nr_of_shots = len(context.selected_sequences)
         strip = context.scene.sequence_editor.active_strip
         if nr_of_shots == 1:
-            return strip.blezou.initialized
+            return strip.blezou.linked
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -440,6 +456,7 @@ class BZ_PT_SQE_debug(bpy.types.Panel):
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 40
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
