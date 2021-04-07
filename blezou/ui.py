@@ -294,14 +294,14 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
 
         # sequence
         sub_row = col.row(align=True)
-        sub_row.prop(strip.blezou, "sequence")
+        sub_row.prop(strip.blezou, "sequence_name")
         sub_row.operator(BZ_OT_SQE_LinkSequence.bl_idname, text="", icon="LINKED")
 
         # shot
-        col.prop(strip.blezou, "shot")
+        col.prop(strip.blezou, "shot_name")
 
         # description
-        col.prop(strip.blezou, "description")
+        col.prop(strip.blezou, "shot_description")
         col.enabled = False if not strip.blezou.initialized else True
 
         # initialized
@@ -312,9 +312,11 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         # id
         col = box.column(align=True)
         col.enabled = False
-        col.prop(strip.blezou, "id")
+        col.prop(strip.blezou, "shot_id")
         col.prop(strip.blezou, "linked")
-        col.prop(strip.blezou, "project")
+        col.prop(strip.blezou, "project_name")
+        col.prop(strip.blezou, "project_id")
+        col.prop(strip.blezou, "sequence_id")
 
 
 class BZ_PT_SQE_push(bpy.types.Panel):

@@ -8,17 +8,26 @@ class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
     be pushed to backend.
     """
 
-    id: bpy.props.StringProperty(name="ID")
-    shot: bpy.props.StringProperty(name="Shot", default="")
-    sequence: bpy.props.StringProperty(name="Seq", default="")
-    description: bpy.props.StringProperty(name="Description", default="")
+    # shot
+    shot_id: bpy.props.StringProperty(name="Shot ID")
+    shot_name: bpy.props.StringProperty(name="Shot", default="")
+    shot_description: bpy.props.StringProperty(name="Description", default="")
+
+    # sequence
+    sequence_name: bpy.props.StringProperty(name="Seq", default="")
+    sequence_id: bpy.props.StringProperty(name="Seq ID", default="")
+
+    # project
+    project_name: bpy.props.StringProperty(name="Project", default="")
+    project_id: bpy.props.StringProperty(name="Project ID", default="")
+
+    # meta
     initialized: bpy.props.BoolProperty(
         name="Initialized", default=False, description="Is Blezou shot"
     )
     linked: bpy.props.BoolProperty(
         name="Linked", default=False, description="Is linked to an ID in gazou"
     )
-    project: bpy.props.StringProperty(name="Project", default="")
 
     def to_dict(self):
         return {
@@ -29,10 +38,16 @@ class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
         }
 
     def clear(self):
-        self.id = ""
-        self.shot = ""
-        self.sequence = ""
-        self.description = ""
+        self.shot_id = ""
+        self.shot_name = ""
+        self.shot_description = ""
+
+        self.sequence_id = ""
+        self.sequence_name = ""
+
+        self.project_name = ""
+        self.project_id = ""
+
         self.initialized = False
         self.linked = False
 

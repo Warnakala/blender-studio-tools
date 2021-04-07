@@ -341,17 +341,25 @@ class Pull:
     def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
         # clear cache before pulling
         ZCache.clear_all()
-        seq_name = zshot.sequence_name
-        if seq_name:  # TODO: is sometimtes None
-            strip.blezou.sequence = seq_name
-        strip.blezou.shot = zshot.name
-        strip.blezou.description = zshot.description if zshot.description else ""
-        strip.blezou.id = zshot.id
+
+        # update sequence props
+        zseq = ZSequence.by_id(zshot.parent_id)
+        strip.blezou.sequence_id = zseq.id
+        strip.blezou.sequence_name = zseq.name
+
+        # update shot props
+        strip.blezou.shot_id = zshot.id
+        strip.blezou.shot_name = zshot.name
+        strip.blezou.shot_description = zshot.description if zshot.description else ""
+
+        # update project props
+        zproject = ZProject.by_id(zshot.project_id)
+        strip.blezou.project_id = zproject.id
+        strip.blezou.project_name = zproject.name
+
+        # update meta props
         strip.blezou.initialized = True
         strip.blezou.linked = True
-        strip.blezou.project = zshot.project_name
-        # strip.frame_final_start = zshot.data["frame_in"]
-        # strip.frame_final_end = zshot.data["frame_out"]
         logger.info("Pulled meta from shot: %s to strip: %s" % (zshot.name, strip.name))
 
 
@@ -360,13 +368,23 @@ class Push:
 
     @staticmethod
     def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
-        zshot.name = strip.blezou.shot
-        zshot.description = strip.blezou.description
+
+        # update shot info
+        zshot.name = strip.blezou.shot_name
+        zshot.description = strip.blezou.shot_description
         frame_range = Push._remap_frame_range(
             strip.frame_final_start, strip.frame_final_end
         )
         zshot.data["frame_in"] = frame_range[0]
         zshot.data["frame_out"] = frame_range[1]
+
+        # update sequence info if changed
+        if not zshot.sequence_name == strip.blezou.sequence_name:
+            zseq = ZSequence.by_id(strip.blezou.sequence_id)
+            zshot.sequence_id = zseq.id
+            zshot.parent_id = zseq.id
+            zshot.sequence_name = zseq.name
+
         # update in gazou
         zshot.update()
         logger.info("Pushed meta to shot: %s from strip: %s" % (zshot.name, strip.name))
@@ -378,14 +396,14 @@ class Push:
         zproject: ZProject,
     ) -> ZShot:
         zshot = zproject.create_shot(
-            strip.blezou.shot,
+            strip.blezou.shot_name,
             zsequence,
             frame_in=strip.frame_final_start,
             frame_out=strip.frame_final_end,
         )
         # update description, no option to pass that on create
-        if strip.blezou.description:
-            zshot.description = strip.blezou.description
+        if strip.blezou.shot_description:
+            zshot.description = strip.blezou.shot_description
             zshot.update()
 
         # set project name locally, will be available on next pull
@@ -398,7 +416,7 @@ class Push:
     @staticmethod
     def new_sequence(strip: bpy.types.Sequence, zproject: ZProject) -> ZSequence:
         zsequence = zproject.create_sequence(
-            strip.blezou.sequence,
+            strip.blezou.sequence_name,
         )
         logger.info(
             "Pushed create sequence: %s for project: %s"
@@ -444,15 +462,15 @@ class CheckStrip:
             return False
         else:
             logger.info(
-                "Strip: %s. Is linked to ID: %s." % (strip.name, strip.blezou.id)
+                "Strip: %s. Is linked to ID: %s." % (strip.name, strip.blezou.shot_id)
             )
             return True
 
     @staticmethod
     def has_meta(strip: bpy.types.Sequence) -> bool:
-        """Returns True if strip.blezou.shot and strip.blezou.sequence is Truethy else False"""
-        seq = strip.blezou.sequence
-        shot = strip.blezou.shot
+        """Returns True if strip.blezou.shot_name and strip.blezou.sequence_name is Truethy else False"""
+        seq = strip.blezou.sequence_name
+        shot = strip.blezou.shot_name
         if not bool(seq and shot):
             logger.info("Strip: %s. Missing metadata." % strip.name)
             return False
@@ -465,16 +483,16 @@ class CheckStrip:
 
     @staticmethod
     def shot_exists_by_id(strip: bpy.types.Sequence) -> Optional[ZShot]:
-        """Returns ZShot instance if shot with strip.blezou.id exists else None"""
+        """Returns ZShot instance if shot with strip.blezou.shot_id exists else None"""
 
         ZCache.clear_all()
 
         try:
-            zshot = ZShot.by_id(strip.blezou.id)
+            zshot = ZShot.by_id(strip.blezou.shot_id)
         except gazu.exception.RouteNotFoundException:
             logger.error(
                 "Strip: %s. Shot ID: %s not found in gazou anymore. Was maybe deleted?"
-                % (strip.name, strip.blezou.id)
+                % (strip.name, strip.blezou.shot_id)
             )
             return None
         if zshot:
@@ -486,7 +504,7 @@ class CheckStrip:
         else:
             logger.info(
                 "Strip: %s. Shot %s does not exist in gazou. ID: %s not found."
-                % (strip.name, zshot.name, strip.blezou.id)
+                % (strip.name, zshot.name, strip.blezou.shot_id)
             )
             return None
 
@@ -494,11 +512,11 @@ class CheckStrip:
     def seq_exists_by_name(
         strip: bpy.types.Sequence, zproject: ZProject
     ) -> Optional[ZSequence]:
-        """Returns ZSequence instance if strip.blezou.sequence exists in gazou, else None"""
+        """Returns ZSequence instance if strip.blezou.sequence_name exists in gazou, else None"""
 
         ZCache.clear_all()
 
-        zseq = zproject.get_sequence_by_name(strip.blezou.sequence)
+        zseq = zproject.get_sequence_by_name(strip.blezou.sequence_name)
         if zseq:
             logger.info(
                 "Strip: %s. Sequence %s exists in gazou, ID: %s)."
@@ -508,7 +526,7 @@ class CheckStrip:
         else:
             logger.info(
                 "Strip: %s. Sequence %s does not exist in gazou."
-                % (strip.name, strip.blezou.sequence)
+                % (strip.name, strip.blezou.sequence_name)
             )
             return None
 
@@ -516,11 +534,11 @@ class CheckStrip:
     def shot_exists_by_name(
         strip: bpy.types.Sequence, zproject: ZProject, zsequence: ZSequence
     ) -> Optional[ZShot]:
-        """Returns ZShot instance if strip.blezou.shot exists in gazou, else None."""
+        """Returns ZShot instance if strip.blezou.shot_name exists in gazou, else None."""
 
         ZCache.clear_all()
 
-        zshot = zproject.get_shot_by_name(zsequence, strip.blezou.shot)
+        zshot = zproject.get_shot_by_name(zsequence, strip.blezou.shot_name)
         if zshot:
             logger.info(
                 "Strip: %s. Shot already existent in gazou, ID: %s)."
@@ -530,7 +548,7 @@ class CheckStrip:
         else:
             logger.info(
                 "Strip: %s. Shot %s does not exist in gazou."
-                % (strip.name, strip.blezou.shot)
+                % (strip.name, strip.blezou.shot_name)
             )
             return None
 
@@ -555,7 +573,7 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
         active_project = ZProject(**prefs["project_active"].to_dict())
 
         enum_list = [
-            (s.name, s.name, s.description if s.description else "")
+            (s.id, s.name, s.description if s.description else "")
             for s in active_project.get_sequences_all()
         ]
         return enum_list
@@ -566,15 +584,20 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         prefs = prefs_get(context)
         active_project = prefs["project_active"]
-        return bool(zsession_auth(context) and active_project)
+        strip = context.scene.sequence_editor.active_strip
+        return bool(zsession_auth(context) and active_project and strip)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         strip = context.scene.sequence_editor.active_strip
-        sequence = self.enum_prop
-        if not sequence:
+        sequence_id = self.enum_prop
+        if not sequence_id:
             return {"CANCELED"}
 
-        strip.blezou.sequence = sequence
+        # set sequence properties
+        zseq = ZSequence.by_id(sequence_id)
+        strip.blezou.sequence_name = zseq.name
+        strip.blezou.sequence_id = zseq.id
+
         ui_redraw()
         return {"FINISHED"}
 
@@ -1007,7 +1030,6 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         # needs to be logged in, active project
         prefs = prefs_get(context)
-        active_project = prefs["project_active"]
         return bool(zsession_auth(context) and context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -1163,9 +1185,11 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
         self, context: bpy.types.Context, strip: bpy.types.Sequence
     ) -> Path:
         bpy.ops.render.render()
-        file_name = f"{strip.blezou.id}_{str(context.scene.frame_current)}.jpg"
+        file_name = f"{strip.blezou.shot_id}_{str(context.scene.frame_current)}.jpg"
         path = self._save_render(bpy.data.images["Render Result"], file_name)
-        logger.info(f"Saved thumbnail of shot {strip.blezou.shot} to {path.as_posix()}")
+        logger.info(
+            f"Saved thumbnail of shot {strip.blezou.shot_name} to {path.as_posix()}"
+        )
         return path
 
     def _save_render(self, datablock: bpy.types.Image, file_name: str) -> Path:

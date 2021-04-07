@@ -48,8 +48,8 @@ def _sqe_update_duplicates(context: bpy.types.Context) -> List[Tuple[str, str, s
 
         if strips[i].blezou.linked:
             # get shot_id, shot_name, create entry in data_dict if id not existent
-            shot_id = strips[i].blezou.id
-            shot_name = strips[i].blezou.shot
+            shot_id = strips[i].blezou.shot_id
+            shot_name = strips[i].blezou.shot_name
             if shot_id not in data_dict:
                 data_dict[shot_id] = {"name": shot_name, "strips": []}
 
@@ -59,7 +59,7 @@ def _sqe_update_duplicates(context: bpy.types.Context) -> List[Tuple[str, str, s
 
             # comparet to all other strip
             for j in range(i + 1, len(strips)):
-                if shot_id == strips[j].blezou.id:
+                if shot_id == strips[j].blezou.shot_id:
                     data_dict[shot_id]["strips"].append(strips[j])
 
     # convert in data strucutre for enum property
@@ -85,7 +85,7 @@ def _sqe_update_multi_project(context: bpy.types.Context) -> List[Tuple[str, str
     # create data dict that holds project names as key and values the corresponding sequence strips
     for strip in strips:
         if strip.blezou.linked:
-            project = strip.blezou.project
+            project = strip.blezou.project_name
             if project not in data_dict:
                 data_dict[project] = []
 
