@@ -25,7 +25,7 @@ from .logger import ZLoggerFactory
 from .gazu import gazu
 from . import opsdata
 
-logger = ZLoggerFactory.getLogger(__name__)
+logger = ZLoggerFactory.getLogger(name=__name__)
 
 
 class BZ_OT_SessionStart(bpy.types.Operator):
@@ -70,26 +70,30 @@ class BZ_OT_SessionStart(bpy.types.Operator):
 
         if project_active_id:
             prefs._ZPROJECT_ACTIVE = ZProject.by_id(project_active_id)
-            logger.info(f"Initialized Active Project to: {prefs._ZPROJECT_ACTIVE.name}")
+            logger.info(
+                f"Initialized Active Project Cache to: {prefs._ZPROJECT_ACTIVE.name}"
+            )
 
         if sequence_active_id:
             props._ZSEQUENCE_ACTIVE = ZSequence.by_id(sequence_active_id)
             logger.info(
-                f"Initialized Active Sequence to: {props._ZSEQUENCE_ACTIVE.name}"
+                f"Initialized Active Sequence Cache to: {props._ZSEQUENCE_ACTIVE.name}"
             )
 
         if shot_active_id:
             props._ZSHOT_ACTIVE = ZShot.by_id(shot_active_id)
-            logger.info(f"Initialized Active Shot to: {props._ZSHOT_ACTIVE.name}")
+            logger.info(f"Initialized Active Shot Cache to: {props._ZSHOT_ACTIVE.name}")
 
         if asset_active_id:
             props._ZASSET_ACTIVE = ZAsset.by_id(asset_active_id)
-            logger.info(f"Initialized Active Asset to: {props._ZASSET_ACTIVE.name}")
+            logger.info(
+                f"Initialized Active Asset Cache to: {props._ZASSET_ACTIVE.name}"
+            )
 
         if asset_type_active_id:
             props._ZASSET_TYPE_ACTIVE = ZAssetType.by_id(asset_type_active_id)
         logger.info(
-            f"Initialized Active Asset Type to: {props._ZASSET_TYPE_ACTIVE.name}"
+            f"Initialized Active Asset Type Cache to: {props._ZASSET_TYPE_ACTIVE.name}"
         )
 
 
@@ -109,6 +113,9 @@ class BZ_OT_SessionEnd(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         zsession = zsession_get(context)
         zsession.end()
+        # clear cache variables
+        props.clear_cache_variables()
+        prefs.clear_cache_variables()
         return {"FINISHED"}
 
 

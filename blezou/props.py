@@ -4,7 +4,7 @@ from dataclasses import asdict
 from .logger import ZLoggerFactory
 from typing import Optional, Any
 
-logger = ZLoggerFactory.getLogger(__name__)
+logger = ZLoggerFactory.getLogger(name=__name__)
 
 _ZSEQUENCE_ACTIVE: ZSequence = ZSequence()
 _ZSHOT_ACTIVE: ZShot = ZShot()
@@ -94,16 +94,22 @@ class BZ_PopertyGroup_BlezouData(bpy.types.PropertyGroup):
     def clear(self):
         self.sequence_active_id = ""
         self.shot_active_id = ""
-        self.asset_type_active_id = ""
         self.asset_active_id = ""
+        self.asset_type_active_id = ""
 
 
-def clear_cache_variables() -> None:
-    _ZSEQUENCE_ACTIVE = None
-    _ZSHOT_ACTIVE = None
-    _ZASSET_ACTIVE = None
-    _ZASSET_TYPE_ACTIVE = None
+def clear_cache_variables():
+    _ZSEQUENCE_ACTIVE = ZSequence()
+    logger.info("Cleared Active Sequence Cache")
+    _ZSHOT_ACTIVE = ZShot()
+    logger.info("Cleared Active Shot Cache")
+    _ZASSET_ACTIVE = ZAsset()
+    logger.info("Cleared Active Asset Cache")
+    _ZASSET_TYPE_ACTIVE = ZAssetType()
+    logger.info("Cleared Active Asset Type Cache")
 
+
+# ----------------REGISTER--------------
 
 classes = [BZ_PopertyGroup_SEQ_Shot, BZ_PopertyGroup_BlezouData]
 
@@ -129,4 +135,5 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
+    # clear cache
     clear_cache_variables()

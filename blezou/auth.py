@@ -4,7 +4,7 @@ from dataclasses import dataclass, asdict, field
 from .gazu import gazu
 from .logger import ZLoggerFactory
 
-logger = ZLoggerFactory.getLogger(__name__)
+logger = ZLoggerFactory.getLogger(name=__name__)
 
 
 class ZSession:

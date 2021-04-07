@@ -4,7 +4,10 @@ from pathlib import Path
 import bpy
 from .auth import ZSession
 from .types import ZProject
+from .logger import ZLoggerFactory
 from .ops import BZ_OT_ProductionsLoad, BZ_OT_SessionStart, BZ_OT_SessionEnd
+
+logger = ZLoggerFactory.getLogger(name=__name__)
 
 _ZPROJECT_ACTIVE: ZProject = ZProject()
 
@@ -116,6 +119,11 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         box.row().prop(self, "folder_thumbnail")
 
 
+def clear_cache_variables():
+    _ZPROJECT_ACTIVE = ZProject()
+    logger.info("Cleared Active Project Cache")
+
+
 # ---------REGISTER ----------
 
 classes = [BZ_AddonPreferences]
@@ -129,9 +137,12 @@ def register():
 def unregister():
 
     # log user out
-    prefs = addon_prefs_get(bpy.context)
-    if prefs.session.is_auth():
-        prefs.session.end()
+    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
+    if addon_prefs.session.is_auth():
+        addon_prefs.session.end()
+
+    # clear cache
+    clear_cache_variables()
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

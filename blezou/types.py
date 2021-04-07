@@ -4,7 +4,7 @@ from typing import Dict, Union, Union, Any, List, Optional
 from .gazu import gazu
 from .logger import ZLoggerFactory
 
-logger = ZLoggerFactory.getLogger(__name__)
+logger = ZLoggerFactory.getLogger(name=__name__)
 
 # TODO: @dataclass needs the init arguments to be known, what if gazu api changes?
 # some properties are also only provided by gazu if they are initialized
