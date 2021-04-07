@@ -1,17 +1,28 @@
 import bpy
 from typing import Optional
-from .util import prefs_get, zsession_get, zsession_auth
+from .util import *
+from . import props
+
 from .ops import (
+    BZ_OT_SessionStart,
+    BZ_OT_SessionEnd,
+    BZ_OT_ProductionsLoad,
+    BZ_OT_SequencesLoad,
+    BZ_OT_ShotsLoad,
+    BZ_OT_AssetsLoad,
+    BZ_OT_AssetTypesLoad,
     BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_DelShotMeta,
     BZ_OT_SQE_LinkShot,
+    BZ_OT_SQE_LinkSequence,
     BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PushShotMeta,
     BZ_OT_SQE_PullShotMeta,
     BZ_OT_SQE_DebugDuplicates,
     BZ_OT_SQE_DebugNotLinked,
+    BZ_OT_SQE_DebugMultiProjects,
 )
 
 
@@ -39,21 +50,20 @@ class BZ_PT_vi3d_auth(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = context.preferences.addons["blezou"].preferences
-        zsession = prefs.session
+        prefs = addon_prefs_get(context)
+        zsession = zsession_get(context)
 
         layout = self.layout
 
-        box = layout.box()
-        # box.row().prop(prefs, 'host')
-        box.row().prop(prefs, "email")
-        box.row().prop(prefs, "passwd")
-
         row = layout.row(align=True)
         if not zsession.is_auth():
-            row.operator("blezou.session_start", text="Login")
+            row.label(text=f"Email: {prefs.email}")
+            row = layout.row(align=True)
+            row.operator(BZ_OT_SessionStart.bl_idname, text="Login", icon="PLAY")
         else:
-            row.operator("blezou.session_end", text="Logout")
+            row.label(text=f"Logged in: {zsession.email}")
+            row = layout.row(align=True)
+            row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE")
 
 
 class BZ_PT_vi3d_context(bpy.types.Panel):
@@ -72,53 +82,48 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return True
+        return zsession_auth(context)
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = prefs_get(context)
+        prefs = addon_prefs_get(context)
         layout = self.layout
         category = prefs.category  # can be either 'SHOTS' or 'ASSETS'
+        zproject_active = zproject_active_get()
         item_group_data = {
             "name": "Sequence",
-            "pref_name": "sequence_active",
-            "operator": "blezou.sequences_load",
+            "zobject": zsequence_active_get(),
+            "operator": BZ_OT_SequencesLoad.bl_idname,
         }
         item_data = {
             "name": "Shot",
-            "pref_name": "shot_active",
-            "operator": "blezou.shots_load",
+            "zobject": zshot_active_get(),
+            "operator": BZ_OT_ShotsLoad.bl_idname,
         }
-
         # Production
-        if not prefs["project_active"].to_dict():
-            prod_load_text = "Select Production"
-        else:
-            prod_load_text = prefs["project_active"]["name"]
-
-        box = layout.box()
-        row = box.row(align=True)
-        row.operator(
-            "blezou.productions_load", text=prod_load_text, icon="DOWNARROW_HLT"
-        )
+        layout.row().label(text=f"Production: {zproject_active.name}")
 
         # Category
+        box = layout.box()
         row = box.row(align=True)
         row.prop(prefs, "category", expand=True)
-        if not zsession_auth(context) or not prefs["project_active"].to_dict():
+
+        if not zsession_auth(context) or not zproject_active:
             row.enabled = False
 
         # Sequence / AssetType
         if category == "ASSETS":
             item_group_data["name"] = "AssetType"
-            item_group_data["pref_name"] = "asset_type_active"
-            item_group_data["operator"] = "blezou.asset_types_load"
+            item_group_data["zobject"] = zasset_type_active_get()
+            item_group_data["operator"] = BZ_OT_AssetTypesLoad.bl_idname
 
         row = box.row(align=True)
         item_group_text = f"Select {item_group_data['name']}"
-        if not prefs["project_active"].to_dict():
+
+        if not zproject_active:
             row.enabled = False
-        elif prefs[item_group_data["pref_name"]]:
-            item_group_text = prefs[item_group_data["pref_name"]]["name"]
+
+        elif item_group_data["zobject"]:
+            item_group_text = item_group_data["zobject"].name
         row.operator(
             item_group_data["operator"], text=item_group_text, icon="DOWNARROW_HLT"
         )
@@ -126,18 +131,18 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         # Shot / Asset
         if category == "ASSETS":
             item_data["name"] = "Asset"
-            item_data["pref_name"] = "asset_active"
-            item_data["operator"] = "blezou.assets_load"
+            item_data["zobject"] = zasset_active_get()
+            item_data["operator"] = BZ_OT_AssetsLoad.bl_idname
 
         row = box.row(align=True)
         item_text = f"Select {item_data['name']}"
-        if (
-            not prefs["project_active"].to_dict()
-            and prefs[item_group_data["pref_name"]]
-        ):
+
+        if not zproject_active and item_group_data["zobject"]:
             row.enabled = False
-        elif prefs[item_data["pref_name"]]:
-            item_text = prefs[item_data["pref_name"]]["name"]
+
+        elif item_data["zobject"]:
+            item_text = item_data["zobject"].name
+
         row.operator(item_data["operator"], text=item_text, icon="DOWNARROW_HLT")
 
 
@@ -153,53 +158,20 @@ class BZ_PT_SQE_auth(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = context.preferences.addons["blezou"].preferences
-        zsession = prefs.session
+        prefs = addon_prefs_get(context)
+        zsession = zsession_get(context)
 
         layout = self.layout
-
-        box = layout.box()
-        # box.row().prop(prefs, 'host')
-        box.row().prop(prefs, "email")
-        box.row().prop(prefs, "passwd")
 
         row = layout.row(align=True)
         if not zsession.is_auth():
-            row.operator("blezou.session_start", text="Login")
+            row.label(text=f"Email: {prefs.email}")
+            row = layout.row(align=True)
+            row.operator(BZ_OT_SessionStart.bl_idname, text="Login", icon="PLAY")
         else:
-            row.operator("blezou.session_end", text="Logout")
-
-
-class BZ_PT_SQE_context(bpy.types.Panel):
-    """
-    Panel in sequence editor that only shows active production browser operator.
-    """
-
-    bl_category = "Blezou"
-    bl_label = "Context"
-    bl_space_type = "SEQUENCE_EDITOR"
-    bl_region_type = "UI"
-    bl_order = 20
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        return True
-
-    def draw(self, context: bpy.types.Context) -> None:
-        prefs = prefs_get(context)
-        layout = self.layout
-
-        # Production
-        if not prefs["project_active"]:
-            prod_load_text = "Select Production"
-        else:
-            prod_load_text = prefs["project_active"]["name"]
-
-        box = layout.box()
-        row = box.row(align=True)
-        row.operator(
-            "blezou.productions_load", text=prod_load_text, icon="DOWNARROW_HLT"
-        )
+            row.label(text=f"Logged in: {zsession.email}")
+            row = layout.row(align=True)
+            row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE")
 
 
 class BZ_PT_SQE_tools(bpy.types.Panel):
@@ -221,43 +193,63 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
 
         strip = context.scene.sequence_editor.active_strip
+        selshots = context.selected_sequences
+        nr_of_shots = len(selshots)
         noun = get_selshots_noun(context)
+        zproject_active = zproject_active_get()
 
         layout = self.layout
-        row = layout.row(align=True)
-        row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"INIT {noun}", icon="PLUS")
 
-        if not strip:
-            # link operator
-            row.operator(
-                BZ_OT_SQE_LinkShot.bl_idname, text="Link Active Shot", icon="LINKED"
-            )
-        else:
+        # Production
+        layout.row().label(text=f"Production: {zproject_active.name}")
+
+        if nr_of_shots == 0:
+            row = layout.row(align=True)
+            # init all
+            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS")
+
+        elif nr_of_shots == 1:
+            row = layout.row(align=True)
+
             if not strip.blezou.initialized:
-                # link operator
+                # init active
                 row.operator(
-                    BZ_OT_SQE_LinkShot.bl_idname, text="Link Active Shot", icon="LINKED"
+                    BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS"
                 )
-            else:
-                # relink operator
+                # link active
                 row.operator(
                     BZ_OT_SQE_LinkShot.bl_idname,
-                    text="Relink Active Shot",
+                    text=f"Link {noun}",
                     icon="LINKED",
                 )
 
-        # delete operator
-        selshots = context.selected_sequences
-        if len(selshots) > 1:
-            noun = "%i Shots" % len(selshots)
+            else:
+                # relink active
+                row.operator(
+                    BZ_OT_SQE_LinkShot.bl_idname,
+                    text=f"Relink {noun}",
+                    icon="LINKED",
+                )
+                row = layout.row(align=True)
+                # unlink active
+                row.operator(
+                    BZ_OT_SQE_DelShotMeta.bl_idname,
+                    text=f"Unlink {noun}",
+                    icon="CANCEL",
+                )
+
         else:
-            noun = "Active Shot"
-        row = layout.row(align=True)
-        row.operator(
-            BZ_OT_SQE_DelShotMeta.bl_idname,
-            text=f"Delete Metadata {noun}",
-            icon="CANCEL",
-        )
+            row = layout.row(align=True)
+
+            # init all
+            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS")
+            # unlink all
+            row = layout.row(align=True)
+            row.operator(
+                BZ_OT_SQE_DelShotMeta.bl_idname,
+                text=f"Unlink {noun}",
+                icon="CANCEL",
+            )
 
 
 class BZ_PT_SQE_shot_meta(bpy.types.Panel):
@@ -267,14 +259,18 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
 
     bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
-    bl_label = "Metadata Active Shot"
+    bl_label = "Metadata"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 10
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.scene.sequence_editor.active_strip)
+        nr_of_shots = len(context.selected_sequences)
+        strip = context.scene.sequence_editor.active_strip
+        if nr_of_shots == 1:
+            return strip.blezou.initialized
+        return False
 
     def draw(self, context: bpy.types.Context) -> None:
 
@@ -284,26 +280,25 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         col = box.column(align=True)
 
         # sequence
-        col.prop(strip.blezou, "sequence")
+        sub_row = col.row(align=True)
+        sub_row.prop(strip.blezou, "sequence_name")
+        sub_row.operator(BZ_OT_SQE_LinkSequence.bl_idname, text="", icon="LINKED")
 
         # shot
-        col.prop(strip.blezou, "shot")
+        col.prop(strip.blezou, "shot_name")
 
         # description
-        col.prop(strip.blezou, "description")
+        col.prop(strip.blezou, "shot_description")
         col.enabled = False if not strip.blezou.initialized else True
 
-        # initialized
-        col = box.column(align=True)
-        col.prop(strip.blezou, "initialized")
-        col.enabled = False
-
-        # id
+        # not editable
         col = box.column(align=True)
         col.enabled = False
-        col.prop(strip.blezou, "id")
         col.prop(strip.blezou, "linked")
-        col.prop(strip.blezou, "project")
+        # ol.prop(strip.blezou, "shot_id")
+        # col.prop(strip.blezou, "project_name")
+        # col.prop(strip.blezou, "project_id")
+        # col.prop(strip.blezou, "sequence_id")
 
 
 class BZ_PT_SQE_push(bpy.types.Panel):
@@ -313,52 +308,73 @@ class BZ_PT_SQE_push(bpy.types.Panel):
 
     bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
-    bl_label = "PUSH"
+    bl_label = "Push"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 20
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
+        # if only one strip is selected and it is not init then hide panel
+        nr_of_shots = len(context.selected_sequences)
+        strip = context.scene.sequence_editor.active_strip
+        if nr_of_shots == 1:
+            return strip.blezou.initialized
+
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
         noun = get_selshots_noun(context)
-
+        nr_of_shots = len(context.selected_sequences)
         layout = self.layout
+        strip = context.scene.sequence_editor.active_strip
 
+        # special case if one shot is selected and it is init but not linked
+        if nr_of_shots == 1 and not strip.blezou.linked:
+            # new operator
+            row = layout.row()
+            col = row.column(align=True)
+            col.operator(
+                BZ_OT_SQE_PushNewShot.bl_idname,
+                text=f"New {noun}",
+                icon="ADD",
+            )
+            return
+
+        # either way no selection one selection but linked or multiple
+
+        # metadata operator
         row = layout.row()
         col = row.column(align=True)
         col.operator(
             BZ_OT_SQE_PushShotMeta.bl_idname,
-            text=f"Push METADATA for {noun}",
+            text=f"Metadata {noun}",
             icon="SEQ_STRIP_META",
         )
 
+        # thumbnail operator
         col.operator(
             BZ_OT_SQE_PushThumbnail.bl_idname,
-            text=f"Push THUMBNAIL for {noun}",
+            text=f"Thumbnail {noun}",
             icon="IMAGE_DATA",
         )
 
+        # new operator only if not linked when once is active
         row = layout.row()
         col = row.column(align=True)
-        col.operator(
-            BZ_OT_SQE_PushNewShot.bl_idname,
-            text=f"Push NEW for {noun}",
-            icon="ADD",
-        )
+        if nr_of_shots != 1 or not strip.blezou.linked:
+            col.operator(
+                BZ_OT_SQE_PushNewShot.bl_idname,
+                text=f"New {noun}",
+                icon="ADD",
+            )
         # delete operator
-        selshots = context.selected_sequences
-        if len(selshots) > 1:
-            noun = "%i Shots" % len(selshots)
-        else:
-            noun = "Active Shot"
-        col.operator(
-            BZ_OT_SQE_PushDeleteShot.bl_idname,
-            text=f"Push DELETE for {noun}",
-            icon="KEYTYPE_EXTREME_VEC",
-        )
+        if nr_of_shots > 0:
+            col.operator(
+                BZ_OT_SQE_PushDeleteShot.bl_idname,
+                text=f"Delete {noun}",
+                icon="KEYTYPE_EXTREME_VEC",
+            )
 
 
 class BZ_PT_SQE_pull(bpy.types.Panel):
@@ -368,13 +384,18 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
 
     bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
-    bl_label = "PULL"
+    bl_label = "Pull"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 30
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
+        # if only one strip is selected and it is not init then hide panel
+        nr_of_shots = len(context.selected_sequences)
+        strip = context.scene.sequence_editor.active_strip
+        if nr_of_shots == 1:
+            return strip.blezou.linked
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -384,7 +405,7 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
         row = layout.row()
         row.operator(
             BZ_OT_SQE_PullShotMeta.bl_idname,
-            text=f"Pull Metadata for {noun}",
+            text=f"Metadata {noun}",
             icon="SEQ_STRIP_META",
         )
 
@@ -400,6 +421,7 @@ class BZ_PT_SQE_debug(bpy.types.Panel):
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 40
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -412,13 +434,19 @@ class BZ_PT_SQE_debug(bpy.types.Panel):
         row = layout.row()
         row.operator(
             BZ_OT_SQE_DebugDuplicates.bl_idname,
-            text=f"Debug Duplicates {noun}",
+            text=f"Duplicates {noun}",
             icon="MODIFIER_ON",
         )
         row = layout.row()
         row.operator(
             BZ_OT_SQE_DebugNotLinked.bl_idname,
-            text=f"Debug not Linked {noun}",
+            text=f"Not Linked {noun}",
+            icon="MODIFIER_ON",
+        )
+        row = layout.row()
+        row.operator(
+            BZ_OT_SQE_DebugMultiProjects.bl_idname,
+            text=f"Multi Projects {noun}",
             icon="MODIFIER_ON",
         )
 
@@ -429,7 +457,6 @@ classes = [
     BZ_PT_vi3d_auth,
     BZ_PT_SQE_auth,
     BZ_PT_vi3d_context,
-    BZ_PT_SQE_context,
     BZ_PT_SQE_tools,
     BZ_PT_SQE_shot_meta,
     BZ_PT_SQE_push,

@@ -5,8 +5,14 @@ Blezou is a Blender addon to interact with the gazou data base from within Blend
 ---------
 - Addon preferences to set host, email, password
 - 3DView: browsing through gazou data structure to initialize context
-- SequenceEditor: set metadata for each sequence strips
-- SequenceEditor: sync metadata for sequence strips and update backend (create/update shots)
+- SequenceEditor: Selection sensitive operators, most of them work on multiple strips:
+    - Push thumbnail for shot to kitsu
+    - Push metadata for shot to kitsu (shotname, description, frame in, frame out)
+    - Push create a new shot to (create)
+    - Push delete a shot to kitsu
+    - Pull Metadadata of shot from kitsu
+    - Debug initialized shots that are not linked yet
+    - Debug shots that are linked to multiple sequence strips
 
 ## Prerequisite
 ------------
