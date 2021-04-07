@@ -1,13 +1,11 @@
 import bpy
 from .types import ZProject, ZSequence, ZShot, ZAssetType, ZAsset
 from dataclasses import asdict
-from .util import prefs_get
 from .logger import ZLoggerFactory
 from typing import Optional, Any
 
 logger = ZLoggerFactory.getLogger(__name__)
 
-_ZPROJECT_ACTIVE: ZProject = ZProject()
 _ZSEQUENCE_ACTIVE: ZSequence = ZSequence()
 _ZSHOT_ACTIVE: ZShot = ZShot()
 _ZASSET_ACTIVE: ZAsset = ZAsset()
@@ -68,12 +66,6 @@ class BZ_PopertyGroup_SEQ_Shot(bpy.types.PropertyGroup):
 class BZ_PopertyGroup_BlezouData(bpy.types.PropertyGroup):
     """"""
 
-    project_active_id: bpy.props.StringProperty(  # type: ignore
-        name="previous project id",
-        description="GazouId that refers to the last active project",
-        default="",
-        options={"HIDDEN", "SKIP_SAVE"},
-    )
     sequence_active_id: bpy.props.StringProperty(  # type: ignore
         name="active sequence id",
         description="Gazou Id that refers to the active sequence",
@@ -99,24 +91,14 @@ class BZ_PopertyGroup_BlezouData(bpy.types.PropertyGroup):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
-
-def load_project_previous(context: bpy.types.Context) -> None:
-    prefs = prefs_get(context)
-    # check if previous active project is there, set active project
-    p_id = context.scene.blezou.project_previous_id
-    # does not work because of restricted context
-    if not p_id:
-        return None
-    zproject = ZProject.by_id(p_id)
-    if not zproject:
-        return None
-
-    prefs["project_active"] = asdict(zproject)
-    logger.info(f"Loaded previous Project: {zproject.name}")
+    def clear(self):
+        self.sequence_active_id = ""
+        self.shot_active_id = ""
+        self.asset_type_active_id = ""
+        self.asset_active_id = ""
 
 
 def clear_cache_variables() -> None:
-    _ZPROJECT_ACTIVE = None
     _ZSEQUENCE_ACTIVE = None
     _ZSHOT_ACTIVE = None
     _ZASSET_ACTIVE = None

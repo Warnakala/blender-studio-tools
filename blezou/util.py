@@ -1,10 +1,9 @@
-import sys
-from pathlib import Path
 import bpy
 from .auth import ZSession
 from typing import Dict, Any, Optional
 from .types import ZProject, ZSequence, ZShot, ZAsset, ZAssetType
 from . import props
+from . import prefs
 
 
 def zsession_get(context: bpy.types.Context) -> ZSession:
@@ -15,7 +14,7 @@ def zsession_get(context: bpy.types.Context) -> ZSession:
     return prefs.session  # type: ignore
 
 
-def prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
+def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """
     shortcut to get blezou addon preferences
     """
@@ -30,17 +29,17 @@ def zsession_auth(context: bpy.types.Context) -> bool:
 
 
 def zproject_active_get() -> ZProject:
-    return props._ZPROJECT_ACTIVE
+    return prefs._ZPROJECT_ACTIVE
 
 
 def zproject_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
-    props._ZPROJECT_ACTIVE = ZProject.by_id(entity_id)
-    context.scene.blezou.project_active_id = entity_id
+    prefs._ZPROJECT_ACTIVE = ZProject.by_id(entity_id)
+    addon_prefs_get(context).project_active_id = entity_id
 
 
 def zproject_active_reset(context: bpy.types.Context) -> None:
-    props._ZPROJECT_ACTIVE = ZProject()
-    context.scene.blezou.project_active_id = ""
+    prefs._ZPROJECT_ACTIVE = ZProject()
+    addon_prefs_get(context).project_active_id = ""
 
 
 def zsequence_active_get() -> ZSequence:
@@ -97,21 +96,3 @@ def zasset_type_active_set_by_id(context: bpy.types.Context, entity_id: str) -> 
 def zasset_type_active_reset(context: bpy.types.Context) -> None:
     props._ZASSET_TYPE_ACTIVE = ZAssetType()
     context.scene.blezou.asset_type_active_id = ""
-
-
-def get_datadir() -> Path:
-    """Returns a Path where persistent application data can be stored.
-
-    # linux: ~/.local/share
-    # macOS: ~/Library/Application Support
-    # windows: C:/Users/<USER>/AppData/Roaming
-    """
-
-    home = Path.home()
-
-    if sys.platform == "win32":
-        return home / "AppData/Roaming"
-    elif sys.platform == "linux":
-        return home / ".local/share"
-    elif sys.platform == "darwin":
-        return home / "Library/Application Support"

@@ -20,6 +20,7 @@ from .types import (
 from .util import *
 from .core import ui_redraw
 from . import props
+from . import prefs
 from .logger import ZLoggerFactory
 from .gazu import gazu
 from . import opsdata
@@ -41,9 +42,6 @@ class BZ_OT_SessionStart(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return True
-        # TODO: zsession.valid_config() seems to have update issues
-        zsession = zsession_get(context)
-        return zsession.valid_config()
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         zsession = zsession_get(context)
@@ -54,23 +52,25 @@ class BZ_OT_SessionStart(bpy.types.Operator):
         return {"FINISHED"}
 
     def get_config(self, context: bpy.types.Context) -> Dict[str, str]:
-        prefs = prefs_get(context)
+        addon_prefs = addon_prefs_get(context)
         return {
-            "email": prefs.email,
-            "host": prefs.host,
-            "passwd": prefs.passwd,
+            "email": addon_prefs.email,
+            "host": addon_prefs.host,
+            "passwd": addon_prefs.passwd,
         }
 
     def _init_cache_variables(self, context: bpy.types.Context) -> None:
-        project_active_id = context.scene.blezou.project_active_id
+        addon_prefs = addon_prefs_get(context)
+
+        project_active_id = addon_prefs.project_active_id
         sequence_active_id = context.scene.blezou.sequence_active_id
         shot_active_id = context.scene.blezou.shot_active_id
         asset_active_id = context.scene.blezou.asset_active_id
         asset_type_active_id = context.scene.blezou.asset_type_active_id
 
         if project_active_id:
-            props._ZPROJECT_ACTIVE = ZProject.by_id(project_active_id)
-            logger.info(f"Initialized Active Project to: {props._ZPROJECT_ACTIVE.name}")
+            prefs._ZPROJECT_ACTIVE = ZProject.by_id(project_active_id)
+            logger.info(f"Initialized Active Project to: {prefs._ZPROJECT_ACTIVE.name}")
 
         if sequence_active_id:
             props._ZSEQUENCE_ACTIVE = ZSequence.by_id(sequence_active_id)
@@ -1217,8 +1217,8 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
     def _save_render(self, datablock: bpy.types.Image, file_name: str) -> Path:
         """Save the current render image to disk"""
 
-        prefs = prefs_get(bpy.context)
-        folder_name = prefs.folder_thumbnail
+        addon_prefs = addon_prefs_get(bpy.context)
+        folder_name = addon_prefs.folder_thumbnail
 
         # Ensure folder exists
         folder_path = Path(folder_name).absolute()

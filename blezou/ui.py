@@ -50,21 +50,20 @@ class BZ_PT_vi3d_auth(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = prefs_get(context)
+        prefs = addon_prefs_get(context)
         zsession = zsession_get(context)
 
         layout = self.layout
 
-        box = layout.box()
-        # box.row().prop(prefs, 'host')
-        box.row().prop(prefs, "email")
-        box.row().prop(prefs, "passwd")
-
         row = layout.row(align=True)
         if not zsession.is_auth():
-            row.operator(BZ_OT_SessionStart.bl_idname, text="Login")
+            row.label(text=f"Email: {prefs.email}")
+            row = layout.row(align=True)
+            row.operator(BZ_OT_SessionStart.bl_idname, text="Login", icon="PLAY")
         else:
-            row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout")
+            row.label(text=f"Logged in: {zsession.email}")
+            row = layout.row(align=True)
+            row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE")
 
 
 class BZ_PT_vi3d_context(bpy.types.Panel):
@@ -83,10 +82,10 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return True
+        return zsession_auth(context)
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = prefs_get(context)
+        prefs = addon_prefs_get(context)
         layout = self.layout
         category = prefs.category  # can be either 'SHOTS' or 'ASSETS'
         zproject_active = zproject_active_get()
@@ -100,20 +99,11 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
             "zobject": zshot_active_get(),
             "operator": BZ_OT_ShotsLoad.bl_idname,
         }
-
         # Production
-        if not zproject_active:
-            prod_load_text = "Select Production"
-        else:
-            prod_load_text = zproject_active.name
-
-        box = layout.box()
-        row = box.row(align=True)
-        row.operator(
-            BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
-        )
+        layout.row().label(text=f"Production: {zproject_active.name}")
 
         # Category
+        box = layout.box()
         row = box.row(align=True)
         row.prop(prefs, "category", expand=True)
 
@@ -168,49 +158,20 @@ class BZ_PT_SQE_auth(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = prefs_get(context)
+        prefs = addon_prefs_get(context)
         zsession = zsession_get(context)
 
         layout = self.layout
 
         row = layout.row(align=True)
         if not zsession.is_auth():
-            row.operator(BZ_OT_SessionStart.bl_idname, text=f"Login: {prefs.email}")
+            row.label(text=f"Email: {prefs.email}")
+            row = layout.row(align=True)
+            row.operator(BZ_OT_SessionStart.bl_idname, text="Login", icon="PLAY")
         else:
             row.label(text=f"Logged in: {zsession.email}")
             row = layout.row(align=True)
-            row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout")
-
-
-class BZ_PT_SQE_context(bpy.types.Panel):
-    """
-    Panel in sequence editor that only shows active production browser operator.
-    """
-
-    bl_category = "Blezou"
-    bl_label = "Context"
-    bl_space_type = "SEQUENCE_EDITOR"
-    bl_region_type = "UI"
-    bl_order = 20
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        return True
-
-    def draw(self, context: bpy.types.Context) -> None:
-        zproject_active = zproject_active_get()
-        layout = self.layout
-        # Production
-        if not zproject_active:
-            prod_load_text = "Select Production"
-        else:
-            prod_load_text = zproject_active.name
-
-        box = layout.box()
-        row = box.row(align=True)
-        row.operator(
-            BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
-        )
+            row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE")
 
 
 class BZ_PT_SQE_tools(bpy.types.Panel):
@@ -235,8 +196,12 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         selshots = context.selected_sequences
         nr_of_shots = len(selshots)
         noun = get_selshots_noun(context)
+        zproject_active = zproject_active_get()
 
         layout = self.layout
+
+        # Production
+        layout.row().label(text=f"Production: {zproject_active.name}")
 
         if nr_of_shots == 0:
             row = layout.row(align=True)
@@ -492,7 +457,6 @@ classes = [
     BZ_PT_vi3d_auth,
     BZ_PT_SQE_auth,
     BZ_PT_vi3d_context,
-    BZ_PT_SQE_context,
     BZ_PT_SQE_tools,
     BZ_PT_SQE_shot_meta,
     BZ_PT_SQE_push,
