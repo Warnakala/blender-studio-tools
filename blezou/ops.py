@@ -48,7 +48,11 @@ class BZ_OT_SessionStart(bpy.types.Operator):
 
         zsession.set_config(self.get_config(context))
         zsession.start()
-        self._init_cache_variables(context)
+
+        # init cache variables
+        prefs.init_cache_variables(context=context)
+        props.init_cache_variables(context=context)
+
         return {"FINISHED"}
 
     def get_config(self, context: bpy.types.Context) -> Dict[str, str]:
@@ -58,43 +62,6 @@ class BZ_OT_SessionStart(bpy.types.Operator):
             "host": addon_prefs.host,
             "passwd": addon_prefs.passwd,
         }
-
-    def _init_cache_variables(self, context: bpy.types.Context) -> None:
-        addon_prefs = addon_prefs_get(context)
-
-        project_active_id = addon_prefs.project_active_id
-        sequence_active_id = context.scene.blezou.sequence_active_id
-        shot_active_id = context.scene.blezou.shot_active_id
-        asset_active_id = context.scene.blezou.asset_active_id
-        asset_type_active_id = context.scene.blezou.asset_type_active_id
-
-        if project_active_id:
-            prefs._ZPROJECT_ACTIVE = ZProject.by_id(project_active_id)
-            logger.info(
-                f"Initialized Active Project Cache to: {prefs._ZPROJECT_ACTIVE.name}"
-            )
-
-        if sequence_active_id:
-            props._ZSEQUENCE_ACTIVE = ZSequence.by_id(sequence_active_id)
-            logger.info(
-                f"Initialized Active Sequence Cache to: {props._ZSEQUENCE_ACTIVE.name}"
-            )
-
-        if shot_active_id:
-            props._ZSHOT_ACTIVE = ZShot.by_id(shot_active_id)
-            logger.info(f"Initialized Active Shot Cache to: {props._ZSHOT_ACTIVE.name}")
-
-        if asset_active_id:
-            props._ZASSET_ACTIVE = ZAsset.by_id(asset_active_id)
-            logger.info(
-                f"Initialized Active Asset Cache to: {props._ZASSET_ACTIVE.name}"
-            )
-
-        if asset_type_active_id:
-            props._ZASSET_TYPE_ACTIVE = ZAssetType.by_id(asset_type_active_id)
-        logger.info(
-            f"Initialized Active Asset Type Cache to: {props._ZASSET_TYPE_ACTIVE.name}"
-        )
 
 
 class BZ_OT_SessionEnd(bpy.types.Operator):

@@ -98,7 +98,42 @@ class BZ_PopertyGroup_BlezouData(bpy.types.PropertyGroup):
         self.asset_type_active_id = ""
 
 
+def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
+    global _ZSEQUENCE_ACTIVE
+    global _ZSHOT_ACTIVE
+    global _ZASSET_ACTIVE
+    global _ZASSET_TYPE_ACTIVE
+
+    sequence_active_id = context.scene.blezou.sequence_active_id
+    shot_active_id = context.scene.blezou.shot_active_id
+    asset_active_id = context.scene.blezou.asset_active_id
+    asset_type_active_id = context.scene.blezou.asset_type_active_id
+
+    if sequence_active_id:
+        _ZSEQUENCE_ACTIVE = ZSequence.by_id(sequence_active_id)
+        logger.info(f"Initialized Active Sequence Cache to: {_ZSEQUENCE_ACTIVE.name}")
+
+    if shot_active_id:
+        _ZSHOT_ACTIVE = ZShot.by_id(shot_active_id)
+        logger.info(f"Initialized Active Shot Cache to: {_ZSHOT_ACTIVE.name}")
+
+    if asset_active_id:
+        _ZASSET_ACTIVE = ZAsset.by_id(asset_active_id)
+        logger.info(f"Initialized Active Asset Cache to: {_ZASSET_ACTIVE.name}")
+
+    if asset_type_active_id:
+        _ZASSET_TYPE_ACTIVE = ZAssetType.by_id(asset_type_active_id)
+        logger.info(
+            f"Initialized Active Asset Type Cache to: {_ZASSET_TYPE_ACTIVE.name}"
+        )
+
+
 def clear_cache_variables():
+    global _ZSEQUENCE_ACTIVE
+    global _ZSHOT_ACTIVE
+    global _ZASSET_ACTIVE
+    global _ZASSET_TYPE_ACTIVE
+
     _ZSEQUENCE_ACTIVE = ZSequence()
     logger.info("Cleared Active Sequence Cache")
     _ZSHOT_ACTIVE = ZShot()

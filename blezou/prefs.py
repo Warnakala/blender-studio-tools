@@ -2,6 +2,7 @@ import sys
 import hashlib
 from pathlib import Path
 import bpy
+from bpy.app.handlers import persistent
 from .auth import ZSession
 from .types import ZProject
 from .logger import ZLoggerFactory
@@ -119,9 +120,29 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         box.row().prop(self, "folder_thumbnail")
 
 
+def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
+    global _ZPROJECT_ACTIVE
+
+    addon_prefs = context.preferences.addons["blezou"].preferences
+    project_active_id = addon_prefs.project_active_id
+
+    if project_active_id:
+        _ZPROJECT_ACTIVE = ZProject.by_id(project_active_id)
+        logger.info(f"Initialized Active Project Cache to: {_ZPROJECT_ACTIVE.name}")
+
+
 def clear_cache_variables():
+    global _ZPROJECT_ACTIVE
+
     _ZPROJECT_ACTIVE = ZProject()
     logger.info("Cleared Active Project Cache")
+
+
+@persistent
+def end_session(dummy):
+    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
+    if addon_prefs.session.is_auth():
+        addon_prefs.session.end()
 
 
 # ---------REGISTER ----------
@@ -132,6 +153,8 @@ classes = [BZ_AddonPreferences]
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+
+    bpy.app.handlers.load_post.append(end_session)
 
 
 def unregister():
