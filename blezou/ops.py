@@ -17,8 +17,9 @@ from .types import (
     ZTaskStatus,
     ZCache,
 )
-from .util import zsession_auth, prefs_get, zsession_get
+from .util import *
 from .core import ui_redraw
+from . import props
 from .logger import ZLoggerFactory
 from .gazu import gazu
 from . import opsdata
@@ -49,6 +50,7 @@ class BZ_OT_SessionStart(bpy.types.Operator):
 
         zsession.set_config(self.get_config(context))
         zsession.start()
+        self._init_cache_variables(context)
         return {"FINISHED"}
 
     def get_config(self, context: bpy.types.Context) -> Dict[str, str]:
@@ -58,6 +60,37 @@ class BZ_OT_SessionStart(bpy.types.Operator):
             "host": prefs.host,
             "passwd": prefs.passwd,
         }
+
+    def _init_cache_variables(self, context: bpy.types.Context) -> None:
+        project_active_id = context.scene.blezou.project_active_id
+        sequence_active_id = context.scene.blezou.sequence_active_id
+        shot_active_id = context.scene.blezou.shot_active_id
+        asset_active_id = context.scene.blezou.asset_active_id
+        asset_type_active_id = context.scene.blezou.asset_type_active_id
+
+        if project_active_id:
+            props._ZPROJECT_ACTIVE = ZProject.by_id(project_active_id)
+            logger.info(f"Initialized Active Project to: {props._ZPROJECT_ACTIVE.name}")
+
+        if sequence_active_id:
+            props._ZSEQUENCE_ACTIVE = ZSequence.by_id(sequence_active_id)
+            logger.info(
+                f"Initialized Active Sequence to: {props._ZSEQUENCE_ACTIVE.name}"
+            )
+
+        if shot_active_id:
+            props._ZSHOT_ACTIVE = ZShot.by_id(shot_active_id)
+            logger.info(f"Initialized Active Shot to: {props._ZSHOT_ACTIVE.name}")
+
+        if asset_active_id:
+            props._ZASSET_ACTIVE = ZAsset.by_id(asset_active_id)
+            logger.info(f"Initialized Active Asset to: {props._ZASSET_ACTIVE.name}")
+
+        if asset_type_active_id:
+            props._ZASSET_TYPE_ACTIVE = ZAssetType.by_id(asset_type_active_id)
+        logger.info(
+            f"Initialized Active Asset Type to: {props._ZASSET_TYPE_ACTIVE.name}"
+        )
 
 
 class BZ_OT_SessionEnd(bpy.types.Operator):
@@ -106,19 +139,18 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         return zsession_auth(context)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        prefs = prefs_get(context)
-
         # store vars to check if project / seq / shot changed
-        prev_project_active = prefs["project_active"].to_dict()
+        project_prev_id = zproject_active_get().id
 
-        # update prefs
-        prefs["project_active"] = asdict(ZProject.by_id(self.enum_prop))
+        # update blezou metadata
+        zproject_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
-        if prev_project_active:
-            if prefs["project_active"].to_dict()["id"] != prev_project_active["id"]:
-                prefs["sequence_active"] = {}
-                prefs["shot_active"] = {}
+        if self.enum_prop != project_prev_id:
+            zsequence_active_reset(context)
+            zasset_type_active_reset(context)
+            zshot_active_reset(context)
+            zasset_active_reset(context)
 
         ui_redraw()
         return {"FINISHED"}
@@ -141,12 +173,11 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
 
     def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        prefs = prefs_get(context)
-        active_project = ZProject(**prefs["project_active"].to_dict())
+        zproject_active = zproject_active_get()
 
         enum_list = [
             (s.id, s.name, s.description if s.description else "")
-            for s in active_project.get_sequences_all()
+            for s in zproject_active.get_sequences_all()
         ]
         return enum_list
 
@@ -154,27 +185,19 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
-
-        if zsession_auth(context):
-            if active_project:
-                return True
-        return False
+        return bool(zsession_auth(context) and zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        prefs = prefs_get(context)
 
         # store vars to check if project / seq / shot changed
-        prev_sequence_active = prefs["sequence_active"].to_dict()
+        zseq_prev_id = zsequence_active_get().id
 
-        # update preferences
-        prefs["sequence_active"] = asdict(ZSequence.by_id(self.enum_prop))
+        # update blezou metadata
+        zsequence_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
-        if prev_sequence_active:
-            if prefs["sequence_active"].to_dict()["id"] != prev_sequence_active["id"]:
-                prefs["shot_active"] = {}
+        if self.enum_prop != zseq_prev_id:
+            zshot_active_reset(context)
 
         ui_redraw()
         return {"FINISHED"}
@@ -197,14 +220,11 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
     # TODO: reduce api request to one, we request in _get_shots and also in execute to set active shot
 
     def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        prefs = prefs_get(context)
-        active_sequence = ZSequence(
-            **prefs["sequence_active"].to_dict()
-        )  # is of type IDProperty
+        zseq_active = zsequence_active_get()
 
         enum_list = [
             (s.id, s.name, s.description if s.description else "")
-            for s in active_sequence.get_all_shots()
+            for s in zseq_active.get_all_shots()
         ]
         return enum_list
 
@@ -213,18 +233,14 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # only if session is auth active_project and active sequence selected
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
-        active_sequence = prefs["sequence_active"]
-
-        if zsession_auth(context) and active_project and active_sequence:
-            return True
-        return False
+        return bool(
+            zsession_auth(context) and zsequence_active_get() and zproject_active_get()
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # update preferences
-        prefs = prefs_get(context)
-        prefs["shot_active"] = asdict(ZShot.by_id(self.enum_prop))
+        # update blezou metadata
+        if self.enum_prop:
+            zshot_active_set_by_id(context, self.enum_prop)
         ui_redraw()
         return {"FINISHED"}
 
@@ -246,11 +262,9 @@ class BZ_OT_AssetTypesLoad(bpy.types.Operator):
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
 
     def _get_assetypes(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        prefs = prefs_get(context)
-        active_project = ZProject(**prefs["project_active"].to_dict())
-
+        zproject_active = zproject_active_get()
         enum_list = [
-            (at.id, at.name, "") for at in active_project.get_all_asset_types()
+            (at.id, at.name, "") for at in zproject_active.get_all_asset_types()
         ]
         return enum_list
 
@@ -258,26 +272,18 @@ class BZ_OT_AssetTypesLoad(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
-
-        if zsession_auth(context) and active_project:
-            return True
-        return False
+        return bool(zsession_auth(context) and zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        prefs = prefs_get(context)
-
         # store vars to check if project / seq / shot changed
-        prev_a_type_active = prefs["asset_type_active"].to_dict()
+        asset_type_prev_id = zasset_type_active_get().id
 
-        # update preferences
-        prefs["asset_type_active"] = asdict(ZAssetType.by_id(self.enum_prop))
+        # update blezou metadata
+        zasset_type_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
-        if prev_a_type_active:
-            if prefs["asset_type_active"].to_dict()["id"] != prev_a_type_active["id"]:
-                prefs["asset_active"] = {}
+        if self.enum_prop != asset_type_prev_id:
+            zasset_active_reset(context)
 
         ui_redraw()
         return {"FINISHED"}
@@ -300,13 +306,12 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
 
     def _get_assets(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        prefs = prefs_get(context)
-        active_project = ZProject(**prefs["project_active"].to_dict())
-        active_asset_type = ZAssetType(**prefs["asset_type_active"].to_dict())
+        zproject_active = zproject_active_get()
+        zasset_type_active = zasset_type_active_get()
 
         enum_list = [
             (a.id, a.name, a.description if a.description else "")
-            for a in active_project.get_all_assets_for_type(active_asset_type)
+            for a in zproject_active.get_all_assets_for_type(zasset_type_active)
         ]
         return enum_list
 
@@ -314,18 +319,18 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
-        active_asset_type = prefs["asset_type_active"]
-
-        if zsession_auth(context) and active_project and active_asset_type:
-            return True
-        return False
+        return bool(
+            zsession_auth(context)
+            and zproject_active_get()
+            and zasset_type_active_get()
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # update preferences
-        prefs = prefs_get(context)
-        prefs["asset_active"] = asdict(ZAsset.by_id(self.enum_prop))
+        if not self.enum_prop:
+            return {"CANCELED"}
+
+        # update blezou metadata
+        zasset_active_set_by_id(context, self.enum_prop)
         ui_redraw()
         return {"FINISHED"}
 
@@ -628,9 +633,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # needs to be logged in, active project
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
-        return bool(zsession_auth(context) and active_project.to_dict())
+        return bool(zsession_auth(context) and zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -638,11 +641,10 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             self.report({"WARNING"}, "Push New aborted.")
             return {"CANCELLED"}
 
-        prefs = prefs_get(context)
-        zproject = ZProject(**prefs["project_active"].to_dict())
+        zproject_active = zproject_active_get()
         succeeded = []
         failed = []
-        logger.info("-START- Blezou pushing new Shots to: %s" % zproject.name)
+        logger.info("-START- Blezou pushing new Shots to: %s" % zproject_active.name)
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -670,18 +672,18 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
                 continue
 
             # check if seq already on gazou > create it
-            zseq = CheckStrip.seq_exists_by_name(strip, zproject)
+            zseq = CheckStrip.seq_exists_by_name(strip, zproject_active)
             if not zseq:
-                zseq = Push.new_sequence(strip, zproject)
+                zseq = Push.new_sequence(strip, zproject_active)
 
             # check if shot already on gazou > create it
-            zshot = CheckStrip.shot_exists_by_name(strip, zproject, zseq)
+            zshot = CheckStrip.shot_exists_by_name(strip, zproject_active, zseq)
             if zshot:
                 failed.append(strip)
                 continue
 
             # push update to shot
-            zshot = Push.new_shot(strip, zseq, zproject)
+            zshot = Push.new_shot(strip, zseq, zproject_active)
             Pull.shot_meta(strip, zshot)
             succeeded.append(strip)
 
@@ -693,7 +695,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             {"INFO"},
             f"Created {len(succeeded)} new Shots | Failed: {len(failed)}",
         )
-        logger.info("-END- Blezou pushing new Shots to: %s" % zproject.name)
+        logger.info("-END- Blezou pushing new Shots to: %s" % zproject_active.name)
         ui_redraw()
         return {"FINISHED"}
 
@@ -702,10 +704,9 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):
-        prefs = prefs_get(context)
-        zproject = ZProject(**prefs["project_active"].to_dict())
-
+        zproject_active = zproject_active_get()
         selected_sequences = context.selected_sequences
+
         if not selected_sequences:
             selected_sequences = context.scene.sequence_editor.sequences_all
 
@@ -714,10 +715,10 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         else:
             noun = "this shot"
 
-        if not prefs["project_active"].to_dict():
+        if not zproject_active:
             prod_load_text = "Select Production"
         else:
-            prod_load_text = prefs["project_active"]["name"]
+            prod_load_text = zproject_active.name
 
         # UI
         layout = self.layout
@@ -733,7 +734,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             self,
             "confirm",
             text="Project: %s - Create %s on gazou? Will skip shots if already exists."
-            % (zproject.name, noun),
+            % (zproject_active.name, noun),
         )
 
 
@@ -791,16 +792,14 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
     bl_property = "enum_prop"
 
     def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        prefs = prefs_get(context)
-        zproject_dict = prefs["project_active"].to_dict()
+        zproject_active = zproject_active_get()
 
-        if not zproject_dict:
+        if not zproject_active:
             return []
 
-        active_project = ZProject(**zproject_dict)
         enum_list = [
             (s.id, s.name, s.description if s.description else "")
-            for s in active_project.get_sequences_all()
+            for s in zproject_active.get_sequences_all()
         ]
         return enum_list
 
@@ -808,12 +807,10 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
         strip = context.scene.sequence_editor.active_strip
         return bool(
             zsession_auth(context)
-            and active_project
+            and zproject_active_get()
             and strip
             and context.selected_sequences
         )
@@ -852,15 +849,13 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
     bl_property = "enum_prop"
 
     def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        prefs = prefs_get(context)
-        zproject_dict = prefs["project_active"].to_dict()
+        zproject_active = zproject_active_get()
 
-        if not zproject_dict:
+        if not zproject_active:
             return []
 
-        zproject = ZProject(**zproject_dict)
         enum_list = []
-        all_sequences = zproject.get_sequences_all()
+        all_sequences = zproject_active.get_sequences_all()
         for seq in all_sequences:
             all_shots = seq.get_all_shots()
             if len(all_shots) > 0:
@@ -881,11 +876,9 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = prefs_get(context)
-        active_project = prefs["project_active"]
         return bool(
             zsession_auth(context)
-            and active_project
+            and zproject_active_get()
             and context.scene.sequence_editor.active_strip
             and context.selected_sequences
         )
@@ -905,7 +898,9 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        return context.window_manager.invoke_props_dialog(self, width=500)
+        return context.window_manager.invoke_props_dialog(  # type: ignore
+            self, width=500
+        )
 
 
 class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
@@ -1042,8 +1037,6 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        # needs to be logged in, active project
-        prefs = prefs_get(context)
         return bool(zsession_auth(context) and context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -1131,6 +1124,7 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
         do_multishot: bool = nr_of_strips > 1
         failed = []
         upload_queue: List[Path] = []  # will be used as successed list
+
         logger.info("-START- Pushing Shot Thumbnails")
         with self.override_render_settings(context):
             with self.temporary_current_frame(context) as original_curframe:
@@ -1343,7 +1337,7 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         opsdata._SQE_DUPLCIATES[:] = opsdata._sqe_update_duplicates(context)
-        return context.window_manager.invoke_props_popup(self, event)
+        return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
 class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
@@ -1380,7 +1374,7 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         opsdata._SQE_NOT_LINKED[:] = opsdata._sqe_update_not_linked(context)
-        return context.window_manager.invoke_props_popup(self, event)
+        return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
 class BZ_OT_SQE_DebugMultiProjects(bpy.types.Operator):
@@ -1417,7 +1411,7 @@ class BZ_OT_SQE_DebugMultiProjects(bpy.types.Operator):
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         opsdata._SQE_MULTI_PROJECT[:] = opsdata._sqe_update_multi_project(context)
-        return context.window_manager.invoke_props_popup(self, event)
+        return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
 # ---------REGISTER ----------

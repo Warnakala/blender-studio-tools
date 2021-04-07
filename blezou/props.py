@@ -1,7 +1,20 @@
 import bpy
+from .types import ZProject, ZSequence, ZShot, ZAssetType, ZAsset
+from dataclasses import asdict
+from .util import prefs_get
+from .logger import ZLoggerFactory
+from typing import Optional, Any
+
+logger = ZLoggerFactory.getLogger(__name__)
+
+_ZPROJECT_ACTIVE: ZProject = ZProject()
+_ZSEQUENCE_ACTIVE: ZSequence = ZSequence()
+_ZSHOT_ACTIVE: ZShot = ZShot()
+_ZASSET_ACTIVE: ZAsset = ZAsset()
+_ZASSET_TYPE_ACTIVE: ZAssetType = ZAssetType()
 
 
-class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
+class BZ_PopertyGroup_SEQ_Shot(bpy.types.PropertyGroup):
     """
     Property group that will be registered on sequence strips.
     They hold metadata that will be used to compose a data structure that can
@@ -9,23 +22,23 @@ class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
     """
 
     # shot
-    shot_id: bpy.props.StringProperty(name="Shot ID")
-    shot_name: bpy.props.StringProperty(name="Shot", default="")
-    shot_description: bpy.props.StringProperty(name="Description", default="")
+    shot_id: bpy.props.StringProperty(name="Shot ID")  # type: ignore
+    shot_name: bpy.props.StringProperty(name="Shot", default="")  # type: ignore
+    shot_description: bpy.props.StringProperty(name="Description", default="")  # type: ignore
 
     # sequence
-    sequence_name: bpy.props.StringProperty(name="Seq", default="")
-    sequence_id: bpy.props.StringProperty(name="Seq ID", default="")
+    sequence_name: bpy.props.StringProperty(name="Seq", default="")  # type: ignore
+    sequence_id: bpy.props.StringProperty(name="Seq ID", default="")  # type: ignore
 
     # project
-    project_name: bpy.props.StringProperty(name="Project", default="")
-    project_id: bpy.props.StringProperty(name="Project ID", default="")
+    project_name: bpy.props.StringProperty(name="Project", default="")  # type: ignore
+    project_id: bpy.props.StringProperty(name="Project ID", default="")  # type: ignore
 
     # meta
-    initialized: bpy.props.BoolProperty(
+    initialized: bpy.props.BoolProperty(  # type: ignore
         name="Initialized", default=False, description="Is Blezou shot"
     )
-    linked: bpy.props.BoolProperty(
+    linked: bpy.props.BoolProperty(  # type: ignore
         name="Linked", default=False, description="Is linked to an ID in gazou"
     )
 
@@ -52,7 +65,65 @@ class BZ_PopertyGroup_VSEQ_Shot(bpy.types.PropertyGroup):
         self.linked = False
 
 
-classes = [BZ_PopertyGroup_VSEQ_Shot]
+class BZ_PopertyGroup_BlezouData(bpy.types.PropertyGroup):
+    """"""
+
+    project_active_id: bpy.props.StringProperty(  # type: ignore
+        name="previous project id",
+        description="GazouId that refers to the last active project",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+    sequence_active_id: bpy.props.StringProperty(  # type: ignore
+        name="active sequence id",
+        description="Gazou Id that refers to the active sequence",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+    shot_active_id: bpy.props.StringProperty(  # type: ignore
+        name="active shot id",
+        description="Gazou Id that refers to the active project",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+    asset_active_id: bpy.props.StringProperty(  # type: ignore
+        name="active asset id",
+        description="Gazou Id that refers to the active asset",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+    asset_type_active_id: bpy.props.StringProperty(  # type: ignore
+        name="active asset_type id",
+        description="Gazou Id that refers to the active asset_type",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+
+
+def load_project_previous(context: bpy.types.Context) -> None:
+    prefs = prefs_get(context)
+    # check if previous active project is there, set active project
+    p_id = context.scene.blezou.project_previous_id
+    # does not work because of restricted context
+    if not p_id:
+        return None
+    zproject = ZProject.by_id(p_id)
+    if not zproject:
+        return None
+
+    prefs["project_active"] = asdict(zproject)
+    logger.info(f"Loaded previous Project: {zproject.name}")
+
+
+def clear_cache_variables() -> None:
+    _ZPROJECT_ACTIVE = None
+    _ZSEQUENCE_ACTIVE = None
+    _ZSHOT_ACTIVE = None
+    _ZASSET_ACTIVE = None
+    _ZASSET_TYPE_ACTIVE = None
+
+
+classes = [BZ_PopertyGroup_SEQ_Shot, BZ_PopertyGroup_BlezouData]
 
 
 def register():
@@ -62,7 +133,12 @@ def register():
 
     bpy.types.Sequence.blezou = bpy.props.PointerProperty(
         name="Blezou",
-        type=BZ_PopertyGroup_VSEQ_Shot,
+        type=BZ_PopertyGroup_SEQ_Shot,
+        description="Metadata that is required for blezou",
+    )
+    bpy.types.Scene.blezou = bpy.props.PointerProperty(
+        name="Blezou",
+        type=BZ_PopertyGroup_BlezouData,
         description="Metadata that is required for blezou",
     )
 
@@ -70,3 +146,5 @@ def register():
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+
+    clear_cache_variables()

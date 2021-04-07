@@ -1,6 +1,8 @@
 import bpy
 from typing import Optional
-from .util import prefs_get, zsession_get, zsession_auth
+from .util import *
+from . import props
+
 from .ops import (
     BZ_OT_SessionStart,
     BZ_OT_SessionEnd,
@@ -48,8 +50,8 @@ class BZ_PT_vi3d_auth(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = context.preferences.addons["blezou"].preferences
-        zsession = prefs.session
+        prefs = prefs_get(context)
+        zsession = zsession_get(context)
 
         layout = self.layout
 
@@ -87,22 +89,23 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         prefs = prefs_get(context)
         layout = self.layout
         category = prefs.category  # can be either 'SHOTS' or 'ASSETS'
+        zproject_active = zproject_active_get()
         item_group_data = {
             "name": "Sequence",
-            "pref_name": "sequence_active",
+            "zobject": zsequence_active_get(),
             "operator": BZ_OT_SequencesLoad.bl_idname,
         }
         item_data = {
             "name": "Shot",
-            "pref_name": "shot_active",
+            "zobject": zshot_active_get(),
             "operator": BZ_OT_ShotsLoad.bl_idname,
         }
 
         # Production
-        if not prefs["project_active"].to_dict():
+        if not zproject_active:
             prod_load_text = "Select Production"
         else:
-            prod_load_text = prefs["project_active"]["name"]
+            prod_load_text = zproject_active.name
 
         box = layout.box()
         row = box.row(align=True)
@@ -113,21 +116,24 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         # Category
         row = box.row(align=True)
         row.prop(prefs, "category", expand=True)
-        if not zsession_auth(context) or not prefs["project_active"].to_dict():
+
+        if not zsession_auth(context) or not zproject_active:
             row.enabled = False
 
         # Sequence / AssetType
         if category == "ASSETS":
             item_group_data["name"] = "AssetType"
-            item_group_data["pref_name"] = "asset_type_active"
+            item_group_data["zobject"] = zasset_type_active_get()
             item_group_data["operator"] = BZ_OT_AssetTypesLoad.bl_idname
 
         row = box.row(align=True)
         item_group_text = f"Select {item_group_data['name']}"
-        if not prefs["project_active"].to_dict():
+
+        if not zproject_active:
             row.enabled = False
-        elif prefs[item_group_data["pref_name"]]:
-            item_group_text = prefs[item_group_data["pref_name"]]["name"]
+
+        elif item_group_data["zobject"]:
+            item_group_text = item_group_data["zobject"].name
         row.operator(
             item_group_data["operator"], text=item_group_text, icon="DOWNARROW_HLT"
         )
@@ -135,18 +141,18 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         # Shot / Asset
         if category == "ASSETS":
             item_data["name"] = "Asset"
-            item_data["pref_name"] = "asset_active"
+            item_data["zobject"] = zasset_active_get()
             item_data["operator"] = BZ_OT_AssetsLoad.bl_idname
 
         row = box.row(align=True)
         item_text = f"Select {item_data['name']}"
-        if (
-            not prefs["project_active"].to_dict()
-            and prefs[item_group_data["pref_name"]]
-        ):
+
+        if not zproject_active and item_group_data["zobject"]:
             row.enabled = False
-        elif prefs[item_data["pref_name"]]:
-            item_text = prefs[item_data["pref_name"]]["name"]
+
+        elif item_data["zobject"]:
+            item_text = item_data["zobject"].name
+
         row.operator(item_data["operator"], text=item_text, icon="DOWNARROW_HLT")
 
 
@@ -162,20 +168,17 @@ class BZ_PT_SQE_auth(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = context.preferences.addons["blezou"].preferences
-        zsession = prefs.session
+        prefs = prefs_get(context)
+        zsession = zsession_get(context)
 
         layout = self.layout
 
-        box = layout.box()
-        # box.row().prop(prefs, 'host')
-        box.row().prop(prefs, "email")
-        box.row().prop(prefs, "passwd")
-
         row = layout.row(align=True)
         if not zsession.is_auth():
-            row.operator(BZ_OT_SessionStart.bl_idname, text="Login")
+            row.operator(BZ_OT_SessionStart.bl_idname, text=f"Login: {prefs.email}")
         else:
+            row.label(text=f"Logged in: {zsession.email}")
+            row = layout.row(align=True)
             row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout")
 
 
@@ -195,14 +198,13 @@ class BZ_PT_SQE_context(bpy.types.Panel):
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = prefs_get(context)
+        zproject_active = zproject_active_get()
         layout = self.layout
-
         # Production
-        if not prefs["project_active"]:
+        if not zproject_active:
             prod_load_text = "Select Production"
         else:
-            prod_load_text = prefs["project_active"]["name"]
+            prod_load_text = zproject_active.name
 
         box = layout.box()
         row = box.row(align=True)

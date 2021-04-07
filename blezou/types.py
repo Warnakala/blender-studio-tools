@@ -8,6 +8,8 @@ logger = ZLoggerFactory.getLogger(__name__)
 
 # TODO: @dataclass needs the init arguments to be known, what if gazu api changes?
 # some properties are also only provided by gazu if they are initialized
+
+
 class ZProductions:
     """
     Class to get object oriented representation of backend productions data structure.
@@ -41,7 +43,7 @@ class ZProject:
     Has multiple constructor functions (by_name, by_id, init>by_dict)
     """
 
-    id: str
+    id: str = ""
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
@@ -173,6 +175,9 @@ class ZProject:
     # TASKS
     # ---------------
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 @dataclass
 class ZSequence:
@@ -181,7 +186,7 @@ class ZSequence:
     Has multiple constructor functions (by_name, by_id, init>by_dict)
     """
 
-    id: str
+    id: str = ""
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
@@ -233,6 +238,9 @@ class ZSequence:
     def get_all_tasks(self) -> List[ZTask]:
         return [ZTask(**t) for t in gazu.task.all_tasks_for_sequence(asdict(self))]
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 @dataclass
 class ZAssetType:
@@ -260,6 +268,9 @@ class ZAssetType:
         tpye_dict = gazu.asset.get_asset_type(type_id)
         return cls(**tpye_dict)
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 @dataclass
 class ZShot:
@@ -268,7 +279,7 @@ class ZShot:
     Has multiple constructor functions (by_name, by_id, init>by_dict
     """
 
-    id: str
+    id: str = ""
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
@@ -323,6 +334,9 @@ class ZShot:
     def remove(self, force: bool = False) -> str:
         return gazu.shot.remove_shot(asdict(self), force=force)
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 @dataclass
 class ZAsset:
@@ -331,7 +345,7 @@ class ZAsset:
     Has multiple constructor functions (by_name, by_id, init>by_dict)
     """
 
-    id: str
+    id: str = ""
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
@@ -389,6 +403,9 @@ class ZAsset:
     def get_all_tasks(self) -> List[ZTask]:
         return [ZTask(**t) for t in gazu.task.all_tasks_for_asset(asdict(self))]
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 @dataclass
 class ZTaskType:
@@ -398,7 +415,7 @@ class ZTaskType:
     TaksType is the 'category' a single task belongs to. e.G 'Animation'
     """
 
-    id: str
+    id: str = ""
     pid: str = ""
     created_at: str = ""
     updated_at: str = ""
@@ -431,6 +448,9 @@ class ZTaskType:
     def all_task_types(cls):
         return [cls(**t) for t in gazu.task.all_task_types()]
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 @dataclass
 class ZTask:
@@ -441,7 +461,7 @@ class ZTask:
     with the TaskType 'Animation'
     """
 
-    id: str
+    id: str = ""
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
@@ -591,6 +611,9 @@ class ZTask:
         )
         return ZPreview(**preview_dict)
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 @dataclass
 class ZTaskStatus:
@@ -599,7 +622,7 @@ class ZTaskStatus:
     Has multiple constructor functions (by_name, by_id, init>by_dict)
     """
 
-    id: str
+    id: str = ""
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
@@ -638,6 +661,9 @@ class ZTaskStatus:
         task_status_dict = gazu.task.get_task_status(task_status_id)
         return cls(**task_status_dict)
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 @dataclass
 class ZComment:
@@ -646,7 +672,7 @@ class ZComment:
     Has multiple constructor functions (by_name, by_id, init>by_dict)
     """
 
-    id: str
+    id: str = ""
     created_at: str = ""
     updated_at: str = ""
     shotgun_id: Optional[str] = None
@@ -667,6 +693,9 @@ class ZComment:
     mentions: List[str] = field(default_factory=list)
     attachment_files: List[Dict[str, Any]] = field(default_factory=list)
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 @dataclass
 class ZPreview:
@@ -675,7 +704,7 @@ class ZPreview:
     Has multiple constructor functions (by_name, by_id, init>by_dict)
     """
 
-    id: str
+    id: str = ""
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
@@ -702,6 +731,9 @@ class ZPreview:
     def set_main_preview(self):
         gazu.task.set_main_preview(asdict(self))
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 @dataclass
 class ZUser:
@@ -710,7 +742,7 @@ class ZUser:
     Has multiple constructor functions (by_name, by_id, init>by_dict)
     """
 
-    id: str
+    id: str = ""
     created_at: str = ""
     updated_at: str = ""
     first_name: str = ""
@@ -731,6 +763,9 @@ class ZUser:
     notifications_slack_userid: str = ""
     type: str = "Person"
     full_name: str = ""
+
+    def __bool__(self):
+        return bool(self.id)
 
 
 class ZCache:

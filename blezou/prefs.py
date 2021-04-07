@@ -62,21 +62,6 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         box.row().prop(self, "folder_thumbnail")
 
 
-def bz_prefs_init_properties(context: bpy.types.Context) -> None:
-    prefs = prefs_get(context)
-
-    # TODO: is this the correct way to initialize dynamic properties?
-    # we need properties that can hold dicts/nested dicts as value
-
-    # id properties
-    prefs["project_active"] = {}
-    prefs["sequence_active"] = {}
-    prefs["shot_active"] = {}
-    prefs["asset_active"] = {}
-    prefs["asset_type_active"] = {}
-    prefs["sqe_track_props"] = {}
-
-
 # ---------REGISTER ----------
 
 classes = [BZ_AddonPreferences]
@@ -86,13 +71,8 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # additional setup
-    bz_prefs_init_properties(bpy.context)
-
 
 def unregister():
-    # additional setup
-    bz_prefs_init_properties(bpy.context)
 
     # log user out
     prefs = prefs_get(bpy.context)
