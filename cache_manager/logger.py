@@ -26,7 +26,7 @@ class LoggerFactory:
         return logger
 
 
-logger = ZLoggerFactory.getLogger(__name__)
+logger = LoggerFactory.getLogger(__name__)
 
 
 class LoggerLevelManager:

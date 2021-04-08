@@ -6,7 +6,6 @@ import bpy
 classes = [
 ]
 
-
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)

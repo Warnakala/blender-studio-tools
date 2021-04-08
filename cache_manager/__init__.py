@@ -1,6 +1,7 @@
 import bpy
 from . import ops
 from . import ui
+from . import prefs
 from .logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(__name__)
@@ -24,11 +25,15 @@ if _need_reload:
     import importlib
 
     logger.info("-START- Reloading Cache Manager")
+    prefs = importlib.reload(prefs)
+    ops = importlib.reload(ops)
+    ui = importlib.reload(ui)
     logger.info("-END- Reloading Cache Manager")
 
 
 def register():
     logger.info("-START- Registering Cache Manager")
+    prefs.register()
     ops.register()
     ui.register()
     logger.info("-END- Registering Cache Manager")
@@ -36,6 +41,7 @@ def register():
 
 def unregister():
     logger.info("-START- Unregistering Cache Manager")
+    prefs.unregister()
     ui.unregister()
     ops.unregister()
     logger.info("-END- Unregistering Cache Manager")
