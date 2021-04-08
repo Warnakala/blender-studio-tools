@@ -1,4 +1,5 @@
 import bpy
+from bpy.app.handlers import persistent
 from .types import ZProject, ZSequence, ZShot, ZAssetType, ZAsset
 from dataclasses import asdict
 from .logger import ZLoggerFactory
@@ -144,6 +145,11 @@ def clear_cache_variables():
     logger.info("Cleared Active Asset Type Cache")
 
 
+@persistent
+def load_post_handler(dummy):
+    clear_cache_variables()
+
+
 # ----------------REGISTER--------------
 
 classes = [BZ_PopertyGroup_SEQ_Shot, BZ_PopertyGroup_BlezouData]
@@ -164,6 +170,8 @@ def register():
         type=BZ_PopertyGroup_BlezouData,
         description="Metadata that is required for blezou",
     )
+
+    bpy.app.handlers.load_post.append(load_post_handler)
 
 
 def unregister():

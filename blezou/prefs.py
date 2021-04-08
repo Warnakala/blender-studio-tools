@@ -139,10 +139,11 @@ def clear_cache_variables():
 
 
 @persistent
-def end_session(dummy):
+def load_post_handler(dummy):
     addon_prefs = bpy.context.preferences.addons["blezou"].preferences
     if addon_prefs.session.is_auth():
         addon_prefs.session.end()
+    clear_cache_variables()
 
 
 # ---------REGISTER ----------
@@ -154,7 +155,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.app.handlers.load_post.append(end_session)
+    bpy.app.handlers.load_post.append(load_post_handler)
 
 
 def unregister():
