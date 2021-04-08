@@ -207,7 +207,9 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         if nr_of_shots == 0:
             row = layout.row(align=True)
             # init all
-            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS")
+            row.operator(
+                BZ_OT_SQE_InitShotBulk.bl_idname, text=f"Bulk Init {noun}", icon="PLUS"
+            )
 
         elif nr_of_shots == 1:
             row = layout.row(align=True)

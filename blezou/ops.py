@@ -889,7 +889,8 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return len(context.selected_sequences) > 1
+        nr_of_shots = len(context.selected_sequences)
+        return bool(nr_of_shots > 1 or nr_of_shots == 0)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -897,8 +898,12 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
         logger.info("-START- Bulk Initializing Shots")
 
         # sort sequence after frame in
+        selected_sequences = context.selected_sequences
+        if not selected_sequences:
+            selected_sequences = context.scene.sequence_editor.sequences_all
+
         selected_sequences = sorted(
-            context.selected_sequences, key=lambda x: x.frame_final_start
+            selected_sequences, key=lambda x: x.frame_final_start
         )
 
         for idx, strip in enumerate(selected_sequences):
@@ -935,7 +940,7 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
             strip.blezou.sequence_name = sequence
             strip.blezou.shot_name = shot
             succeeded.append(strip)
-            logger.info("Initialized strip: %s as Shot." % strip.name)
+            logger.info("Initialized strip: %s as Shot: %s" % (strip.name, shot)
 
         self.report(
             {"INFO"},
@@ -950,10 +955,14 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
 
     def draw(self, context):
         selected_sequences = context.selected_sequences
+        if not selected_sequences:
+            selected_sequences = context.scene.sequence_editor.sequences_all
         # noun = "%i shots" % len(selected_sequences)
 
         # UI
         layout = self.layout
+        row = layout.row()
+        row.label(text=f"{len(selected_sequences)} Shots")
 
         # Sequence
         row = layout.row()
