@@ -424,7 +424,7 @@ class Push:
 
     @staticmethod
     def _remap_frame_range(frame_in, frame_out):
-        start_frame = 1001
+        start_frame = 101
         nb_of_frames = frame_out - frame_in
         return (start_frame, start_frame + nb_of_frames)
 
