@@ -13,6 +13,7 @@ from .ops import (
     BZ_OT_AssetTypesLoad,
     BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_InitShot,
+    BZ_OT_SQE_InitShotBulk,
     BZ_OT_SQE_DelShotMeta,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_LinkSequence,
@@ -241,8 +242,10 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         else:
             row = layout.row(align=True)
 
-            # init all
-            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS")
+            # bul init
+            row.operator(
+                BZ_OT_SQE_InitShotBulk.bl_idname, text=f"Bulk Init {noun}", icon="PLUS"
+            )
             # unlink all
             row = layout.row(align=True)
             row.operator(

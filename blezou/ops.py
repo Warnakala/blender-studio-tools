@@ -1,6 +1,7 @@
 from dataclasses import asdict
 from pathlib import Path
 import copy
+import re
 import contextlib
 from typing import Set, Dict, Union, List, Tuple, Any, Optional, cast
 import bpy
@@ -710,12 +711,14 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
 
         # UI
         layout = self.layout
-        row = layout.row()
 
         # Production
+        row = layout.row()
+        row.enabled = False
         row.operator(
             BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
         )
+
         # confirm dialog
         col = layout.column()
         col.prop(
@@ -733,8 +736,8 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
     operations and to  differentiate between regular sequence strip and blezou shot strip.
     """
 
-    bl_idname = "blezou.sqe_new_shot"
-    bl_label = "New Shot"
+    bl_idname = "blezou.sqe_init_shot"
+    bl_label = "Init Shot"
     bl_description = "Adds required shot metadata to selecetd strips"
 
     @classmethod
@@ -767,6 +770,201 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
         logger.info("-END- Initializing Shots")
         ui_redraw()
         return {"FINISHED"}
+
+
+class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
+    """
+    Operator that initializes a regular sequence strip to a 'blezou' shot.
+    Only sets strip.blezou.initialized = True. But this is required for further
+    operations and to  differentiate between regular sequence strip and blezou shot strip.
+    """
+
+    bl_idname = "blezou.sqe_init_shot_bulkd"
+    bl_label = "Bulk Init Shot"
+    bl_description = "Adds required shot metadata to selecetd strips"
+
+    # Property Functions
+    def _get_active_project(self) -> str:
+        return zproject_active_get().name
+
+    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+        zproject_active = zproject_active_get()
+        if not zproject_active:
+            return []
+
+        enum_list = [
+            (s.name, s.name, s.description if s.description else "")
+            for s in zproject_active.get_sequences_all()
+        ]
+        return enum_list
+
+    def _gen_shot_preview(self):
+        examples: List[str] = []
+
+        # catch 0 value
+        project = (
+            self.project_custom if self.use_custom_project else self.project_active
+        )
+        sequence = self.sequence_custom if self.use_custom_seq else self.sequence_enum
+        shot_pattern = str(self.shot_pattern)
+        var_lookup_table = {"Sequence": sequence, "Project": project}
+
+        for count in range(3):
+            counter_number = self.counter_start + (self.counter_increment * count)
+            counter = str(counter_number).rjust(self.counter_digits, "0")
+            var_lookup_table["Counter"] = counter
+            examples.append(opsdata._resolve_pattern(shot_pattern, var_lookup_table))
+
+        return ", ".join(examples) + "..."
+
+    # Property Definitions
+    use_custom_seq: bpy.props.BoolProperty(name="Use Custom")  # type: ignore
+    use_custom_project: bpy.props.BoolProperty(name="Use Custom")  # type: ignore
+    sequence_enum: bpy.props.EnumProperty(items=_get_sequences, description="Value that will be used to insert in <Sequence> wildcard")  # type: ignore
+    sequence_custom: bpy.props.StringProperty(  # type: ignore
+        name="Sequence",
+        description="Value that will be used to insert in <Sequence> wildcard if custom sequence is enabled.",
+        default="",
+    )
+    project_active: bpy.props.StringProperty(
+        name="Active Project",
+        description="Active Project that is set in addon preferences.",
+        get=_get_active_project,
+    )
+    project_custom: bpy.props.StringProperty(  # type: ignore
+        name="Project",
+        description="Value that will be used to insert in <Project> wildcard if custom project is enabled.",
+        default="",
+    )
+    counter_digits: bpy.props.IntProperty(  # type: ignore
+        name="Counter Digits",
+        description="How many digits the counter should contain.",
+        default=4,
+        min=0,
+    )
+    counter_start: bpy.props.IntProperty(  # type: ignore
+        name="Counter Start",
+        description="Value that defines where the shot counter starts.",
+        step=10,
+        min=0,
+    )
+    counter_increment: bpy.props.IntProperty(  # type: ignore
+        name="Counter Incr",
+        description="By which Increment counter should be increased.",
+        default=10,
+        step=5,
+        min=0,
+    )
+    shot_pattern: bpy.props.StringProperty(  # type: ignore
+        name="Shot Pattern",
+        description="Pattern to define how Bulk Init will name the shots. Supported wildcards: <Project>, <Sequence>, <Counter>",
+        default="<Sequence>_<Counter>",
+    )
+
+    shot_preview: bpy.props.StringProperty(  # type: ignore
+        name="Shot Pattern",
+        description="Preview result of current settings on how a shot will be named.",
+        get=_gen_shot_preview,
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return len(context.selected_sequences) > 1
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        succeeded = []
+        failed = []
+        logger.info("-START- Bulk Initializing Shots")
+
+        # sort sequence after frame in
+        selected_sequences = sorted(
+            context.selected_sequences, key=lambda x: x.frame_final_start
+        )
+
+        for idx, strip in enumerate(selected_sequences):
+            if strip.blezou.initialized:
+                logger.info("%s already initialized." % strip.name)
+                failed.append(strip)
+                continue
+
+            # gem data for resolver
+            project = (
+                self.project_custom if self.use_custom_project else self.project_active
+            )
+            sequence = (
+                self.sequence_custom if self.use_custom_seq else self.sequence_enum
+            )
+            counter_number = self.counter_start + (self.counter_increment * idx)
+            counter = str(counter_number).rjust(self.counter_digits, "0")
+            var_lookup_table = {
+                "Sequence": sequence,
+                "Project": project,
+                "Counter": counter,
+            }
+            shot = opsdata._resolve_pattern(self.shot_pattern, var_lookup_table)
+
+            strip.blezou.initialized = True
+            strip.blezou.sequence_name = sequence
+            strip.blezou.shot_name = shot
+            succeeded.append(strip)
+            logger.info("Initialized strip: %s as Shot." % strip.name)
+
+        self.report(
+            {"INFO"},
+            f"Initialized {len(succeeded)} Shots | Failed: {len(failed)}.",
+        )
+        logger.info("-END- Bulk Initializing Shots")
+        ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+    def draw(self, context):
+        selected_sequences = context.selected_sequences
+        # noun = "%i shots" % len(selected_sequences)
+
+        # UI
+        layout = self.layout
+
+        # Counter
+        row = layout.row()
+        row.label(text="Counter Settings")
+        row = layout.row()
+        box = row.box()
+        box.row().prop(self, "counter_digits", text="Digits")
+        box.row().prop(self, "counter_increment", text="Increment")
+        box.row().prop(self, "counter_start", text="Start")
+
+        # varaibles
+        row = layout.row()
+        row.label(text="Variables")
+        row = layout.row()
+        box = row.box()
+
+        # sequence
+        row = box.row(align=True)
+        row.prop(self, "use_custom_seq", text="Custom")
+        if self.use_custom_seq:
+            row.prop(self, "sequence_custom", text="Sequence")
+        else:
+            row.prop(self, "sequence_enum", text="Sequence")
+
+        # project
+        row = box.row(align=True)
+        row.prop(self, "use_custom_project", text="Custom")
+        if self.use_custom_project:
+            row.prop(self, "project_custom", text="Project")
+        else:
+            row.prop(self, "project_active", text="Project")
+
+        # pattern
+        row = layout.row()
+        row.label(text="Shot Pattern")
+        row = layout.row()
+        box = row.box()
+        box.row().prop(self, "shot_pattern", text="Shot Pattern")
+        box.row().prop(self, "shot_preview", text="Preview")
 
 
 class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
@@ -1416,6 +1614,7 @@ classes = [
     BZ_OT_SQE_PushShotMeta,
     BZ_OT_SQE_DelShotMeta,
     BZ_OT_SQE_InitShot,
+    BZ_OT_SQE_InitShotBulk,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_LinkSequence,
     BZ_OT_SQE_PushThumbnail,

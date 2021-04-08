@@ -1,5 +1,9 @@
 import bpy
-from typing import List, Tuple, Optional
+import re
+from typing import List, Tuple, Optional, Dict, Any
+from .logger import ZLoggerFactory
+
+logger = ZLoggerFactory.getLogger(name=__name__)
 
 _SQE_NOT_LINKED: List[Tuple[str, str, str]] = []
 _SQE_DUPLCIATES: List[Tuple[str, str, str]] = []
@@ -74,8 +78,8 @@ def _sqe_update_duplicates(context: bpy.types.Context) -> List[Tuple[str, str, s
 
 def _sqe_update_multi_project(context: bpy.types.Context) -> List[Tuple[str, str, str]]:
     """get all strips that are initialized but not linked yet"""
-    enum_list = []
-    data_dict = {}
+    enum_list: List[Tuple[str, str, str]] = []
+    data_dict: Dict[str, Any] = {}
 
     if context.selected_sequences:
         strips = context.selected_sequences
@@ -100,3 +104,22 @@ def _sqe_update_multi_project(context: bpy.types.Context) -> List[Tuple[str, str
             enum_list.append((strip.name, strip.name, ""))
 
     return enum_list
+
+
+def _resolve_pattern(pattern: str, var_lookup_table: Dict[str, str]) -> str:
+
+    matches = re.findall(r"\<(\w+)\>", pattern)
+    matches = list(set(matches))
+    # if no variable detected just return value
+    if len(matches) == 0:
+        return pattern
+    else:
+        result = pattern
+        for to_replace in matches:
+            if to_replace in var_lookup_table:
+                to_insert = var_lookup_table[to_replace]
+                result = result.replace("<{}>".format(to_replace), to_insert)
+            else:
+                logger.warning(f"Failed to resolve variable: {to_replace} not defined!")
+                return ""
+        return result
