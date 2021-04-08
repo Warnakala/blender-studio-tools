@@ -940,7 +940,7 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
             strip.blezou.sequence_name = sequence
             strip.blezou.shot_name = shot
             succeeded.append(strip)
-            logger.info("Initialized strip: %s as Shot: %s" % (strip.name, shot)
+            logger.info("Initialized strip: %s as Shot: %s" % (strip.name, shot))
 
         self.report(
             {"INFO"},
