@@ -379,11 +379,15 @@ class Push:
         zsequence: ZSequence,
         zproject: ZProject,
     ) -> ZShot:
+
+        frame_range = Push._remap_frame_range(
+            strip.frame_final_start, strip.frame_final_end
+        )
         zshot = zproject.create_shot(
             strip.blezou.shot_name,
             zsequence,
-            frame_in=strip.frame_final_start,
-            frame_out=strip.frame_final_end,
+            frame_in=frame_range[0],
+            frame_out=frame_range[1],
         )
         # update description, no option to pass that on create
         if strip.blezou.shot_description:
@@ -801,13 +805,16 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
     def _gen_shot_preview(self):
         examples: List[str] = []
 
-        # catch 0 value
-        project = (
-            self.project_custom if self.use_custom_project else self.project_active
+        var_project = (
+            self.var_project_custom
+            if self.var_use_custom_project
+            else self.var_project_active
         )
-        sequence = self.sequence_custom if self.use_custom_seq else self.sequence_enum
+        var_sequence = (
+            self.var_sequence_custom if self.var_use_custom_seq else self.sequence_enum
+        )
         shot_pattern = str(self.shot_pattern)
-        var_lookup_table = {"Sequence": sequence, "Project": project}
+        var_lookup_table = {"Sequence": var_sequence, "Project": var_project}
 
         for count in range(3):
             counter_number = self.counter_start + (self.counter_increment * count)
@@ -818,22 +825,40 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
         return ", ".join(examples) + "..."
 
     # Property Definitions
-    use_custom_seq: bpy.props.BoolProperty(name="Use Custom")  # type: ignore
-    use_custom_project: bpy.props.BoolProperty(name="Use Custom")  # type: ignore
-    sequence_enum: bpy.props.EnumProperty(items=_get_sequences, description="Value that will be used to insert in <Sequence> wildcard")  # type: ignore
-    sequence_custom: bpy.props.StringProperty(  # type: ignore
+    var_use_custom_seq: bpy.props.BoolProperty(
+        name="Use Custom",
+        description="Enables to type in custom sequence name for <Sequence> wildcard.",
+    )  # type: ignore
+    var_use_custom_project: bpy.props.BoolProperty(
+        name="Use Custom",
+        description="Enables to type in custom project name for <Project> wildcard",
+    )  # type: ignore
+    var_sequence_custom: bpy.props.StringProperty(  # type: ignore
         name="Sequence",
         description="Value that will be used to insert in <Sequence> wildcard if custom sequence is enabled.",
         default="",
     )
-    project_active: bpy.props.StringProperty(
-        name="Active Project",
-        description="Active Project that is set in addon preferences.",
-        get=_get_active_project,
-    )
-    project_custom: bpy.props.StringProperty(  # type: ignore
+    var_project_custom: bpy.props.StringProperty(  # type: ignore
         name="Project",
         description="Value that will be used to insert in <Project> wildcard if custom project is enabled.",
+        default="",
+    )
+    var_project_active: bpy.props.StringProperty(
+        name="Active Project",
+        description="Value that will be used to insert in <Project> wildcard",
+        get=_get_active_project,
+    )
+    use_sequence_new: bpy.props.BoolProperty(
+        name="New",
+        description="Instead of dropdown menu to select existing sequences, check this to type in new sequence name.",
+    )
+    sequence_enum: bpy.props.EnumProperty(
+        items=_get_sequences,
+        description="Name of Sequence the generated Shots will be assinged to.",
+    )
+    sequence_new: bpy.props.StringProperty(  # type: ignore
+        name="Sequence",
+        description="Name of the new Sequence that the shots will belong to.",
         default="",
     )
     counter_digits: bpy.props.IntProperty(  # type: ignore
@@ -887,20 +912,28 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
                 failed.append(strip)
                 continue
 
-            # gem data for resolver
-            project = (
-                self.project_custom if self.use_custom_project else self.project_active
+            # gen data for resolver
+            var_project = (
+                self.var_project_custom
+                if self.var_use_custom_project
+                else self.var_project_active
             )
-            sequence = (
-                self.sequence_custom if self.use_custom_seq else self.sequence_enum
+            var_sequence = (
+                self.var_sequence_custom
+                if self.var_use_custom_seq
+                else self.sequence_enum
             )
             counter_number = self.counter_start + (self.counter_increment * idx)
             counter = str(counter_number).rjust(self.counter_digits, "0")
             var_lookup_table = {
-                "Sequence": sequence,
-                "Project": project,
+                "Sequence": var_sequence,
+                "Project": var_project,
                 "Counter": counter,
             }
+
+            sequence = (
+                self.sequence_new if self.use_sequence_new else self.sequence_enum
+            )
             shot = opsdata._resolve_pattern(self.shot_pattern, var_lookup_table)
 
             strip.blezou.initialized = True
@@ -927,6 +960,18 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
         # UI
         layout = self.layout
 
+        # Sequence
+        row = layout.row()
+        row.label(text="Sequence")
+        row = layout.row()
+        box = row.box()
+        row = box.row(align=True)
+        row.prop(self, "use_sequence_new", text="New")
+        if self.use_sequence_new:
+            row.prop(self, "sequence_new", text="Sequence")
+        else:
+            row.prop(self, "sequence_enum", text="Sequence")
+
         # Counter
         row = layout.row()
         row.label(text="Counter Settings")
@@ -944,19 +989,19 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
 
         # sequence
         row = box.row(align=True)
-        row.prop(self, "use_custom_seq", text="Custom")
-        if self.use_custom_seq:
-            row.prop(self, "sequence_custom", text="Sequence")
+        row.prop(self, "var_use_custom_seq", text="Custom")
+        if self.var_use_custom_seq:
+            row.prop(self, "var_sequence_custom", text="Sequence")
         else:
             row.prop(self, "sequence_enum", text="Sequence")
 
         # project
         row = box.row(align=True)
-        row.prop(self, "use_custom_project", text="Custom")
-        if self.use_custom_project:
-            row.prop(self, "project_custom", text="Project")
+        row.prop(self, "var_use_custom_project", text="Custom")
+        if self.var_use_custom_project:
+            row.prop(self, "var_project_custom", text="Project")
         else:
-            row.prop(self, "project_active", text="Project")
+            row.prop(self, "var_project_active", text="Project")
 
         # pattern
         row = layout.row()
