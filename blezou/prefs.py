@@ -84,6 +84,11 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
+    shot_pattern: bpy.props.StringProperty(  # type: ignore
+        name="Shot Pattern",
+        description="Pattern to define how Bulk Init will name the shots. Supported wildcards: <Project>, <Sequence>, <Counter>",
+        default="<Sequence>_<Counter>",
+    )
     session: ZSession = ZSession()
 
     def draw(self, context: bpy.types.Context) -> None:

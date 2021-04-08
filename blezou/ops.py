@@ -813,7 +813,7 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
         var_sequence = (
             self.var_sequence_custom if self.var_use_custom_seq else self.sequence_enum
         )
-        shot_pattern = str(self.shot_pattern)
+        shot_pattern = addon_prefs_get(bpy.context).shot_pattern
         var_lookup_table = {"Sequence": var_sequence, "Project": var_project}
 
         for count in range(3):
@@ -880,11 +880,6 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
         step=5,
         min=0,
     )
-    shot_pattern: bpy.props.StringProperty(  # type: ignore
-        name="Shot Pattern",
-        description="Pattern to define how Bulk Init will name the shots. Supported wildcards: <Project>, <Sequence>, <Counter>",
-        default="<Sequence>_<Counter>",
-    )
 
     shot_preview: bpy.props.StringProperty(  # type: ignore
         name="Shot Pattern",
@@ -930,11 +925,11 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
                 "Project": var_project,
                 "Counter": counter,
             }
-
+            shot_pattern = addon_prefs_get(context).shot_pattern
             sequence = (
                 self.sequence_new if self.use_sequence_new else self.sequence_enum
             )
-            shot = opsdata._resolve_pattern(self.shot_pattern, var_lookup_table)
+            shot = opsdata._resolve_pattern(shot_pattern, var_lookup_table)
 
             strip.blezou.initialized = True
             strip.blezou.sequence_name = sequence
@@ -1008,7 +1003,7 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
         row.label(text="Shot Pattern")
         row = layout.row()
         box = row.box()
-        box.row().prop(self, "shot_pattern", text="Shot Pattern")
+        box.row().prop(addon_prefs_get(context), "shot_pattern", text="Shot Pattern")
         box.row().prop(self, "shot_preview", text="Preview")
 
 
