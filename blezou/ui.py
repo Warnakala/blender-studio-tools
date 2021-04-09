@@ -28,15 +28,13 @@ from .ops import (
 )
 
 
-def get_selshots_noun(context: bpy.types.Context, prefix: str = "Active") -> str:
-    selshots = context.selected_sequences
-    if not selshots:
+def get_selshots_noun(nr_of_shots: int, prefix: str = "Active") -> str:
+    if not nr_of_shots:
         noun = "All"
-    elif len(selshots) == 1:
+    elif nr_of_shots == 1:
         noun = f"{prefix} Shot"
     else:
-        noun = "%i Shots" % len(selshots)
-
+        noun = "%i Shots" % nr_of_shots
     return noun
 
 
@@ -201,22 +199,29 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         strip = context.scene.sequence_editor.active_strip
         selshots = context.selected_sequences
         nr_of_shots = len(selshots)
-        noun = get_selshots_noun(context)
+        noun = get_selshots_noun(nr_of_shots)
         zproject_active = zproject_active_get()
+
+        strips_to_init = []
+        strips_to_uninit = []
+        strips_to_unlink = []
+
+        for s in selshots:
+            if not s.blezou.initialized:
+                strips_to_init.append(s)
+            elif not s.blezou.linked:
+                strips_to_unlink.append(s)
+            elif s.blezou.initialized:
+                strips_to_uninit.append(s)
 
         layout = self.layout
 
         # Production
-        layout.row().label(text=f"Production: {zproject_active.name}")
-
-        # No Selection
-        if nr_of_shots == 0:
-            row = layout.row(align=True)
-            # init all
-            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="ADD")
+        if zsession_auth(context):
+            layout.row().label(text=f"Production: {zproject_active.name}")
 
         # Single Selection
-        elif nr_of_shots == 1:
+        if nr_of_shots == 1:
             row = layout.row(align=True)
 
             if not strip.blezou.initialized:
@@ -247,18 +252,24 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                 )
 
         # Multiple Selection
-        else:
+        elif nr_of_shots > 1:
             row = layout.row(align=True)
 
-            # bul init
-            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="ADD")
+            # init
+            if len(strips_to_init):
+                row.operator(
+                    BZ_OT_SQE_InitShot.bl_idname,
+                    text=f"Init {len(strips_to_init)} Shots",
+                    icon="ADD",
+                )
             # unlink all
-            row = layout.row(align=True)
-            row.operator(
-                BZ_OT_SQE_DelShotMeta.bl_idname,
-                text=f"Unlink {noun}",
-                icon="UNLINKED",
-            )
+            if len(strips_to_unlink):
+                row = layout.row(align=True)
+                row.operator(
+                    BZ_OT_SQE_DelShotMeta.bl_idname,
+                    text=f"Unlink {len(strips_to_unlink)} Shots",
+                    icon="UNLINKED",
+                )
 
 
 class BZ_PT_SQE_shot_meta(bpy.types.Panel):
@@ -345,6 +356,8 @@ class BZ_PT_SQE_push(bpy.types.Panel):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # if only one strip is selected and it is not init then hide panel
+        if not zsession_auth(context):
+            return False
         nr_of_shots = len(context.selected_sequences)
         strip = context.scene.sequence_editor.active_strip
         if nr_of_shots == 1:
@@ -356,8 +369,24 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         nr_of_shots = len(context.selected_sequences)
         layout = self.layout
         strip = context.scene.sequence_editor.active_strip
-        noun_active = get_selshots_noun(context, prefix="Active")
-        noun_new = get_selshots_noun(context, prefix="New")
+
+        selshots = context.selected_sequences
+        if not selshots:
+            selshots = context.scene.sequence_editor.sequences_all
+
+        strips_to_meta = []
+        strips_to_tb = []
+        strips_to_submit = []
+        strips_to_delete = []
+
+        for s in selshots:
+            if s.blezou.linked:
+                strips_to_tb.append(s)
+                strips_to_meta.append(s)
+                strips_to_delete.append(s)
+
+            elif s.blezou.initialized:
+                strips_to_submit.append(s)
 
         # special case if one shot is selected and it is init but not linked
         # shows the operator but it is not enabled until user types in required metadata
@@ -367,7 +396,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
             col = row.column(align=True)
             col.operator(
                 BZ_OT_SQE_PushNewShot.bl_idname,
-                text=f"Submit {noun_new}",
+                text="Submit New Shot",
                 icon="ADD",
             )
             return
@@ -376,36 +405,49 @@ class BZ_PT_SQE_push(bpy.types.Panel):
 
         # metadata operator
         row = layout.row()
-        col = row.column(align=True)
-        col.operator(
-            BZ_OT_SQE_PushShotMeta.bl_idname,
-            text=f"Metadata {noun_active}",
-            icon="ALIGN_LEFT",
-        )
+        if len(strips_to_meta):
+            col = row.column(align=True)
+            noun = get_selshots_noun(
+                len(strips_to_meta), prefix=f"{len(strips_to_meta)}"
+            )
+            col.operator(
+                BZ_OT_SQE_PushShotMeta.bl_idname,
+                text=f"Metadata {noun}",
+                icon="ALIGN_LEFT",
+            )
 
         # thumbnail operator
-        col.operator(
-            BZ_OT_SQE_PushThumbnail.bl_idname,
-            text=f"Thumbnail {noun_active}",
-            icon="IMAGE_DATA",
-        )
+        if len(strips_to_tb):
+            noun = get_selshots_noun(len(strips_to_tb), prefix=f"{len(strips_to_meta)}")
+            col.operator(
+                BZ_OT_SQE_PushThumbnail.bl_idname,
+                text=f"Thumbnail {noun}",
+                icon="IMAGE_DATA",
+            )
 
         # delete and new operator
         if nr_of_shots > 0:
+            if len(strips_to_submit):
+                noun = get_selshots_noun(
+                    len(strips_to_submit), prefix=f"{len(strips_to_meta)}"
+                )
+                row = layout.row()
+                col = row.column(align=True)
+                col.operator(
+                    BZ_OT_SQE_PushNewShot.bl_idname,
+                    text=f"Submit {noun}",
+                    icon="ADD",
+                )
 
-            row = layout.row()
-            col = row.column(align=True)
-            col.operator(
-                BZ_OT_SQE_PushNewShot.bl_idname,
-                text=f"Submit {noun_new}",
-                icon="ADD",
-            )
-
-            col.operator(
-                BZ_OT_SQE_PushDeleteShot.bl_idname,
-                text=f"Delete {noun_active}",
-                icon="REMOVE",
-            )
+            if len(strips_to_delete):
+                noun = get_selshots_noun(
+                    len(strips_to_delete), prefix=f"{len(strips_to_meta)}"
+                )
+                col.operator(
+                    BZ_OT_SQE_PushDeleteShot.bl_idname,
+                    text=f"Delete {noun}",
+                    icon="REMOVE",
+                )
 
 
 class BZ_PT_SQE_pull(bpy.types.Panel):
@@ -423,6 +465,9 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # if only one strip is selected and it is not init then hide panel
+        if not zsession_auth(context):
+            return False
+
         nr_of_shots = len(context.selected_sequences)
         strip = context.scene.sequence_editor.active_strip
         if nr_of_shots == 1:
@@ -430,15 +475,28 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
-        noun = get_selshots_noun(context)
+        selshots = context.selected_sequences
+
+        if not selshots:
+            selshots = context.scene.sequence_editor.sequences_all
+
+        strips_to_meta = []
+
+        for s in selshots:
+            if s.blezou.linked:
+                strips_to_meta.append(s)
 
         layout = self.layout
-        row = layout.row()
-        row.operator(
-            BZ_OT_SQE_PullShotMeta.bl_idname,
-            text=f"Metadata {noun}",
-            icon="ALIGN_LEFT",
-        )
+        if len(strips_to_meta):
+            noun = get_selshots_noun(
+                len(strips_to_meta), prefix=f"{len(strips_to_meta)}"
+            )
+            row = layout.row()
+            row.operator(
+                BZ_OT_SQE_PullShotMeta.bl_idname,
+                text=f"Metadata {noun}",
+                icon="ALIGN_LEFT",
+            )
 
 
 class BZ_PT_SQE_debug(bpy.types.Panel):
@@ -459,7 +517,8 @@ class BZ_PT_SQE_debug(bpy.types.Panel):
         return addon_prefs_get(context).enable_debug
 
     def draw(self, context: bpy.types.Context) -> None:
-        noun = get_selshots_noun(context)
+        nr_of_shots = len(context.selected_sequences)
+        noun = get_selshots_noun(nr_of_shots)
 
         layout = self.layout
         row = layout.row()
