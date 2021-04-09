@@ -299,11 +299,6 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         # not editable
         col = box.column(align=True)
         col.enabled = False
-        col.prop(strip.blezou, "linked")
-        # ol.prop(strip.blezou, "shot_id")
-        # col.prop(strip.blezou, "project_name")
-        # col.prop(strip.blezou, "project_id")
-        # col.prop(strip.blezou, "sequence_id")
 
 
 class BZ_PT_SQE_push(bpy.types.Panel):
