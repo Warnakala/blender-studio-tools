@@ -13,7 +13,7 @@ _ZASSET_ACTIVE: ZAsset = ZAsset()
 _ZASSET_TYPE_ACTIVE: ZAssetType = ZAssetType()
 
 
-class BZ_PopertyGroup_SEQ_Shot(bpy.types.PropertyGroup):
+class BZ_PopertyGroupSequence(bpy.types.PropertyGroup):
     """
     Property group that will be registered on sequence strips.
     They hold metadata that will be used to compose a data structure that can
@@ -64,7 +64,7 @@ class BZ_PopertyGroup_SEQ_Shot(bpy.types.PropertyGroup):
         self.linked = False
 
 
-class BZ_PopertyGroup_BlezouData(bpy.types.PropertyGroup):
+class BZ_PopertyGroupScene(bpy.types.PropertyGroup):
     """"""
 
     sequence_active_id: bpy.props.StringProperty(  # type: ignore
@@ -97,6 +97,19 @@ class BZ_PopertyGroup_BlezouData(bpy.types.PropertyGroup):
         self.shot_active_id = ""
         self.asset_active_id = ""
         self.asset_type_active_id = ""
+
+
+class BZ_PopertyGroupWindow(bpy.types.PropertyGroup):
+    """"""
+
+    multi_edit_seq: bpy.props.StringProperty(  # type: ignore
+        name="Sequence",
+        description="",
+        default="",
+    )
+
+    def clear(self):
+        self.multi_edit_seq = ""
 
 
 def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
@@ -152,7 +165,7 @@ def load_post_handler(dummy):
 
 # ----------------REGISTER--------------
 
-classes = [BZ_PopertyGroup_SEQ_Shot, BZ_PopertyGroup_BlezouData]
+classes = [BZ_PopertyGroupSequence, BZ_PopertyGroupScene]
 
 
 def register():
@@ -162,12 +175,12 @@ def register():
 
     bpy.types.Sequence.blezou = bpy.props.PointerProperty(
         name="Blezou",
-        type=BZ_PopertyGroup_SEQ_Shot,
+        type=BZ_PopertyGroupSequence,
         description="Metadata that is required for blezou",
     )
     bpy.types.Scene.blezou = bpy.props.PointerProperty(
         name="Blezou",
-        type=BZ_PopertyGroup_BlezouData,
+        type=BZ_PopertyGroupScene,
         description="Metadata that is required for blezou",
     )
 

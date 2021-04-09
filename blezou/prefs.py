@@ -84,12 +84,6 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
-    shot_pattern: bpy.props.StringProperty(  # type: ignore
-        name="Shot Pattern",
-        description="Pattern to define how Bulk Init will name the shots. Supported wildcards: <Project>, <Sequence>, <Counter>",
-        default="<Sequence>_<Counter>",
-    )
-
     enable_debug: bpy.props.BoolProperty(  # type: ignore
         name="Enable Debug Operators",
         description="Enables Operatots that provide debug functionality.",
@@ -97,6 +91,26 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
     show_advanced: bpy.props.BoolProperty(  # type: ignore
         name="Show Advanced Settings",
         description="Show advanced settings that should already have good defaults.",
+    )
+
+    shot_pattern: bpy.props.StringProperty(  # type: ignore
+        name="Shot Pattern",
+        description="Pattern to define how Bulk Init will name the shots. Supported wildcards: <Project>, <Sequence>, <Counter>",
+        default="<Sequence>_<Counter>",
+    )
+
+    shot_counter_digits: bpy.props.IntProperty(  # type: ignore
+        name="Shot Counter Digits",
+        description="How many digits the counter should contain.",
+        default=4,
+        min=0,
+    )
+    shot_counter_increment: bpy.props.IntProperty(  # type: ignore
+        name="Shot Counter Increment",
+        description="By which Increment counter should be increased.",
+        default=10,
+        step=5,
+        min=0,
     )
 
     session: ZSession = ZSession()
@@ -140,6 +154,11 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         box.row().prop(self, "folder_thumbnail")
         box.row().prop(self, "enable_debug")
         box.row().prop(self, "show_advanced")
+
+        if self.show_advanced:
+            box.row().prop(self, "shot_pattern")
+            box.row().prop(self, "shot_counter_digits")
+            box.row().prop(self, "shot_counter_increment")
 
 
 def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:

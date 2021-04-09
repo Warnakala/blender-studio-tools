@@ -13,7 +13,6 @@ from .ops import (
     BZ_OT_AssetTypesLoad,
     BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_InitShot,
-    BZ_OT_SQE_InitShotBulk,
     BZ_OT_SQE_DelShotMeta,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_LinkSequence,
@@ -21,6 +20,8 @@ from .ops import (
     BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PushShotMeta,
     BZ_OT_SQE_PullShotMeta,
+    BZ_OT_SQE_MultiEditSequence,
+    BZ_OT_SQE_MultiEditShot,
     BZ_OT_SQE_DebugDuplicates,
     BZ_OT_SQE_DebugNotLinked,
     BZ_OT_SQE_DebugMultiProjects,
@@ -212,9 +213,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         if nr_of_shots == 0:
             row = layout.row(align=True)
             # init all
-            row.operator(
-                BZ_OT_SQE_InitShotBulk.bl_idname, text=f"Bulk Init {noun}", icon="ADD"
-            )
+            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="ADD")
 
         # Single Selection
         elif nr_of_shots == 1:
@@ -252,9 +251,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
             row = layout.row(align=True)
 
             # bul init
-            row.operator(
-                BZ_OT_SQE_InitShotBulk.bl_idname, text=f"Bulk Init {noun}", icon="ADD"
-            )
+            row.operator(BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="ADD")
             # unlink all
             row = layout.row(align=True)
             row.operator(
@@ -303,9 +300,34 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         col.prop(strip.blezou, "shot_description")
         col.enabled = False if not strip.blezou.initialized else True
 
-        # not editable
-        col = box.column(align=True)
-        col.enabled = False
+
+class BZ_PT_SQE_shot_muli_edit(bpy.types.Panel):
+    """
+    Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
+    """
+
+    bl_parent_id = "BZ_PT_SQE_tools"
+    bl_category = "Blezou"
+    bl_label = "Multi Edit"
+    bl_space_type = "SEQUENCE_EDITOR"
+    bl_region_type = "UI"
+    bl_order = 11
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        sel_shots = context.selected_sequences
+        nr_of_shots = len(sel_shots)
+        unvalid = [s for s in sel_shots if s.blezou.linked or not s.blezou.initialized]
+        return bool(not unvalid and nr_of_shots > 1)
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout = self.layout
+        sel_shots = context.selected_sequences
+
+        # sequence
+        row = layout.row(align=True)
+        row.operator(BZ_OT_SQE_MultiEditSequence.bl_idname, text="Sequence")
+        row.operator(BZ_OT_SQE_MultiEditShot.bl_idname, text="Shot")
 
 
 class BZ_PT_SQE_push(bpy.types.Panel):
@@ -468,6 +490,7 @@ classes = [
     BZ_PT_vi3d_context,
     BZ_PT_SQE_tools,
     BZ_PT_SQE_shot_meta,
+    BZ_PT_SQE_shot_muli_edit,
     BZ_PT_SQE_push,
     BZ_PT_SQE_pull,
     BZ_PT_SQE_debug,
