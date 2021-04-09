@@ -52,15 +52,15 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     host: bpy.props.StringProperty(  # type: ignore
-        name="host", default="", options={"HIDDEN", "SKIP_SAVE"}
+        name="Host", default="", options={"HIDDEN", "SKIP_SAVE"}
     )
 
     email: bpy.props.StringProperty(  # type: ignore
-        name="email", default="", options={"HIDDEN", "SKIP_SAVE"}
+        name="Email", default="", options={"HIDDEN", "SKIP_SAVE"}
     )
 
     passwd: bpy.props.StringProperty(  # type: ignore
-        name="passwd", default="", options={"HIDDEN", "SKIP_SAVE"}, subtype="PASSWORD"
+        name="Password", default="", options={"HIDDEN", "SKIP_SAVE"}, subtype="PASSWORD"
     )
     category: bpy.props.EnumProperty(  # type: ignore
         items=(
@@ -70,7 +70,7 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         default="SHOTS",
     )
     folder_thumbnail: bpy.props.StringProperty(  # type: ignore
-        name="thumbnail folder",
+        name="Thumbnail Folder",
         description="Folder in which thumbnails will be saved",
         default="",
         subtype="DIR_PATH",
@@ -78,10 +78,19 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
     )
 
     project_active_id: bpy.props.StringProperty(  # type: ignore
-        name="previous project id",
+        name="Project Active ID",
         description="GazouId that refers to the last active project",
         default="",
         options={"HIDDEN", "SKIP_SAVE"},
+    )
+
+    enable_debug: bpy.props.BoolProperty(  # type: ignore
+        name="Enable Debug Operators",
+        description="Enables Operatots that provide debug functionality.",
+    )
+    show_advanced: bpy.props.BoolProperty(  # type: ignore
+        name="Show Advanced Settings",
+        description="Show advanced settings that should already have good defaults.",
     )
 
     shot_pattern: bpy.props.StringProperty(  # type: ignore
@@ -89,26 +98,46 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         description="Pattern to define how Bulk Init will name the shots. Supported wildcards: <Project>, <Sequence>, <Counter>",
         default="<Sequence>_<Counter>",
     )
+
+    shot_counter_digits: bpy.props.IntProperty(  # type: ignore
+        name="Shot Counter Digits",
+        description="How many digits the counter should contain.",
+        default=4,
+        min=0,
+    )
+    shot_counter_increment: bpy.props.IntProperty(  # type: ignore
+        name="Shot Counter Increment",
+        description="By which Increment counter should be increased.",
+        default=10,
+        step=5,
+        min=0,
+    )
+
     session: ZSession = ZSession()
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
-        layout.label(text="Login and Host Settings")
-        box = layout.box()
 
         # login
-        box.row().prop(self, "host")
-        box.row().prop(self, "email")
-        box.row().prop(self, "passwd")
-        if not context.preferences.addons["blezou"].preferences.session.is_auth():
+        box = layout.box()
+        box.label(text="Login and Host Settings", icon="URL")
+        if not self.session.is_auth():
+            box.row().prop(self, "host")
+            box.row().prop(self, "email")
+            box.row().prop(self, "passwd")
             box.row().operator(BZ_OT_SessionStart.bl_idname, text="Login", icon="PLAY")
         else:
+            row = box.row()
+            row.prop(self, "host")
+            row.enabled = False
+            box.row().label(text=f"Logged in: {self.session.email}")
             box.row().operator(
                 BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE"
             )
+
         # Production
-        layout.label(text="Active Production")
         box = layout.box()
+        box.label(text="Project settings", icon="FILEBROWSER")
         row = box.row(align=True)
 
         if not _ZPROJECT_ACTIVE:
@@ -120,9 +149,16 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
             BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
         )
         # misc settings
-        layout.label(text="Misc")
         box = layout.box()
+        box.label(text="Misc", icon="MODIFIER")
         box.row().prop(self, "folder_thumbnail")
+        box.row().prop(self, "enable_debug")
+        box.row().prop(self, "show_advanced")
+
+        if self.show_advanced:
+            box.row().prop(self, "shot_pattern")
+            box.row().prop(self, "shot_counter_digits")
+            box.row().prop(self, "shot_counter_increment")
 
 
 def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
