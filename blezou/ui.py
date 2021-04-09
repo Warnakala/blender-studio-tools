@@ -45,7 +45,7 @@ class BZ_PT_vi3d_auth(bpy.types.Panel):
     """
 
     bl_category = "Blezou"
-    bl_label = "Kitsu Login"
+    bl_label = "Login"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_order = 10
@@ -153,7 +153,7 @@ class BZ_PT_SQE_auth(bpy.types.Panel):
     """
 
     bl_category = "Blezou"
-    bl_label = "Kitsu Login"
+    bl_label = "Login"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 10
@@ -182,7 +182,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
 
     bl_idname = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
-    bl_label = "SEQ Editor Tools"
+    bl_label = "Shot Tools"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 30
