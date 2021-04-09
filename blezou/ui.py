@@ -204,6 +204,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         # Production
         layout.row().label(text=f"Production: {zproject_active.name}")
 
+        # No Selection
         if nr_of_shots == 0:
             row = layout.row(align=True)
             # init all
@@ -211,6 +212,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                 BZ_OT_SQE_InitShotBulk.bl_idname, text=f"Bulk Init {noun}", icon="ADD"
             )
 
+        # Single Selection
         elif nr_of_shots == 1:
             row = layout.row(align=True)
 
@@ -227,20 +229,15 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                 )
 
             else:
-                # relink active
-                row.operator(
-                    BZ_OT_SQE_LinkShot.bl_idname,
-                    text=f"Relink {noun}",
-                    icon="LINKED",
-                )
                 row = layout.row(align=True)
                 # unlink active
                 row.operator(
                     BZ_OT_SQE_DelShotMeta.bl_idname,
                     text=f"Unlink {noun}",
-                    icon="CANCEL",
+                    icon="UNLINKED",
                 )
 
+        # Multiple Selection
         else:
             row = layout.row(align=True)
 
@@ -253,7 +250,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
             row.operator(
                 BZ_OT_SQE_DelShotMeta.bl_idname,
                 text=f"Unlink {noun}",
-                icon="CANCEL",
+                icon="UNLINKED",
             )
 
 
@@ -351,7 +348,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         col.operator(
             BZ_OT_SQE_PushShotMeta.bl_idname,
             text=f"Metadata {noun_active}",
-            icon="SEQ_STRIP_META",
+            icon="ALIGN_LEFT",
         )
 
         # thumbnail operator
@@ -375,7 +372,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
             col.operator(
                 BZ_OT_SQE_PushDeleteShot.bl_idname,
                 text=f"Delete {noun_active}",
-                icon="KEYTYPE_EXTREME_VEC",
+                icon="REMOVE",
             )
 
 
@@ -408,7 +405,7 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
         row.operator(
             BZ_OT_SQE_PullShotMeta.bl_idname,
             text=f"Metadata {noun}",
-            icon="SEQ_STRIP_META",
+            icon="ALIGN_LEFT",
         )
 
 
