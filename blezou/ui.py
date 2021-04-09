@@ -208,7 +208,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
             row = layout.row(align=True)
             # init all
             row.operator(
-                BZ_OT_SQE_InitShotBulk.bl_idname, text=f"Bulk Init {noun}", icon="PLUS"
+                BZ_OT_SQE_InitShotBulk.bl_idname, text=f"Bulk Init {noun}", icon="ADD"
             )
 
         elif nr_of_shots == 1:
@@ -217,7 +217,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
             if not strip.blezou.initialized:
                 # init active
                 row.operator(
-                    BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="PLUS"
+                    BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="ADD"
                 )
                 # link active
                 row.operator(
@@ -246,7 +246,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
 
             # bul init
             row.operator(
-                BZ_OT_SQE_InitShotBulk.bl_idname, text=f"Bulk Init {noun}", icon="PLUS"
+                BZ_OT_SQE_InitShotBulk.bl_idname, text=f"Bulk Init {noun}", icon="ADD"
             )
             # unlink all
             row = layout.row(align=True)
