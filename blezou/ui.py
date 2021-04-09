@@ -158,6 +158,10 @@ class BZ_PT_SQE_auth(bpy.types.Panel):
     bl_region_type = "UI"
     bl_order = 10
 
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(not zsession_auth(context))
+
     def draw(self, context: bpy.types.Context) -> None:
         prefs = addon_prefs_get(context)
         zsession = zsession_get(context)
