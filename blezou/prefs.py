@@ -94,27 +94,36 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         name="Enable Debug Operators",
         description="Enables Operatots that provide debug functionality.",
     )
+    show_advanced: bpy.props.BoolProperty(  # type: ignore
+        name="Show Advanced Settings",
+        description="Show advanced settings that should already have good defaults.",
+    )
 
     session: ZSession = ZSession()
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
-        layout.label(text="Login and Host Settings")
-        box = layout.box()
 
         # login
-        box.row().prop(self, "host")
-        box.row().prop(self, "email")
-        box.row().prop(self, "passwd")
-        if not context.preferences.addons["blezou"].preferences.session.is_auth():
+        box = layout.box()
+        box.label(text="Login and Host Settings", icon="URL")
+        if not self.session.is_auth():
+            box.row().prop(self, "host")
+            box.row().prop(self, "email")
+            box.row().prop(self, "passwd")
             box.row().operator(BZ_OT_SessionStart.bl_idname, text="Login", icon="PLAY")
         else:
+            row = box.row()
+            row.prop(self, "host")
+            row.enabled = False
+            box.row().label(text=f"Logged in: {self.session.email}")
             box.row().operator(
                 BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE"
             )
+
         # Production
-        layout.label(text="Active Production")
         box = layout.box()
+        box.label(text="Project settings", icon="FILEBROWSER")
         row = box.row(align=True)
 
         if not _ZPROJECT_ACTIVE:
@@ -126,10 +135,11 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
             BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
         )
         # misc settings
-        layout.label(text="Misc")
         box = layout.box()
-        box.row().prop(self, "enable_debug")
+        box.label(text="Misc", icon="MODIFIER")
         box.row().prop(self, "folder_thumbnail")
+        box.row().prop(self, "enable_debug")
+        box.row().prop(self, "show_advanced")
 
 
 def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
