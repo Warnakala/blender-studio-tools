@@ -89,6 +89,12 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         description="Pattern to define how Bulk Init will name the shots. Supported wildcards: <Project>, <Sequence>, <Counter>",
         default="<Sequence>_<Counter>",
     )
+
+    enable_debug: bpy.props.BoolProperty(  # type: ignore
+        name="Enable Debug Operators",
+        description="Enables Operatots that provide debug functionality.",
+    )
+
     session: ZSession = ZSession()
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -122,6 +128,7 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         # misc settings
         layout.label(text="Misc")
         box = layout.box()
+        box.row().prop(self, "enable_debug")
         box.row().prop(self, "folder_thumbnail")
 
 

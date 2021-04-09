@@ -422,12 +422,12 @@ class BZ_PT_SQE_debug(bpy.types.Panel):
     bl_label = "Debug"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
-    bl_order = 40
     bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 40
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return True
+        return addon_prefs_get(context).enable_debug
 
     def draw(self, context: bpy.types.Context) -> None:
         noun = get_selshots_noun(context)
