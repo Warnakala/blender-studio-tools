@@ -20,8 +20,7 @@ from .ops import (
     BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PushShotMeta,
     BZ_OT_SQE_PullShotMeta,
-    BZ_OT_SQE_MultiEditSequence,
-    BZ_OT_SQE_MultiEditShot,
+    BZ_OT_SQE_MultiEditStrip,
     BZ_OT_SQE_DebugDuplicates,
     BZ_OT_SQE_DebugNotLinked,
     BZ_OT_SQE_DebugMultiProjects,
@@ -312,7 +311,7 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         col.enabled = False if not strip.blezou.initialized else True
 
 
-class BZ_PT_SQE_shot_muli_edit(bpy.types.Panel):
+class BZ_PT_SQE_ShotMultiEdit(bpy.types.Panel):
     """
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
@@ -332,13 +331,73 @@ class BZ_PT_SQE_shot_muli_edit(bpy.types.Panel):
         return bool(not unvalid and nr_of_shots > 1)
 
     def draw(self, context: bpy.types.Context) -> None:
-        layout = self.layout
-        sel_shots = context.selected_sequences
+        addon_prefs = addon_prefs_get(context)
+        nr_of_shots = len(context.selected_sequences)
+        noun = get_selshots_noun(nr_of_shots)
 
-        # sequence
-        row = layout.row(align=True)
-        row.operator(BZ_OT_SQE_MultiEditSequence.bl_idname, text="Sequence")
-        row.operator(BZ_OT_SQE_MultiEditShot.bl_idname, text="Shot")
+        # UI
+        layout = self.layout
+
+        # Sequence
+        row = layout.row()
+        box = row.box()
+        row = box.row(align=True)
+        row.prop(context.window_manager, "use_sequence_new", text="New Seqeunce")
+        if context.window_manager.use_sequence_new:
+            row.prop(context.window_manager, "sequence_new", text="")
+        else:
+            row.prop(context.window_manager, "sequence_enum", text="")
+
+        # Counter
+        row = box.row()
+        row.prop(
+            context.window_manager, "shot_counter_start", text="Shot Counter Start"
+        )
+        row.prop(context.window_manager, "show_advanced", text="")
+
+        if context.window_manager.show_advanced:
+
+            # Counter
+            box.row().prop(
+                addon_prefs, "shot_counter_digits", text="Shot Counter Digits"
+            )
+            box.row().prop(
+                addon_prefs, "shot_counter_increment", text="Shot Counter Increment"
+            )
+
+            # variables
+            row = box.row(align=True)
+            row.prop(
+                context.window_manager,
+                "var_use_custom_seq",
+                text="Custom Sequence Variable",
+            )
+            if context.window_manager.var_use_custom_seq:
+                row.prop(context.window_manager, "var_sequence_custom", text="")
+
+            # project
+            row = box.row(align=True)
+            row.prop(
+                context.window_manager,
+                "var_use_custom_project",
+                text="Custom Project Variable",
+            )
+            if context.window_manager.var_use_custom_project:
+                row.prop(context.window_manager, "var_project_custom", text="")
+
+            # Shot pattern
+            box.row().prop(addon_prefs, "shot_pattern", text="Shot Pattern")
+
+        # preview
+        row = box.row()
+        row.prop(context.window_manager, "shot_preview", text="Preview")
+
+        row = layout.row()
+        row.operator(
+            BZ_OT_SQE_MultiEditStrip.bl_idname,
+            text=f"Edit {noun}",
+            icon="TRIA_RIGHT",
+        )
 
 
 class BZ_PT_SQE_push(bpy.types.Panel):
@@ -549,7 +608,7 @@ classes = [
     BZ_PT_vi3d_context,
     BZ_PT_SQE_tools,
     BZ_PT_SQE_shot_meta,
-    BZ_PT_SQE_shot_muli_edit,
+    BZ_PT_SQE_ShotMultiEdit,
     BZ_PT_SQE_push,
     BZ_PT_SQE_pull,
     BZ_PT_SQE_debug,
