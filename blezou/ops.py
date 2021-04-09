@@ -850,7 +850,7 @@ class BZ_OT_SQE_MultiEditShot(bpy.types.Operator):
         examples: List[str] = []
 
         var_project = (
-            addon_prefs.var_project_custom
+            self.var_project_custom
             if self.var_use_custom_project
             else self.var_project_active
         )
