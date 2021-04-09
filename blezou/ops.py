@@ -1202,7 +1202,7 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
 
     bl_idname = "blezou.sqe_del_shot_meta"
     bl_label = "Delete Shot Metadata"
-    bl_description = "Cleares shot metadata of selecetd strips. Link to server will be lost. Only affects SQE."
+    bl_description = "Cleares shot metadata of selecetd strips. Only affects Sequence Editor. Link to server will be lost. "
     confirm: bpy.props.BoolProperty(name="Confirm")
 
     @classmethod
@@ -1253,7 +1253,7 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text="Cleares metadata of %s. Link to server will be lost. Only affects SQE."
+            text="Cleares metadata of %s. Only affects Sequence Editor. Link to server will be lost."
             % noun,
         )
 

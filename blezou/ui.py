@@ -233,12 +233,18 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                 )
 
             else:
+                noun_unlink = "Unlink"
+                icon_unlink = "UNLINKED"
+                if not strip.blezou.linked:
+                    noun_unlink = "Uninitialize"
+                    icon_unlink = "REMOVE"
+
                 row = layout.row(align=True)
                 # unlink active
                 row.operator(
                     BZ_OT_SQE_DelShotMeta.bl_idname,
-                    text=f"Unlink {noun}",
-                    icon="UNLINKED",
+                    text=f"{noun_unlink} {noun}",
+                    icon=icon_unlink,
                 )
 
         # Multiple Selection
