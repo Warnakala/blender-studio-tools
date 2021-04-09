@@ -27,12 +27,12 @@ from .ops import (
 )
 
 
-def get_selshots_noun(context: bpy.types.Context) -> str:
+def get_selshots_noun(context: bpy.types.Context, prefix: str = "Active") -> str:
     selshots = context.selected_sequences
     if not selshots:
         noun = "All"
     elif len(selshots) == 1:
-        noun = "Active Shot"
+        noun = f"{prefix} Shot"
     else:
         noun = "%i Shots" % len(selshots)
 
@@ -329,19 +329,21 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
-        noun = get_selshots_noun(context)
         nr_of_shots = len(context.selected_sequences)
         layout = self.layout
         strip = context.scene.sequence_editor.active_strip
+        noun_active = get_selshots_noun(context, prefix="Active")
+        noun_new = get_selshots_noun(context, prefix="New")
 
         # special case if one shot is selected and it is init but not linked
+        # shows the operator but it is not enabled until user types in required metadata
         if nr_of_shots == 1 and not strip.blezou.linked:
             # new operator
             row = layout.row()
             col = row.column(align=True)
             col.operator(
                 BZ_OT_SQE_PushNewShot.bl_idname,
-                text=f"New {noun}",
+                text=f"Submit {noun_new}",
                 icon="ADD",
             )
             return
@@ -353,31 +355,31 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         col = row.column(align=True)
         col.operator(
             BZ_OT_SQE_PushShotMeta.bl_idname,
-            text=f"Metadata {noun}",
+            text=f"Metadata {noun_active}",
             icon="SEQ_STRIP_META",
         )
 
         # thumbnail operator
         col.operator(
             BZ_OT_SQE_PushThumbnail.bl_idname,
-            text=f"Thumbnail {noun}",
+            text=f"Thumbnail {noun_active}",
             icon="IMAGE_DATA",
         )
 
-        # new operator only if not linked when once is active
-        row = layout.row()
-        col = row.column(align=True)
-        if nr_of_shots != 1 or not strip.blezou.linked:
+        # delete and new operator
+        if nr_of_shots > 0:
+
+            row = layout.row()
+            col = row.column(align=True)
             col.operator(
                 BZ_OT_SQE_PushNewShot.bl_idname,
-                text=f"New {noun}",
+                text=f"Submit {noun_new}",
                 icon="ADD",
             )
-        # delete operator
-        if nr_of_shots > 0:
+
             col.operator(
                 BZ_OT_SQE_PushDeleteShot.bl_idname,
-                text=f"Delete {noun}",
+                text=f"Delete {noun_active}",
                 icon="KEYTYPE_EXTREME_VEC",
             )
 
