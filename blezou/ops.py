@@ -32,7 +32,7 @@ logger = ZLoggerFactory.getLogger(name=__name__)
 class BZ_OT_SessionStart(bpy.types.Operator):
     """
     Starts the ZSession, which  is stored in Blezou addon preferences.
-    Authenticates user with backend until session ends.
+    Authenticates user with server until session ends.
     Host, email and password are retrieved from Blezou addon preferences.
     """
 
@@ -89,7 +89,7 @@ class BZ_OT_SessionEnd(bpy.types.Operator):
 
 class BZ_OT_ProductionsLoad(bpy.types.Operator):
     """
-    Gets all productions that are available in backend and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all productions that are available in server and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
     bl_idname = "blezou.productions_load"
@@ -141,7 +141,7 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
 
 class BZ_OT_SequencesLoad(bpy.types.Operator):
     """
-    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
     bl_idname = "blezou.sequences_load"
@@ -188,7 +188,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
 
 class BZ_OT_ShotsLoad(bpy.types.Operator):
     """
-    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
     bl_idname = "blezou.shots_load"
@@ -230,7 +230,7 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
 
 class BZ_OT_AssetTypesLoad(bpy.types.Operator):
     """
-    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
     bl_idname = "blezou.asset_types_load"
@@ -274,7 +274,7 @@ class BZ_OT_AssetTypesLoad(bpy.types.Operator):
 
 class BZ_OT_AssetsLoad(bpy.types.Operator):
     """
-    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
     bl_idname = "blezou.assets_load"
@@ -479,19 +479,19 @@ class CheckStrip:
             zshot = ZShot.by_id(strip.blezou.shot_id)
         except gazu.exception.RouteNotFoundException:
             logger.error(
-                "Strip: %s. Shot ID: %s not found in gazou anymore. Was maybe deleted?"
+                "Strip: %s Shot ID: %s not found on server anymore. Was maybe deleted?"
                 % (strip.name, strip.blezou.shot_id)
             )
             return None
         if zshot:
             logger.info(
-                "Strip: %s. Shot %s exists in gazou, ID: %s)."
+                "Strip: %s Shot %s exists on server (ID: %s)."
                 % (strip.name, zshot.name, zshot.id)
             )
             return zshot
         else:
             logger.info(
-                "Strip: %s. Shot %s does not exist in gazou. ID: %s not found."
+                "Strip: %s Shot %s does not exist on server (ID: %s)"
                 % (strip.name, zshot.name, strip.blezou.shot_id)
             )
             return None
@@ -507,13 +507,13 @@ class CheckStrip:
         zseq = zproject.get_sequence_by_name(strip.blezou.sequence_name)
         if zseq:
             logger.info(
-                "Strip: %s. Sequence %s exists in gazou, ID: %s)."
+                "Strip: %s Sequence %s exists in on server (ID: %s)."
                 % (strip.name, zseq.name, zseq.id)
             )
             return zseq
         else:
             logger.info(
-                "Strip: %s. Sequence %s does not exist in gazou."
+                "Strip: %s Sequence %s does not exist on server."
                 % (strip.name, strip.blezou.sequence_name)
             )
             return None
@@ -529,13 +529,13 @@ class CheckStrip:
         zshot = zproject.get_shot_by_name(zsequence, strip.blezou.shot_name)
         if zshot:
             logger.info(
-                "Strip: %s. Shot already existent in gazou, ID: %s)."
+                "Strip: %s Shot already existent on server (ID: %s)."
                 % (strip.name, zshot.id)
             )
             return zshot
         else:
             logger.info(
-                "Strip: %s. Shot %s does not exist in gazou."
+                "Strip: %s Shot %s does not exist on server."
                 % (strip.name, strip.blezou.shot_name)
             )
             return None
@@ -553,7 +553,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
     """
 
     bl_idname = "blezou.sqe_push_shot_meta"
-    bl_label = "Push Shot meta"
+    bl_label = "Push Shot Metadata"
     bl_options = {"INTERNAL"}
 
     @classmethod
@@ -608,7 +608,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
     """
 
     bl_idname = "blezou.sqe_push_new_shot"
-    bl_label = "Push New Shot"
+    bl_label = "Submit New Shot"
     bl_options = {"INTERNAL"}
 
     confirm: bpy.props.BoolProperty(name="confirm")
@@ -631,13 +631,13 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         if not self.confirm:
-            self.report({"WARNING"}, "Push New aborted.")
+            self.report({"WARNING"}, "Submit new aborted.")
             return {"CANCELLED"}
 
         zproject_active = zproject_active_get()
         succeeded = []
         failed = []
-        logger.info("-START- Blezou pushing new Shots to: %s" % zproject_active.name)
+        logger.info("-START- Blezou submitting new shots to: %s" % zproject_active.name)
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -686,9 +686,9 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
 
         self.report(
             {"INFO"},
-            f"Created {len(succeeded)} new Shots | Failed: {len(failed)}",
+            f"Submitted {len(succeeded)} new shots | Failed: {len(failed)}",
         )
-        logger.info("-END- Blezou pushing new Shots to: %s" % zproject_active.name)
+        logger.info("-END- Blezou submitting new shots to: %s" % zproject_active.name)
         ui_redraw()
         return {"FINISHED"}
 
@@ -704,9 +704,9 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             selected_sequences = context.scene.sequence_editor.sequences_all
 
         if len(selected_sequences) > 1:
-            noun = "%i shots" % len(selected_sequences)
+            noun = "%i Shots" % len(selected_sequences)
         else:
-            noun = "this shot"
+            noun = "this Shot"
 
         if not zproject_active:
             prod_load_text = "Select Production"
@@ -728,8 +728,8 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text="Project: %s - Create %s on gazou? Will skip shots if already exists."
-            % (zproject_active.name, noun),
+            text="Submit %s to server. Will skip shots if they already exist."
+            % (noun.lower()),
         )
 
 
@@ -741,7 +741,7 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
     """
 
     bl_idname = "blezou.sqe_init_shot"
-    bl_label = "Init Shot"
+    bl_label = "Initialize Shot"
     bl_description = "Adds required shot metadata to selecetd strips"
 
     @classmethod
@@ -751,7 +751,7 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
         failed = []
-        logger.info("-START- Initializing Shots")
+        logger.info("-START- Initializing shots")
 
         selected_sequences = context.selected_sequences
         if not selected_sequences:
@@ -765,13 +765,13 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
 
             strip.blezou.initialized = True
             succeeded.append(strip)
-            logger.info("Initialized strip: %s as Shot." % strip.name)
+            logger.info("Initialized strip: %s as shot." % strip.name)
 
         self.report(
             {"INFO"},
-            f"Initialized {len(succeeded)} Shots | Failed: {len(failed)}.",
+            f"Initialized {len(succeeded)} shots | Failed: {len(failed)}.",
         )
-        logger.info("-END- Initializing Shots")
+        logger.info("-END- Initializing shots")
         ui_redraw()
         return {"FINISHED"}
 
@@ -784,7 +784,7 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
     """
 
     bl_idname = "blezou.sqe_init_shot_bulkd"
-    bl_label = "Bulk Init Shot"
+    bl_label = "Bulk Initialize Shots"
     bl_description = "Adds required shot metadata to selecetd strips"
 
     # Property Functions
@@ -940,11 +940,11 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
             strip.blezou.sequence_name = sequence
             strip.blezou.shot_name = shot
             succeeded.append(strip)
-            logger.info("Initialized strip: %s as Shot: %s" % (strip.name, shot))
+            logger.info("Initialized strip: %s as shot: %s" % (strip.name, shot))
 
         self.report(
             {"INFO"},
-            f"Initialized {len(succeeded)} Shots | Failed: {len(failed)}.",
+            f"Initialized {len(succeeded)} shots | Failed: {len(failed)}.",
         )
         logger.info("-END- Bulk Initializing Shots")
         ui_redraw()
@@ -1018,7 +1018,7 @@ class BZ_OT_SQE_InitShotBulk(bpy.types.Operator):
 
 class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
     """
-    Gets all sequences that are available in backend for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
     bl_idname = "blezou.sqe_link_sequence"
@@ -1079,7 +1079,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
     bl_idname = "blezou.sqe_link_shot"
     bl_label = "Link Shot"
     bl_description = (
-        "Adds required shot metadata to selecetd strip based on data from gazou."
+        "Adds required shot metadata to selecetd strip based on data from server."
     )
     bl_property = "enum_prop"
 
@@ -1145,7 +1145,7 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
     """
 
     bl_idname = "blezou.sqe_pull_shot_meta"
-    bl_label = "Pull Shot Meta"
+    bl_label = "Pull Shot Metadata"
     bl_options = {"INTERNAL"}
 
     @classmethod
@@ -1155,7 +1155,7 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
         failed = []
-        logger.info("-START- Pulling Shot Metadata")
+        logger.info("-START- Pulling shot metadata")
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -1187,9 +1187,9 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         context.window_manager.progress_end()
         self.report(
             {"INFO"},
-            f"Pulled Metadata for {len(succeeded)} Shots | Failed: {len(failed)}.",
+            f"Pulled metadata for {len(succeeded)} shots | Failed: {len(failed)}.",
         )
-        logger.info("-END- Pulling Shot Metadata")
+        logger.info("-END- Pulling shot metadata")
         ui_redraw()
         return {"FINISHED"}
 
@@ -1202,8 +1202,8 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
 
     bl_idname = "blezou.sqe_del_shot_meta"
     bl_label = "Delete Shot Metadata"
-    bl_description = "Cleares shot metadata of selecetd strips. Link to shot in gazou will be lost. Only affects SQE."
-    confirm: bpy.props.BoolProperty(name="confirm")
+    bl_description = "Cleares shot metadata of selecetd strips. Link to server will be lost. Only affects SQE."
+    confirm: bpy.props.BoolProperty(name="Confirm")
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1211,12 +1211,12 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.confirm:
-            self.report({"WARNING"}, "Clearing Metadata aborted.")
+            self.report({"WARNING"}, "Clearing metadata aborted.")
             return {"CANCELLED"}
 
         failed: List[bpy.types.Sequence] = []
         succeeded: List[bpy.types.Sequence] = []
-        logger.info("-START- Deleting Shot Metadata")
+        logger.info("-START- Deleting shot metadata")
 
         for strip in context.selected_sequences:
             if not CheckStrip.initialized(strip):
@@ -1230,9 +1230,9 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
 
         self.report(
             {"INFO"},
-            f"Cleared metadata of {len(succeeded)} Shots | Failed: {len(failed)}.",
+            f"Cleared metadata of {len(succeeded)} shots | Failed: {len(failed)}.",
         )
-        logger.info("-END- Deleting Shot Metadata")
+        logger.info("-END- Deleting shot metadata")
         ui_redraw()
         return {"FINISHED"}
 
@@ -1253,7 +1253,7 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text="Delete Metadata of %s . Link to gazou will be lost. Only affects Sequence Editor."
+            text="Cleares metadata of %s. Link to server will be lost. Only affects SQE."
             % noun,
         )
 
@@ -1265,10 +1265,10 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
     """
 
     bl_idname = "blezou.sqe_push_del_shot"
-    bl_label = "Del Shot"
-    bl_description = "Deletes Shot on gazou and clears metadata of selected strips."
+    bl_label = "Delete Shot"
+    bl_description = "Deletes shot on server and clears metadata of selected strips."
 
-    confirm: bpy.props.BoolProperty(name="confirm")
+    confirm: bpy.props.BoolProperty(name="Confirm")
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1276,12 +1276,12 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.confirm:
-            self.report({"WARNING"}, "Push Delete aborted.")
+            self.report({"WARNING"}, "Push delete aborted.")
             return {"CANCELLED"}
 
         succeeded = []
         failed = []
-        logger.info("-START- Blezou deleting Shots")
+        logger.info("-START- Blezou deleting shots")
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -1312,9 +1312,9 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
 
         self.report(
             {"INFO"},
-            f"Deleted {len(succeeded)} Shots | Failed: {len(failed)}",
+            f"Deleted {len(succeeded)} shots | Failed: {len(failed)}",
         )
-        logger.info("-END- Blezou deleting Shots")
+        logger.info("-END- Blezou deleting shots")
         ui_redraw()
         return {"FINISHED"}
 
@@ -1335,7 +1335,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text="!DANGER!: I hereby confirm: Delete %s from gazou." % noun,
+            text="Delete %s on server." % noun,
         )
 
 
@@ -1360,7 +1360,7 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
         failed = []
         upload_queue: List[Path] = []  # will be used as successed list
 
-        logger.info("-START- Pushing Shot Thumbnails")
+        logger.info("-START- Pushing shot thumbnails")
         with self.override_render_settings(context):
             with self.temporary_current_frame(context) as original_curframe:
 
@@ -1419,9 +1419,9 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
 
         self.report(
             {"INFO"},
-            f"Created thumbnails for {len(upload_queue)} Shots | Failed: {len(failed)}",
+            f"Created thumbnails for {len(upload_queue)} shots | Failed: {len(failed)}",
         )
-        logger.info("-END- Pushing Shot Thumbnails")
+        logger.info("-END- Pushing shot thumbnails")
         return {"FINISHED"}
 
     def make_thumbnail(
@@ -1460,11 +1460,11 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
 
         if not ztask_status:
             raise RuntimeError(
-                "Failed to upload thumbnails. Task Status: 'wip' is missing."
+                "Failed to upload thumbnails. Task status: 'wip' is missing."
             )
         if not ztask_type:
             raise RuntimeError(
-                "Failed to upload thumbnails. Task Type: 'Animation' is missing."
+                "Failed to upload thumbnails. Task type: 'Animation' is missing."
             )
 
         # find / get latest task
@@ -1616,7 +1616,7 @@ class BZ_OT_SQE_DebugMultiProjects(bpy.types.Operator):
     """"""
 
     bl_idname = "blezou.sqe_debug_multi_project"
-    bl_label = "Debug Not Linked"
+    bl_label = "Debug Multi Projects"
     bl_options = {"REGISTER", "UNDO"}
     bl_property = "multi_project"
 

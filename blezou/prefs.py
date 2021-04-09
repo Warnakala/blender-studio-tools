@@ -52,15 +52,15 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     host: bpy.props.StringProperty(  # type: ignore
-        name="host", default="", options={"HIDDEN", "SKIP_SAVE"}
+        name="Host", default="", options={"HIDDEN", "SKIP_SAVE"}
     )
 
     email: bpy.props.StringProperty(  # type: ignore
-        name="email", default="", options={"HIDDEN", "SKIP_SAVE"}
+        name="Email", default="", options={"HIDDEN", "SKIP_SAVE"}
     )
 
     passwd: bpy.props.StringProperty(  # type: ignore
-        name="passwd", default="", options={"HIDDEN", "SKIP_SAVE"}, subtype="PASSWORD"
+        name="Password", default="", options={"HIDDEN", "SKIP_SAVE"}, subtype="PASSWORD"
     )
     category: bpy.props.EnumProperty(  # type: ignore
         items=(
@@ -70,7 +70,7 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         default="SHOTS",
     )
     folder_thumbnail: bpy.props.StringProperty(  # type: ignore
-        name="thumbnail folder",
+        name="Thumbnail Folder",
         description="Folder in which thumbnails will be saved",
         default="",
         subtype="DIR_PATH",
@@ -78,7 +78,7 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
     )
 
     project_active_id: bpy.props.StringProperty(  # type: ignore
-        name="previous project id",
+        name="Project Active ID",
         description="GazouId that refers to the last active project",
         default="",
         options={"HIDDEN", "SKIP_SAVE"},
