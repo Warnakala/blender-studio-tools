@@ -347,7 +347,7 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         col.prop(strip.blezou, "shot_name")
 
         # description
-        col.prop(strip.blezou, "shot_description")
+        col.prop(strip.blezou, "shot_description_display")
         col.enabled = False if not strip.blezou.initialized else True
 
 

@@ -22,10 +22,15 @@ class BZ_PopertyGroupSequence(bpy.types.PropertyGroup):
     be pushed to backend.
     """
 
+    def _get_shot_description(self):
+        return self.shot_description
+
     # shot
     shot_id: bpy.props.StringProperty(name="Shot ID")  # type: ignore
     shot_name: bpy.props.StringProperty(name="Shot", default="")  # type: ignore
-    shot_description: bpy.props.StringProperty(name="Description", default="")  # type: ignore
+    shot_description: bpy.props.StringProperty(name="Description", default="", options={"HIDDEN"})  # type: ignore
+
+    shot_description_display: bpy.props.StringProperty(name="Description Display", get=_get_shot_description)  # type: ignore
 
     # sequence
     sequence_name: bpy.props.StringProperty(name="Sequence", default="")  # type: ignore
