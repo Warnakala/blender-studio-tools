@@ -862,30 +862,30 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         "Adds required shot metadata to selecetd strip based on data from server."
     )
 
-    def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         zproject_active = zproject_active_get()
-
         if not zproject_active:
             return []
 
-        enum_list = []
-        all_sequences = zproject_active.get_sequences_all()
-        for seq in all_sequences:
-            all_shots = seq.get_all_shots()
-            if len(all_shots) > 0:
-                enum_list.append(
-                    ("", seq.name, seq.description if seq.description else "")
-                )
-                for shot in all_shots:
-                    enum_list.append(
-                        (
-                            shot.id,
-                            shot.name,
-                            shot.description if shot.description else "",
-                        )
-                    )
+        enum_list = [
+            (s.id, s.name, s.description if s.description else "")
+            for s in zproject_active.get_sequences_all()
+        ]
         return enum_list
 
+    def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+        if not self.sequence_enum:
+            return []
+
+        zseq_active = ZSequence.by_id(self.sequence_enum)
+
+        enum_list = [
+            (s.id, s.name, s.description if s.description else "")
+            for s in zseq_active.get_all_shots()
+        ]
+        return enum_list
+
+    sequence_enum: bpy.props.EnumProperty(items=_get_sequences, name="Sequence")  # type: ignore
     shots_enum: bpy.props.EnumProperty(items=_get_shots, name="Shot")  # type: ignore
     use_url: bpy.props.BoolProperty(
         name="Use URL",
@@ -917,10 +917,6 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         if self.use_url:
             # http://192.168.178.80/productions/4dda1c36-1f49-44c7-98c9-93b40ea37dcd/shots/5e69e2e0-c3c8-4fc2-a4a3-f18151adf9dc
             split = self.url.split("/")
-            if not split:
-                self.report({"WARNING"}, "Invalid URL: %s" % self.url)
-                return {"CANCELLED"}
-
             shot_id = split[-1]
 
         # by shot enum
@@ -933,10 +929,16 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         # check if id availalbe on server (mainly for url option)
         try:
             zshot = ZShot.by_id(shot_id)
-        except gazu.exception.RouteNotFoundException:
-            self.report({"WARNING"}, "ID not found on server: %s" % self.url)
+
+        except (TypeError, gazu.exception.ServerErrorException):
+            self.report({"WARNING"}, "Invalid URL: %s" % self.url)
             return {"CANCELLED"}
 
+        except gazu.exception.RouteNotFoundException:
+            self.report({"WARNING"}, "ID not found on server: %s" % shot_id)
+            return {"CANCELLED"}
+
+        # pull shot meta
         Pull.shot_meta(strip, zshot)
 
         t = "Linked strip: %s to shot: %s with ID: %s" % (
@@ -964,7 +966,11 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         if self.use_url:
             row.prop(self, "url")
         else:
+            row = layout.row()
+            row.prop(self, "sequence_enum")
+            row = layout.row()
             row.prop(self, "shots_enum")
+            row = layout.row()
 
 
 class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
