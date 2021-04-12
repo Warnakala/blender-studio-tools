@@ -5,6 +5,8 @@ from .types import ZProject, ZSequence, ZShot, ZAsset, ZAssetType
 from . import props
 from . import prefs
 
+VALID_STRIP_TYPES = {"MOVIE", "COLOR"}
+
 
 def zsession_get(context: bpy.types.Context) -> ZSession:
     """

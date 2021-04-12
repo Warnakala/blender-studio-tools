@@ -2,7 +2,6 @@ import bpy
 from typing import Optional
 from .util import *
 from . import props
-
 from .ops import (
     BZ_OT_SessionStart,
     BZ_OT_SessionEnd,
@@ -207,6 +206,8 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         strips_to_unlink = []
 
         for s in selshots:
+            if s.type not in VALID_STRIP_TYPES:
+                continue
             if not s.blezou.initialized:
                 strips_to_init.append(s)
             elif s.blezou.linked:
@@ -225,6 +226,10 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
             row = layout.row(align=True)
 
             # initialize
+            if strip.type not in VALID_STRIP_TYPES:
+                row.label(text=f"Only sequence strips of types: {VALID_STRIP_TYPES}")
+                return
+
             if not strip.blezou.initialized:
                 # init active
                 row.operator(

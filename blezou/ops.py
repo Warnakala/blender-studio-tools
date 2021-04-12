@@ -432,6 +432,13 @@ class CheckStrip:
     """Class that contains various static methods to perform checks on sequence strips"""
 
     @staticmethod
+    def valid_type(strip: bpy.types.Sequence) -> bool:
+        if not strip.type in VALID_STRIP_TYPES:
+            logger.info("Strip: %s. Invalid type." % strip.type)
+            return False
+        return True
+
+    @staticmethod
     def initialized(strip: bpy.types.Sequence) -> bool:
         """Returns True if strip.blezou.initialized is True else False"""
         if not strip.blezou.initialized:
@@ -573,9 +580,13 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             # only if strip is linked to gazou
             if not CheckStrip.linked(strip):
-                failed.append(strip)
+                # failed.append(strip)
                 continue
 
             # check if shot is still available by id
@@ -648,9 +659,13 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             # check if user initialized shot
             if not CheckStrip.initialized(strip):
-                failed.append(strip)
+                # failed.append(strip)
                 continue
 
             # check if strip is already linked to gazou
@@ -757,9 +772,14 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
             selected_sequences = context.scene.sequence_editor.sequences_all
 
         for strip in selected_sequences:
+
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             if strip.blezou.initialized:
                 logger.info("%s already initialized." % strip.name)
-                failed.append(strip)
+                # failed.append(strip)
                 continue
 
             strip.blezou.initialized = True
@@ -807,6 +827,7 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
             and zproject_active_get()
             and strip
             and context.selected_sequences
+            and CheckStrip.valid_type(strip)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -847,7 +868,11 @@ class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
 
         seq_name = sel_shots[0].blezou.sequence_name
         for s in sel_shots:
-            if s.blezou.linked or not s.blezou.initialized:
+            if (
+                s.blezou.linked
+                or not s.blezou.initialized
+                or not CheckStrip.valid_type(s)
+            ):
                 return False
             if s.blezou.sequence_name != seq_name:
                 return False
@@ -960,11 +985,13 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
+        strip = context.scene.sequence_editor.active_strip
         return bool(
             zsession_auth(context)
             and zproject_active_get()
-            and context.scene.sequence_editor.active_strip
+            and strip
             and context.selected_sequences
+            and CheckStrip.valid_type(strip)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -1016,9 +1043,13 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             # only if strip is linked to gazou
             if not CheckStrip.linked(strip):
-                failed.append(strip)
+                # failed.append(strip)
                 continue
 
             # check if shot is still available by id
@@ -1068,6 +1099,11 @@ class BZ_OT_SQE_UninitStrip(bpy.types.Operator):
         logger.info("-START- Uninitializing strips")
 
         for strip in context.selected_sequences:
+
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             if not CheckStrip.initialized(strip):
                 # failed.append(strip)
                 continue
@@ -1141,6 +1177,11 @@ class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
         logger.info("-START- Unlinking shots")
 
         for strip in context.selected_sequences:
+
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             if not CheckStrip.initialized(strip):
                 # failed.append(strip)
                 continue
@@ -1219,9 +1260,13 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             # check if strip is already linked to gazou
             if not CheckStrip.linked(strip):
-                failed.append(strip)
+                # failed.append(strip)
                 continue
 
             # check if shot still exists on gazou
@@ -1304,9 +1349,13 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
                 for idx, strip in enumerate(selected_sequences):
                     context.window_manager.progress_update(idx)
 
+                    if not CheckStrip.valid_type(strip):
+                        # failed.append(strip)
+                        continue
+
                     # only if strip is linked to gazou
                     if not CheckStrip.linked(strip):
-                        failed.append(strip)
+                        # failed.append(strip)
                         continue
 
                     # check if shot is still available by id
