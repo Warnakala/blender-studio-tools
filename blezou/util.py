@@ -5,6 +5,8 @@ from .types import ZProject, ZSequence, ZShot, ZAsset, ZAssetType
 from . import props
 from . import prefs
 
+VALID_STRIP_TYPES = {"MOVIE", "COLOR"}
+
 
 def zsession_get(context: bpy.types.Context) -> ZSession:
     """
@@ -96,3 +98,12 @@ def zasset_type_active_set_by_id(context: bpy.types.Context, entity_id: str) -> 
 def zasset_type_active_reset(context: bpy.types.Context) -> None:
     props._ZASSET_TYPE_ACTIVE = ZAssetType()
     context.scene.blezou.asset_type_active_id = ""
+
+
+def ui_redraw() -> None:
+    """
+    Forces blender to redraw the UI.
+    """
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            area.tag_redraw()

@@ -19,7 +19,6 @@ from .types import (
     ZCache,
 )
 from .util import *
-from .core import ui_redraw
 from . import props
 from . import prefs
 from .logger import ZLoggerFactory
@@ -433,6 +432,13 @@ class CheckStrip:
     """Class that contains various static methods to perform checks on sequence strips"""
 
     @staticmethod
+    def valid_type(strip: bpy.types.Sequence) -> bool:
+        if not strip.type in VALID_STRIP_TYPES:
+            logger.info("Strip: %s. Invalid type." % strip.type)
+            return False
+        return True
+
+    @staticmethod
     def initialized(strip: bpy.types.Sequence) -> bool:
         """Returns True if strip.blezou.initialized is True else False"""
         if not strip.blezou.initialized:
@@ -574,9 +580,13 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             # only if strip is linked to gazou
             if not CheckStrip.linked(strip):
-                failed.append(strip)
+                # failed.append(strip)
                 continue
 
             # check if shot is still available by id
@@ -649,9 +659,13 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             # check if user initialized shot
             if not CheckStrip.initialized(strip):
-                failed.append(strip)
+                # failed.append(strip)
                 continue
 
             # check if strip is already linked to gazou
@@ -758,9 +772,14 @@ class BZ_OT_SQE_InitShot(bpy.types.Operator):
             selected_sequences = context.scene.sequence_editor.sequences_all
 
         for strip in selected_sequences:
+
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             if strip.blezou.initialized:
                 logger.info("%s already initialized." % strip.name)
-                failed.append(strip)
+                # failed.append(strip)
                 continue
 
             strip.blezou.initialized = True
@@ -808,6 +827,7 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
             and zproject_active_get()
             and strip
             and context.selected_sequences
+            and CheckStrip.valid_type(strip)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -829,94 +849,12 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_MultiEditShot(bpy.types.Operator):
+class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
     """"""
 
-    bl_idname = "blezou.sqe_multi_edit_shot"
-    bl_label = "Multi Edit Shot"
+    bl_idname = "blezou.sqe_multi_edit_strip"
+    bl_label = "Multi Edit Strip"
     bl_options = {"INTERNAL"}
-
-    def _get_project_active(self):
-        zproject_active = zproject_active_get()
-        return zproject_active.name
-
-    def _gen_shot_preview(self):
-        addon_prefs = addon_prefs_get(bpy.context)
-        shot_counter_increment = addon_prefs.shot_counter_increment
-        shot_counter_digits = addon_prefs.shot_counter_digits
-        shot_counter_start = self.shot_counter_start
-        shot_pattern = addon_prefs.shot_pattern
-        strip = bpy.context.scene.sequence_editor.active_strip
-        examples: List[str] = []
-
-        var_project = (
-            self.var_project_custom
-            if self.var_use_custom_project
-            else self.var_project_active
-        )
-        var_sequence = (
-            self.var_sequence_custom
-            if self.var_use_custom_seq
-            else strip.blezou.sequence_name
-        )
-        var_lookup_table = {"Sequence": var_sequence, "Project": var_project}
-
-        for count in range(3):
-            counter_number = shot_counter_start + (shot_counter_increment * count)
-            counter = str(counter_number).rjust(shot_counter_digits, "0")
-            var_lookup_table["Counter"] = counter
-            examples.append(opsdata._resolve_pattern(shot_pattern, var_lookup_table))
-
-        return " | ".join(examples) + "..."
-
-    # Property Definition
-    show_advanced: bpy.props.BoolProperty(
-        name="Show Advanced",
-        description="Shows advanced options to fine control shot pattern.",
-        default=False,
-    )
-
-    var_use_custom_seq: bpy.props.BoolProperty(
-        name="Use Custom",
-        description="Enables to type in custom sequence name for <Sequence> wildcard.",
-        default=False,
-    )
-
-    var_use_custom_project: bpy.props.BoolProperty(
-        name="Use Custom",
-        description="Enables to type in custom project name for <Project> wildcard",
-        default=False,
-    )
-
-    var_sequence_custom: bpy.props.StringProperty(  # type: ignore
-        name="Custom Sequence Variable",
-        description="Value that will be used to insert in <Sequence> wildcard if custom sequence is enabled.",
-        default="",
-    )
-
-    var_project_custom: bpy.props.StringProperty(  # type: ignore
-        name="Custom Project Variable",
-        description="Value that will be used to insert in <Project> wildcard if custom project is enabled.",
-        default="",
-    )
-
-    shot_counter_start: bpy.props.IntProperty(
-        description="Value that defines where the shot counter starts.",
-        step=10,
-        min=0,
-    )
-
-    shot_preview: bpy.props.StringProperty(
-        name="Shot Pattern",
-        description="Preview result of current settings on how a shot will be named.",
-        get=_gen_shot_preview,
-    )
-
-    var_project_active: bpy.props.StringProperty(
-        name="Active Project",
-        description="Value that will be inserted in <Project> wildcard.",
-        get=_get_project_active,
-    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -930,7 +868,11 @@ class BZ_OT_SQE_MultiEditShot(bpy.types.Operator):
 
         seq_name = sel_shots[0].blezou.sequence_name
         for s in sel_shots:
-            if s.blezou.linked or not s.blezou.initialized:
+            if (
+                s.blezou.linked
+                or not s.blezou.initialized
+                or not CheckStrip.valid_type(s)
+            ):
                 return False
             if s.blezou.sequence_name != seq_name:
                 return False
@@ -940,18 +882,23 @@ class BZ_OT_SQE_MultiEditShot(bpy.types.Operator):
         addon_prefs = addon_prefs_get(context)
         shot_counter_increment = addon_prefs.shot_counter_increment
         shot_counter_digits = addon_prefs.shot_counter_digits
-        shot_counter_start = self.shot_counter_start
+        shot_counter_start = context.window_manager.shot_counter_start
         shot_pattern = addon_prefs.shot_pattern
         strip = context.scene.sequence_editor.active_strip
+        sequence = (
+            context.window_manager.sequence_new
+            if context.window_manager.use_sequence_new
+            else context.window_manager.sequence_enum
+        )
         var_project = (
             addon_prefs.var_project_custom
-            if self.var_use_custom_project
-            else self.var_project_active
+            if context.window_manager.var_use_custom_project
+            else context.window_manager.var_project_active
         )
         var_sequence = (
-            self.var_sequence_custom
-            if self.var_use_custom_seq
-            else strip.blezou.sequence_name
+            context.window_manager.var_sequence_custom
+            if context.window_manager.var_use_custom_seq
+            else sequence
         )
         succeeded = []
         failed = []
@@ -964,6 +911,7 @@ class BZ_OT_SQE_MultiEditShot(bpy.types.Operator):
         )
 
         for idx, strip in enumerate(selected_sequences):
+
             # gen data for resolver
             counter_number = shot_counter_start + (shot_counter_increment * idx)
             counter = str(counter_number).rjust(shot_counter_digits, "0")
@@ -973,11 +921,18 @@ class BZ_OT_SQE_MultiEditShot(bpy.types.Operator):
                 "Counter": counter,
             }
 
+            # run shot name resolver
             shot = opsdata._resolve_pattern(shot_pattern, var_lookup_table)
 
+            # set metadata
+            strip.blezou.sequence_name = sequence
             strip.blezou.shot_name = shot
+
             succeeded.append(strip)
-            logger.info("Strip: %s Assign shot %s" % (strip.name, shot))
+            logger.info(
+                "Strip: %s Assign sequence: %s Assign shot: %s"
+                % (strip.name, sequence, shot)
+            )
 
         self.report(
             {"INFO"},
@@ -986,136 +941,6 @@ class BZ_OT_SQE_MultiEditShot(bpy.types.Operator):
         logger.info("-END- Multi Edit Shot")
         ui_redraw()
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=300)
-
-    def draw(self, context):
-        addon_prefs = addon_prefs_get(context)
-        # UI
-        layout = self.layout
-
-        # Counter
-        row = layout.row()
-        row.prop(self, "shot_counter_start", text="Shot Counter Start")
-        row.prop(self, "show_advanced", text="")
-
-        if self.show_advanced:
-            row = layout.row()
-            box = row.box()
-
-            # Counter
-            box.row().prop(addon_prefs, "shot_pattern", text="Shot Pattern")
-
-            # Counter
-            box.row().label(text="Counter Settings")
-            box.row().prop(addon_prefs, "shot_counter_digits", text="Digits")
-            box.row().prop(addon_prefs, "shot_counter_increment", text="Increment")
-
-            # variables
-            box.row().label(text="Variables")
-            row = box.row(align=True)
-            row.prop(self, "var_use_custom_seq", text="Custom Sequence Variable")
-            if self.var_use_custom_seq:
-                row.prop(self, "var_sequence_custom", text="")
-
-            # project
-            row = box.row(align=True)
-            row.prop(self, "var_use_custom_project", text="Custom Project Variable")
-            if self.var_use_custom_project:
-                row.prop(self, "var_project_custom", text="")
-
-        # pattern
-        row = layout.row()
-        row.prop(self, "shot_preview", text="Preview")
-
-
-class BZ_OT_SQE_MultiEditSequence(bpy.types.Operator):
-    """"""
-
-    bl_idname = "blezou.sqe_multi_edit_sequence"
-    bl_label = "Multi Edit Sequence"
-    bl_options = {"INTERNAL"}
-
-    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zproject_active = zproject_active_get()
-
-        if not zproject_active:
-            return []
-
-        enum_list = [(s.name, s.name, "") for s in zproject_active.get_sequences_all()]
-        return enum_list
-
-    sequence_enum: bpy.props.EnumProperty(
-        name="Sequences",
-        items=_get_sequences,
-        description="Name of Sequence the generated Shots will be assinged to.",
-    )
-    sequence_new: bpy.props.StringProperty(  # type: ignore
-        name="Sequence",
-        description="Name of the new Sequence that the shots will belong to.",
-        default="",
-    )
-
-    use_sequence_new: bpy.props.BoolProperty(
-        name="New",
-        description="Instead of dropdown menu to select existing sequences, check this to type in new sequence name.",
-    )
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        sel_shots = context.selected_sequences
-        nr_of_shots = len(sel_shots)
-        unvalid = [s for s in sel_shots if s.blezou.linked or not s.blezou.initialized]
-        return bool(not unvalid and nr_of_shots > 1)
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        addon_prefs = addon_prefs_get(context)
-        succeeded = []
-        failed = []
-        logger.info("-START- Multi Edit Sequence")
-
-        # sort sequence after frame in
-        selected_sequences = context.selected_sequences
-        selected_sequences = sorted(
-            selected_sequences, key=lambda x: x.frame_final_start
-        )
-
-        for strip in selected_sequences:
-            sequence = (
-                self.sequence_new if self.use_sequence_new else self.sequence_enum
-            )
-            strip.blezou.sequence_name = sequence
-            succeeded.append(strip)
-            logger.info("Strip: %s Set sequence %s" % (strip.name, sequence))
-
-        self.report(
-            {"INFO"},
-            f"Assigned {len(succeeded)} Sequences | Failed: {len(failed)}.",
-        )
-        logger.info("-END- Multi Edit Sequence")
-        ui_redraw()
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=200)
-
-    def draw(self, context):
-        addon_prefs = addon_prefs_get(context)
-        selected_sequences = context.selected_sequences
-
-        # UI
-        layout = self.layout
-
-        # Sequence
-        row = layout.row()
-        box = row.box()
-        row = box.row(align=True)
-        row.prop(self, "use_sequence_new", text="New")
-        if self.use_sequence_new:
-            row.prop(self, "sequence_new", text="")
-        else:
-            row.prop(self, "sequence_enum", text="")
 
 
 class BZ_OT_SQE_LinkShot(bpy.types.Operator):
@@ -1160,11 +985,13 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
+        strip = context.scene.sequence_editor.active_strip
         return bool(
             zsession_auth(context)
             and zproject_active_get()
-            and context.scene.sequence_editor.active_strip
+            and strip
             and context.selected_sequences
+            and CheckStrip.valid_type(strip)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -1216,9 +1043,13 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             # only if strip is linked to gazou
             if not CheckStrip.linked(strip):
-                failed.append(strip)
+                # failed.append(strip)
                 continue
 
             # check if shot is still available by id
@@ -1243,15 +1074,15 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
+class BZ_OT_SQE_UninitStrip(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything in gazou.
     """
 
-    bl_idname = "blezou.sqe_del_shot_meta"
-    bl_label = "Delete Shot Metadata"
-    bl_description = "Cleares shot metadata of selecetd strips. Only affects Sequence Editor. Link to server will be lost. "
+    bl_idname = "blezou.sqe_uninit_strip"
+    bl_label = "Uninitialize"
+    bl_description = "c selecetd strips. Only affects Sequence Editor. "
     confirm: bpy.props.BoolProperty(name="Confirm")
 
     @classmethod
@@ -1260,28 +1091,37 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.confirm:
-            self.report({"WARNING"}, "Clearing metadata aborted.")
+            self.report({"WARNING"}, "Uninitializing aborted.")
             return {"CANCELLED"}
 
         failed: List[bpy.types.Sequence] = []
         succeeded: List[bpy.types.Sequence] = []
-        logger.info("-START- Deleting shot metadata")
+        logger.info("-START- Uninitializing strips")
 
         for strip in context.selected_sequences:
+
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             if not CheckStrip.initialized(strip):
-                failed.append(strip)
+                # failed.append(strip)
+                continue
+
+            if CheckStrip.linked(strip):
+                # failed.append(strip)
                 continue
 
             # clear blezou properties
             strip.blezou.clear()
             succeeded.append(strip)
-            logger.info("Cleared metadata and uninitialized strip: %s" % strip.name)
+            logger.info("Uninitialized strip: %s" % strip.name)
 
         self.report(
             {"INFO"},
-            f"Cleared metadata of {len(succeeded)} shots | Failed: {len(failed)}.",
+            f"Uninitialized {len(succeeded)} strips | Failed: {len(failed)}.",
         )
-        logger.info("-END- Deleting shot metadata")
+        logger.info("-END- Uninitializing strips")
         ui_redraw()
         return {"FINISHED"}
 
@@ -1294,16 +1134,96 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
         col = layout.column()
 
         selshots = context.selected_sequences
-        if len(selshots) > 1:
-            noun = "%i shots" % len(selshots)
+        strips_to_uninit = [
+            s for s in selshots if s.blezou.initialized and not s.blezou.linked
+        ]
+
+        if len(strips_to_uninit) > 1:
+            noun = "%i shots" % len(strips_to_uninit)
         else:
             noun = "this shot"
 
         col.prop(
             self,
             "confirm",
-            text="Cleares metadata of %s. Only affects Sequence Editor. Link to server will be lost."
-            % noun,
+            text="Uninitialize %s. Only affects Sequence Editor." % noun,
+        )
+
+
+class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
+    """
+    Operator that deletes all  metadata of all selected sequencce strips
+    after performing various checks. It does NOT change anything in gazou.
+    """
+
+    bl_idname = "blezou.sqe_unlink_shot"
+    bl_label = "Unlink"
+    bl_description = (
+        "Deletes link to the server of selecetd shots. Only affects Sequence Editor."
+    )
+    confirm: bpy.props.BoolProperty(name="Confirm")
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(context.selected_sequences)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        if not self.confirm:
+            self.report({"WARNING"}, "Unlinking aborted.")
+            return {"CANCELLED"}
+
+        failed: List[bpy.types.Sequence] = []
+        succeeded: List[bpy.types.Sequence] = []
+        logger.info("-START- Unlinking shots")
+
+        for strip in context.selected_sequences:
+
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
+            if not CheckStrip.initialized(strip):
+                # failed.append(strip)
+                continue
+
+            if not CheckStrip.linked(strip):
+                # failed.append(strip)
+                continue
+
+            # clear blezou properties
+            shot_name = strip.blezou.shot_name
+            strip.blezou.unlink()
+            succeeded.append(strip)
+            logger.info("Unlinked shot: %s" % shot_name)
+
+        self.report(
+            {"INFO"},
+            f"Unlinked {len(succeeded)} shots | Failed: {len(failed)}.",
+        )
+        logger.info("-END- Unlinking shots")
+        ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        self.confirm = False
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+
+        selshots = context.selected_sequences
+        strips_to_unlink = [s for s in selshots if s.blezou.linked]
+
+        if len(strips_to_unlink) > 1:
+            noun = "%i shots" % len(strips_to_unlink)
+        else:
+            noun = "this shot"
+
+        col.prop(
+            self,
+            "confirm",
+            text="Deletes link to server of %s. Only affects Sequence Editor." % noun,
         )
 
 
@@ -1340,9 +1260,13 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
+            if not CheckStrip.valid_type(strip):
+                # failed.append(strip)
+                continue
+
             # check if strip is already linked to gazou
             if not CheckStrip.linked(strip):
-                failed.append(strip)
+                # failed.append(strip)
                 continue
 
             # check if shot still exists on gazou
@@ -1425,9 +1349,13 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
                 for idx, strip in enumerate(selected_sequences):
                     context.window_manager.progress_update(idx)
 
+                    if not CheckStrip.valid_type(strip):
+                        # failed.append(strip)
+                        continue
+
                     # only if strip is linked to gazou
                     if not CheckStrip.linked(strip):
-                        failed.append(strip)
+                        # failed.append(strip)
                         continue
 
                     # check if shot is still available by id
@@ -1710,15 +1638,15 @@ classes = [
     BZ_OT_AssetsLoad,
     BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushShotMeta,
-    BZ_OT_SQE_DelShotMeta,
+    BZ_OT_SQE_UninitStrip,
+    BZ_OT_SQE_UnlinkShot,
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_LinkSequence,
     BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PullShotMeta,
-    BZ_OT_SQE_MultiEditShot,
-    BZ_OT_SQE_MultiEditSequence,
+    BZ_OT_SQE_MultiEditStrip,
     BZ_OT_SQE_DebugDuplicates,
     BZ_OT_SQE_DebugNotLinked,
     BZ_OT_SQE_DebugMultiProjects,
@@ -1726,7 +1654,6 @@ classes = [
 
 
 def register():
-    importlib.reload(opsdata)
     for cls in classes:
         bpy.utils.register_class(cls)
 
