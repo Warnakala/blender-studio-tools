@@ -1654,7 +1654,6 @@ classes = [
 
 
 def register():
-    importlib.reload(opsdata)
     for cls in classes:
         bpy.utils.register_class(cls)
 
