@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, asdict, field
 from typing import Dict, Union, Union, Any, List, Optional
-from .gazu import gazu
+from . import gazu
 from .logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)

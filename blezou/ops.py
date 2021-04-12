@@ -22,7 +22,7 @@ from .util import *
 from . import props
 from . import prefs
 from .logger import ZLoggerFactory
-from .gazu import gazu
+from . import gazu
 from . import opsdata
 
 logger = ZLoggerFactory.getLogger(name=__name__)
