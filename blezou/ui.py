@@ -436,12 +436,24 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         # if only one strip is selected and it is not init then hide panel
         if not zsession_auth(context):
             return False
-        nr_of_shots = len(context.selected_sequences)
-        strip = context.scene.sequence_editor.active_strip
-        if nr_of_shots == 1:
-            return strip.blezou.initialized
 
-        return True
+        selshots = context.selected_sequences
+        if not selshots:
+            selshots = context.scene.sequence_editor.sequences_all
+
+        strips_to_meta = []
+        strips_to_tb = []
+        strips_to_submit = []
+
+        for s in selshots:
+            if s.blezou.linked:
+                strips_to_tb.append(s)
+                strips_to_meta.append(s)
+
+            elif s.blezou.initialized:
+                strips_to_submit.append(s)
+
+        return bool(strips_to_meta or strips_to_tb or strips_to_submit)
 
     def draw(self, context: bpy.types.Context) -> None:
         nr_of_shots = len(context.selected_sequences)
@@ -536,15 +548,20 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
         if not zsession_auth(context):
             return False
 
-        nr_of_shots = len(context.selected_sequences)
-        strip = context.scene.sequence_editor.active_strip
-        if nr_of_shots == 1:
-            return strip.blezou.linked
-        return True
+        selshots = context.selected_sequences
+        if not selshots:
+            selshots = context.scene.sequence_editor.sequences_all
+
+        strips_to_meta = []
+
+        for s in selshots:
+            if s.blezou.linked:
+                strips_to_meta.append(s)
+
+        return bool(strips_to_meta)
 
     def draw(self, context: bpy.types.Context) -> None:
         selshots = context.selected_sequences
-
         if not selshots:
             selshots = context.scene.sequence_editor.sequences_all
 
