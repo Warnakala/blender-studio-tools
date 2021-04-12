@@ -1150,7 +1150,7 @@ class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
                 continue
 
             # clear blezou properties
-            shot_name = strip.shot_name
+            shot_name = strip.blezou.shot_name
             strip.blezou.unlink()
             succeeded.append(strip)
             logger.info("Unlinked shot: %s" % shot_name)
