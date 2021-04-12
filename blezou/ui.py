@@ -208,7 +208,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         for s in selshots:
             if not s.blezou.initialized:
                 strips_to_init.append(s)
-            elif not s.blezou.linked:
+            elif s.blezou.linked:
                 strips_to_unlink.append(s)
             elif s.blezou.initialized:
                 strips_to_uninit.append(s)
@@ -249,6 +249,16 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                     text=f"{noun_unlink} {noun}",
                     icon=icon_unlink,
                 )
+                if strip.blezou.linked:
+                    row.prop(context.window_manager, "advanced_delete", text="")
+
+                    if context.window_manager.advanced_delete:
+                        row = layout.row(align=True)
+                        row.operator(
+                            BZ_OT_SQE_PushDeleteShot.bl_idname,
+                            text=f"Unlink and Delete Active Shot",
+                            icon="REMOVE",
+                        )
 
         # Multiple Selection
         elif nr_of_shots > 1:
@@ -269,6 +279,15 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                     text=f"Unlink {len(strips_to_unlink)} Shots",
                     icon="UNLINKED",
                 )
+                row.prop(context.window_manager, "advanced_delete", text="")
+
+                if context.window_manager.advanced_delete:
+                    row = layout.row(align=True)
+                    row.operator(
+                        BZ_OT_SQE_PushDeleteShot.bl_idname,
+                        text=f"Unlink and Delete {len(strips_to_unlink)} Shots",
+                        icon="REMOVE",
+                    )
 
 
 class BZ_PT_SQE_shot_meta(bpy.types.Panel):
@@ -484,7 +503,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
                 icon="IMAGE_DATA",
             )
 
-        # delete and new operator
+        # submit operator
         if nr_of_shots > 0:
             if len(strips_to_submit):
                 noun = get_selshots_noun(
@@ -496,16 +515,6 @@ class BZ_PT_SQE_push(bpy.types.Panel):
                     BZ_OT_SQE_PushNewShot.bl_idname,
                     text=f"Submit {noun}",
                     icon="ADD",
-                )
-
-            if len(strips_to_delete):
-                noun = get_selshots_noun(
-                    len(strips_to_delete), prefix=f"{len(strips_to_meta)}"
-                )
-                col.operator(
-                    BZ_OT_SQE_PushDeleteShot.bl_idname,
-                    text=f"Delete {noun}",
-                    icon="REMOVE",
                 )
 
 

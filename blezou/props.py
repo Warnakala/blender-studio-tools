@@ -267,6 +267,13 @@ def _add_window_manager_props():
         description="Instead of dropdown menu to select existing sequences, check this to type in new sequence name.",
     )
 
+    # advanced delete props
+    bpy.types.WindowManager.advanced_delete = bpy.props.BoolProperty(
+        name="Advanced Delete",
+        description="Checkbox to show advanced shot deletion operations.",
+        default=False,
+    )
+
 
 def _clear_window_manager_props():
     del bpy.types.WindowManager.show_advanced
