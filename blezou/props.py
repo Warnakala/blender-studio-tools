@@ -65,6 +65,16 @@ class BZ_PopertyGroupSequence(bpy.types.PropertyGroup):
         self.initialized = False
         self.linked = False
 
+    def unlink(self):
+        self.sequence_id = ""
+        self.sequence_name = ""
+
+        self.project_name = ""
+        self.project_id = ""
+
+        self.initialized = False
+        self.linked = False
+
 
 class BZ_PopertyGroupScene(bpy.types.PropertyGroup):
     """"""

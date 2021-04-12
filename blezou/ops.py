@@ -1043,15 +1043,15 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
+class BZ_OT_SQE_UninitStrip(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything in gazou.
     """
 
-    bl_idname = "blezou.sqe_del_shot_meta"
-    bl_label = "Delete Shot Metadata"
-    bl_description = "Cleares shot metadata of selecetd strips. Only affects Sequence Editor. Link to server will be lost. "
+    bl_idname = "blezou.sqe_uninit_strip"
+    bl_label = "Uninitialize"
+    bl_description = "c selecetd strips. Only affects Sequence Editor. "
     confirm: bpy.props.BoolProperty(name="Confirm")
 
     @classmethod
@@ -1060,28 +1060,32 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.confirm:
-            self.report({"WARNING"}, "Clearing metadata aborted.")
+            self.report({"WARNING"}, "Uninitializing aborted.")
             return {"CANCELLED"}
 
         failed: List[bpy.types.Sequence] = []
         succeeded: List[bpy.types.Sequence] = []
-        logger.info("-START- Deleting shot metadata")
+        logger.info("-START- Uninitializing strips")
 
         for strip in context.selected_sequences:
             if not CheckStrip.initialized(strip):
-                failed.append(strip)
+                # failed.append(strip)
+                continue
+
+            if CheckStrip.linked(strip):
+                # failed.append(strip)
                 continue
 
             # clear blezou properties
             strip.blezou.clear()
             succeeded.append(strip)
-            logger.info("Cleared metadata and uninitialized strip: %s" % strip.name)
+            logger.info("Uninitialized strip: %s" % strip.name)
 
         self.report(
             {"INFO"},
-            f"Cleared metadata of {len(succeeded)} shots | Failed: {len(failed)}.",
+            f"Uninitialized {len(succeeded)} strips | Failed: {len(failed)}.",
         )
-        logger.info("-END- Deleting shot metadata")
+        logger.info("-END- Uninitializing strips")
         ui_redraw()
         return {"FINISHED"}
 
@@ -1094,16 +1098,91 @@ class BZ_OT_SQE_DelShotMeta(bpy.types.Operator):
         col = layout.column()
 
         selshots = context.selected_sequences
-        if len(selshots) > 1:
-            noun = "%i shots" % len(selshots)
+        strips_to_uninit = [
+            s for s in selshots if s.blezou.initialized and not s.blezou.linked
+        ]
+
+        if len(strips_to_uninit) > 1:
+            noun = "%i shots" % len(strips_to_uninit)
         else:
             noun = "this shot"
 
         col.prop(
             self,
             "confirm",
-            text="Cleares metadata of %s. Only affects Sequence Editor. Link to server will be lost."
-            % noun,
+            text="Uninitialize %s. Only affects Sequence Editor." % noun,
+        )
+
+
+class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
+    """
+    Operator that deletes all  metadata of all selected sequencce strips
+    after performing various checks. It does NOT change anything in gazou.
+    """
+
+    bl_idname = "blezou.sqe_unlink_shot"
+    bl_label = "Unlink"
+    bl_description = (
+        "Deletes link to the server of selecetd shots. Only affects Sequence Editor."
+    )
+    confirm: bpy.props.BoolProperty(name="Confirm")
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(context.selected_sequences)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        if not self.confirm:
+            self.report({"WARNING"}, "Unlinking aborted.")
+            return {"CANCELLED"}
+
+        failed: List[bpy.types.Sequence] = []
+        succeeded: List[bpy.types.Sequence] = []
+        logger.info("-START- Unlinking shots")
+
+        for strip in context.selected_sequences:
+            if not CheckStrip.initialized(strip):
+                # failed.append(strip)
+                continue
+
+            if not CheckStrip.linked(strip):
+                # failed.append(strip)
+                continue
+
+            # clear blezou properties
+            shot_name = strip.shot_name
+            strip.blezou.unlink()
+            succeeded.append(strip)
+            logger.info("Unlinked shot: %s" % shot_name)
+
+        self.report(
+            {"INFO"},
+            f"Unlinked {len(succeeded)} shots | Failed: {len(failed)}.",
+        )
+        logger.info("-END- Unlinking shots")
+        ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        self.confirm = False
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+
+        selshots = context.selected_sequences
+        strips_to_unlink = [s for s in selshots if s.blezou.linked]
+
+        if len(strips_to_unlink) > 1:
+            noun = "%i shots" % len(strips_to_unlink)
+        else:
+            noun = "this shot"
+
+        col.prop(
+            self,
+            "confirm",
+            text="Deletes link to server of %s. Only affects Sequence Editor." % noun,
         )
 
 
@@ -1510,7 +1589,8 @@ classes = [
     BZ_OT_AssetsLoad,
     BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushShotMeta,
-    BZ_OT_SQE_DelShotMeta,
+    BZ_OT_SQE_UninitStrip,
+    BZ_OT_SQE_UnlinkShot,
     BZ_OT_SQE_InitShot,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_LinkSequence,

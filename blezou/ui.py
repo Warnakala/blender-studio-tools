@@ -13,7 +13,8 @@ from .ops import (
     BZ_OT_AssetTypesLoad,
     BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_InitShot,
-    BZ_OT_SQE_DelShotMeta,
+    BZ_OT_SQE_UninitStrip,
+    BZ_OT_SQE_UnlinkShot,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_LinkSequence,
     BZ_OT_SQE_PushNewShot,
@@ -223,6 +224,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         if nr_of_shots == 1:
             row = layout.row(align=True)
 
+            # initialize
             if not strip.blezou.initialized:
                 # init active
                 row.operator(
@@ -235,30 +237,33 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                     icon="LINKED",
                 )
 
-            else:
-                noun_unlink = "Unlink"
-                icon_unlink = "UNLINKED"
-                if not strip.blezou.linked:
-                    noun_unlink = "Uninitialize"
-                    icon_unlink = "REMOVE"
+            # unlink
+            elif strip.blezou.linked:
 
+                row = layout.row(align=True)
+                row.operator(
+                    BZ_OT_SQE_UnlinkShot.bl_idname,
+                    text=f"Unlink {noun}",
+                    icon="UNLINKED",
+                )
+                row.prop(context.window_manager, "advanced_delete", text="")
+
+                if context.window_manager.advanced_delete:
+                    row = layout.row(align=True)
+                    row.operator(
+                        BZ_OT_SQE_PushDeleteShot.bl_idname,
+                        text=f"Unlink and Delete Active Shot",
+                        icon="CANCEL",
+                    )
+            # uninitialize
+            else:
                 row = layout.row(align=True)
                 # unlink active
                 row.operator(
-                    BZ_OT_SQE_DelShotMeta.bl_idname,
-                    text=f"{noun_unlink} {noun}",
-                    icon=icon_unlink,
+                    BZ_OT_SQE_UninitStrip.bl_idname,
+                    text=f"Uninitialize {noun}",
+                    icon="REMOVE",
                 )
-                if strip.blezou.linked:
-                    row.prop(context.window_manager, "advanced_delete", text="")
-
-                    if context.window_manager.advanced_delete:
-                        row = layout.row(align=True)
-                        row.operator(
-                            BZ_OT_SQE_PushDeleteShot.bl_idname,
-                            text=f"Unlink and Delete Active Shot",
-                            icon="REMOVE",
-                        )
 
         # Multiple Selection
         elif nr_of_shots > 1:
@@ -271,11 +276,22 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                     text=f"Init {len(strips_to_init)} Shots",
                     icon="ADD",
                 )
+            # make row
+            if len(strips_to_uninit) or len(strips_to_unlink):
+                row = layout.row(align=True)
+
+            # uninitialize
+            if len(strips_to_uninit):
+                row.operator(
+                    BZ_OT_SQE_UninitStrip.bl_idname,
+                    text=f"Uninitialize {len(strips_to_uninit)} Shots",
+                    icon="REMOVE",
+                )
+
             # unlink all
             if len(strips_to_unlink):
-                row = layout.row(align=True)
                 row.operator(
-                    BZ_OT_SQE_DelShotMeta.bl_idname,
+                    BZ_OT_SQE_UnlinkShot.bl_idname,
                     text=f"Unlink {len(strips_to_unlink)} Shots",
                     icon="UNLINKED",
                 )
@@ -286,7 +302,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                     row.operator(
                         BZ_OT_SQE_PushDeleteShot.bl_idname,
                         text=f"Unlink and Delete {len(strips_to_unlink)} Shots",
-                        icon="REMOVE",
+                        icon="CANCEL",
                     )
 
 
