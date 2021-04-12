@@ -497,7 +497,8 @@ class BZ_PT_SQE_push(bpy.types.Panel):
                 strips_to_delete.append(s)
 
             elif s.blezou.initialized:
-                strips_to_submit.append(s)
+                if s.blezou.shot_name and s.blezou.sequence_name:
+                    strips_to_submit.append(s)
 
         # special case if one shot is selected and it is init but not linked
         # shows the operator but it is not enabled until user types in required metadata
@@ -540,7 +541,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         if nr_of_shots > 0:
             if len(strips_to_submit):
                 noun = get_selshots_noun(
-                    len(strips_to_submit), prefix=f"{len(strips_to_meta)}"
+                    len(strips_to_submit), prefix=f"{len(strips_to_submit)}"
                 )
                 row = layout.row()
                 col = row.column(align=True)
