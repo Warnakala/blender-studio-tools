@@ -21,11 +21,7 @@ The following tools are needed for installation
 
 ## Installation
 ---------
-This project contains 'gazu' as a git submobule. If you simply download this repo the blezou/gazu folder will be empty.
-Because of that the easiest way for now is to clone the repo with the following command to resolve all submodules:
-
--  ```git clone --recurse-submodules https://gitlab.com/blender/blezou.git```
-
+Download or clone this repository.
 In the root project folder you will find the 'blezou' folder. Place this folder in your Blender addons directory or create a sym link to it.
 
 ## Plugins
