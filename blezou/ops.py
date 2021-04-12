@@ -19,7 +19,6 @@ from .types import (
     ZCache,
 )
 from .util import *
-from .core import ui_redraw
 from . import props
 from . import prefs
 from .logger import ZLoggerFactory
