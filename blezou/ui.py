@@ -2,7 +2,6 @@ import bpy
 from typing import Optional
 from .util import *
 from . import props
-
 from .ops import (
     BZ_OT_SessionStart,
     BZ_OT_SessionEnd,
@@ -13,15 +12,15 @@ from .ops import (
     BZ_OT_AssetTypesLoad,
     BZ_OT_SQE_PushThumbnail,
     BZ_OT_SQE_InitShot,
-    BZ_OT_SQE_DelShotMeta,
+    BZ_OT_SQE_UninitStrip,
+    BZ_OT_SQE_UnlinkShot,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_LinkSequence,
     BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PushShotMeta,
     BZ_OT_SQE_PullShotMeta,
-    BZ_OT_SQE_MultiEditSequence,
-    BZ_OT_SQE_MultiEditShot,
+    BZ_OT_SQE_MultiEditStrip,
     BZ_OT_SQE_DebugDuplicates,
     BZ_OT_SQE_DebugNotLinked,
     BZ_OT_SQE_DebugMultiProjects,
@@ -207,9 +206,11 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         strips_to_unlink = []
 
         for s in selshots:
+            if s.type not in VALID_STRIP_TYPES:
+                continue
             if not s.blezou.initialized:
                 strips_to_init.append(s)
-            elif not s.blezou.linked:
+            elif s.blezou.linked:
                 strips_to_unlink.append(s)
             elif s.blezou.initialized:
                 strips_to_uninit.append(s)
@@ -224,6 +225,11 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
         if nr_of_shots == 1:
             row = layout.row(align=True)
 
+            # initialize
+            if strip.type not in VALID_STRIP_TYPES:
+                row.label(text=f"Only sequence strips of types: {VALID_STRIP_TYPES}")
+                return
+
             if not strip.blezou.initialized:
                 # init active
                 row.operator(
@@ -236,19 +242,32 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                     icon="LINKED",
                 )
 
-            else:
-                noun_unlink = "Unlink"
-                icon_unlink = "UNLINKED"
-                if not strip.blezou.linked:
-                    noun_unlink = "Uninitialize"
-                    icon_unlink = "REMOVE"
+            # unlink
+            elif strip.blezou.linked:
 
+                row = layout.row(align=True)
+                row.operator(
+                    BZ_OT_SQE_UnlinkShot.bl_idname,
+                    text=f"Unlink {noun}",
+                    icon="UNLINKED",
+                )
+                row.prop(context.window_manager, "advanced_delete", text="")
+
+                if context.window_manager.advanced_delete:
+                    row = layout.row(align=True)
+                    row.operator(
+                        BZ_OT_SQE_PushDeleteShot.bl_idname,
+                        text=f"Unlink and Delete Active Shot",
+                        icon="CANCEL",
+                    )
+            # uninitialize
+            else:
                 row = layout.row(align=True)
                 # unlink active
                 row.operator(
-                    BZ_OT_SQE_DelShotMeta.bl_idname,
-                    text=f"{noun_unlink} {noun}",
-                    icon=icon_unlink,
+                    BZ_OT_SQE_UninitStrip.bl_idname,
+                    text=f"Uninitialize {noun}",
+                    icon="REMOVE",
                 )
 
         # Multiple Selection
@@ -262,14 +281,34 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                     text=f"Init {len(strips_to_init)} Shots",
                     icon="ADD",
                 )
+            # make row
+            if len(strips_to_uninit) or len(strips_to_unlink):
+                row = layout.row(align=True)
+
+            # uninitialize
+            if len(strips_to_uninit):
+                row.operator(
+                    BZ_OT_SQE_UninitStrip.bl_idname,
+                    text=f"Uninitialize {len(strips_to_uninit)} Shots",
+                    icon="REMOVE",
+                )
+
             # unlink all
             if len(strips_to_unlink):
-                row = layout.row(align=True)
                 row.operator(
-                    BZ_OT_SQE_DelShotMeta.bl_idname,
+                    BZ_OT_SQE_UnlinkShot.bl_idname,
                     text=f"Unlink {len(strips_to_unlink)} Shots",
                     icon="UNLINKED",
                 )
+                row.prop(context.window_manager, "advanced_delete", text="")
+
+                if context.window_manager.advanced_delete:
+                    row = layout.row(align=True)
+                    row.operator(
+                        BZ_OT_SQE_PushDeleteShot.bl_idname,
+                        text=f"Unlink and Delete {len(strips_to_unlink)} Shots",
+                        icon="CANCEL",
+                    )
 
 
 class BZ_PT_SQE_shot_meta(bpy.types.Panel):
@@ -312,7 +351,7 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         col.enabled = False if not strip.blezou.initialized else True
 
 
-class BZ_PT_SQE_shot_muli_edit(bpy.types.Panel):
+class BZ_PT_SQE_ShotMultiEdit(bpy.types.Panel):
     """
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
@@ -332,13 +371,73 @@ class BZ_PT_SQE_shot_muli_edit(bpy.types.Panel):
         return bool(not unvalid and nr_of_shots > 1)
 
     def draw(self, context: bpy.types.Context) -> None:
-        layout = self.layout
-        sel_shots = context.selected_sequences
+        addon_prefs = addon_prefs_get(context)
+        nr_of_shots = len(context.selected_sequences)
+        noun = get_selshots_noun(nr_of_shots)
 
-        # sequence
-        row = layout.row(align=True)
-        row.operator(BZ_OT_SQE_MultiEditSequence.bl_idname, text="Sequence")
-        row.operator(BZ_OT_SQE_MultiEditShot.bl_idname, text="Shot")
+        # UI
+        layout = self.layout
+
+        # Sequence
+        row = layout.row()
+        box = row.box()
+        row = box.row(align=True)
+        row.prop(context.window_manager, "use_sequence_new", text="New Seqeunce")
+        if context.window_manager.use_sequence_new:
+            row.prop(context.window_manager, "sequence_new", text="")
+        else:
+            row.prop(context.window_manager, "sequence_enum", text="")
+
+        # Counter
+        row = box.row()
+        row.prop(
+            context.window_manager, "shot_counter_start", text="Shot Counter Start"
+        )
+        row.prop(context.window_manager, "show_advanced", text="")
+
+        if context.window_manager.show_advanced:
+
+            # Counter
+            box.row().prop(
+                addon_prefs, "shot_counter_digits", text="Shot Counter Digits"
+            )
+            box.row().prop(
+                addon_prefs, "shot_counter_increment", text="Shot Counter Increment"
+            )
+
+            # variables
+            row = box.row(align=True)
+            row.prop(
+                context.window_manager,
+                "var_use_custom_seq",
+                text="Custom Sequence Variable",
+            )
+            if context.window_manager.var_use_custom_seq:
+                row.prop(context.window_manager, "var_sequence_custom", text="")
+
+            # project
+            row = box.row(align=True)
+            row.prop(
+                context.window_manager,
+                "var_use_custom_project",
+                text="Custom Project Variable",
+            )
+            if context.window_manager.var_use_custom_project:
+                row.prop(context.window_manager, "var_project_custom", text="")
+
+            # Shot pattern
+            box.row().prop(addon_prefs, "shot_pattern", text="Shot Pattern")
+
+        # preview
+        row = box.row()
+        row.prop(context.window_manager, "shot_preview", text="Preview")
+
+        row = layout.row()
+        row.operator(
+            BZ_OT_SQE_MultiEditStrip.bl_idname,
+            text=f"Edit {noun}",
+            icon="TRIA_RIGHT",
+        )
 
 
 class BZ_PT_SQE_push(bpy.types.Panel):
@@ -358,12 +457,24 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         # if only one strip is selected and it is not init then hide panel
         if not zsession_auth(context):
             return False
-        nr_of_shots = len(context.selected_sequences)
-        strip = context.scene.sequence_editor.active_strip
-        if nr_of_shots == 1:
-            return strip.blezou.initialized
 
-        return True
+        selshots = context.selected_sequences
+        if not selshots:
+            selshots = context.scene.sequence_editor.sequences_all
+
+        strips_to_meta = []
+        strips_to_tb = []
+        strips_to_submit = []
+
+        for s in selshots:
+            if s.blezou.linked:
+                strips_to_tb.append(s)
+                strips_to_meta.append(s)
+
+            elif s.blezou.initialized:
+                strips_to_submit.append(s)
+
+        return bool(strips_to_meta or strips_to_tb or strips_to_submit)
 
     def draw(self, context: bpy.types.Context) -> None:
         nr_of_shots = len(context.selected_sequences)
@@ -425,7 +536,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
                 icon="IMAGE_DATA",
             )
 
-        # delete and new operator
+        # submit operator
         if nr_of_shots > 0:
             if len(strips_to_submit):
                 noun = get_selshots_noun(
@@ -437,16 +548,6 @@ class BZ_PT_SQE_push(bpy.types.Panel):
                     BZ_OT_SQE_PushNewShot.bl_idname,
                     text=f"Submit {noun}",
                     icon="ADD",
-                )
-
-            if len(strips_to_delete):
-                noun = get_selshots_noun(
-                    len(strips_to_delete), prefix=f"{len(strips_to_meta)}"
-                )
-                col.operator(
-                    BZ_OT_SQE_PushDeleteShot.bl_idname,
-                    text=f"Delete {noun}",
-                    icon="REMOVE",
                 )
 
 
@@ -468,15 +569,20 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
         if not zsession_auth(context):
             return False
 
-        nr_of_shots = len(context.selected_sequences)
-        strip = context.scene.sequence_editor.active_strip
-        if nr_of_shots == 1:
-            return strip.blezou.linked
-        return True
+        selshots = context.selected_sequences
+        if not selshots:
+            selshots = context.scene.sequence_editor.sequences_all
+
+        strips_to_meta = []
+
+        for s in selshots:
+            if s.blezou.linked:
+                strips_to_meta.append(s)
+
+        return bool(strips_to_meta)
 
     def draw(self, context: bpy.types.Context) -> None:
         selshots = context.selected_sequences
-
         if not selshots:
             selshots = context.scene.sequence_editor.sequences_all
 
@@ -549,7 +655,7 @@ classes = [
     BZ_PT_vi3d_context,
     BZ_PT_SQE_tools,
     BZ_PT_SQE_shot_meta,
-    BZ_PT_SQE_shot_muli_edit,
+    BZ_PT_SQE_ShotMultiEdit,
     BZ_PT_SQE_push,
     BZ_PT_SQE_pull,
     BZ_PT_SQE_debug,

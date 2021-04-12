@@ -3,7 +3,9 @@ from bpy.app.handlers import persistent
 from .types import ZProject, ZSequence, ZShot, ZAssetType, ZAsset
 from dataclasses import asdict
 from .logger import ZLoggerFactory
-from typing import Optional, Any
+from typing import Optional, Any, List, Dict, Tuple
+from . import opsdata
+from . import prefs
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
@@ -61,6 +63,14 @@ class BZ_PopertyGroupSequence(bpy.types.PropertyGroup):
         self.project_id = ""
 
         self.initialized = False
+        self.linked = False
+
+    def unlink(self):
+        self.sequence_id = ""
+
+        self.project_name = ""
+        self.project_id = ""
+
         self.linked = False
 
 
@@ -158,6 +168,135 @@ def clear_cache_variables():
     logger.info("Cleared active asset type cache")
 
 
+def _get_project_active(self):
+    return prefs._ZPROJECT_ACTIVE.name
+
+
+def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+    zproject_active = prefs._ZPROJECT_ACTIVE
+
+    if not zproject_active:
+        return []
+
+    enum_list = [(s.name, s.name, "") for s in zproject_active.get_sequences_all()]
+    return enum_list
+
+
+def _gen_shot_preview(self):
+    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
+    shot_counter_increment = addon_prefs.shot_counter_increment
+    shot_counter_digits = addon_prefs.shot_counter_digits
+    shot_counter_start = self.shot_counter_start
+    shot_pattern = addon_prefs.shot_pattern
+    strip = bpy.context.scene.sequence_editor.active_strip
+    examples: List[str] = []
+    sequence = self.sequence_new if self.use_sequence_new else self.sequence_enum
+    var_project = (
+        self.var_project_custom
+        if self.var_use_custom_project
+        else self.var_project_active
+    )
+    var_sequence = self.var_sequence_custom if self.var_use_custom_seq else sequence
+    var_lookup_table = {"Sequence": var_sequence, "Project": var_project}
+
+    for count in range(3):
+        counter_number = shot_counter_start + (shot_counter_increment * count)
+        counter = str(counter_number).rjust(shot_counter_digits, "0")
+        var_lookup_table["Counter"] = counter
+        examples.append(opsdata._resolve_pattern(shot_pattern, var_lookup_table))
+
+    return " | ".join(examples) + "..."
+
+
+def _add_window_manager_props():
+
+    # Multi Edit Properties
+    bpy.types.WindowManager.show_advanced = bpy.props.BoolProperty(
+        name="Show Advanced",
+        description="Shows advanced options to fine control shot pattern.",
+        default=False,
+    )
+
+    bpy.types.WindowManager.var_use_custom_seq = bpy.props.BoolProperty(
+        name="Use Custom",
+        description="Enables to type in custom sequence name for <Sequence> wildcard.",
+        default=False,
+    )
+
+    bpy.types.WindowManager.var_use_custom_project = bpy.props.BoolProperty(
+        name="Use Custom",
+        description="Enables to type in custom project name for <Project> wildcard",
+        default=False,
+    )
+
+    bpy.types.WindowManager.var_sequence_custom = bpy.props.StringProperty(  # type: ignore
+        name="Custom Sequence Variable",
+        description="Value that will be used to insert in <Sequence> wildcard if custom sequence is enabled.",
+        default="",
+    )
+
+    bpy.types.WindowManager.var_project_custom = bpy.props.StringProperty(  # type: ignore
+        name="Custom Project Variable",
+        description="Value that will be used to insert in <Project> wildcard if custom project is enabled.",
+        default="",
+    )
+
+    bpy.types.WindowManager.shot_counter_start = bpy.props.IntProperty(
+        description="Value that defines where the shot counter starts.",
+        step=10,
+        min=0,
+    )
+
+    bpy.types.WindowManager.shot_preview = bpy.props.StringProperty(
+        name="Shot Pattern",
+        description="Preview result of current settings on how a shot will be named.",
+        get=_gen_shot_preview,
+    )
+
+    bpy.types.WindowManager.var_project_active = bpy.props.StringProperty(
+        name="Active Project",
+        description="Value that will be inserted in <Project> wildcard.",
+        get=_get_project_active,
+    )
+
+    bpy.types.WindowManager.sequence_enum = bpy.props.EnumProperty(
+        name="Sequences",
+        items=_get_sequences,
+        description="Name of Sequence the generated Shots will be assinged to.",
+    )
+    bpy.types.WindowManager.sequence_new = bpy.props.StringProperty(  # type: ignore
+        name="Sequence",
+        description="Name of the new Sequence that the shots will belong to.",
+        default="",
+    )
+
+    bpy.types.WindowManager.use_sequence_new = bpy.props.BoolProperty(
+        name="New",
+        description="Instead of dropdown menu to select existing sequences, check this to type in new sequence name.",
+    )
+
+    # advanced delete props
+    bpy.types.WindowManager.advanced_delete = bpy.props.BoolProperty(
+        name="Advanced Delete",
+        description="Checkbox to show advanced shot deletion operations.",
+        default=False,
+    )
+
+
+def _clear_window_manager_props():
+    del bpy.types.WindowManager.show_advanced
+    del bpy.types.WindowManager.var_use_custom_seq
+    del bpy.types.WindowManager.var_use_custom_project
+    del bpy.types.WindowManager.var_sequence_custom
+    del bpy.types.WindowManager.var_project_custom
+    del bpy.types.WindowManager.shot_counter_start
+    del bpy.types.WindowManager.shot_preview
+    del bpy.types.WindowManager.var_project_active
+    del bpy.types.WindowManager.sequence_enum
+    del bpy.types.WindowManager.sequence_new
+    del bpy.types.WindowManager.use_sequence_new
+
+
 @persistent
 def load_post_handler(dummy):
     clear_cache_variables()
@@ -173,17 +312,22 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
+    # Sequence Properties
     bpy.types.Sequence.blezou = bpy.props.PointerProperty(
         name="Blezou",
         type=BZ_PopertyGroupSequence,
         description="Metadata that is required for blezou",
     )
+    # Scene Properties
     bpy.types.Scene.blezou = bpy.props.PointerProperty(
         name="Blezou",
         type=BZ_PopertyGroupScene,
         description="Metadata that is required for blezou",
     )
+    # Window Manager Properties
+    _add_window_manager_props()
 
+    # Handlers
     bpy.app.handlers.load_post.append(load_post_handler)
 
 
@@ -193,3 +337,9 @@ def unregister():
 
     # clear cache
     clear_cache_variables()
+
+    # clear properties
+    _clear_window_manager_props()
+
+    # clear handlers
+    bpy.app.handlers.load_post.remove(load_post_handler)

@@ -5,6 +5,8 @@ from . import props
 from . import prefs
 from . import ops
 from . import ui
+from . import util
+from . import opsdata
 
 logger = ZLoggerFactory.getLogger(__name__)
 
@@ -27,6 +29,8 @@ if _need_reload:
     import importlib
 
     logger.info("-START- Reloading Blezou")
+    opsdata = importlib.reload(opsdata)
+    util = importlib.reload(util)
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)
     ops = importlib.reload(ops)
