@@ -22,7 +22,7 @@ from .util import *
 from . import props
 from . import prefs
 from .logger import ZLoggerFactory
-from .gazu import gazu
+from . import gazu
 from . import opsdata
 
 logger = ZLoggerFactory.getLogger(name=__name__)
@@ -305,7 +305,7 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.enum_prop:
-            return {"CANCELED"}
+            return {"CANCELLED"}
 
         # update blezou metadata
         zasset_active_set_by_id(context, self.enum_prop)
@@ -834,7 +834,7 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
         strip = context.scene.sequence_editor.active_strip
         sequence_id = self.enum_prop
         if not sequence_id:
-            return {"CANCELED"}
+            return {"CANCELLED"}
 
         # set sequence properties
         zseq = ZSequence.by_id(sequence_id)
@@ -847,6 +847,130 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.invoke_search_popup(self)
         return {"FINISHED"}
+
+
+class BZ_OT_SQE_LinkShot(bpy.types.Operator):
+    """
+    Operator that invokes ui which shows user all available shots in gazou.
+    It is used to 'link' a seqeunce strip to an alredy existent shot in gazou.
+    Fills out all metadata after selecting shot.
+    """
+
+    bl_idname = "blezou.sqe_link_shot"
+    bl_label = "Link Shot"
+    bl_description = (
+        "Adds required shot metadata to selecetd strip based on data from server."
+    )
+
+    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+        zproject_active = zproject_active_get()
+        if not zproject_active:
+            return []
+
+        enum_list = [
+            (s.id, s.name, s.description if s.description else "")
+            for s in zproject_active.get_sequences_all()
+        ]
+        return enum_list
+
+    def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+        if not self.sequence_enum:
+            return []
+
+        zseq_active = ZSequence.by_id(self.sequence_enum)
+
+        enum_list = [
+            (s.id, s.name, s.description if s.description else "")
+            for s in zseq_active.get_all_shots()
+        ]
+        return enum_list
+
+    sequence_enum: bpy.props.EnumProperty(items=_get_sequences, name="Sequence")  # type: ignore
+    shots_enum: bpy.props.EnumProperty(items=_get_shots, name="Shot")  # type: ignore
+    use_url: bpy.props.BoolProperty(
+        name="Use URL",
+        description="Use URL of shot on server to initiate strip. Paste complete URL.",
+    )
+    url: bpy.props.StringProperty(
+        name="URL",
+        description="Complete URL of shot on server that will be used to initiate strip",
+        default="",
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        strip = context.scene.sequence_editor.active_strip
+        return bool(
+            zsession_auth(context)
+            and zproject_active_get()
+            and strip
+            and context.selected_sequences
+            and CheckStrip.valid_type(strip)
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        strip = context.scene.sequence_editor.active_strip
+
+        shot_id = self.shots_enum
+
+        # by url
+        if self.use_url:
+            # http://192.168.178.80/productions/4dda1c36-1f49-44c7-98c9-93b40ea37dcd/shots/5e69e2e0-c3c8-4fc2-a4a3-f18151adf9dc
+            split = self.url.split("/")
+            shot_id = split[-1]
+
+        # by shot enum
+        else:
+            shot_id = self.shots_enum
+            if not shot_id:
+                self.report({"WARNING"}, "Invalid selection. Please choose a shot.")
+                return {"CANCELLED"}
+
+        # check if id availalbe on server (mainly for url option)
+        try:
+            zshot = ZShot.by_id(shot_id)
+
+        except (TypeError, gazu.exception.ServerErrorException):
+            self.report({"WARNING"}, "Invalid URL: %s" % self.url)
+            return {"CANCELLED"}
+
+        except gazu.exception.RouteNotFoundException:
+            self.report({"WARNING"}, "ID not found on server: %s" % shot_id)
+            return {"CANCELLED"}
+
+        # pull shot meta
+        Pull.shot_meta(strip, zshot)
+
+        t = "Linked strip: %s to shot: %s with ID: %s" % (
+            strip.name,
+            zshot.name,
+            zshot.id,
+        )
+        logger.info(t)
+        self.report({"INFO"}, t)
+        ui_redraw()
+
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        self.use_url = False
+        return context.window_manager.invoke_props_dialog(  # type: ignore
+            self, width=300
+        )
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row()
+        row.prop(self, "use_url")
+        if self.use_url:
+            row.prop(self, "url")
+        else:
+            row = layout.row()
+            row.prop(self, "sequence_enum")
+            row = layout.row()
+            row.prop(self, "shots_enum")
+            row = layout.row()
 
 
 class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
@@ -941,77 +1065,6 @@ class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
         logger.info("-END- Multi Edit Shot")
         ui_redraw()
         return {"FINISHED"}
-
-
-class BZ_OT_SQE_LinkShot(bpy.types.Operator):
-    """
-    Operator that invokes ui which shows user all available shots in gazou.
-    It is used to 'link' a seqeunce strip to an alredy existent shot in gazou.
-    Fills out all metadata after selecting shot.
-    """
-
-    bl_idname = "blezou.sqe_link_shot"
-    bl_label = "Link Shot"
-    bl_description = (
-        "Adds required shot metadata to selecetd strip based on data from server."
-    )
-    bl_property = "enum_prop"
-
-    def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zproject_active = zproject_active_get()
-
-        if not zproject_active:
-            return []
-
-        enum_list = []
-        all_sequences = zproject_active.get_sequences_all()
-        for seq in all_sequences:
-            all_shots = seq.get_all_shots()
-            if len(all_shots) > 0:
-                enum_list.append(
-                    ("", seq.name, seq.description if seq.description else "")
-                )
-                for shot in all_shots:
-                    enum_list.append(
-                        (
-                            shot.id,
-                            shot.name,
-                            shot.description if shot.description else "",
-                        )
-                    )
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_shots, name="Shot")  # type: ignore
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        strip = context.scene.sequence_editor.active_strip
-        return bool(
-            zsession_auth(context)
-            and zproject_active_get()
-            and strip
-            and context.selected_sequences
-            and CheckStrip.valid_type(strip)
-        )
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        strip = context.scene.sequence_editor.active_strip
-
-        if self.enum_prop:  # returns 0 for organisational item
-            zshot = ZShot.by_id(self.enum_prop)
-            Pull.shot_meta(strip, zshot)
-            logger.info(
-                "Linked strip: %s to shot: %s with ID: %s"
-                % (strip.name, zshot.name, zshot.id)
-            )
-
-        ui_redraw()
-        return {"FINISHED"}
-
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        return context.window_manager.invoke_props_dialog(  # type: ignore
-            self, width=500
-        )
 
 
 class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
@@ -1536,7 +1589,7 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
         strip_name = self.duplicates
 
         if not strip_name:
-            return {"CANCELED"}
+            return {"CANCELLED"}
 
         # deselect all if something is selected
         if context.selected_sequences:
