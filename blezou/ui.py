@@ -37,7 +37,7 @@ def get_selshots_noun(nr_of_shots: int, prefix: str = "Active") -> str:
     return noun
 
 
-class BZ_PT_vi3d_auth(bpy.types.Panel):
+class BZ_PT_VI3D_Auth(bpy.types.Panel):
     """
     Panel in 3dview that displays email, password and login operator.
     """
@@ -65,7 +65,7 @@ class BZ_PT_vi3d_auth(bpy.types.Panel):
             row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE")
 
 
-class BZ_PT_vi3d_context(bpy.types.Panel):
+class BZ_PT_VI3D_Context(bpy.types.Panel):
     """
     Panel in 3dview that enables browsing through backend data structure.
     Thought of as a menu to setup a context by selecting active production
@@ -145,7 +145,7 @@ class BZ_PT_vi3d_context(bpy.types.Panel):
         row.operator(item_data["operator"], text=item_text, icon="DOWNARROW_HLT")
 
 
-class BZ_PT_SQE_auth(bpy.types.Panel):
+class BZ_PT_SQE_Auth(bpy.types.Panel):
     """
     Panel in sequence editor that displays email, password and login operator.
     """
@@ -177,17 +177,16 @@ class BZ_PT_SQE_auth(bpy.types.Panel):
             row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE")
 
 
-class BZ_PT_SQE_tools(bpy.types.Panel):
+class BZ_PT_SQE_ShotSetup(bpy.types.Panel):
     """
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
 
-    bl_idname = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
     bl_label = "Shot Tools"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
-    bl_order = 30
+    bl_order = 10
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -215,15 +214,17 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
             elif s.blezou.initialized:
                 strips_to_uninit.append(s)
 
+        # create box
         layout = self.layout
+        box = layout.box()
 
         # Production
         if zsession_auth(context):
-            layout.row().label(text=f"Production: {zproject_active.name}")
+            box.row().label(text=f"Production: {zproject_active.name}")
 
         # Single Selection
         if nr_of_shots == 1:
-            row = layout.row(align=True)
+            row = box.row(align=True)
 
             # initialize
             if strip.type not in VALID_STRIP_TYPES:
@@ -245,7 +246,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
             # unlink
             elif strip.blezou.linked:
 
-                row = layout.row(align=True)
+                row = box.row(align=True)
                 row.operator(
                     BZ_OT_SQE_UnlinkShot.bl_idname,
                     text=f"Unlink {noun}",
@@ -254,7 +255,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                 row.prop(context.window_manager, "advanced_delete", text="")
 
                 if context.window_manager.advanced_delete:
-                    row = layout.row(align=True)
+                    row = box.row(align=True)
                     row.operator(
                         BZ_OT_SQE_PushDeleteShot.bl_idname,
                         text=f"Unlink and Delete Active Shot",
@@ -262,7 +263,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                     )
             # uninitialize
             else:
-                row = layout.row(align=True)
+                row = box.row(align=True)
                 # unlink active
                 row.operator(
                     BZ_OT_SQE_UninitStrip.bl_idname,
@@ -272,7 +273,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
 
         # Multiple Selection
         elif nr_of_shots > 1:
-            row = layout.row(align=True)
+            row = box.row(align=True)
 
             # init
             if len(strips_to_init):
@@ -283,7 +284,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                 )
             # make row
             if len(strips_to_uninit) or len(strips_to_unlink):
-                row = layout.row(align=True)
+                row = box.row(align=True)
 
             # uninitialize
             if len(strips_to_uninit):
@@ -303,7 +304,7 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                 row.prop(context.window_manager, "advanced_delete", text="")
 
                 if context.window_manager.advanced_delete:
-                    row = layout.row(align=True)
+                    row = box.row(align=True)
                     row.operator(
                         BZ_OT_SQE_PushDeleteShot.bl_idname,
                         text=f"Unlink and Delete {len(strips_to_unlink)} Shots",
@@ -311,17 +312,16 @@ class BZ_PT_SQE_tools(bpy.types.Panel):
                     )
 
 
-class BZ_PT_SQE_shot_meta(bpy.types.Panel):
+class BZ_PT_SQE_ShotMeta(bpy.types.Panel):
     """
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
 
-    bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
     bl_label = "Metadata"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
-    bl_order = 10
+    bl_order = 15
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -334,8 +334,12 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
 
         strip = context.scene.sequence_editor.active_strip
+
+        # create box
         layout = self.layout
         box = layout.box()
+        box.label(text="Metadata", icon="ALIGN_LEFT")
+
         col = box.column(align=True)
 
         # sequence
@@ -347,7 +351,7 @@ class BZ_PT_SQE_shot_meta(bpy.types.Panel):
         col.prop(strip.blezou, "shot_name")
 
         # description
-        col.prop(strip.blezou, "shot_description_display")
+        col.prop(strip.blezou, "shot_description_display", text="Description")
         col.enabled = False if not strip.blezou.initialized else True
 
 
@@ -356,12 +360,11 @@ class BZ_PT_SQE_ShotMultiEdit(bpy.types.Panel):
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
 
-    bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
     bl_label = "Multi Edit"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
-    bl_order = 11
+    bl_order = 20
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -375,12 +378,12 @@ class BZ_PT_SQE_ShotMultiEdit(bpy.types.Panel):
         nr_of_shots = len(context.selected_sequences)
         noun = get_selshots_noun(nr_of_shots)
 
-        # UI
+        # create box
         layout = self.layout
+        box = layout.box()
+        box.label(text="Multi Edit", icon="TOOL_SETTINGS")
 
         # Sequence
-        row = layout.row()
-        box = row.box()
         row = box.row(align=True)
         row.prop(context.window_manager, "use_sequence_new", text="New Seqeunce")
         if context.window_manager.use_sequence_new:
@@ -440,17 +443,16 @@ class BZ_PT_SQE_ShotMultiEdit(bpy.types.Panel):
         )
 
 
-class BZ_PT_SQE_push(bpy.types.Panel):
+class BZ_PT_SQE_Push(bpy.types.Panel):
     """
     Panel that shows operator to sync sequence editor metadata with backend.
     """
 
-    bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
     bl_label = "Push"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
-    bl_order = 20
+    bl_order = 25
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -500,11 +502,15 @@ class BZ_PT_SQE_push(bpy.types.Panel):
                 if s.blezou.shot_name and s.blezou.sequence_name:
                     strips_to_submit.append(s)
 
+        # create box
+        layout = self.layout
+        box = layout.box()
+        box.label(text="Push", icon="EXPORT")
         # special case if one shot is selected and it is init but not linked
         # shows the operator but it is not enabled until user types in required metadata
         if nr_of_shots == 1 and not strip.blezou.linked:
             # new operator
-            row = layout.row()
+            row = box.row()
             col = row.column(align=True)
             col.operator(
                 BZ_OT_SQE_PushNewShot.bl_idname,
@@ -516,7 +522,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
         # either way no selection one selection but linked or multiple
 
         # metadata operator
-        row = layout.row()
+        row = box.row()
         if len(strips_to_meta):
             col = row.column(align=True)
             noun = get_selshots_noun(
@@ -543,7 +549,7 @@ class BZ_PT_SQE_push(bpy.types.Panel):
                 noun = get_selshots_noun(
                     len(strips_to_submit), prefix=f"{len(strips_to_submit)}"
                 )
-                row = layout.row()
+                row = box.row()
                 col = row.column(align=True)
                 col.operator(
                     BZ_OT_SQE_PushNewShot.bl_idname,
@@ -552,12 +558,11 @@ class BZ_PT_SQE_push(bpy.types.Panel):
                 )
 
 
-class BZ_PT_SQE_pull(bpy.types.Panel):
+class BZ_PT_SQE_Pull(bpy.types.Panel):
     """
     Panel that shows operator to sync sequence editor metadata with backend.
     """
 
-    bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
     bl_label = "Pull"
     bl_space_type = "SEQUENCE_EDITOR"
@@ -593,12 +598,17 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
             if s.blezou.linked:
                 strips_to_meta.append(s)
 
+        # create box
+        layout = self.layout
+        box = layout.box()
+        box.label(text="Pull", icon="IMPORT")
+
         layout = self.layout
         if len(strips_to_meta):
             noun = get_selshots_noun(
                 len(strips_to_meta), prefix=f"{len(strips_to_meta)}"
             )
-            row = layout.row()
+            row = box.row()
             row.operator(
                 BZ_OT_SQE_PullShotMeta.bl_idname,
                 text=f"Metadata {noun}",
@@ -606,18 +616,17 @@ class BZ_PT_SQE_pull(bpy.types.Panel):
             )
 
 
-class BZ_PT_SQE_debug(bpy.types.Panel):
+class BZ_PT_SQE_Debug(bpy.types.Panel):
     """
     Panel that shows operator to open a debug ui
     """
 
-    bl_parent_id = "BZ_PT_SQE_tools"
     bl_category = "Blezou"
     bl_label = "Debug"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_order = 40
+    bl_order = 35
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -627,20 +636,24 @@ class BZ_PT_SQE_debug(bpy.types.Panel):
         nr_of_shots = len(context.selected_sequences)
         noun = get_selshots_noun(nr_of_shots)
 
+        # create box
         layout = self.layout
-        row = layout.row()
+        box = layout.box()
+        box.label(text="Debug", icon="MODIFIER_ON")
+
+        row = box.row()
         row.operator(
             BZ_OT_SQE_DebugDuplicates.bl_idname,
             text=f"Duplicates {noun}",
             icon="MODIFIER_ON",
         )
-        row = layout.row()
+        row = box.row()
         row.operator(
             BZ_OT_SQE_DebugNotLinked.bl_idname,
             text=f"Not Linked {noun}",
             icon="MODIFIER_ON",
         )
-        row = layout.row()
+        row = box.row()
         row.operator(
             BZ_OT_SQE_DebugMultiProjects.bl_idname,
             text=f"Multi Projects {noun}",
@@ -651,15 +664,15 @@ class BZ_PT_SQE_debug(bpy.types.Panel):
 # ---------REGISTER ----------
 
 classes = [
-    BZ_PT_vi3d_auth,
-    BZ_PT_SQE_auth,
-    BZ_PT_vi3d_context,
-    BZ_PT_SQE_tools,
-    BZ_PT_SQE_shot_meta,
+    BZ_PT_VI3D_Auth,
+    BZ_PT_SQE_Auth,
+    BZ_PT_VI3D_Context,
+    BZ_PT_SQE_ShotSetup,
+    BZ_PT_SQE_ShotMeta,
     BZ_PT_SQE_ShotMultiEdit,
-    BZ_PT_SQE_push,
-    BZ_PT_SQE_pull,
-    BZ_PT_SQE_debug,
+    BZ_PT_SQE_Push,
+    BZ_PT_SQE_Pull,
+    BZ_PT_SQE_Debug,
 ]
 
 
