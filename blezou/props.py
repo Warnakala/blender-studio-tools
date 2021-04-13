@@ -9,6 +9,8 @@ from . import prefs
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
+# CACHE VARIABLES
+# used to cache active entitys to prevent a new api request when read only
 _ZSEQUENCE_ACTIVE: ZSequence = ZSequence()
 _ZSHOT_ACTIVE: ZShot = ZShot()
 _ZASSET_ACTIVE: ZAsset = ZAsset()
