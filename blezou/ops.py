@@ -355,9 +355,7 @@ class Push:
         # update shot info
         zshot.name = strip.blezou.shot_name
         zshot.description = strip.blezou.shot_description
-        frame_range = Push._remap_frame_range(
-            strip.frame_final_start, strip.frame_final_end
-        )
+        frame_range = (strip.frame_final_start, strip.frame_final_end)
         zshot.data["frame_in"] = frame_range[0]
         zshot.data["frame_out"] = frame_range[1]
 
@@ -379,9 +377,7 @@ class Push:
         zproject: ZProject,
     ) -> ZShot:
 
-        frame_range = Push._remap_frame_range(
-            strip.frame_final_start, strip.frame_final_end
-        )
+        frame_range = (strip.frame_final_start, strip.frame_final_end)
         zshot = zproject.create_shot(
             strip.blezou.shot_name,
             zsequence,
@@ -422,7 +418,7 @@ class Push:
         return result
 
     @staticmethod
-    def _remap_frame_range(frame_in, frame_out):
+    def _remap_frame_range(frame_in: int, frame_out: int) -> Tuple[int, int]:
         start_frame = 101
         nb_of_frames = frame_out - frame_in
         return (start_frame, start_frame + nb_of_frames)
