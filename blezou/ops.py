@@ -14,7 +14,7 @@ from .types import (
     ZAsset,
     ZAssetType,
     ZCache,
-    ZProductions,
+    ZProjectList,
     ZProject,
     ZSequence,
     ZShot,
@@ -333,10 +333,10 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         if not zsession_auth(context):
             return []
 
-        zproductions = ZProductions()
+        zprojectlist = ZProjectList()
         enum_list = [
             (p.id, p.name, p.description if p.description else "")
-            for p in zproductions.projects
+            for p in zprojectlist.projects
         ]
         return enum_list
 

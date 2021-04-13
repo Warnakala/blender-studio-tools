@@ -9,7 +9,7 @@ from .logger import ZLoggerFactory
 logger = ZLoggerFactory.getLogger(name=__name__)
 
 
-class ZProductions:
+class ZProjectList:
     """
     Class to get object oriented representation of backend productions data structure.
     """
@@ -20,10 +20,7 @@ class ZProductions:
 
     @property
     def names(self) -> List[str]:
-        _names = []
-        for p in self._projects:
-            _names.append(p.name)
-        return _names
+        return [p.name for p in self._projects]
 
     @property
     def projects(self) -> List[ZProject]:
