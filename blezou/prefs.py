@@ -10,6 +10,8 @@ from .ops import BZ_OT_ProductionsLoad, BZ_OT_SessionStart, BZ_OT_SessionEnd
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
+# CACHE VARIABLES
+# used to cache active entitys to prevent a new api request when read only
 _ZPROJECT_ACTIVE: ZProject = ZProject()
 
 

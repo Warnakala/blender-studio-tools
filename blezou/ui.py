@@ -11,7 +11,7 @@ from .ops import (
     BZ_OT_AssetsLoad,
     BZ_OT_AssetTypesLoad,
     BZ_OT_SQE_PushThumbnail,
-    BZ_OT_SQE_InitShot,
+    BZ_OT_SQE_InitStrip,
     BZ_OT_SQE_UninitStrip,
     BZ_OT_SQE_UnlinkShot,
     BZ_OT_SQE_LinkShot,
@@ -283,7 +283,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
             if not strip.blezou.initialized:
                 # init active
                 row.operator(
-                    BZ_OT_SQE_InitShot.bl_idname, text=f"Init {noun}", icon="ADD"
+                    BZ_OT_SQE_InitStrip.bl_idname, text=f"Init {noun}", icon="ADD"
                 )
                 # link active
                 row.operator(
@@ -320,7 +320,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
             # init
             if len(strips_to_init):
                 row.operator(
-                    BZ_OT_SQE_InitShot.bl_idname,
+                    BZ_OT_SQE_InitStrip.bl_idname,
                     text=f"Init {len(strips_to_init)} Shots",
                     icon="ADD",
                 )
