@@ -234,7 +234,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
 
     @classmethod
     def poll_setup(cls, context: bpy.types.Context) -> bool:
-        return True
+        return bool(context.selected_sequences)
 
     def draw_setup(self, context: bpy.types.Context) -> None:
         """
