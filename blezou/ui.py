@@ -1,30 +1,32 @@
-import bpy
 from typing import Optional
-from .util import *
+
+import bpy
+
 from . import props
+from .util import *
 from .ops import (
-    BZ_OT_SessionStart,
-    BZ_OT_SessionEnd,
-    BZ_OT_ProductionsLoad,
-    BZ_OT_SequencesLoad,
-    BZ_OT_ShotsLoad,
     BZ_OT_AssetsLoad,
     BZ_OT_AssetTypesLoad,
-    BZ_OT_SQE_PushThumbnail,
+    BZ_OT_ProductionsLoad,
+    BZ_OT_SequencesLoad,
+    BZ_OT_SessionEnd,
+    BZ_OT_SessionStart,
+    BZ_OT_ShotsLoad,
+    BZ_OT_SQE_DebugDuplicates,
+    BZ_OT_SQE_DebugMultiProjects,
+    BZ_OT_SQE_DebugNotLinked,
     BZ_OT_SQE_InitStrip,
-    BZ_OT_SQE_UninitStrip,
-    BZ_OT_SQE_UnlinkShot,
-    BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_LinkSequence,
+    BZ_OT_SQE_LinkShot,
+    BZ_OT_SQE_MultiEditStrip,
+    BZ_OT_SQE_PullShotMeta,
+    BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PushNewSequence,
     BZ_OT_SQE_PushNewShot,
-    BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PushShotMeta,
-    BZ_OT_SQE_PullShotMeta,
-    BZ_OT_SQE_MultiEditStrip,
-    BZ_OT_SQE_DebugDuplicates,
-    BZ_OT_SQE_DebugNotLinked,
-    BZ_OT_SQE_DebugMultiProjects,
+    BZ_OT_SQE_PushThumbnail,
+    BZ_OT_SQE_UninitStrip,
+    BZ_OT_SQE_UnlinkShot,
 )
 
 

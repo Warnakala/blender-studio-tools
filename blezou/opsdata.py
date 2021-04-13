@@ -1,6 +1,8 @@
-import bpy
 import re
-from typing import List, Tuple, Optional, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
+
+import bpy
+
 from .logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)

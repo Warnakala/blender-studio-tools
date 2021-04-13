@@ -1,11 +1,12 @@
+from dataclasses import asdict
+from typing import Any, Dict, List, Optional, Tuple
+
 import bpy
 from bpy.app.handlers import persistent
-from .types import ZProject, ZSequence, ZShot, ZAssetType, ZAsset, ZCache
-from dataclasses import asdict
+
+from . import opsdata, prefs
 from .logger import ZLoggerFactory
-from typing import Optional, Any, List, Dict, Tuple
-from . import opsdata
-from . import prefs
+from .types import ZAsset, ZAssetType, ZCache, ZProject, ZSequence, ZShot
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

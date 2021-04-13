@@ -1,6 +1,8 @@
 from __future__ import annotations
-from typing import Union, Tuple, Dict, Any, Optional
-from dataclasses import dataclass, asdict, field
+
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, Optional, Tuple, Union
+
 from . import gazu
 from .logger import ZLoggerFactory
 

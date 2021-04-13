@@ -1,12 +1,14 @@
-import sys
 import hashlib
+import sys
 from pathlib import Path
+
 import bpy
 from bpy.app.handlers import persistent
+
 from .auth import ZSession
-from .types import ZProject
 from .logger import ZLoggerFactory
-from .ops import BZ_OT_ProductionsLoad, BZ_OT_SessionStart, BZ_OT_SessionEnd
+from .ops import BZ_OT_ProductionsLoad, BZ_OT_SessionEnd, BZ_OT_SessionStart
+from .types import ZProject
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

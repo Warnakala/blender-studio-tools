@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import List, Optional, Dict, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 class ZLoggerFactory:

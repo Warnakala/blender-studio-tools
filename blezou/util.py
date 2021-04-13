@@ -1,9 +1,10 @@
+from typing import Any, Dict, Optional
+
 import bpy
+
+from . import prefs, props
 from .auth import ZSession
-from typing import Dict, Any, Optional
-from .types import ZProject, ZSequence, ZShot, ZAsset, ZAssetType
-from . import props
-from . import prefs
+from .types import ZAsset, ZAssetType, ZProject, ZSequence, ZShot
 
 VALID_STRIP_TYPES = {"MOVIE", "COLOR"}
 

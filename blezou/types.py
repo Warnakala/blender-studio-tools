@@ -1,13 +1,12 @@
 from __future__ import annotations
-from dataclasses import dataclass, asdict, field
-from typing import Dict, Union, Union, Any, List, Optional
+
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, List, Optional, Union
+
 from . import gazu
 from .logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
-
-# TODO: @dataclass needs the init arguments to be known, what if gazu api changes?
-# some properties are also only provided by gazu if they are initialized
 
 
 class ZProductions:
