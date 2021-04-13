@@ -190,7 +190,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return True
+        return bool(zsession_auth(context) or context.selected_sequences)
 
     def draw(self, context: bpy.types.Context) -> None:
 
