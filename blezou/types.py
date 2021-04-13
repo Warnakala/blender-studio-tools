@@ -48,7 +48,7 @@ class ZProject:
     updated_at: str = ""
     name: str = ""
     code: Optional[str] = None
-    description: Optional[str] = ""
+    description: Optional[str] = None
     shotgun_id: Optional[str] = None
     data: None = None
     has_avatar: bool = False
@@ -191,13 +191,13 @@ class ZSequence:
     updated_at: str = ""
     name: str = ""
     code: Optional[str] = None
-    description: Optional[str] = ""
+    description: Optional[str] = None
     shotgun_id: Optional[str] = None
     canceled: bool = False
     nb_frames: Optional[int] = None
     project_id: str = ""
     entity_type_id: str = ""
-    parent_id: Optional[str] = None
+    parent_id: str = ""
     source_id: Optional[str] = None
     preview_file_id: Optional[str] = None
     data: Optional[Dict[str, Any]] = None
@@ -285,7 +285,7 @@ class ZShot:
     name: str = ""
     canceled: bool = False
     code: Optional[str] = None
-    description: Optional[str] = ""
+    description: Optional[str] = None
     entity_type_id: str = ""
     episode_id: Optional[str] = None
     episode_name: str = ""
@@ -332,7 +332,7 @@ class ZShot:
         return self
 
     def remove(self, force: bool = False) -> str:
-        return gazu.shot.remove_shot(asdict(self), force=force)
+        return str(gazu.shot.remove_shot(asdict(self), force=force))
 
     def __bool__(self):
         return bool(self.id)
@@ -350,12 +350,12 @@ class ZAsset:
     updated_at: str = ""
     name: str = ""
     code: Optional[str] = None
-    description: Optional[str] = ""
+    description: Optional[str] = None
     shotgun_id: Optional[str] = None
     canceled: bool = False
     project_id: str = ""
     entity_type_id: str = ""
-    parent_id: Optional[str] = None
+    parent_id: str = ""
     preview_file_id: str = ""
     type: str = ""
     project_name: str = ""
@@ -465,7 +465,7 @@ class ZTask:
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
-    description: Optional[str] = ""
+    description: Optional[str] = None
     priority: int = 0
     duration: int = 0
     estimation: int = 0
