@@ -183,13 +183,11 @@ def _get_project_active(self):
 
 
 def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-    # clear cache
-    # ZCache.clear_all()
-
+    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
     zproject_active = prefs._ZPROJECT_ACTIVE
 
-    if not zproject_active:
-        return []
+    if not zproject_active or not addon_prefs.session.is_auth:
+        return [("None", "None", "")]
 
     enum_list = [(s.name, s.name, "") for s in zproject_active.get_sequences_all()]
     return enum_list
