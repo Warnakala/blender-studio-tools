@@ -1,6 +1,6 @@
 import bpy
 from bpy.app.handlers import persistent
-from .types import ZProject, ZSequence, ZShot, ZAssetType, ZAsset
+from .types import ZProject, ZSequence, ZShot, ZAssetType, ZAsset, ZCache
 from dataclasses import asdict
 from .logger import ZLoggerFactory
 from typing import Optional, Any, List, Dict, Tuple
@@ -25,12 +25,13 @@ class BZ_PopertyGroupSequence(bpy.types.PropertyGroup):
     def _get_shot_description(self):
         return self.shot_description
 
+    def _get_sequence_name(self):
+        return self.sequence_name
+
     # shot
     shot_id: bpy.props.StringProperty(name="Shot ID")  # type: ignore
     shot_name: bpy.props.StringProperty(name="Shot", default="")  # type: ignore
     shot_description: bpy.props.StringProperty(name="Description", default="", options={"HIDDEN"})  # type: ignore
-
-    shot_description_display: bpy.props.StringProperty(name="Description Display", get=_get_shot_description)  # type: ignore
 
     # sequence
     sequence_name: bpy.props.StringProperty(name="Sequence", default="")  # type: ignore
@@ -47,6 +48,10 @@ class BZ_PopertyGroupSequence(bpy.types.PropertyGroup):
     linked: bpy.props.BoolProperty(  # type: ignore
         name="Linked", default=False, description="Is linked to an ID in gazou"
     )
+
+    # display props
+    shot_description_display: bpy.props.StringProperty(name="Description", get=_get_shot_description)  # type: ignore
+    sequence_name_display: bpy.props.StringProperty(name="Sequence", get=_get_sequence_name)  # type: ignore
 
     def to_dict(self):
         return {
@@ -178,10 +183,11 @@ def _get_project_active(self):
 
 
 def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
     zproject_active = prefs._ZPROJECT_ACTIVE
 
-    if not zproject_active:
-        return []
+    if not zproject_active or not addon_prefs.session.is_auth:
+        return [("None", "None", "")]
 
     enum_list = [(s.name, s.name, "") for s in zproject_active.get_sequences_all()]
     return enum_list
@@ -195,7 +201,7 @@ def _gen_shot_preview(self):
     shot_pattern = addon_prefs.shot_pattern
     strip = bpy.context.scene.sequence_editor.active_strip
     examples: List[str] = []
-    sequence = self.sequence_new if self.use_sequence_new else self.sequence_enum
+    sequence = self.sequence_enum
     var_project = (
         self.var_project_custom
         if self.var_use_custom_project
@@ -269,16 +275,6 @@ def _add_window_manager_props():
         items=_get_sequences,
         description="Name of Sequence the generated Shots will be assinged to.",
     )
-    bpy.types.WindowManager.sequence_new = bpy.props.StringProperty(  # type: ignore
-        name="Sequence",
-        description="Name of the new Sequence that the shots will belong to.",
-        default="",
-    )
-
-    bpy.types.WindowManager.use_sequence_new = bpy.props.BoolProperty(
-        name="New",
-        description="Instead of dropdown menu to select existing sequences, check this to type in new sequence name.",
-    )
 
     # advanced delete props
     bpy.types.WindowManager.advanced_delete = bpy.props.BoolProperty(
@@ -298,8 +294,6 @@ def _clear_window_manager_props():
     del bpy.types.WindowManager.shot_preview
     del bpy.types.WindowManager.var_project_active
     del bpy.types.WindowManager.sequence_enum
-    del bpy.types.WindowManager.sequence_new
-    del bpy.types.WindowManager.use_sequence_new
 
 
 @persistent

@@ -771,4 +771,5 @@ class ZUser:
 class ZCache:
     @classmethod
     def clear_all(cls):
+        logger.info("Cleared Server Cache")
         return gazu.cache.clear_all()
