@@ -177,10 +177,29 @@ class BZ_PT_SQE_Auth(bpy.types.Panel):
             row.operator(BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE")
 
 
+class BZ_MT_SQE_AdvancedDelete(bpy.types.Menu):
+    bl_label = "Advanced Delete"
+
+    def draw(self, context: bpy.types.Context) -> None:
+
+        selshots = context.selected_sequences
+        strips_to_unlink = [s for s in selshots if s.blezou.linked]
+
+        layout = self.layout
+        layout.operator(
+            BZ_OT_SQE_PushDeleteShot.bl_idname,
+            text=f"Unlink and Delete {len(strips_to_unlink)} Shots",
+            icon="CANCEL",
+        )
+
+
 class BZ_PT_SQE_ShotTools(bpy.types.Panel):
     """
     Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
     """
+
+    # TODO: Because each draw function was previously a seperate Panel there might be a lot of
+    # code duplication now, needs to be refactored at some point
 
     bl_category = "Blezou"
     bl_label = "Shot Tools"
@@ -281,15 +300,8 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
                     text=f"Unlink {noun}",
                     icon="UNLINKED",
                 )
-                row.prop(context.window_manager, "advanced_delete", text="")
+                row.menu("BZ_MT_SQE_AdvancedDelete", icon="DOWNARROW_HLT", text="")
 
-                if context.window_manager.advanced_delete:
-                    row = box.row(align=True)
-                    row.operator(
-                        BZ_OT_SQE_PushDeleteShot.bl_idname,
-                        text=f"Unlink and Delete Active Shot",
-                        icon="CANCEL",
-                    )
             # uninitialize
             else:
                 row = box.row(align=True)
@@ -330,15 +342,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
                     text=f"Unlink {len(strips_to_unlink)} Shots",
                     icon="UNLINKED",
                 )
-                row.prop(context.window_manager, "advanced_delete", text="")
-
-                if context.window_manager.advanced_delete:
-                    row = box.row(align=True)
-                    row.operator(
-                        BZ_OT_SQE_PushDeleteShot.bl_idname,
-                        text=f"Unlink and Delete {len(strips_to_unlink)} Shots",
-                        icon="CANCEL",
-                    )
+                row.menu("BZ_MT_SQE_AdvancedDelete", icon="DOWNARROW_HLT", text="")
 
     @classmethod
     def poll_metadata(cls, context: bpy.types.Context) -> bool:
@@ -394,7 +398,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
         # create box
         layout = self.layout
         box = layout.box()
-        box.label(text="Multi Edit", icon="TOOL_SETTINGS")
+        box.label(text="Multi Edit", icon="PROPERTIES")
 
         # Sequence
         row = box.row(align=True)
@@ -646,7 +650,13 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
 
 # ---------REGISTER ----------
 
-classes = [BZ_PT_VI3D_Auth, BZ_PT_SQE_Auth, BZ_PT_VI3D_Context, BZ_PT_SQE_ShotTools]
+classes = [
+    BZ_PT_VI3D_Auth,
+    BZ_PT_SQE_Auth,
+    BZ_PT_VI3D_Context,
+    BZ_MT_SQE_AdvancedDelete,
+    BZ_PT_SQE_ShotTools,
+]
 
 
 def register():
