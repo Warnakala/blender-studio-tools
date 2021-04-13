@@ -3,7 +3,7 @@ from typing import Optional
 import bpy
 
 from . import props
-from .util import *
+from . import util
 from .ops import (
     BZ_OT_AssetsLoad,
     BZ_OT_AssetTypesLoad,
@@ -52,8 +52,8 @@ class BZ_PT_VI3D_Auth(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = addon_prefs_get(context)
-        zsession = zsession_get(context)
+        prefs = util.addon_prefs_get(context)
+        zsession = util.zsession_get(context)
 
         layout = self.layout
 
@@ -84,21 +84,21 @@ class BZ_PT_VI3D_Context(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return zsession_auth(context)
+        return util.zsession_auth(context)
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = addon_prefs_get(context)
+        prefs = util.addon_prefs_get(context)
         layout = self.layout
         category = prefs.category  # can be either 'SHOTS' or 'ASSETS'
-        zproject_active = zproject_active_get()
+        zproject_active = util.zproject_active_get()
         item_group_data = {
             "name": "Sequence",
-            "zobject": zsequence_active_get(),
+            "zobject": util.zsequence_active_get(),
             "operator": BZ_OT_SequencesLoad.bl_idname,
         }
         item_data = {
             "name": "Shot",
-            "zobject": zshot_active_get(),
+            "zobject": util.zshot_active_get(),
             "operator": BZ_OT_ShotsLoad.bl_idname,
         }
         # Production
@@ -109,13 +109,13 @@ class BZ_PT_VI3D_Context(bpy.types.Panel):
         row = box.row(align=True)
         row.prop(prefs, "category", expand=True)
 
-        if not zsession_auth(context) or not zproject_active:
+        if not util.zsession_auth(context) or not zproject_active:
             row.enabled = False
 
         # Sequence / AssetType
         if category == "ASSETS":
             item_group_data["name"] = "AssetType"
-            item_group_data["zobject"] = zasset_type_active_get()
+            item_group_data["zobject"] = util.zasset_type_active_get()
             item_group_data["operator"] = BZ_OT_AssetTypesLoad.bl_idname
 
         row = box.row(align=True)
@@ -133,7 +133,7 @@ class BZ_PT_VI3D_Context(bpy.types.Panel):
         # Shot / Asset
         if category == "ASSETS":
             item_data["name"] = "Asset"
-            item_data["zobject"] = zasset_active_get()
+            item_data["zobject"] = util.zasset_active_get()
             item_data["operator"] = BZ_OT_AssetsLoad.bl_idname
 
         row = box.row(align=True)
@@ -161,11 +161,11 @@ class BZ_PT_SQE_Auth(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(not zsession_auth(context))
+        return bool(not util.zsession_auth(context))
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = addon_prefs_get(context)
-        zsession = zsession_get(context)
+        prefs = util.addon_prefs_get(context)
+        zsession = util.zsession_get(context)
 
         layout = self.layout
 
@@ -212,7 +212,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(zsession_auth(context) or context.selected_sequences)
+        return bool(util.zsession_auth(context) or context.selected_sequences)
 
     def draw(self, context: bpy.types.Context) -> None:
 
@@ -248,14 +248,14 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
         selshots = context.selected_sequences
         nr_of_shots = len(selshots)
         noun = get_selshots_noun(nr_of_shots)
-        zproject_active = zproject_active_get()
+        zproject_active = util.zproject_active_get()
 
         strips_to_init = []
         strips_to_uninit = []
         strips_to_unlink = []
 
         for s in selshots:
-            if s.type not in VALID_STRIP_TYPES:
+            if s.type not in util.VALID_STRIP_TYPES:
                 continue
             if not s.blezou.initialized:
                 strips_to_init.append(s)
@@ -270,7 +270,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
         box.label(text="Setup Shots", icon="TOOL_SETTINGS")
 
         # Production
-        if zsession_auth(context):
+        if util.zsession_auth(context):
             box.row().label(text=f"Production: {zproject_active.name}")
 
         # Single Selection
@@ -278,8 +278,10 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
             row = box.row(align=True)
 
             # initialize
-            if strip.type not in VALID_STRIP_TYPES:
-                row.label(text=f"Only sequence strips of types: {VALID_STRIP_TYPES}")
+            if strip.type not in util.VALID_STRIP_TYPES:
+                row.label(
+                    text=f"Only sequence strips of types: {util.VALID_STRIP_TYPES}"
+                )
                 return
 
             if not strip.blezou.initialized:
@@ -397,7 +399,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
         Mostly used to quickly initialize lots of shots with an increasing counter.
         """
 
-        addon_prefs = addon_prefs_get(context)
+        addon_prefs = util.addon_prefs_get(context)
         nr_of_shots = len(context.selected_sequences)
         noun = get_selshots_noun(nr_of_shots)
 
@@ -468,7 +470,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
     @classmethod
     def poll_push(cls, context: bpy.types.Context) -> bool:
         # if only one strip is selected and it is not init then hide panel
-        if not zsession_auth(context):
+        if not util.zsession_auth(context):
             return False
 
         selshots = context.selected_sequences
@@ -574,7 +576,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
     @classmethod
     def poll_pull(cls, context: bpy.types.Context) -> bool:
         # if only one strip is selected and it is not init then hide panel
-        if not zsession_auth(context):
+        if not util.zsession_auth(context):
             return False
 
         selshots = context.selected_sequences
@@ -623,7 +625,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
 
     @classmethod
     def poll_debug(cls, context: bpy.types.Context) -> bool:
-        return addon_prefs_get(context).enable_debug
+        return util.addon_prefs_get(context).enable_debug
 
     def draw_debug(self, context: bpy.types.Context) -> None:
         nr_of_shots = len(context.selected_sequences)
