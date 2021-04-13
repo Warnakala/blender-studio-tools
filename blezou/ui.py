@@ -16,6 +16,7 @@ from .ops import (
     BZ_OT_SQE_UnlinkShot,
     BZ_OT_SQE_LinkShot,
     BZ_OT_SQE_LinkSequence,
+    BZ_OT_SQE_PushNewSequence,
     BZ_OT_SQE_PushNewShot,
     BZ_OT_SQE_PushDeleteShot,
     BZ_OT_SQE_PushShotMeta,
@@ -368,8 +369,11 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
 
         # sequence
         sub_row = col.row(align=True)
-        sub_row.prop(strip.blezou, "sequence_name")
-        sub_row.operator(BZ_OT_SQE_LinkSequence.bl_idname, text="", icon="LINKED")
+        sub_row.prop(strip.blezou, "sequence_name_display")
+        sub_row.operator(
+            BZ_OT_SQE_LinkSequence.bl_idname, text="", icon="DOWNARROW_HLT"
+        )
+        sub_row.operator(BZ_OT_SQE_PushNewSequence.bl_idname, text="", icon="ADD")
 
         # shot
         col.prop(strip.blezou, "shot_name")
@@ -401,12 +405,12 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
         box.label(text="Multi Edit", icon="PROPERTIES")
 
         # Sequence
-        row = box.row(align=True)
-        row.prop(context.window_manager, "use_sequence_new", text="New Seqeunce")
-        if context.window_manager.use_sequence_new:
-            row.prop(context.window_manager, "sequence_new", text="")
-        else:
-            row.prop(context.window_manager, "sequence_enum", text="")
+        # TODO: use link sequence operator instead or sequence_enum ?
+        col = box.column()
+        sub_row = col.row(align=True)
+        # sub_row.prop(context.window_manager, "sequence_name_display")
+        sub_row.prop(context.window_manager, "sequence_enum", text="Sequence")
+        sub_row.operator(BZ_OT_SQE_PushNewSequence.bl_idname, text="", icon="ADD")
 
         # Counter
         row = box.row()
