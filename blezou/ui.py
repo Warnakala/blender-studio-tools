@@ -432,7 +432,7 @@ class BZ_PT_SQE_ShotMultiEdit(bpy.types.Panel):
         row = box.row()
         row.prop(context.window_manager, "shot_preview", text="Preview")
 
-        row = layout.row()
+        row = box.row(align=True)
         row.operator(
             BZ_OT_SQE_MultiEditStrip.bl_idname,
             text=f"Edit {noun}",
