@@ -122,6 +122,8 @@ def _resolve_pattern(pattern: str, var_lookup_table: Dict[str, str]) -> str:
                 to_insert = var_lookup_table[to_replace]
                 result = result.replace("<{}>".format(to_replace), to_insert)
             else:
-                logger.warning(f"Failed to resolve variable: {to_replace} not defined!")
+                logger.warning(
+                    "Failed to resolve variable: %s not defined!", to_replace
+                )
                 return ""
         return result

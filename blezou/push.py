@@ -26,7 +26,7 @@ def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
 
     # update on server
     zshot.update()
-    logger.info("Pushed meta to shot: %s from strip: %s" % (zshot.name, strip.name))
+    logger.info("Pushed meta to shot: %s from strip: %s", zshot.name, strip.name)
 
 
 def new_shot(
@@ -49,7 +49,7 @@ def new_shot(
 
     # set project name locally, will be available on next pull
     zshot.project_name = zproject.name
-    logger.info("Pushed create shot: %s for project: %s" % (zshot.name, zproject.name))
+    logger.info("Pushed create shot: %s for project: %s", zshot.name, zproject.name)
     return zshot
 
 
@@ -58,7 +58,7 @@ def new_sequence(strip: bpy.types.Sequence, zproject: ZProject) -> ZSequence:
         strip.blezou.sequence_name,
     )
     logger.info(
-        "Pushed create sequence: %s for project: %s" % (zsequence.name, zproject.name)
+        "Pushed create sequence: %s for project: %s", zsequence.name, zproject.name
     )
     return zsequence
 
@@ -66,8 +66,9 @@ def new_sequence(strip: bpy.types.Sequence, zproject: ZProject) -> ZSequence:
 def delete_shot(strip: bpy.types.Sequence, zshot: ZShot) -> str:
     result = zshot.remove()
     logger.info(
-        "Pushed delete shot: %s for project: %s"
-        % (zshot.name, zshot.project_name if zshot.project_name else "Unknown")
+        "Pushed delete shot: %s for project: %s",
+        zshot.name,
+        zshot.project_name or "Unknown",
     )
     strip.blezou.clear()
     return result

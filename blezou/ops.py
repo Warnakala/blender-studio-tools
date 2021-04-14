@@ -408,7 +408,7 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
         zproject_active = util.zproject_active_get()
         succeeded = []
         failed = []
-        logger.info("-START- Blezou submitting new shots to: %s" % zproject_active.name)
+        logger.info("-START- Blezou submitting new shots to: %s", zproject_active.name)
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -466,7 +466,7 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
             {"INFO"},
             f"Submitted {len(succeeded)} new shots | Failed: {len(failed)}",
         )
-        logger.info("-END- Blezou submitting new shots to: %s" % zproject_active.name)
+        logger.info("-END- Blezou submitting new shots to: %s", zproject_active.name)
         util.ui_redraw()
         return {"FINISHED"}
 
@@ -563,7 +563,7 @@ class BLEZOU_OT_sqe_push_new_sequence(bpy.types.Operator):
             {"INFO"},
             f"Submitted new sequence: {zsequence.name}",
         )
-        logger.info("Submitted new sequence: %s" % zsequence.name)
+        logger.info("Submitted new sequence: %s", zsequence.name)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -623,13 +623,13 @@ class BLEZOU_OT_sqe_init_strip(bpy.types.Operator):
                 continue
 
             if strip.blezou.initialized:
-                logger.info("%s already initialized." % strip.name)
+                logger.info("%s already initialized.", strip.name)
                 # failed.append(strip)
                 continue
 
             strip.blezou.initialized = True
             succeeded.append(strip)
-            logger.info("Initialized strip: %s as shot." % strip.name)
+            logger.info("Initialized strip: %s as shot.", strip.name)
 
         self.report(
             {"INFO"},
@@ -1010,7 +1010,7 @@ class BLEZOU_OT_sqe_uninit_strip(bpy.types.Operator):
             # clear blezou properties
             strip.blezou.clear()
             succeeded.append(strip)
-            logger.info("Uninitialized strip: %s" % strip.name)
+            logger.info("Uninitialized strip: %s", strip.name)
 
         self.report(
             {"INFO"},
@@ -1089,7 +1089,7 @@ class BLEZOU_OT_sqe_unlink_shot(bpy.types.Operator):
             shot_name = strip.blezou.shot_name
             strip.blezou.unlink()
             succeeded.append(strip)
-            logger.info("Unlinked shot: %s" % shot_name)
+            logger.info("Unlinked shot: %s", shot_name)
 
         self.report(
             {"INFO"},

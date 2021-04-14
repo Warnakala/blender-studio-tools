@@ -28,4 +28,4 @@ def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
     # update meta props
     strip.blezou.initialized = True
     strip.blezou.linked = True
-    logger.info("Pulled meta from shot: %s to strip: %s" % (zshot.name, strip.name))
+    logger.info("Pulled meta from shot: %s to strip: %s", zshot.name, strip.name)

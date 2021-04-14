@@ -148,20 +148,20 @@ def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
 
     if sequence_active_id:
         _zsequence_active = ZSequence.by_id(sequence_active_id)
-        logger.info(f"Initialized active aequence cache to: {_zsequence_active.name}")
+        logger.info("Initialized active aequence cache to: %s", _zsequence_active.name)
 
     if shot_active_id:
         _zshot_active = ZShot.by_id(shot_active_id)
-        logger.info(f"Initialized active shot cache to: {_zshot_active.name}")
+        logger.info("Initialized active shot cache to: %s ", _zshot_active.name)
 
     if asset_active_id:
         _zasset_active = ZAsset.by_id(asset_active_id)
-        logger.info(f"Initialized active asset cache to: {_zasset_active.name}")
+        logger.info("Initialized active asset cache to: %s", _zasset_active.name)
 
     if asset_type_active_id:
         _zasset_type_active = ZAssetType.by_id(asset_type_active_id)
         logger.info(
-            f"Initialized active asset type cache to: {_zasset_type_active.name}"
+            "Initialized active asset type cache to: %s ", _zasset_type_active.name
         )
 
 

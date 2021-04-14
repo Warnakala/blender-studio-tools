@@ -181,7 +181,7 @@ def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
 
     if project_active_id:
         _zproject_active = ZProject.by_id(project_active_id)
-        logger.info(f"Initialized Active Project Cache to: {_zproject_active.name}")
+        logger.info("Initialized Active Project Cache to: %s", _zproject_active.name)
 
 
 def clear_cache_variables():
