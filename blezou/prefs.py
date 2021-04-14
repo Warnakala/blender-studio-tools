@@ -1,21 +1,22 @@
-import sys
 import hashlib
+import sys
 from pathlib import Path
+
 import bpy
-from bpy.app.handlers import persistent
+
 from .auth import ZSession
-from .types import ZProject
 from .logger import ZLoggerFactory
-from .ops import BZ_OT_ProductionsLoad, BZ_OT_SessionStart, BZ_OT_SessionEnd
+from .ops import (
+    BLEZOU_OT_productions_load,
+    BLEZOU_OT_session_end,
+    BLEZOU_OT_session_start,
+)
+from . import cache
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
-# CACHE VARIABLES
-# used to cache active entitys to prevent a new api request when read only
-_ZPROJECT_ACTIVE: ZProject = ZProject()
 
-
-class BZ_AddonPreferences(bpy.types.AddonPreferences):
+class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
     """
     Addon preferences to blezou. Holds variables that are important for authentification.
     During runtime new attributes are created that get initialized in: bz_prefs_init_properties()
@@ -119,6 +120,7 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
+        zproject_active = cache.zproject_active_get()
 
         # login
         box = layout.box()
@@ -127,14 +129,16 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
             box.row().prop(self, "host")
             box.row().prop(self, "email")
             box.row().prop(self, "passwd")
-            box.row().operator(BZ_OT_SessionStart.bl_idname, text="Login", icon="PLAY")
+            box.row().operator(
+                BLEZOU_OT_session_start.bl_idname, text="Login", icon="PLAY"
+            )
         else:
             row = box.row()
             row.prop(self, "host")
             row.enabled = False
             box.row().label(text=f"Logged in: {self.session.email}")
             box.row().operator(
-                BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE"
+                BLEZOU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
             )
 
         # Production
@@ -142,13 +146,15 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
         box.label(text="Project settings", icon="FILEBROWSER")
         row = box.row(align=True)
 
-        if not _ZPROJECT_ACTIVE:
+        if not zproject_active:
             prod_load_text = "Select Production"
         else:
-            prod_load_text = _ZPROJECT_ACTIVE.name
+            prod_load_text = zproject_active.name
 
         row.operator(
-            BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
+            BLEZOU_OT_productions_load.bl_idname,
+            text=prod_load_text,
+            icon="DOWNARROW_HLT",
         )
         # misc settings
         box = layout.box()
@@ -163,42 +169,36 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
             box.row().prop(self, "shot_counter_increment")
 
 
-def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
-    global _ZPROJECT_ACTIVE
-
-    addon_prefs = context.preferences.addons["blezou"].preferences
-    project_active_id = addon_prefs.project_active_id
-
-    if project_active_id:
-        _ZPROJECT_ACTIVE = ZProject.by_id(project_active_id)
-        logger.info(f"Initialized Active Project Cache to: {_ZPROJECT_ACTIVE.name}")
+def zsession_get(context: bpy.types.Context) -> ZSession:
+    """
+    shortcut to get zsession from blezou addon preferences
+    """
+    prefs = context.preferences.addons["blezou"].preferences
+    return prefs.session  # type: ignore
 
 
-def clear_cache_variables():
-    global _ZPROJECT_ACTIVE
+def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
+    """
+    shortcut to get blezou addon preferences
+    """
+    return context.preferences.addons["blezou"].preferences
 
-    _ZPROJECT_ACTIVE = ZProject()
-    logger.info("Cleared Active Project Cache")
 
-
-@persistent
-def load_post_handler(dummy):
-    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
-    if addon_prefs.session.is_auth():
-        addon_prefs.session.end()
-    clear_cache_variables()
+def zsession_auth(context: bpy.types.Context) -> bool:
+    """
+    shortcut to check if zession is authorized
+    """
+    return zsession_get(context).is_auth()
 
 
 # ---------REGISTER ----------
 
-classes = [BZ_AddonPreferences]
+classes = [BLEZOU_addon_preferences]
 
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-
-    bpy.app.handlers.load_post.append(load_post_handler)
 
 
 def unregister():
@@ -208,8 +208,6 @@ def unregister():
     if addon_prefs.session.is_auth():
         addon_prefs.session.end()
 
-    # clear cache
-    clear_cache_variables()
-
+    # unregister classes
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

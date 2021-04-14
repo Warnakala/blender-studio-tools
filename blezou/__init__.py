@@ -1,12 +1,17 @@
 import bpy
 
-from .logger import ZLoggerFactory, ZLoggerLevelManager
+from . import types
+from . import cache
+from . import checkstrip
+from . import pull
+from . import push
+from . import propsdata
 from . import props
 from . import prefs
+from . import opsdata
 from . import ops
 from . import ui
-from . import util
-from . import opsdata
+from .logger import ZLoggerFactory, ZLoggerLevelManager
 
 logger = ZLoggerFactory.getLogger(__name__)
 
@@ -29,10 +34,15 @@ if _need_reload:
     import importlib
 
     logger.info("-START- Reloading Blezou")
-    opsdata = importlib.reload(opsdata)
-    util = importlib.reload(util)
+    cache = importlib.reload(cache)
+    types = importlib.reload(types)
+    checkstrip = importlib.reload(checkstrip)
+    pull = importlib.reload(pull)
+    push = importlib.reload(push)
+    propsdata = importlib.reload(propsdata)
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)
+    opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
     ZLoggerLevelManager.configure_levels()
@@ -41,6 +51,7 @@ if _need_reload:
 
 def register():
     logger.info("-START- Registering Blezou")
+    cache.register()
     props.register()
     prefs.register()
     ops.register()
@@ -55,6 +66,7 @@ def unregister():
     ops.unregister()
     prefs.unregister()
     props.unregister()
+    cache.unregister()
     ZLoggerLevelManager.restore_levels()
     logger.info("-END- Unregistering Blezou")
 

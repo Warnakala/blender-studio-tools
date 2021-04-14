@@ -1,25 +1,35 @@
-import bpy
 import re
-from typing import List, Tuple, Optional, Dict, Any
+from typing import Any, Dict, List, Tuple
+
+import bpy
+
+from . import cache, prefs
 from .logger import ZLoggerFactory
+from .types import ZSequence, ZProjectList
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
-_SQE_NOT_LINKED: List[Tuple[str, str, str]] = []
-_SQE_DUPLCIATES: List[Tuple[str, str, str]] = []
-_SQE_MULTI_PROJECT: List[Tuple[str, str, str]] = []
+_sqe_not_linked: List[Tuple[str, str, str]] = []
+_sqe_duplicates: List[Tuple[str, str, str]] = []
+_sqe_multi_project: List[Tuple[str, str, str]] = []
+
+_sequence_enum_list: List[Tuple[str, str, str]] = []
+_shot_enum_list: List[Tuple[str, str, str]] = []
+_asset_types_enum_list: List[Tuple[str, str, str]] = []
+_asset_enum_list: List[Tuple[str, str, str]] = []
+_projects_list: List[Tuple[str, str, str]] = []
 
 
 def _sqe_get_not_linked(self, context):
-    return _SQE_NOT_LINKED
+    return _sqe_not_linked
 
 
 def _sqe_get_duplicates(self, context):
-    return _SQE_DUPLCIATES
+    return _sqe_duplicates
 
 
 def _sqe_get_multi_project(self, context):
-    return _SQE_MULTI_PROJECT
+    return _sqe_multi_project
 
 
 def _sqe_update_not_linked(context: bpy.types.Context) -> List[Tuple[str, str, str]]:
@@ -120,6 +130,114 @@ def _resolve_pattern(pattern: str, var_lookup_table: Dict[str, str]) -> str:
                 to_insert = var_lookup_table[to_replace]
                 result = result.replace("<{}>".format(to_replace), to_insert)
             else:
-                logger.warning(f"Failed to resolve variable: {to_replace} not defined!")
+                logger.warning(
+                    "Failed to resolve variable: %s not defined!", to_replace
+                )
                 return ""
         return result
+
+
+def _get_projects(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    global _projects_list
+
+    if not prefs.zsession_auth(context):
+        return []
+
+    zprojectlist = ZProjectList()
+    _projects_list.clear()
+    _projects_list.extend(
+        [(p.id, p.name, p.description or "") for p in zprojectlist.projects]
+    )
+    return _projects_list
+
+
+def _get_sequences(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    global _sequence_enum_list
+
+    zproject_active = cache.zproject_active_get()
+    if not zproject_active:
+        return []
+
+    _sequence_enum_list.clear()
+    _sequence_enum_list.extend(
+        [
+            (s.id, s.name, s.description or "")
+            for s in zproject_active.get_sequences_all()
+        ]
+    )
+    return _sequence_enum_list
+
+
+def _get_shots_from_op_enum(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    global _shot_enum_list
+
+    if not self.sequence_enum:
+        return []
+
+    zseq_active = ZSequence.by_id(self.sequence_enum)
+
+    _shot_enum_list.clear()
+    _shot_enum_list.extend(
+        [(s.id, s.name, s.description or "") for s in zseq_active.get_all_shots()]
+    )
+    return _shot_enum_list
+
+
+def _get_shots_from_active_seq(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    global _shot_enum_list
+
+    zseq_active = cache.zsequence_active_get()
+
+    if not zseq_active:
+        return []
+
+    _shot_enum_list.clear()
+    _shot_enum_list.extend(
+        [(s.id, s.name, s.description or "") for s in zseq_active.get_all_shots()]
+    )
+    return _shot_enum_list
+
+
+def _get_assetypes(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    global _asset_types_enum_list
+
+    zproject_active = cache.zproject_active_get()
+    if not zproject_active:
+        return []
+
+    _asset_types_enum_list.clear()
+    _asset_types_enum_list.extend(
+        [(at.id, at.name, "") for at in zproject_active.get_all_asset_types()]
+    )
+    return _asset_types_enum_list
+
+
+def _get_assets_from_active_asset_type(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    global _asset_enum_list
+
+    zproject_active = cache.zproject_active_get()
+    zasset_type_active = cache.zasset_type_active_get()
+
+    if not zproject_active or not zasset_type_active:
+        return []
+
+    _asset_enum_list.clear()
+    _asset_enum_list.extend(
+        [
+            (a.id, a.name, a.description or "")
+            for a in zproject_active.get_all_assets_for_type(zasset_type_active)
+        ]
+    )
+    return _asset_enum_list

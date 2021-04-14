@@ -1,265 +1,33 @@
-from dataclasses import asdict
-from pathlib import Path
-import copy
-import re
 import contextlib
-from typing import Set, Dict, Union, List, Tuple, Any, Optional, cast
+from pathlib import Path
+from typing import Dict, List, Set
+
 import bpy
-import importlib
+
+from . import gazu, cache, opsdata, prefs, push, pull, checkstrip
+from .logger import ZLoggerFactory
 from .types import (
-    ZProductions,
-    ZProject,
+    ZCache,
     ZSequence,
     ZShot,
-    ZAssetType,
-    ZAsset,
     ZTask,
-    ZTaskType,
     ZTaskStatus,
-    ZCache,
+    ZTaskType,
 )
-from .util import *
-from . import props
-from . import prefs
-from .logger import ZLoggerFactory
-from . import gazu
-from . import opsdata
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
 
-class Pull:
-    """Class that contains staticmethods to pull data from server data base into Blender"""
-
-    @staticmethod
-    def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
-        # clear cache before pulling
-        ZCache.clear_all()
-
-        # update sequence props
-        zseq = ZSequence.by_id(zshot.parent_id)
-        strip.blezou.sequence_id = zseq.id
-        strip.blezou.sequence_name = zseq.name
-
-        # update shot props
-        strip.blezou.shot_id = zshot.id
-        strip.blezou.shot_name = zshot.name
-        strip.blezou.shot_description = zshot.description if zshot.description else ""
-
-        # update project props
-        zproject = ZProject.by_id(zshot.project_id)
-        strip.blezou.project_id = zproject.id
-        strip.blezou.project_name = zproject.name
-
-        # update meta props
-        strip.blezou.initialized = True
-        strip.blezou.linked = True
-        logger.info("Pulled meta from shot: %s to strip: %s" % (zshot.name, strip.name))
+def ui_redraw() -> None:
+    """
+    Forces blender to redraw the UI.
+    """
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            area.tag_redraw()
 
 
-class Push:
-    """Class that contains staticmethods to push data from blender to sevrer  data base"""
-
-    @staticmethod
-    def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
-
-        # update shot info
-        zshot.name = strip.blezou.shot_name
-        zshot.description = strip.blezou.shot_description
-        frame_range = (strip.frame_final_start, strip.frame_final_end)
-        zshot.data["frame_in"] = frame_range[0]
-        zshot.data["frame_out"] = frame_range[1]
-
-        # update sequence info if changed
-        if not zshot.sequence_name == strip.blezou.sequence_name:
-            zseq = ZSequence.by_id(strip.blezou.sequence_id)
-            zshot.sequence_id = zseq.id
-            zshot.parent_id = zseq.id
-            zshot.sequence_name = zseq.name
-
-        # update on server
-        zshot.update()
-        logger.info("Pushed meta to shot: %s from strip: %s" % (zshot.name, strip.name))
-
-    @staticmethod
-    def new_shot(
-        strip: bpy.types.Sequence,
-        zsequence: ZSequence,
-        zproject: ZProject,
-    ) -> ZShot:
-
-        frame_range = (strip.frame_final_start, strip.frame_final_end)
-        zshot = zproject.create_shot(
-            strip.blezou.shot_name,
-            zsequence,
-            frame_in=frame_range[0],
-            frame_out=frame_range[1],
-        )
-        # update description, no option to pass that on create
-        if strip.blezou.shot_description:
-            zshot.description = strip.blezou.shot_description
-            zshot.update()
-
-        # set project name locally, will be available on next pull
-        zshot.project_name = zproject.name
-        logger.info(
-            "Pushed create shot: %s for project: %s" % (zshot.name, zproject.name)
-        )
-        return zshot
-
-    @staticmethod
-    def new_sequence(strip: bpy.types.Sequence, zproject: ZProject) -> ZSequence:
-        zsequence = zproject.create_sequence(
-            strip.blezou.sequence_name,
-        )
-        logger.info(
-            "Pushed create sequence: %s for project: %s"
-            % (zsequence.name, zproject.name)
-        )
-        return zsequence
-
-    @staticmethod
-    def delete_shot(strip: bpy.types.Sequence, zshot: ZShot) -> str:
-        result = zshot.remove()
-        logger.info(
-            "Pushed delete shot: %s for project: %s"
-            % (zshot.name, zshot.project_name if zshot.project_name else "Unknown")
-        )
-        strip.blezou.clear()
-        return result
-
-    @staticmethod
-    def _remap_frame_range(frame_in: int, frame_out: int) -> Tuple[int, int]:
-        start_frame = 101
-        nb_of_frames = frame_out - frame_in
-        return (start_frame, start_frame + nb_of_frames)
-
-
-class CheckStrip:
-    """Class that contains various static methods to perform checks on sequence strips"""
-
-    @staticmethod
-    def valid_type(strip: bpy.types.Sequence) -> bool:
-        if not strip.type in VALID_STRIP_TYPES:
-            logger.info("Strip: %s. Invalid type." % strip.type)
-            return False
-        return True
-
-    @staticmethod
-    def initialized(strip: bpy.types.Sequence) -> bool:
-        """Returns True if strip.blezou.initialized is True else False"""
-        if not strip.blezou.initialized:
-            logger.info("Strip: %s. Not initialized." % strip.name)
-            return False
-        else:
-            logger.info("Strip: %s. Is initialized." % strip.name)
-            return True
-
-    @staticmethod
-    def linked(strip: bpy.types.Sequence) -> bool:
-        """Returns True if strip.blezou.linked is True else False"""
-        if not strip.blezou.linked:
-            logger.info("Strip: %s. Not linked yet." % strip.name)
-            return False
-        else:
-            logger.info(
-                "Strip: %s. Is linked to ID: %s." % (strip.name, strip.blezou.shot_id)
-            )
-            return True
-
-    @staticmethod
-    def has_meta(strip: bpy.types.Sequence) -> bool:
-        """Returns True if strip.blezou.shot_name and strip.blezou.sequence_name is Truethy else False"""
-        seq = strip.blezou.sequence_name
-        shot = strip.blezou.shot_name
-        if not bool(seq and shot):
-            logger.info("Strip: %s. Missing metadata." % strip.name)
-            return False
-        else:
-            logger.info(
-                "Strip: %s. Has metadata (Sequence: %s, Shot: %s)."
-                % (strip.name, seq, shot)
-            )
-            return True
-
-    @staticmethod
-    def shot_exists_by_id(strip: bpy.types.Sequence) -> Optional[ZShot]:
-        """Returns ZShot instance if shot with strip.blezou.shot_id exists else None"""
-
-        ZCache.clear_all()
-
-        try:
-            zshot = ZShot.by_id(strip.blezou.shot_id)
-        except gazu.exception.RouteNotFoundException:
-            logger.error(
-                "Strip: %s Shot ID: %s not found on server anymore. Was maybe deleted?"
-                % (strip.name, strip.blezou.shot_id)
-            )
-            return None
-        if zshot:
-            logger.info(
-                "Strip: %s Shot %s exists on server (ID: %s)."
-                % (strip.name, zshot.name, zshot.id)
-            )
-            return zshot
-        else:
-            logger.info(
-                "Strip: %s Shot %s does not exist on server (ID: %s)"
-                % (strip.name, zshot.name, strip.blezou.shot_id)
-            )
-            return None
-
-    @staticmethod
-    def seq_exists_by_name(
-        strip: bpy.types.Sequence, zproject: ZProject
-    ) -> Optional[ZSequence]:
-        """Returns ZSequence instance if strip.blezou.sequence_name exists on server, else None"""
-
-        ZCache.clear_all()
-
-        zseq = zproject.get_sequence_by_name(strip.blezou.sequence_name)
-        if zseq:
-            logger.info(
-                "Strip: %s Sequence %s exists in on server (ID: %s)."
-                % (strip.name, zseq.name, zseq.id)
-            )
-            return zseq
-        else:
-            logger.info(
-                "Strip: %s Sequence %s does not exist on server."
-                % (strip.name, strip.blezou.sequence_name)
-            )
-            return None
-
-    @staticmethod
-    def shot_exists_by_name(
-        strip: bpy.types.Sequence, zproject: ZProject, zsequence: ZSequence
-    ) -> Optional[ZShot]:
-        """Returns ZShot instance if strip.blezou.shot_name exists on server, else None."""
-
-        ZCache.clear_all()
-
-        zshot = zproject.get_shot_by_name(zsequence, strip.blezou.shot_name)
-        if zshot:
-            logger.info(
-                "Strip: %s Shot already existent on server (ID: %s)."
-                % (strip.name, zshot.id)
-            )
-            return zshot
-        else:
-            logger.info(
-                "Strip: %s Shot %s does not exist on server."
-                % (strip.name, strip.blezou.shot_name)
-            )
-            return None
-
-    @staticmethod
-    def contains(strip: bpy.types.Sequence, framenr: int) -> bool:
-        """Returns True if the strip covers the given frame number"""
-        return int(strip.frame_final_start) <= framenr <= int(strip.frame_final_end)
-
-
-class BZ_OT_SessionStart(bpy.types.Operator):
+class BLEZOU_OT_session_start(bpy.types.Operator):
     """
     Starts the ZSession, which  is stored in Blezou addon preferences.
     Authenticates user with server until session ends.
@@ -275,19 +43,18 @@ class BZ_OT_SessionStart(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        zsession = zsession_get(context)
+        zsession = prefs.zsession_get(context)
 
         zsession.set_config(self.get_config(context))
         zsession.start()
 
-        # init cache variables
-        prefs.init_cache_variables(context=context)
-        props.init_cache_variables(context=context)
+        # init cache variables, will skip if cache already initiated
+        cache.init_cache_variables()
 
         return {"FINISHED"}
 
     def get_config(self, context: bpy.types.Context) -> Dict[str, str]:
-        addon_prefs = addon_prefs_get(context)
+        addon_prefs = prefs.addon_prefs_get(context)
         return {
             "email": addon_prefs.email,
             "host": addon_prefs.host,
@@ -295,7 +62,7 @@ class BZ_OT_SessionStart(bpy.types.Operator):
         }
 
 
-class BZ_OT_SessionEnd(bpy.types.Operator):
+class BLEZOU_OT_session_end(bpy.types.Operator):
     """
     Ends the ZSession which is stored in Blezou addon preferences.
     """
@@ -306,18 +73,17 @@ class BZ_OT_SessionEnd(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return zsession_auth(context)
+        return prefs.zsession_auth(context)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        zsession = zsession_get(context)
+        zsession = prefs.zsession_get(context)
         zsession.end()
         # clear cache variables
-        props.clear_cache_variables()
-        prefs.clear_cache_variables()
+        cache.clear_cache_variables()
         return {"FINISHED"}
 
 
-class BZ_OT_ProductionsLoad(bpy.types.Operator):
+class BLEZOU_OT_productions_load(bpy.types.Operator):
     """
     Gets all productions that are available in server and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -327,39 +93,25 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    def _get_productions(
-        self, context: bpy.types.Context
-    ) -> List[Tuple[str, str, str]]:
-
-        if not zsession_auth(context):
-            return []
-
-        zproductions = ZProductions()
-        enum_list = [
-            (p.id, p.name, p.description if p.description else "")
-            for p in zproductions.projects
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_productions)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_projects)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return zsession_auth(context)
+        return prefs.zsession_auth(context)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # store vars to check if project / seq / shot changed
-        project_prev_id = zproject_active_get().id
+        project_prev_id = cache.zproject_active_get().id
 
         # update blezou metadata
-        zproject_active_set_by_id(context, self.enum_prop)
+        cache.zproject_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
         if self.enum_prop != project_prev_id:
-            zsequence_active_reset(context)
-            zasset_type_active_reset(context)
-            zshot_active_reset(context)
-            zasset_active_reset(context)
+            cache.zsequence_active_reset(context)
+            cache.zasset_type_active_reset(context)
+            cache.zshot_active_reset(context)
+            cache.zasset_active_reset(context)
 
         ui_redraw()
         return {"FINISHED"}
@@ -369,7 +121,7 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SequencesLoad(bpy.types.Operator):
+class BLEZOU_OT_sequences_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -381,32 +133,23 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
 
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
 
-    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zproject_active = zproject_active_get()
-
-        enum_list = [
-            (s.id, s.name, s.description if s.description else "")
-            for s in zproject_active.get_sequences_all()
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_sequences)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_sequences)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(zsession_auth(context) and zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # store vars to check if project / seq / shot changed
-        zseq_prev_id = zsequence_active_get().id
+        zseq_prev_id = cache.zsequence_active_get().id
 
         # update blezou metadata
-        zsequence_active_set_by_id(context, self.enum_prop)
+        cache.zsequence_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
         if self.enum_prop != zseq_prev_id:
-            zshot_active_reset(context)
+            cache.zshot_active_reset(context)
 
         ui_redraw()
         return {"FINISHED"}
@@ -416,7 +159,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_ShotsLoad(bpy.types.Operator):
+class BLEZOU_OT_shots_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -428,28 +171,21 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
 
     # TODO: reduce api request to one, we request in _get_shots and also in execute to set active shot
 
-    def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zseq_active = zsequence_active_get()
-
-        enum_list = [
-            (s.id, s.name, s.description if s.description else "")
-            for s in zseq_active.get_all_shots()
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_shots)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_shots_from_active_seq)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # only if session is auth active_project and active sequence selected
         return bool(
-            zsession_auth(context) and zsequence_active_get() and zproject_active_get()
+            prefs.zsession_auth(context)
+            and cache.zsequence_active_get()
+            and cache.zproject_active_get()
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # update blezou metadata
         if self.enum_prop:
-            zshot_active_set_by_id(context, self.enum_prop)
+            cache.zshot_active_set_by_id(context, self.enum_prop)
         ui_redraw()
         return {"FINISHED"}
 
@@ -458,7 +194,7 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_AssetTypesLoad(bpy.types.Operator):
+class BLEZOU_OT_asset_types_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -470,29 +206,22 @@ class BZ_OT_AssetTypesLoad(bpy.types.Operator):
 
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
 
-    def _get_assetypes(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zproject_active = zproject_active_get()
-        enum_list = [
-            (at.id, at.name, "") for at in zproject_active.get_all_asset_types()
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_assetypes)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_assets_from_active_asset_type)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(zsession_auth(context) and zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # store vars to check if project / seq / shot changed
-        asset_type_prev_id = zasset_type_active_get().id
+        asset_type_prev_id = cache.zasset_type_active_get().id
 
         # update blezou metadata
-        zasset_type_active_set_by_id(context, self.enum_prop)
+        cache.zasset_type_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
         if self.enum_prop != asset_type_prev_id:
-            zasset_active_reset(context)
+            cache.zasset_active_reset(context)
 
         ui_redraw()
         return {"FINISHED"}
@@ -502,7 +231,7 @@ class BZ_OT_AssetTypesLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_AssetsLoad(bpy.types.Operator):
+class BLEZOU_OT_assets_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -513,25 +242,14 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
     bl_property = "enum_prop"
 
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
-
-    def _get_assets(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zproject_active = zproject_active_get()
-        zasset_type_active = zasset_type_active_get()
-
-        enum_list = [
-            (a.id, a.name, a.description if a.description else "")
-            for a in zproject_active.get_all_assets_for_type(zasset_type_active)
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_assets)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_assets_from_active_asset_type)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(
-            zsession_auth(context)
-            and zproject_active_get()
-            and zasset_type_active_get()
+            prefs.zsession_auth(context)
+            and cache.zproject_active_get()
+            and cache.zasset_type_active_get()
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -539,7 +257,7 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
             return {"CANCELLED"}
 
         # update blezou metadata
-        zasset_active_set_by_id(context, self.enum_prop)
+        cache.zasset_active_set_by_id(context, self.enum_prop)
         ui_redraw()
         return {"FINISHED"}
 
@@ -548,7 +266,7 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
+class BLEZOU_OT_sqe_push_shot_meta(bpy.types.Operator):
     """
     Operator that pushes metadata of all selected sequencce strips to sevrer
     after performing various checks. Metadata is saved in strip.blezou.
@@ -560,7 +278,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(zsession_auth(context))
+        return bool(prefs.zsession_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -576,23 +294,23 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
             # only if strip is linked to sevrer
-            if not CheckStrip.linked(strip):
+            if not checkstrip.is_linked(strip):
                 # failed.append(strip)
                 continue
 
             # check if shot is still available by id
-            zshot = CheckStrip.shot_exists_by_id(strip)
+            zshot = checkstrip.shot_exists_by_id(strip)
             if not zshot:
                 failed.append(strip)
                 continue
 
             # push update to shot
-            Push.shot_meta(strip, zshot)
+            push.shot_meta(strip, zshot)
             succeeded.append(strip)
 
         # end progress update
@@ -607,7 +325,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
+class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
     """
     Operator that creates a new shot based on all selected sequencce strips to sevrer
     after performing various checks. Does not create shot if already exists to sevrer .
@@ -626,13 +344,13 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         if nr_of_shots == 1:
             strip = context.scene.sequence_editor.active_strip
             return bool(
-                zsession_auth(context)
-                and zproject_active_get()
+                prefs.zsession_auth(context)
+                and cache.zproject_active_get()
                 and strip.blezou.sequence_name
                 and strip.blezou.shot_name
             )
 
-        return bool(zsession_auth(context) and zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -640,10 +358,10 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             self.report({"WARNING"}, "Submit new shots aborted.")
             return {"CANCELLED"}
 
-        zproject_active = zproject_active_get()
+        zproject_active = cache.zproject_active_get()
         succeeded = []
         failed = []
-        logger.info("-START- Blezou submitting new shots to: %s" % zproject_active.name)
+        logger.info("-START- Blezou submitting new shots to: %s", zproject_active.name)
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -655,39 +373,39 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
             # check if user initialized shot
-            if not CheckStrip.initialized(strip):
+            if not checkstrip.is_initialized(strip):
                 # failed.append(strip)
                 continue
 
             # check if strip is already linked to sevrer
-            if CheckStrip.linked(strip):
+            if checkstrip.is_linked(strip):
                 failed.append(strip)
                 continue
 
             # check if user provided enough info
-            if not CheckStrip.has_meta(strip):
+            if not checkstrip.has_meta(strip):
                 failed.append(strip)
                 continue
 
             # check if seq already to sevrer  > create it
-            zseq = CheckStrip.seq_exists_by_name(strip, zproject_active)
+            zseq = checkstrip.seq_exists_by_name(strip, zproject_active)
             if not zseq:
-                zseq = Push.new_sequence(strip, zproject_active)
+                zseq = push.new_sequence(strip, zproject_active)
 
             # check if shot already to sevrer  > create it
-            zshot = CheckStrip.shot_exists_by_name(strip, zproject_active, zseq)
+            zshot = checkstrip.shot_exists_by_name(strip, zproject_active, zseq)
             if zshot:
                 failed.append(strip)
                 continue
 
             # push update to shot
-            zshot = Push.new_shot(strip, zseq, zproject_active)
-            Pull.shot_meta(strip, zshot)
+            zshot = push.new_shot(strip, zseq, zproject_active)
+            pull.shot_meta(strip, zshot)
             succeeded.append(strip)
 
         # end progress update
@@ -701,7 +419,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             {"INFO"},
             f"Submitted {len(succeeded)} new shots | Failed: {len(failed)}",
         )
-        logger.info("-END- Blezou submitting new shots to: %s" % zproject_active.name)
+        logger.info("-END- Blezou submitting new shots to: %s", zproject_active.name)
         ui_redraw()
         return {"FINISHED"}
 
@@ -710,7 +428,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):
-        zproject_active = zproject_active_get()
+        zproject_active = cache.zproject_active_get()
         selected_sequences = context.selected_sequences
 
         if not selected_sequences:
@@ -747,7 +465,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         )
 
 
-class BZ_OT_SQE_PushNewSequence(bpy.types.Operator):
+class BLEZOU_OT_sqe_push_new_sequence(bpy.types.Operator):
     """
     Operator with input dialog that creates a new sequence on server.
     Does not create sequence if already exists on server.
@@ -765,7 +483,7 @@ class BZ_OT_SQE_PushNewSequence(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # needs to be logged in, active project
-        return bool(zsession_auth(context) and zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -777,7 +495,7 @@ class BZ_OT_SQE_PushNewSequence(bpy.types.Operator):
             self.report({"WARNING"}, "Invalid sequence name.")
             return {"CANCELLED"}
 
-        zproject_active = zproject_active_get()
+        zproject_active = cache.zproject_active_get()
 
         zsequence = zproject_active.get_sequence_by_name(self.sequence_name)
 
@@ -798,7 +516,7 @@ class BZ_OT_SQE_PushNewSequence(bpy.types.Operator):
             {"INFO"},
             f"Submitted new sequence: {zsequence.name}",
         )
-        logger.info("Submitted new sequence: %s" % zsequence.name)
+        logger.info("Submitted new sequence: %s", zsequence.name)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -808,7 +526,7 @@ class BZ_OT_SQE_PushNewSequence(bpy.types.Operator):
     def draw(self, context):
         # UI
         layout = self.layout
-        zproject_active = zproject_active_get()
+        zproject_active = cache.zproject_active_get()
 
         # Production
         row = layout.row()
@@ -827,7 +545,7 @@ class BZ_OT_SQE_PushNewSequence(bpy.types.Operator):
         )
 
 
-class BZ_OT_SQE_InitStrip(bpy.types.Operator):
+class BLEZOU_OT_sqe_init_strip(bpy.types.Operator):
     """
     Operator that initializes a regular sequence strip to a 'blezou' shot.
     Only sets strip.blezou.initialized = True. But this is required for further
@@ -853,29 +571,29 @@ class BZ_OT_SQE_InitStrip(bpy.types.Operator):
 
         for strip in selected_sequences:
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
             if strip.blezou.initialized:
-                logger.info("%s already initialized." % strip.name)
+                logger.info("%s already initialized.", strip.name)
                 # failed.append(strip)
                 continue
 
             strip.blezou.initialized = True
             succeeded.append(strip)
-            logger.info("Initialized strip: %s as shot." % strip.name)
+            logger.info("Initiated strip: %s as shot.", strip.name)
 
         self.report(
             {"INFO"},
-            f"Initialized {len(succeeded)} shots | Failed: {len(failed)}.",
+            f"Initiated {len(succeeded)} shots | Failed: {len(failed)}.",
         )
         logger.info("-END- Initializing shots")
         ui_redraw()
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
+class BLEZOU_OT_sqe_link_sequence(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -885,29 +603,19 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zproject_active = zproject_active_get()
-
-        if not zproject_active:
-            return []
-
-        enum_list = [
-            (s.id, s.name, s.description if s.description else "")
-            for s in zproject_active.get_sequences_all()
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_sequences)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(
+        items=opsdata._get_sequences,
+    )  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         strip = context.scene.sequence_editor.active_strip
         return bool(
-            zsession_auth(context)
-            and zproject_active_get()
+            prefs.zsession_auth(context)
+            and cache.zproject_active_get()
             and strip
             and context.selected_sequences
-            and CheckStrip.valid_type(strip)
+            and checkstrip.is_valid_type(strip)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -929,7 +637,7 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_LinkShot(bpy.types.Operator):
+class BLEZOU_OT_sqe_link_shot(bpy.types.Operator):
     """
     Operator that invokes ui which shows user all available shots on server.
     It is used to 'link' a seqeunce strip to an alredy existent shot on server.
@@ -942,33 +650,8 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         "Adds required shot metadata to selecetd strip based on data from server."
     )
 
-    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-
-        zproject_active = zproject_active_get()
-        if not zproject_active:
-            return []
-
-        enum_list = [
-            (s.id, s.name, s.description if s.description else "")
-            for s in zproject_active.get_sequences_all()
-        ]
-        return enum_list
-
-    def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-
-        if not self.sequence_enum:
-            return []
-
-        zseq_active = ZSequence.by_id(self.sequence_enum)
-
-        enum_list = [
-            (s.id, s.name, s.description if s.description else "")
-            for s in zseq_active.get_all_shots()
-        ]
-        return enum_list
-
-    sequence_enum: bpy.props.EnumProperty(items=_get_sequences, name="Sequence")  # type: ignore
-    shots_enum: bpy.props.EnumProperty(items=_get_shots, name="Shot")  # type: ignore
+    sequence_enum: bpy.props.EnumProperty(items=opsdata._get_sequences, name="Sequence")  # type: ignore
+    shots_enum: bpy.props.EnumProperty(items=opsdata._get_shots_from_op_enum, name="Shot")  # type: ignore
     use_url: bpy.props.BoolProperty(
         name="Use URL",
         description="Use URL of shot on server to initiate strip. Paste complete URL.",
@@ -983,11 +666,11 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         strip = context.scene.sequence_editor.active_strip
         return bool(
-            zsession_auth(context)
-            and zproject_active_get()
+            prefs.zsession_auth(context)
+            and cache.zproject_active_get()
             and strip
             and context.selected_sequences
-            and CheckStrip.valid_type(strip)
+            and checkstrip.is_valid_type(strip)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -1021,7 +704,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
             return {"CANCELLED"}
 
         # pull shot meta
-        Pull.shot_meta(strip, zshot)
+        pull.shot_meta(strip, zshot)
 
         t = "Linked strip: %s to shot: %s with ID: %s" % (
             strip.name,
@@ -1055,7 +738,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
             row = layout.row()
 
 
-class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
+class BLEZOU_OT_sqe_multi_edit_strip(bpy.types.Operator):
     """"""
 
     bl_idname = "blezou.sqe_multi_edit_strip"
@@ -1077,7 +760,7 @@ class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
             if (
                 s.blezou.linked
                 or not s.blezou.initialized
-                or not CheckStrip.valid_type(s)
+                or not checkstrip.is_valid_type(s)
             ):
                 return False
             if s.blezou.sequence_name != seq_name:
@@ -1085,7 +768,7 @@ class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        addon_prefs = addon_prefs_get(context)
+        addon_prefs = prefs.addon_prefs_get(context)
         shot_counter_increment = addon_prefs.shot_counter_increment
         shot_counter_digits = addon_prefs.shot_counter_digits
         shot_counter_start = context.window_manager.shot_counter_start
@@ -1145,7 +828,7 @@ class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
+class BLEZOU_OT_sqe_pull_shot_meta(bpy.types.Operator):
     """
     Operator that pulls metadata of all selected sequencce strips from server
     after performing various checks. Metadata will be saved in strip.blezou.
@@ -1157,7 +840,7 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(zsession_auth(context))
+        return bool(prefs.zsession_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -1174,23 +857,23 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
             # only if strip is linked to sevrer
-            if not CheckStrip.linked(strip):
+            if not checkstrip.is_linked(strip):
                 # failed.append(strip)
                 continue
 
             # check if shot is still available by id
-            zshot = CheckStrip.shot_exists_by_id(strip)
+            zshot = checkstrip.shot_exists_by_id(strip)
             if not zshot:
                 failed.append(strip)
                 continue
 
             # push update to shot
-            Pull.shot_meta(strip, zshot)
+            pull.shot_meta(strip, zshot)
             succeeded.append(strip)
 
         # end progress update
@@ -1205,7 +888,7 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_UninitStrip(bpy.types.Operator):
+class BLEZOU_OT_sqe_uninit_strip(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything on server.
@@ -1231,22 +914,22 @@ class BZ_OT_SQE_UninitStrip(bpy.types.Operator):
 
         for strip in context.selected_sequences:
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
-            if not CheckStrip.initialized(strip):
+            if not checkstrip.is_initialized(strip):
                 # failed.append(strip)
                 continue
 
-            if CheckStrip.linked(strip):
+            if checkstrip.is_linked(strip):
                 # failed.append(strip)
                 continue
 
             # clear blezou properties
             strip.blezou.clear()
             succeeded.append(strip)
-            logger.info("Uninitialized strip: %s" % strip.name)
+            logger.info("Uninitialized strip: %s", strip.name)
 
         self.report(
             {"INFO"},
@@ -1281,7 +964,7 @@ class BZ_OT_SQE_UninitStrip(bpy.types.Operator):
         )
 
 
-class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
+class BLEZOU_OT_sqe_unlink_shot(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything on server.
@@ -1309,15 +992,15 @@ class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
 
         for strip in context.selected_sequences:
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
-            if not CheckStrip.initialized(strip):
+            if not checkstrip.is_initialized(strip):
                 # failed.append(strip)
                 continue
 
-            if not CheckStrip.linked(strip):
+            if not checkstrip.is_linked(strip):
                 # failed.append(strip)
                 continue
 
@@ -1325,7 +1008,7 @@ class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
             shot_name = strip.blezou.shot_name
             strip.blezou.unlink()
             succeeded.append(strip)
-            logger.info("Unlinked shot: %s" % shot_name)
+            logger.info("Unlinked shot: %s", shot_name)
 
         self.report(
             {"INFO"},
@@ -1358,7 +1041,7 @@ class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
         )
 
 
-class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
+class BLEZOU_OT_sqe_push_del_shot(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything on server.
@@ -1372,7 +1055,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(zsession_auth(context) and context.selected_sequences)
+        return bool(prefs.zsession_auth(context) and context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.confirm:
@@ -1391,23 +1074,23 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
             # check if strip is already linked to sevrer
-            if not CheckStrip.linked(strip):
+            if not checkstrip.is_linked(strip):
                 # failed.append(strip)
                 continue
 
             # check if shot still exists to sevrer
-            zshot = CheckStrip.shot_exists_by_id(strip)
+            zshot = checkstrip.shot_exists_by_id(strip)
             if not zshot:
                 failed.append(strip)
                 continue
 
             # delete shot
-            Push.delete_shot(strip, zshot)
+            push.delete_shot(strip, zshot)
             succeeded.append(strip)
 
         # end progress update
@@ -1445,7 +1128,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         )
 
 
-class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
+class BLEZOU_OT_sqe_push_thumbnail(bpy.types.Operator):
     """
     Operator that takes thumbnail of all selected sequencce strips and saves them
     in tmp directory. Loops through all thumbnails and uploads them to sevrer .
@@ -1458,7 +1141,7 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(zsession_auth(context))
+        return bool(prefs.zsession_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         nr_of_strips: int = len(context.selected_sequences)
@@ -1482,17 +1165,17 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
                 for idx, strip in enumerate(selected_sequences):
                     context.window_manager.progress_update(idx)
 
-                    if not CheckStrip.valid_type(strip):
+                    if not checkstrip.is_valid_type(strip):
                         # failed.append(strip)
                         continue
 
                     # only if strip is linked to sevrer
-                    if not CheckStrip.linked(strip):
+                    if not checkstrip.is_linked(strip):
                         # failed.append(strip)
                         continue
 
                     # check if shot is still available by id
-                    zshot = CheckStrip.shot_exists_by_id(strip)
+                    zshot = checkstrip.shot_exists_by_id(strip)
                     if not zshot:
                         failed.append(strip)
                         continue
@@ -1501,7 +1184,7 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
                     if not do_multishot:
                         # if active strip is not contained in the current frame, use middle frame of active strip
                         # otherwise don't change frame and use current one
-                        if not CheckStrip.contains(strip, original_curframe):
+                        if not checkstrip.contains(strip, original_curframe):
                             self.set_middle_frame(context, strip)
                     else:
                         self.set_middle_frame(context, strip)
@@ -1548,7 +1231,7 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
     def _save_render(self, datablock: bpy.types.Image, file_name: str) -> Path:
         """Save the current render image to disk"""
 
-        addon_prefs = addon_prefs_get(bpy.context)
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
         folder_name = addon_prefs.folder_thumbnail
 
         # Ensure folder exists
@@ -1649,7 +1332,7 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
         return middle
 
 
-class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
+class BLEZOU_OT_sqe_debug_duplicates(bpy.types.Operator):
     """"""
 
     bl_idname = "blezou.sqe_debug_duplicates"
@@ -1681,11 +1364,11 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        opsdata._SQE_DUPLCIATES[:] = opsdata._sqe_update_duplicates(context)
+        opsdata._sqe_duplicates[:] = opsdata._sqe_update_duplicates(context)
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
-class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
+class BLEZOU_OT_sqe_debug_not_linked(bpy.types.Operator):
     """"""
 
     bl_idname = "blezou.sqe_debug_not_linked"
@@ -1718,11 +1401,11 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        opsdata._SQE_NOT_LINKED[:] = opsdata._sqe_update_not_linked(context)
+        opsdata._sqe_not_linked[:] = opsdata._sqe_update_not_linked(context)
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
-class BZ_OT_SQE_DebugMultiProjects(bpy.types.Operator):
+class BLEZOU_OT_sqe_debug_multi_project(bpy.types.Operator):
     """"""
 
     bl_idname = "blezou.sqe_debug_multi_project"
@@ -1755,35 +1438,35 @@ class BZ_OT_SQE_DebugMultiProjects(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        opsdata._SQE_MULTI_PROJECT[:] = opsdata._sqe_update_multi_project(context)
+        opsdata._sqe_multi_project[:] = opsdata._sqe_update_multi_project(context)
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
 # ---------REGISTER ----------
 
 classes = [
-    BZ_OT_SessionStart,
-    BZ_OT_SessionEnd,
-    BZ_OT_ProductionsLoad,
-    BZ_OT_SequencesLoad,
-    BZ_OT_ShotsLoad,
-    BZ_OT_AssetTypesLoad,
-    BZ_OT_AssetsLoad,
-    BZ_OT_SQE_PushNewSequence,
-    BZ_OT_SQE_PushNewShot,
-    BZ_OT_SQE_PushShotMeta,
-    BZ_OT_SQE_UninitStrip,
-    BZ_OT_SQE_UnlinkShot,
-    BZ_OT_SQE_InitStrip,
-    BZ_OT_SQE_LinkShot,
-    BZ_OT_SQE_LinkSequence,
-    BZ_OT_SQE_PushThumbnail,
-    BZ_OT_SQE_PushDeleteShot,
-    BZ_OT_SQE_PullShotMeta,
-    BZ_OT_SQE_MultiEditStrip,
-    BZ_OT_SQE_DebugDuplicates,
-    BZ_OT_SQE_DebugNotLinked,
-    BZ_OT_SQE_DebugMultiProjects,
+    BLEZOU_OT_session_start,
+    BLEZOU_OT_session_end,
+    BLEZOU_OT_productions_load,
+    BLEZOU_OT_sequences_load,
+    BLEZOU_OT_shots_load,
+    BLEZOU_OT_asset_types_load,
+    BLEZOU_OT_assets_load,
+    BLEZOU_OT_sqe_push_new_sequence,
+    BLEZOU_OT_sqe_push_new_shot,
+    BLEZOU_OT_sqe_push_shot_meta,
+    BLEZOU_OT_sqe_uninit_strip,
+    BLEZOU_OT_sqe_unlink_shot,
+    BLEZOU_OT_sqe_init_strip,
+    BLEZOU_OT_sqe_link_shot,
+    BLEZOU_OT_sqe_link_sequence,
+    BLEZOU_OT_sqe_push_thumbnail,
+    BLEZOU_OT_sqe_push_del_shot,
+    BLEZOU_OT_sqe_pull_shot_meta,
+    BLEZOU_OT_sqe_multi_edit_strip,
+    BLEZOU_OT_sqe_debug_duplicates,
+    BLEZOU_OT_sqe_debug_not_linked,
+    BLEZOU_OT_sqe_debug_multi_project,
 ]
 
 

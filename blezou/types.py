@@ -1,16 +1,15 @@
 from __future__ import annotations
-from dataclasses import dataclass, asdict, field
-from typing import Dict, Union, Union, Any, List, Optional
+
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, List, Optional, Union
+
 from . import gazu
 from .logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
-# TODO: @dataclass needs the init arguments to be known, what if gazu api changes?
-# some properties are also only provided by gazu if they are initialized
 
-
-class ZProductions:
+class ZProjectList:
     """
     Class to get object oriented representation of backend productions data structure.
     """
@@ -21,10 +20,7 @@ class ZProductions:
 
     @property
     def names(self) -> List[str]:
-        _names = []
-        for p in self._projects:
-            _names.append(p.name)
-        return _names
+        return [p.name for p in self._projects]
 
     @property
     def projects(self) -> List[ZProject]:
@@ -48,7 +44,7 @@ class ZProject:
     updated_at: str = ""
     name: str = ""
     code: Optional[str] = None
-    description: Optional[str] = ""
+    description: Optional[str] = None
     shotgun_id: Optional[str] = None
     data: None = None
     has_avatar: bool = False
@@ -191,13 +187,13 @@ class ZSequence:
     updated_at: str = ""
     name: str = ""
     code: Optional[str] = None
-    description: Optional[str] = ""
+    description: Optional[str] = None
     shotgun_id: Optional[str] = None
     canceled: bool = False
     nb_frames: Optional[int] = None
     project_id: str = ""
     entity_type_id: str = ""
-    parent_id: Optional[str] = None
+    parent_id: str = ""
     source_id: Optional[str] = None
     preview_file_id: Optional[str] = None
     data: Optional[Dict[str, Any]] = None
@@ -285,7 +281,7 @@ class ZShot:
     name: str = ""
     canceled: bool = False
     code: Optional[str] = None
-    description: Optional[str] = ""
+    description: Optional[str] = None
     entity_type_id: str = ""
     episode_id: Optional[str] = None
     episode_name: str = ""
@@ -332,7 +328,7 @@ class ZShot:
         return self
 
     def remove(self, force: bool = False) -> str:
-        return gazu.shot.remove_shot(asdict(self), force=force)
+        return str(gazu.shot.remove_shot(asdict(self), force=force))
 
     def __bool__(self):
         return bool(self.id)
@@ -350,12 +346,12 @@ class ZAsset:
     updated_at: str = ""
     name: str = ""
     code: Optional[str] = None
-    description: Optional[str] = ""
+    description: Optional[str] = None
     shotgun_id: Optional[str] = None
     canceled: bool = False
     project_id: str = ""
     entity_type_id: str = ""
-    parent_id: Optional[str] = None
+    parent_id: str = ""
     preview_file_id: str = ""
     type: str = ""
     project_name: str = ""
@@ -465,7 +461,7 @@ class ZTask:
     created_at: str = ""
     updated_at: str = ""
     name: str = ""
-    description: Optional[str] = ""
+    description: Optional[str] = None
     priority: int = 0
     duration: int = 0
     estimation: int = 0

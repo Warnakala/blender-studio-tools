@@ -1,6 +1,8 @@
 from __future__ import annotations
-from typing import Union, Tuple, Dict, Any, Optional
-from dataclasses import dataclass, asdict, field
+
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, Optional, Tuple, Union
+
 from . import gazu
 from .logger import ZLoggerFactory
 
@@ -38,7 +40,7 @@ class ZSession:
         if not self._login():
             return None
 
-        logger.info("Session started with user: %s" % self.email)
+        logger.info("Session started with user: %s", self.email)
         return self._session
 
     def end(self) -> bool:
@@ -53,10 +55,10 @@ class ZSession:
 
     def _is_host_up(self) -> bool:
         if gazu.client.host_is_up():
-            logger.info("Host is up and running at: %s" % self.host)
+            logger.info("Host is up and running at: %s", self.host)
             return True
         else:
-            logger.error("Failed to reach host at: %s" % self.host)
+            logger.error("Failed to reach host at: %s", self.host)
             return False
 
     def _login(self) -> bool:
@@ -119,7 +121,7 @@ class ZSession:
             self._host = self.get_host_api_url(host)
             gazu.client.set_host(self._host)
             if not gazu.client.host_is_valid():
-                logger.error("Host is not valid: %s" % host)
+                logger.error("Host is not valid: %s", host)
                 self._host = host_backup
                 gazu.client.set_host(self._host)
 
