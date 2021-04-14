@@ -18,7 +18,7 @@ _ZASSET_ACTIVE: ZAsset = ZAsset()
 _ZASSET_TYPE_ACTIVE: ZAssetType = ZAssetType()
 
 
-class BZ_PopertyGroupSequence(bpy.types.PropertyGroup):
+class BLEZOU_property_group_sequence(bpy.types.PropertyGroup):
     """
     Property group that will be registered on sequence strips.
     They hold metadata that will be used to compose a data structure that can
@@ -87,7 +87,7 @@ class BZ_PopertyGroupSequence(bpy.types.PropertyGroup):
         self.linked = False
 
 
-class BZ_PopertyGroupScene(bpy.types.PropertyGroup):
+class BLEZOU_property_group_scene(bpy.types.PropertyGroup):
     """"""
 
     sequence_active_id: bpy.props.StringProperty(  # type: ignore
@@ -122,7 +122,7 @@ class BZ_PopertyGroupScene(bpy.types.PropertyGroup):
         self.asset_type_active_id = ""
 
 
-class BZ_PopertyGroupWindow(bpy.types.PropertyGroup):
+class BLEZOU_property_group_window(bpy.types.PropertyGroup):
     """"""
 
     multi_edit_seq: bpy.props.StringProperty(  # type: ignore
@@ -306,7 +306,7 @@ def load_post_handler(dummy):
 
 # ----------------REGISTER--------------
 
-classes = [BZ_PopertyGroupSequence, BZ_PopertyGroupScene]
+classes = [BLEZOU_property_group_sequence, BLEZOU_property_group_scene]
 
 
 def register():
@@ -317,13 +317,13 @@ def register():
     # Sequence Properties
     bpy.types.Sequence.blezou = bpy.props.PointerProperty(
         name="Blezou",
-        type=BZ_PopertyGroupSequence,
+        type=BLEZOU_property_group_sequence,
         description="Metadata that is required for blezou",
     )
     # Scene Properties
     bpy.types.Scene.blezou = bpy.props.PointerProperty(
         name="Blezou",
-        type=BZ_PopertyGroupScene,
+        type=BLEZOU_property_group_scene,
         description="Metadata that is required for blezou",
     )
     # Window Manager Properties

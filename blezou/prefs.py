@@ -7,7 +7,11 @@ from bpy.app.handlers import persistent
 
 from .auth import ZSession
 from .logger import ZLoggerFactory
-from .ops import BZ_OT_ProductionsLoad, BZ_OT_SessionEnd, BZ_OT_SessionStart
+from .ops import (
+    BLEZOU_OT_productions_load,
+    BLEZOU_OT_session_end,
+    BLEZOU_OT_session_start,
+)
 from .types import ZProject
 
 logger = ZLoggerFactory.getLogger(name=__name__)
@@ -17,7 +21,7 @@ logger = ZLoggerFactory.getLogger(name=__name__)
 _ZPROJECT_ACTIVE: ZProject = ZProject()
 
 
-class BZ_AddonPreferences(bpy.types.AddonPreferences):
+class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
     """
     Addon preferences to blezou. Holds variables that are important for authentification.
     During runtime new attributes are created that get initialized in: bz_prefs_init_properties()
@@ -129,14 +133,16 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
             box.row().prop(self, "host")
             box.row().prop(self, "email")
             box.row().prop(self, "passwd")
-            box.row().operator(BZ_OT_SessionStart.bl_idname, text="Login", icon="PLAY")
+            box.row().operator(
+                BLEZOU_OT_session_start.bl_idname, text="Login", icon="PLAY"
+            )
         else:
             row = box.row()
             row.prop(self, "host")
             row.enabled = False
             box.row().label(text=f"Logged in: {self.session.email}")
             box.row().operator(
-                BZ_OT_SessionEnd.bl_idname, text="Logout", icon="PANEL_CLOSE"
+                BLEZOU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
             )
 
         # Production
@@ -150,7 +156,9 @@ class BZ_AddonPreferences(bpy.types.AddonPreferences):
             prod_load_text = _ZPROJECT_ACTIVE.name
 
         row.operator(
-            BZ_OT_ProductionsLoad.bl_idname, text=prod_load_text, icon="DOWNARROW_HLT"
+            BLEZOU_OT_productions_load.bl_idname,
+            text=prod_load_text,
+            icon="DOWNARROW_HLT",
         )
         # misc settings
         box = layout.box()
@@ -193,7 +201,7 @@ def load_post_handler(dummy):
 
 # ---------REGISTER ----------
 
-classes = [BZ_AddonPreferences]
+classes = [BLEZOU_addon_preferences]
 
 
 def register():

@@ -26,7 +26,7 @@ from .types import (
 logger = ZLoggerFactory.getLogger(name=__name__)
 
 
-class BZ_OT_SessionStart(bpy.types.Operator):
+class BLEZOU_OT_session_start(bpy.types.Operator):
     """
     Starts the ZSession, which  is stored in Blezou addon preferences.
     Authenticates user with server until session ends.
@@ -62,7 +62,7 @@ class BZ_OT_SessionStart(bpy.types.Operator):
         }
 
 
-class BZ_OT_SessionEnd(bpy.types.Operator):
+class BLEZOU_OT_session_end(bpy.types.Operator):
     """
     Ends the ZSession which is stored in Blezou addon preferences.
     """
@@ -84,7 +84,7 @@ class BZ_OT_SessionEnd(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_ProductionsLoad(bpy.types.Operator):
+class BLEZOU_OT_productions_load(bpy.types.Operator):
     """
     Gets all productions that are available in server and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -133,7 +133,7 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SequencesLoad(bpy.types.Operator):
+class BLEZOU_OT_sequences_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -180,7 +180,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_ShotsLoad(bpy.types.Operator):
+class BLEZOU_OT_shots_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -223,7 +223,7 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_AssetTypesLoad(bpy.types.Operator):
+class BLEZOU_OT_asset_types_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -267,7 +267,7 @@ class BZ_OT_AssetTypesLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_AssetsLoad(bpy.types.Operator):
+class BLEZOU_OT_assets_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -313,7 +313,7 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
+class BLEZOU_OT_sqe_push_shot_meta(bpy.types.Operator):
     """
     Operator that pushes metadata of all selected sequencce strips to sevrer
     after performing various checks. Metadata is saved in strip.blezou.
@@ -372,7 +372,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
+class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
     """
     Operator that creates a new shot based on all selected sequencce strips to sevrer
     after performing various checks. Does not create shot if already exists to sevrer .
@@ -512,7 +512,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         )
 
 
-class BZ_OT_SQE_PushNewSequence(bpy.types.Operator):
+class BLEZOU_OT_sqe_push_new_sequence(bpy.types.Operator):
     """
     Operator with input dialog that creates a new sequence on server.
     Does not create sequence if already exists on server.
@@ -592,7 +592,7 @@ class BZ_OT_SQE_PushNewSequence(bpy.types.Operator):
         )
 
 
-class BZ_OT_SQE_InitStrip(bpy.types.Operator):
+class BLEZOU_OT_sqe_init_strip(bpy.types.Operator):
     """
     Operator that initializes a regular sequence strip to a 'blezou' shot.
     Only sets strip.blezou.initialized = True. But this is required for further
@@ -640,7 +640,7 @@ class BZ_OT_SQE_InitStrip(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
+class BLEZOU_OT_sqe_link_sequence(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
@@ -694,7 +694,7 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_LinkShot(bpy.types.Operator):
+class BLEZOU_OT_sqe_link_shot(bpy.types.Operator):
     """
     Operator that invokes ui which shows user all available shots on server.
     It is used to 'link' a seqeunce strip to an alredy existent shot on server.
@@ -819,7 +819,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
             row = layout.row()
 
 
-class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
+class BLEZOU_OT_sqe_multi_edit_strip(bpy.types.Operator):
     """"""
 
     bl_idname = "blezou.sqe_multi_edit_strip"
@@ -909,7 +909,7 @@ class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
+class BLEZOU_OT_sqe_pull_shot_meta(bpy.types.Operator):
     """
     Operator that pulls metadata of all selected sequencce strips from server
     after performing various checks. Metadata will be saved in strip.blezou.
@@ -969,7 +969,7 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BZ_OT_SQE_UninitStrip(bpy.types.Operator):
+class BLEZOU_OT_sqe_uninit_strip(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything on server.
@@ -1045,7 +1045,7 @@ class BZ_OT_SQE_UninitStrip(bpy.types.Operator):
         )
 
 
-class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
+class BLEZOU_OT_sqe_unlink_shot(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything on server.
@@ -1122,7 +1122,7 @@ class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
         )
 
 
-class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
+class BLEZOU_OT_sqe_push_del_shot(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything on server.
@@ -1209,7 +1209,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         )
 
 
-class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
+class BLEZOU_OT_sqe_push_thumbnail(bpy.types.Operator):
     """
     Operator that takes thumbnail of all selected sequencce strips and saves them
     in tmp directory. Loops through all thumbnails and uploads them to sevrer .
@@ -1413,7 +1413,7 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
         return middle
 
 
-class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
+class BLEZOU_OT_sqe_debug_duplicates(bpy.types.Operator):
     """"""
 
     bl_idname = "blezou.sqe_debug_duplicates"
@@ -1449,7 +1449,7 @@ class BZ_OT_SQE_DebugDuplicates(bpy.types.Operator):
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
-class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
+class BLEZOU_OT_sqe_debug_not_linked(bpy.types.Operator):
     """"""
 
     bl_idname = "blezou.sqe_debug_not_linked"
@@ -1486,7 +1486,7 @@ class BZ_OT_SQE_DebugNotLinked(bpy.types.Operator):
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
-class BZ_OT_SQE_DebugMultiProjects(bpy.types.Operator):
+class BLEZOU_OT_sqe_debug_multi_project(bpy.types.Operator):
     """"""
 
     bl_idname = "blezou.sqe_debug_multi_project"
@@ -1526,28 +1526,28 @@ class BZ_OT_SQE_DebugMultiProjects(bpy.types.Operator):
 # ---------REGISTER ----------
 
 classes = [
-    BZ_OT_SessionStart,
-    BZ_OT_SessionEnd,
-    BZ_OT_ProductionsLoad,
-    BZ_OT_SequencesLoad,
-    BZ_OT_ShotsLoad,
-    BZ_OT_AssetTypesLoad,
-    BZ_OT_AssetsLoad,
-    BZ_OT_SQE_PushNewSequence,
-    BZ_OT_SQE_PushNewShot,
-    BZ_OT_SQE_PushShotMeta,
-    BZ_OT_SQE_UninitStrip,
-    BZ_OT_SQE_UnlinkShot,
-    BZ_OT_SQE_InitStrip,
-    BZ_OT_SQE_LinkShot,
-    BZ_OT_SQE_LinkSequence,
-    BZ_OT_SQE_PushThumbnail,
-    BZ_OT_SQE_PushDeleteShot,
-    BZ_OT_SQE_PullShotMeta,
-    BZ_OT_SQE_MultiEditStrip,
-    BZ_OT_SQE_DebugDuplicates,
-    BZ_OT_SQE_DebugNotLinked,
-    BZ_OT_SQE_DebugMultiProjects,
+    BLEZOU_OT_session_start,
+    BLEZOU_OT_session_end,
+    BLEZOU_OT_productions_load,
+    BLEZOU_OT_sequences_load,
+    BLEZOU_OT_shots_load,
+    BLEZOU_OT_asset_types_load,
+    BLEZOU_OT_assets_load,
+    BLEZOU_OT_sqe_push_new_sequence,
+    BLEZOU_OT_sqe_push_new_shot,
+    BLEZOU_OT_sqe_push_shot_meta,
+    BLEZOU_OT_sqe_uninit_strip,
+    BLEZOU_OT_sqe_unlink_shot,
+    BLEZOU_OT_sqe_init_strip,
+    BLEZOU_OT_sqe_link_shot,
+    BLEZOU_OT_sqe_link_sequence,
+    BLEZOU_OT_sqe_push_thumbnail,
+    BLEZOU_OT_sqe_push_del_shot,
+    BLEZOU_OT_sqe_pull_shot_meta,
+    BLEZOU_OT_sqe_multi_edit_strip,
+    BLEZOU_OT_sqe_debug_duplicates,
+    BLEZOU_OT_sqe_debug_not_linked,
+    BLEZOU_OT_sqe_debug_multi_project,
 ]
 
 
