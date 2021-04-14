@@ -1,6 +1,11 @@
 import bpy
 
-from . import ops, opsdata, prefs, props, ui, util
+from . import props
+from . import prefs
+from . import ops
+from . import ui
+from . import util
+from . import opsdata
 from .logger import ZLoggerFactory, ZLoggerLevelManager
 
 logger = ZLoggerFactory.getLogger(__name__)
