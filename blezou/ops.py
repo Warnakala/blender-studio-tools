@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 import bpy
 
-from . import gazu, opsdata, prefs, props, util, push, pull
+from . import gazu, opsdata, prefs, props, util, push, pull, checkstrip
 from .logger import ZLoggerFactory
 from .types import (
     ZProjectList,
@@ -24,130 +24,6 @@ from .types import (
 )
 
 logger = ZLoggerFactory.getLogger(name=__name__)
-
-
-class CheckStrip:
-    """Class that contains various static methods to perform checks on sequence strips"""
-
-    @staticmethod
-    def valid_type(strip: bpy.types.Sequence) -> bool:
-        if not strip.type in util.VALID_STRIP_TYPES:
-            logger.info("Strip: %s. Invalid type." % strip.type)
-            return False
-        return True
-
-    @staticmethod
-    def initialized(strip: bpy.types.Sequence) -> bool:
-        """Returns True if strip.blezou.initialized is True else False"""
-        if not strip.blezou.initialized:
-            logger.info("Strip: %s. Not initialized." % strip.name)
-            return False
-        else:
-            logger.info("Strip: %s. Is initialized." % strip.name)
-            return True
-
-    @staticmethod
-    def linked(strip: bpy.types.Sequence) -> bool:
-        """Returns True if strip.blezou.linked is True else False"""
-        if not strip.blezou.linked:
-            logger.info("Strip: %s. Not linked yet." % strip.name)
-            return False
-        else:
-            logger.info(
-                "Strip: %s. Is linked to ID: %s." % (strip.name, strip.blezou.shot_id)
-            )
-            return True
-
-    @staticmethod
-    def has_meta(strip: bpy.types.Sequence) -> bool:
-        """Returns True if strip.blezou.shot_name and strip.blezou.sequence_name is Truethy else False"""
-        seq = strip.blezou.sequence_name
-        shot = strip.blezou.shot_name
-        if not bool(seq and shot):
-            logger.info("Strip: %s. Missing metadata." % strip.name)
-            return False
-        else:
-            logger.info(
-                "Strip: %s. Has metadata (Sequence: %s, Shot: %s)."
-                % (strip.name, seq, shot)
-            )
-            return True
-
-    @staticmethod
-    def shot_exists_by_id(strip: bpy.types.Sequence) -> Optional[ZShot]:
-        """Returns ZShot instance if shot with strip.blezou.shot_id exists else None"""
-
-        ZCache.clear_all()
-
-        try:
-            zshot = ZShot.by_id(strip.blezou.shot_id)
-        except gazu.exception.RouteNotFoundException:
-            logger.error(
-                "Strip: %s Shot ID: %s not found on server anymore. Was maybe deleted?"
-                % (strip.name, strip.blezou.shot_id)
-            )
-            return None
-        if zshot:
-            logger.info(
-                "Strip: %s Shot %s exists on server (ID: %s)."
-                % (strip.name, zshot.name, zshot.id)
-            )
-            return zshot
-        else:
-            logger.info(
-                "Strip: %s Shot %s does not exist on server (ID: %s)"
-                % (strip.name, zshot.name, strip.blezou.shot_id)
-            )
-            return None
-
-    @staticmethod
-    def seq_exists_by_name(
-        strip: bpy.types.Sequence, zproject: ZProject
-    ) -> Optional[ZSequence]:
-        """Returns ZSequence instance if strip.blezou.sequence_name exists on server, else None"""
-
-        ZCache.clear_all()
-
-        zseq = zproject.get_sequence_by_name(strip.blezou.sequence_name)
-        if zseq:
-            logger.info(
-                "Strip: %s Sequence %s exists in on server (ID: %s)."
-                % (strip.name, zseq.name, zseq.id)
-            )
-            return zseq
-        else:
-            logger.info(
-                "Strip: %s Sequence %s does not exist on server."
-                % (strip.name, strip.blezou.sequence_name)
-            )
-            return None
-
-    @staticmethod
-    def shot_exists_by_name(
-        strip: bpy.types.Sequence, zproject: ZProject, zsequence: ZSequence
-    ) -> Optional[ZShot]:
-        """Returns ZShot instance if strip.blezou.shot_name exists on server, else None."""
-
-        ZCache.clear_all()
-
-        zshot = zproject.get_shot_by_name(zsequence, strip.blezou.shot_name)
-        if zshot:
-            logger.info(
-                "Strip: %s Shot already existent on server (ID: %s)."
-                % (strip.name, zshot.id)
-            )
-            return zshot
-        else:
-            logger.info(
-                "Strip: %s Shot %s does not exist on server."
-                % (strip.name, strip.blezou.shot_name)
-            )
-            return None
-
-    @staticmethod
-    def contains(strip: bpy.types.Sequence, framenr: int) -> bool:
-        """Returns True if the strip covers the given frame number"""
-        return int(strip.frame_final_start) <= framenr <= int(strip.frame_final_end)
 
 
 class BZ_OT_SessionStart(bpy.types.Operator):
@@ -469,17 +345,17 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
             # only if strip is linked to sevrer
-            if not CheckStrip.linked(strip):
+            if not checkstrip.is_linked(strip):
                 # failed.append(strip)
                 continue
 
             # check if shot is still available by id
-            zshot = CheckStrip.shot_exists_by_id(strip)
+            zshot = checkstrip.shot_exists_by_id(strip)
             if not zshot:
                 failed.append(strip)
                 continue
@@ -548,32 +424,32 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
             # check if user initialized shot
-            if not CheckStrip.initialized(strip):
+            if not checkstrip.is_initialized(strip):
                 # failed.append(strip)
                 continue
 
             # check if strip is already linked to sevrer
-            if CheckStrip.linked(strip):
+            if checkstrip.is_linked(strip):
                 failed.append(strip)
                 continue
 
             # check if user provided enough info
-            if not CheckStrip.has_meta(strip):
+            if not checkstrip.has_meta(strip):
                 failed.append(strip)
                 continue
 
             # check if seq already to sevrer  > create it
-            zseq = CheckStrip.seq_exists_by_name(strip, zproject_active)
+            zseq = checkstrip.seq_exists_by_name(strip, zproject_active)
             if not zseq:
                 zseq = push.new_sequence(strip, zproject_active)
 
             # check if shot already to sevrer  > create it
-            zshot = CheckStrip.shot_exists_by_name(strip, zproject_active, zseq)
+            zshot = checkstrip.shot_exists_by_name(strip, zproject_active, zseq)
             if zshot:
                 failed.append(strip)
                 continue
@@ -746,7 +622,7 @@ class BZ_OT_SQE_InitStrip(bpy.types.Operator):
 
         for strip in selected_sequences:
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
@@ -800,7 +676,7 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
             and util.zproject_active_get()
             and strip
             and context.selected_sequences
-            and CheckStrip.valid_type(strip)
+            and checkstrip.is_valid_type(strip)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -880,7 +756,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
             and util.zproject_active_get()
             and strip
             and context.selected_sequences
-            and CheckStrip.valid_type(strip)
+            and checkstrip.is_valid_type(strip)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -970,7 +846,7 @@ class BZ_OT_SQE_MultiEditStrip(bpy.types.Operator):
             if (
                 s.blezou.linked
                 or not s.blezou.initialized
-                or not CheckStrip.valid_type(s)
+                or not checkstrip.is_valid_type(s)
             ):
                 return False
             if s.blezou.sequence_name != seq_name:
@@ -1067,17 +943,17 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
             # only if strip is linked to sevrer
-            if not CheckStrip.linked(strip):
+            if not checkstrip.is_linked(strip):
                 # failed.append(strip)
                 continue
 
             # check if shot is still available by id
-            zshot = CheckStrip.shot_exists_by_id(strip)
+            zshot = checkstrip.shot_exists_by_id(strip)
             if not zshot:
                 failed.append(strip)
                 continue
@@ -1124,15 +1000,15 @@ class BZ_OT_SQE_UninitStrip(bpy.types.Operator):
 
         for strip in context.selected_sequences:
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
-            if not CheckStrip.initialized(strip):
+            if not checkstrip.is_initialized(strip):
                 # failed.append(strip)
                 continue
 
-            if CheckStrip.linked(strip):
+            if checkstrip.is_linked(strip):
                 # failed.append(strip)
                 continue
 
@@ -1202,15 +1078,15 @@ class BZ_OT_SQE_UnlinkShot(bpy.types.Operator):
 
         for strip in context.selected_sequences:
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
-            if not CheckStrip.initialized(strip):
+            if not checkstrip.is_initialized(strip):
                 # failed.append(strip)
                 continue
 
-            if not CheckStrip.linked(strip):
+            if not checkstrip.is_linked(strip):
                 # failed.append(strip)
                 continue
 
@@ -1284,17 +1160,17 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
-            if not CheckStrip.valid_type(strip):
+            if not checkstrip.is_valid_type(strip):
                 # failed.append(strip)
                 continue
 
             # check if strip is already linked to sevrer
-            if not CheckStrip.linked(strip):
+            if not checkstrip.is_linked(strip):
                 # failed.append(strip)
                 continue
 
             # check if shot still exists to sevrer
-            zshot = CheckStrip.shot_exists_by_id(strip)
+            zshot = checkstrip.shot_exists_by_id(strip)
             if not zshot:
                 failed.append(strip)
                 continue
@@ -1375,17 +1251,17 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
                 for idx, strip in enumerate(selected_sequences):
                     context.window_manager.progress_update(idx)
 
-                    if not CheckStrip.valid_type(strip):
+                    if not checkstrip.is_valid_type(strip):
                         # failed.append(strip)
                         continue
 
                     # only if strip is linked to sevrer
-                    if not CheckStrip.linked(strip):
+                    if not checkstrip.is_linked(strip):
                         # failed.append(strip)
                         continue
 
                     # check if shot is still available by id
-                    zshot = CheckStrip.shot_exists_by_id(strip)
+                    zshot = checkstrip.shot_exists_by_id(strip)
                     if not zshot:
                         failed.append(strip)
                         continue
@@ -1394,7 +1270,7 @@ class BZ_OT_SQE_PushThumbnail(bpy.types.Operator):
                     if not do_multishot:
                         # if active strip is not contained in the current frame, use middle frame of active strip
                         # otherwise don't change frame and use current one
-                        if not CheckStrip.contains(strip, original_curframe):
+                        if not checkstrip.contains(strip, original_curframe):
                             self.set_middle_frame(context, strip)
                     else:
                         self.set_middle_frame(context, strip)
