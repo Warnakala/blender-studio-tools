@@ -193,13 +193,6 @@ def zsession_auth(context: bpy.types.Context) -> bool:
     return zsession_get(context).is_auth()
 
 
-@persistent
-def load_post_handler_session_end(dummy):
-    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
-    if addon_prefs.session.is_auth():
-        addon_prefs.session.end()
-
-
 # ---------REGISTER ----------
 
 classes = [BLEZOU_addon_preferences]
@@ -208,9 +201,6 @@ classes = [BLEZOU_addon_preferences]
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-
-    # handlers
-    bpy.app.handlers.load_post.append(load_post_handler_session_end)
 
 
 def unregister():
@@ -223,6 +213,3 @@ def unregister():
     # unregister classes
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-
-    # clear handlers
-    bpy.app.handlers.load_post.remove(load_post_handler_session_end)

@@ -14,6 +14,8 @@ _zshot_active: ZShot = ZShot()
 _zasset_active: ZAsset = ZAsset()
 _zasset_type_active: ZAssetType = ZAssetType()
 
+_cache_initialized: bool = False
+
 
 def _addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """
@@ -119,41 +121,52 @@ def zasset_type_active_reset(context: bpy.types.Context) -> None:
     context.scene.blezou.asset_type_active_id = ""
 
 
-def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
+def init_cache_variables() -> None:
     global _zproject_active
     global _zsequence_active
     global _zshot_active
     global _zasset_active
     global _zasset_type_active
+    global _cache_initialized
 
-    addon_prefs = _addon_prefs_get(context)
+    addon_prefs = _addon_prefs_get(bpy.context)
     project_active_id = addon_prefs.project_active_id
-    sequence_active_id = context.scene.blezou.sequence_active_id
-    shot_active_id = context.scene.blezou.shot_active_id
-    asset_active_id = context.scene.blezou.asset_active_id
-    asset_type_active_id = context.scene.blezou.asset_type_active_id
+    sequence_active_id = bpy.context.scene.blezou.sequence_active_id
+    shot_active_id = bpy.context.scene.blezou.shot_active_id
+    asset_active_id = bpy.context.scene.blezou.asset_active_id
+    asset_type_active_id = bpy.context.scene.blezou.asset_type_active_id
+
+    if not addon_prefs.session.is_auth():
+        logger.info("Skip initiating cache. Session not authorized.")
+        return
+
+    if _cache_initialized:
+        logger.info("Cache already initiated.")
+        return
 
     if project_active_id:
         _zproject_active = ZProject.by_id(project_active_id)
-        logger.info("Initialized Active Project Cache to: %s", _zproject_active.name)
+        logger.info("Initiated Active Project Cache to: %s", _zproject_active.name)
 
     if sequence_active_id:
         _zsequence_active = ZSequence.by_id(sequence_active_id)
-        logger.info("Initialized active sequence cache to: %s", _zsequence_active.name)
+        logger.info("Initiated active sequence cache to: %s", _zsequence_active.name)
 
     if shot_active_id:
         _zshot_active = ZShot.by_id(shot_active_id)
-        logger.info("Initialized active shot cache to: %s ", _zshot_active.name)
+        logger.info("Initiated active shot cache to: %s ", _zshot_active.name)
 
     if asset_active_id:
         _zasset_active = ZAsset.by_id(asset_active_id)
-        logger.info("Initialized active asset cache to: %s", _zasset_active.name)
+        logger.info("Initiated active asset cache to: %s", _zasset_active.name)
 
     if asset_type_active_id:
         _zasset_type_active = ZAssetType.by_id(asset_type_active_id)
         logger.info(
-            "Initialized active asset type cache to: %s ", _zasset_type_active.name
+            "Initiated active asset type cache to: %s ", _zasset_type_active.name
         )
+
+    _cache_initialized = True
 
 
 def clear_cache_variables():
@@ -162,6 +175,7 @@ def clear_cache_variables():
     global _zshot_active
     global _zasset_active
     global _zasset_type_active
+    global _cache_initialized
 
     _zshot_active = ZShot()
     logger.info("Cleared active shot cache")
@@ -178,10 +192,13 @@ def clear_cache_variables():
     _zproject_active = ZProject()
     logger.info("Cleared Active Project Cache")
 
+    _cache_initialized = False
+
 
 @persistent
-def load_post_handler_clear_cache(dummy):
+def load_post_handler_update_cache(dummy):
     clear_cache_variables()
+    init_cache_variables()
 
 
 # ---------REGISTER ----------
@@ -189,9 +206,9 @@ def load_post_handler_clear_cache(dummy):
 
 def register():
     # handlers
-    bpy.app.handlers.load_post.append(load_post_handler_clear_cache)
+    bpy.app.handlers.load_post.append(load_post_handler_update_cache)
 
 
 def unregister():
     # clear handlers
-    bpy.app.handlers.load_post.remove(load_post_handler_clear_cache)
+    bpy.app.handlers.load_post.remove(load_post_handler_update_cache)

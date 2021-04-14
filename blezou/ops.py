@@ -56,8 +56,8 @@ class BLEZOU_OT_session_start(bpy.types.Operator):
         zsession.set_config(self.get_config(context))
         zsession.start()
 
-        # init cache variables
-        cache.init_cache_variables(context=context)
+        # init cache variables, will skip if cache already initiated
+        cache.init_cache_variables()
 
         return {"FINISHED"}
 
@@ -590,11 +590,11 @@ class BLEZOU_OT_sqe_init_strip(bpy.types.Operator):
 
             strip.blezou.initialized = True
             succeeded.append(strip)
-            logger.info("Initialized strip: %s as shot.", strip.name)
+            logger.info("Initiated strip: %s as shot.", strip.name)
 
         self.report(
             {"INFO"},
-            f"Initialized {len(succeeded)} shots | Failed: {len(failed)}.",
+            f"Initiated {len(succeeded)} shots | Failed: {len(failed)}.",
         )
         logger.info("-END- Initializing shots")
         ui_redraw()
