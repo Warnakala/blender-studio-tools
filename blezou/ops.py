@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 import bpy
 
-from . import gazu, opsdata, prefs, props, util
+from . import gazu, opsdata, prefs, props, util, push, pull
 from .logger import ZLoggerFactory
 from .types import (
     ZProjectList,
@@ -24,113 +24,6 @@ from .types import (
 )
 
 logger = ZLoggerFactory.getLogger(name=__name__)
-
-
-class Pull:
-    """Class that contains staticmethods to pull data from server data base into Blender"""
-
-    @staticmethod
-    def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
-        # clear cache before pulling
-        ZCache.clear_all()
-
-        # update sequence props
-        zseq = ZSequence.by_id(zshot.parent_id)
-        strip.blezou.sequence_id = zseq.id
-        strip.blezou.sequence_name = zseq.name
-
-        # update shot props
-        strip.blezou.shot_id = zshot.id
-        strip.blezou.shot_name = zshot.name
-        strip.blezou.shot_description = zshot.description if zshot.description else ""
-
-        # update project props
-        zproject = ZProject.by_id(zshot.project_id)
-        strip.blezou.project_id = zproject.id
-        strip.blezou.project_name = zproject.name
-
-        # update meta props
-        strip.blezou.initialized = True
-        strip.blezou.linked = True
-        logger.info("Pulled meta from shot: %s to strip: %s" % (zshot.name, strip.name))
-
-
-class Push:
-    """Class that contains staticmethods to push data from blender to sevrer  data base"""
-
-    @staticmethod
-    def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
-
-        # update shot info
-        zshot.name = strip.blezou.shot_name
-        zshot.description = strip.blezou.shot_description
-        frame_range = (strip.frame_final_start, strip.frame_final_end)
-        zshot.data["frame_in"] = frame_range[0]
-        zshot.data["frame_out"] = frame_range[1]
-
-        # update sequence info if changed
-        if not zshot.sequence_name == strip.blezou.sequence_name:
-            zseq = ZSequence.by_id(strip.blezou.sequence_id)
-            zshot.sequence_id = zseq.id
-            zshot.parent_id = zseq.id
-            zshot.sequence_name = zseq.name
-
-        # update on server
-        zshot.update()
-        logger.info("Pushed meta to shot: %s from strip: %s" % (zshot.name, strip.name))
-
-    @staticmethod
-    def new_shot(
-        strip: bpy.types.Sequence,
-        zsequence: ZSequence,
-        zproject: ZProject,
-    ) -> ZShot:
-
-        frame_range = (strip.frame_final_start, strip.frame_final_end)
-        zshot = zproject.create_shot(
-            strip.blezou.shot_name,
-            zsequence,
-            frame_in=frame_range[0],
-            frame_out=frame_range[1],
-        )
-        # update description, no option to pass that on create
-        if strip.blezou.shot_description:
-            zshot.description = strip.blezou.shot_description
-            zshot.update()
-
-        # set project name locally, will be available on next pull
-        zshot.project_name = zproject.name
-        logger.info(
-            "Pushed create shot: %s for project: %s" % (zshot.name, zproject.name)
-        )
-        return zshot
-
-    @staticmethod
-    def new_sequence(strip: bpy.types.Sequence, zproject: ZProject) -> ZSequence:
-        zsequence = zproject.create_sequence(
-            strip.blezou.sequence_name,
-        )
-        logger.info(
-            "Pushed create sequence: %s for project: %s"
-            % (zsequence.name, zproject.name)
-        )
-        return zsequence
-
-    @staticmethod
-    def delete_shot(strip: bpy.types.Sequence, zshot: ZShot) -> str:
-        result = zshot.remove()
-        logger.info(
-            "Pushed delete shot: %s for project: %s"
-            % (zshot.name, zshot.project_name if zshot.project_name else "Unknown")
-        )
-        strip.blezou.clear()
-        return result
-
-    @staticmethod
-    def _remap_frame_range(frame_in: int, frame_out: int) -> Tuple[int, int]:
-        start_frame = 101
-        nb_of_frames = frame_out - frame_in
-        return (start_frame, start_frame + nb_of_frames)
 
 
 class CheckStrip:
@@ -592,7 +485,7 @@ class BZ_OT_SQE_PushShotMeta(bpy.types.Operator):
                 continue
 
             # push update to shot
-            Push.shot_meta(strip, zshot)
+            push.shot_meta(strip, zshot)
             succeeded.append(strip)
 
         # end progress update
@@ -677,7 +570,7 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
             # check if seq already to sevrer  > create it
             zseq = CheckStrip.seq_exists_by_name(strip, zproject_active)
             if not zseq:
-                zseq = Push.new_sequence(strip, zproject_active)
+                zseq = push.new_sequence(strip, zproject_active)
 
             # check if shot already to sevrer  > create it
             zshot = CheckStrip.shot_exists_by_name(strip, zproject_active, zseq)
@@ -686,8 +579,8 @@ class BZ_OT_SQE_PushNewShot(bpy.types.Operator):
                 continue
 
             # push update to shot
-            zshot = Push.new_shot(strip, zseq, zproject_active)
-            Pull.shot_meta(strip, zshot)
+            zshot = push.new_shot(strip, zseq, zproject_active)
+            pull.shot_meta(strip, zshot)
             succeeded.append(strip)
 
         # end progress update
@@ -1021,7 +914,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
             return {"CANCELLED"}
 
         # pull shot meta
-        Pull.shot_meta(strip, zshot)
+        pull.shot_meta(strip, zshot)
 
         t = "Linked strip: %s to shot: %s with ID: %s" % (
             strip.name,
@@ -1190,7 +1083,7 @@ class BZ_OT_SQE_PullShotMeta(bpy.types.Operator):
                 continue
 
             # push update to shot
-            Pull.shot_meta(strip, zshot)
+            pull.shot_meta(strip, zshot)
             succeeded.append(strip)
 
         # end progress update
@@ -1407,7 +1300,7 @@ class BZ_OT_SQE_PushDeleteShot(bpy.types.Operator):
                 continue
 
             # delete shot
-            Push.delete_shot(strip, zshot)
+            push.delete_shot(strip, zshot)
             succeeded.append(strip)
 
         # end progress update
