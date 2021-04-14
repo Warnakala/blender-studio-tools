@@ -1,7 +1,8 @@
 import bpy
+from . import blend
+from . import prefs
 from . import ops
 from . import ui
-from . import prefs
 from .logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(__name__)
@@ -25,6 +26,7 @@ if _need_reload:
     import importlib
 
     logger.info("-START- Reloading Cache Manager")
+    blend = importlib.reload(blend)
     prefs = importlib.reload(prefs)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
