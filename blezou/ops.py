@@ -94,18 +94,7 @@ class BLEZOU_OT_productions_load(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    def _get_productions(
-        self, context: bpy.types.Context
-    ) -> List[Tuple[str, str, str]]:
-
-        if not util.zsession_auth(context):
-            return []
-
-        zprojectlist = ZProjectList()
-        enum_list = [(p.id, p.name, p.description or "") for p in zprojectlist.projects]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_productions)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_projects)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -145,16 +134,7 @@ class BLEZOU_OT_sequences_load(bpy.types.Operator):
 
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
 
-    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zproject_active = util.zproject_active_get()
-
-        enum_list = [
-            (s.id, s.name, s.description or "")
-            for s in zproject_active.get_sequences_all()
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_sequences)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_sequences)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -192,15 +172,7 @@ class BLEZOU_OT_shots_load(bpy.types.Operator):
 
     # TODO: reduce api request to one, we request in _get_shots and also in execute to set active shot
 
-    def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zseq_active = util.zsequence_active_get()
-
-        enum_list = [
-            (s.id, s.name, s.description or "") for s in zseq_active.get_all_shots()
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_shots)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_shots_from_active_seq)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -235,14 +207,7 @@ class BLEZOU_OT_asset_types_load(bpy.types.Operator):
 
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
 
-    def _get_assetypes(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zproject_active = util.zproject_active_get()
-        enum_list = [
-            (at.id, at.name, "") for at in zproject_active.get_all_asset_types()
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_assetypes)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_assets_from_active_asset_type)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -278,18 +243,7 @@ class BLEZOU_OT_assets_load(bpy.types.Operator):
     bl_property = "enum_prop"
 
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
-
-    def _get_assets(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zproject_active = util.zproject_active_get()
-        zasset_type_active = util.zasset_type_active_get()
-
-        enum_list = [
-            (a.id, a.name, a.description or "")
-            for a in zproject_active.get_all_assets_for_type(zasset_type_active)
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_assets)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_assets_from_active_asset_type)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -650,19 +604,9 @@ class BLEZOU_OT_sqe_link_sequence(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-        zproject_active = util.zproject_active_get()
-
-        if not zproject_active:
-            return []
-
-        enum_list = [
-            (s.id, s.name, s.description or "")
-            for s in zproject_active.get_sequences_all()
-        ]
-        return enum_list
-
-    enum_prop: bpy.props.EnumProperty(items=_get_sequences)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(
+        items=opsdata._get_sequences,
+    )  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -707,32 +651,8 @@ class BLEZOU_OT_sqe_link_shot(bpy.types.Operator):
         "Adds required shot metadata to selecetd strip based on data from server."
     )
 
-    def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-
-        zproject_active = util.zproject_active_get()
-        if not zproject_active:
-            return []
-
-        enum_list = [
-            (s.id, s.name, s.description or "")
-            for s in zproject_active.get_sequences_all()
-        ]
-        return enum_list
-
-    def _get_shots(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-
-        if not self.sequence_enum:
-            return []
-
-        zseq_active = ZSequence.by_id(self.sequence_enum)
-
-        enum_list = [
-            (s.id, s.name, s.description or "") for s in zseq_active.get_all_shots()
-        ]
-        return enum_list
-
-    sequence_enum: bpy.props.EnumProperty(items=_get_sequences, name="Sequence")  # type: ignore
-    shots_enum: bpy.props.EnumProperty(items=_get_shots, name="Shot")  # type: ignore
+    sequence_enum: bpy.props.EnumProperty(items=opsdata._get_sequences, name="Sequence")  # type: ignore
+    shots_enum: bpy.props.EnumProperty(items=opsdata._get_shots_from_op_enum, name="Shot")  # type: ignore
     use_url: bpy.props.BoolProperty(
         name="Use URL",
         description="Use URL of shot on server to initiate strip. Paste complete URL.",
@@ -1445,7 +1365,7 @@ class BLEZOU_OT_sqe_debug_duplicates(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        opsdata._SQE_DUPLCIATES[:] = opsdata._sqe_update_duplicates(context)
+        opsdata._sqe_duplicates[:] = opsdata._sqe_update_duplicates(context)
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
@@ -1482,7 +1402,7 @@ class BLEZOU_OT_sqe_debug_not_linked(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        opsdata._SQE_NOT_LINKED[:] = opsdata._sqe_update_not_linked(context)
+        opsdata._sqe_not_linked[:] = opsdata._sqe_update_not_linked(context)
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
@@ -1519,7 +1439,7 @@ class BLEZOU_OT_sqe_debug_multi_project(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        opsdata._SQE_MULTI_PROJECT[:] = opsdata._sqe_update_multi_project(context)
+        opsdata._sqe_multi_project[:] = opsdata._sqe_update_multi_project(context)
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 

@@ -212,7 +212,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
     bl_label = "Shot Tools"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
-    bl_order = 10
+    bl_order = 20
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
