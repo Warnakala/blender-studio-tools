@@ -16,8 +16,9 @@ def shot_meta(strip: bpy.types.Sequence, zshot: ZShot) -> None:
     zshot.data["frame_in"] = strip.frame_final_start
     zshot.data["frame_out"] = strip.frame_final_end
 
-    # update sequence info if changed
-    if not zshot.sequence_name == strip.blezou.sequence_name:
+    # if user changed the seqeunce the shot belongs to
+    # (can only be done by operator not by hand)
+    if strip.blezou.sequence_id != zshot.sequence_id:
         zseq = ZSequence.by_id(strip.blezou.sequence_id)
         zshot.sequence_id = zseq.id
         zshot.parent_id = zseq.id
