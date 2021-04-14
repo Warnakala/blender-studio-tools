@@ -12,10 +12,10 @@ logger = ZLoggerFactory.getLogger(name=__name__)
 
 # CACHE VARIABLES
 # used to cache active entitys to prevent a new api request when read only
-_ZSEQUENCE_ACTIVE: ZSequence = ZSequence()
-_ZSHOT_ACTIVE: ZShot = ZShot()
-_ZASSET_ACTIVE: ZAsset = ZAsset()
-_ZASSET_TYPE_ACTIVE: ZAssetType = ZAssetType()
+_zsequence_active: ZSequence = ZSequence()
+_zshot_active: ZShot = ZShot()
+_zasset_active: ZAsset = ZAsset()
+_zasset_type_active: ZAssetType = ZAssetType()
 
 
 class BLEZOU_property_group_sequence(bpy.types.PropertyGroup):
@@ -136,10 +136,10 @@ class BLEZOU_property_group_window(bpy.types.PropertyGroup):
 
 
 def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
-    global _ZSEQUENCE_ACTIVE
-    global _ZSHOT_ACTIVE
-    global _ZASSET_ACTIVE
-    global _ZASSET_TYPE_ACTIVE
+    global _zsequence_active
+    global _zshot_active
+    global _zasset_active
+    global _zasset_type_active
 
     sequence_active_id = context.scene.blezou.sequence_active_id
     shot_active_id = context.scene.blezou.shot_active_id
@@ -147,47 +147,47 @@ def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
     asset_type_active_id = context.scene.blezou.asset_type_active_id
 
     if sequence_active_id:
-        _ZSEQUENCE_ACTIVE = ZSequence.by_id(sequence_active_id)
-        logger.info(f"Initialized active aequence cache to: {_ZSEQUENCE_ACTIVE.name}")
+        _zsequence_active = ZSequence.by_id(sequence_active_id)
+        logger.info(f"Initialized active aequence cache to: {_zsequence_active.name}")
 
     if shot_active_id:
-        _ZSHOT_ACTIVE = ZShot.by_id(shot_active_id)
-        logger.info(f"Initialized active shot cache to: {_ZSHOT_ACTIVE.name}")
+        _zshot_active = ZShot.by_id(shot_active_id)
+        logger.info(f"Initialized active shot cache to: {_zshot_active.name}")
 
     if asset_active_id:
-        _ZASSET_ACTIVE = ZAsset.by_id(asset_active_id)
-        logger.info(f"Initialized active asset cache to: {_ZASSET_ACTIVE.name}")
+        _zasset_active = ZAsset.by_id(asset_active_id)
+        logger.info(f"Initialized active asset cache to: {_zasset_active.name}")
 
     if asset_type_active_id:
-        _ZASSET_TYPE_ACTIVE = ZAssetType.by_id(asset_type_active_id)
+        _zasset_type_active = ZAssetType.by_id(asset_type_active_id)
         logger.info(
-            f"Initialized active asset type cache to: {_ZASSET_TYPE_ACTIVE.name}"
+            f"Initialized active asset type cache to: {_zasset_type_active.name}"
         )
 
 
 def clear_cache_variables():
-    global _ZSEQUENCE_ACTIVE
-    global _ZSHOT_ACTIVE
-    global _ZASSET_ACTIVE
-    global _ZASSET_TYPE_ACTIVE
+    global _zsequence_active
+    global _zshot_active
+    global _zasset_active
+    global _zasset_type_active
 
-    _ZSEQUENCE_ACTIVE = ZSequence()
+    _zsequence_active = ZSequence()
     logger.info("Cleared active aequence cache")
-    _ZSHOT_ACTIVE = ZShot()
+    _zshot_active = ZShot()
     logger.info("Cleared active shot cache")
-    _ZASSET_ACTIVE = ZAsset()
+    _zasset_active = ZAsset()
     logger.info("Cleared active asset cache")
-    _ZASSET_TYPE_ACTIVE = ZAssetType()
+    _zasset_type_active = ZAssetType()
     logger.info("Cleared active asset type cache")
 
 
 def _get_project_active(self):
-    return prefs._ZPROJECT_ACTIVE.name
+    return prefs._zproject_active.name
 
 
 def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
     addon_prefs = bpy.context.preferences.addons["blezou"].preferences
-    zproject_active = prefs._ZPROJECT_ACTIVE
+    zproject_active = prefs._zproject_active
 
     if not zproject_active or not addon_prefs.session.is_auth:
         return [("None", "None", "")]

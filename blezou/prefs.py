@@ -18,7 +18,7 @@ logger = ZLoggerFactory.getLogger(name=__name__)
 
 # CACHE VARIABLES
 # used to cache active entitys to prevent a new api request when read only
-_ZPROJECT_ACTIVE: ZProject = ZProject()
+_zproject_active: ZProject = ZProject()
 
 
 class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
@@ -150,10 +150,10 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
         box.label(text="Project settings", icon="FILEBROWSER")
         row = box.row(align=True)
 
-        if not _ZPROJECT_ACTIVE:
+        if not _zproject_active:
             prod_load_text = "Select Production"
         else:
-            prod_load_text = _ZPROJECT_ACTIVE.name
+            prod_load_text = _zproject_active.name
 
         row.operator(
             BLEZOU_OT_productions_load.bl_idname,
@@ -174,20 +174,20 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
 
 
 def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
-    global _ZPROJECT_ACTIVE
+    global _zproject_active
 
     addon_prefs = context.preferences.addons["blezou"].preferences
     project_active_id = addon_prefs.project_active_id
 
     if project_active_id:
-        _ZPROJECT_ACTIVE = ZProject.by_id(project_active_id)
-        logger.info(f"Initialized Active Project Cache to: {_ZPROJECT_ACTIVE.name}")
+        _zproject_active = ZProject.by_id(project_active_id)
+        logger.info(f"Initialized Active Project Cache to: {_zproject_active.name}")
 
 
 def clear_cache_variables():
-    global _ZPROJECT_ACTIVE
+    global _zproject_active
 
-    _ZPROJECT_ACTIVE = ZProject()
+    _zproject_active = ZProject()
     logger.info("Cleared Active Project Cache")
 
 

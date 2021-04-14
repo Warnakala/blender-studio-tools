@@ -32,72 +32,72 @@ def zsession_auth(context: bpy.types.Context) -> bool:
 
 
 def zproject_active_get() -> ZProject:
-    return prefs._ZPROJECT_ACTIVE
+    return prefs._zproject_active
 
 
 def zproject_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
-    prefs._ZPROJECT_ACTIVE = ZProject.by_id(entity_id)
+    prefs._zproject_active = ZProject.by_id(entity_id)
     addon_prefs_get(context).project_active_id = entity_id
 
 
 def zproject_active_reset(context: bpy.types.Context) -> None:
-    prefs._ZPROJECT_ACTIVE = ZProject()
+    prefs._zproject_active = ZProject()
     addon_prefs_get(context).project_active_id = ""
 
 
 def zsequence_active_get() -> ZSequence:
-    return props._ZSEQUENCE_ACTIVE
+    return props._zsequence_active
 
 
 def zsequence_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
-    props._ZSEQUENCE_ACTIVE = ZSequence.by_id(entity_id)
+    props._zsequence_active = ZSequence.by_id(entity_id)
     context.scene.blezou.sequence_active_id = entity_id
 
 
 def zsequence_active_reset(context: bpy.types.Context) -> None:
-    props._ZSEQUENCE_ACTIVE = ZSequence()
+    props._zsequence_active = ZSequence()
     context.scene.blezou.sequence_active_id = ""
 
 
 def zshot_active_get() -> ZShot:
-    return props._ZSHOT_ACTIVE
+    return props._zshot_active
 
 
 def zshot_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
-    props._ZSHOT_ACTIVE = ZShot.by_id(entity_id)
+    props._zshot_active = ZShot.by_id(entity_id)
     context.scene.blezou.shot_active_id = entity_id
 
 
 def zshot_active_reset(context: bpy.types.Context) -> None:
-    props._ZSHOT_ACTIVE = ZShot()
+    props._zshot_active = ZShot()
     context.scene.blezou.shot_active_id = ""
 
 
 def zasset_active_get() -> ZAsset:
-    return props._ZASSET_ACTIVE
+    return props._zasset_active
 
 
 def zasset_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
-    props._ZASSET_ACTIVE = ZAsset.by_id(entity_id)
+    props._zasset_active = ZAsset.by_id(entity_id)
     context.scene.blezou.asset_active_id = entity_id
 
 
 def zasset_active_reset(context: bpy.types.Context) -> None:
-    props._ZASSET_ACTIVE = ZAsset()
+    props._zasset_active = ZAsset()
     context.scene.blezou.asset_active_id = ""
 
 
 def zasset_type_active_get() -> ZAssetType:
-    return props._ZASSET_TYPE_ACTIVE
+    return props._zasset_type_active
 
 
 def zasset_type_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
-    props._ZASSET_TYPE_ACTIVE = ZAssetType.by_id(entity_id)
+    props._zasset_type_active = ZAssetType.by_id(entity_id)
     context.scene.blezou.asset_type_active_id = entity_id
 
 
 def zasset_type_active_reset(context: bpy.types.Context) -> None:
-    props._ZASSET_TYPE_ACTIVE = ZAssetType()
+    props._zasset_type_active = ZAssetType()
     context.scene.blezou.asset_type_active_id = ""
 
 
