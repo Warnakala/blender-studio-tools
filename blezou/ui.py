@@ -1,10 +1,7 @@
-from typing import Optional
-
 import bpy
 
 from . import cache
 from . import checkstrip
-from . import props
 from . import prefs
 from .ops import (
     BLEZOU_OT_assets_load,

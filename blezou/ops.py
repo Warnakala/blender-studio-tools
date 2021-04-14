@@ -1,21 +1,13 @@
 import contextlib
-import copy
-import importlib
-import re
-from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
+from typing import Dict, List, Set
 
 import bpy
 
 from . import gazu, cache, opsdata, prefs, push, pull, checkstrip
 from .logger import ZLoggerFactory
 from .types import (
-    ZProjectList,
-    ZAsset,
-    ZAssetType,
     ZCache,
-    ZProject,
     ZSequence,
     ZShot,
     ZTask,

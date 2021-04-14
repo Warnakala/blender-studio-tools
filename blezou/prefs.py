@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 
 import bpy
-from bpy.app.handlers import persistent
 
 from .auth import ZSession
 from .logger import ZLoggerFactory
@@ -12,7 +11,6 @@ from .ops import (
     BLEZOU_OT_session_end,
     BLEZOU_OT_session_start,
 )
-from .types import ZProject
 from . import cache
 
 logger = ZLoggerFactory.getLogger(name=__name__)
