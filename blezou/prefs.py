@@ -13,12 +13,9 @@ from .ops import (
     BLEZOU_OT_session_start,
 )
 from .types import ZProject
+from . import cache
 
 logger = ZLoggerFactory.getLogger(name=__name__)
-
-# CACHE VARIABLES
-# used to cache active entitys to prevent a new api request when read only
-_zproject_active: ZProject = ZProject()
 
 
 class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
@@ -125,6 +122,7 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
+        zproject_active = cache.zproject_active_get()
 
         # login
         box = layout.box()
@@ -150,10 +148,10 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
         box.label(text="Project settings", icon="FILEBROWSER")
         row = box.row(align=True)
 
-        if not _zproject_active:
+        if not zproject_active:
             prod_load_text = "Select Production"
         else:
-            prod_load_text = _zproject_active.name
+            prod_load_text = zproject_active.name
 
         row.operator(
             BLEZOU_OT_productions_load.bl_idname,
@@ -173,30 +171,33 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
             box.row().prop(self, "shot_counter_increment")
 
 
-def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
-    global _zproject_active
-
-    addon_prefs = context.preferences.addons["blezou"].preferences
-    project_active_id = addon_prefs.project_active_id
-
-    if project_active_id:
-        _zproject_active = ZProject.by_id(project_active_id)
-        logger.info("Initialized Active Project Cache to: %s", _zproject_active.name)
+def zsession_get(context: bpy.types.Context) -> ZSession:
+    """
+    shortcut to get zsession from blezou addon preferences
+    """
+    prefs = context.preferences.addons["blezou"].preferences
+    return prefs.session  # type: ignore
 
 
-def clear_cache_variables():
-    global _zproject_active
+def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
+    """
+    shortcut to get blezou addon preferences
+    """
+    return context.preferences.addons["blezou"].preferences
 
-    _zproject_active = ZProject()
-    logger.info("Cleared Active Project Cache")
+
+def zsession_auth(context: bpy.types.Context) -> bool:
+    """
+    shortcut to check if zession is authorized
+    """
+    return zsession_get(context).is_auth()
 
 
 @persistent
-def load_post_handler(dummy):
+def load_post_handler_session_end(dummy):
     addon_prefs = bpy.context.preferences.addons["blezou"].preferences
     if addon_prefs.session.is_auth():
         addon_prefs.session.end()
-    clear_cache_variables()
 
 
 # ---------REGISTER ----------
@@ -208,7 +209,8 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.app.handlers.load_post.append(load_post_handler)
+    # handlers
+    bpy.app.handlers.load_post.append(load_post_handler_session_end)
 
 
 def unregister():
@@ -218,8 +220,9 @@ def unregister():
     if addon_prefs.session.is_auth():
         addon_prefs.session.end()
 
-    # clear cache
-    clear_cache_variables()
-
+    # unregister classes
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+
+    # clear handlers
+    bpy.app.handlers.load_post.remove(load_post_handler_session_end)

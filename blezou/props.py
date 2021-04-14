@@ -4,18 +4,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import bpy
 from bpy.app.handlers import persistent
 
-from . import opsdata, prefs
+from . import cache, propsdata
 from .logger import ZLoggerFactory
 from .types import ZAsset, ZAssetType, ZCache, ZProject, ZSequence, ZShot
 
 logger = ZLoggerFactory.getLogger(name=__name__)
-
-# CACHE VARIABLES
-# used to cache active entitys to prevent a new api request when read only
-_zsequence_active: ZSequence = ZSequence()
-_zshot_active: ZShot = ZShot()
-_zasset_active: ZAsset = ZAsset()
-_zasset_type_active: ZAssetType = ZAssetType()
 
 
 class BLEZOU_property_group_sequence(bpy.types.PropertyGroup):
@@ -135,93 +128,6 @@ class BLEZOU_property_group_window(bpy.types.PropertyGroup):
         self.multi_edit_seq = ""
 
 
-def init_cache_variables(context: bpy.types.Context = bpy.context) -> None:
-    global _zsequence_active
-    global _zshot_active
-    global _zasset_active
-    global _zasset_type_active
-
-    sequence_active_id = context.scene.blezou.sequence_active_id
-    shot_active_id = context.scene.blezou.shot_active_id
-    asset_active_id = context.scene.blezou.asset_active_id
-    asset_type_active_id = context.scene.blezou.asset_type_active_id
-
-    if sequence_active_id:
-        _zsequence_active = ZSequence.by_id(sequence_active_id)
-        logger.info("Initialized active aequence cache to: %s", _zsequence_active.name)
-
-    if shot_active_id:
-        _zshot_active = ZShot.by_id(shot_active_id)
-        logger.info("Initialized active shot cache to: %s ", _zshot_active.name)
-
-    if asset_active_id:
-        _zasset_active = ZAsset.by_id(asset_active_id)
-        logger.info("Initialized active asset cache to: %s", _zasset_active.name)
-
-    if asset_type_active_id:
-        _zasset_type_active = ZAssetType.by_id(asset_type_active_id)
-        logger.info(
-            "Initialized active asset type cache to: %s ", _zasset_type_active.name
-        )
-
-
-def clear_cache_variables():
-    global _zsequence_active
-    global _zshot_active
-    global _zasset_active
-    global _zasset_type_active
-
-    _zsequence_active = ZSequence()
-    logger.info("Cleared active aequence cache")
-    _zshot_active = ZShot()
-    logger.info("Cleared active shot cache")
-    _zasset_active = ZAsset()
-    logger.info("Cleared active asset cache")
-    _zasset_type_active = ZAssetType()
-    logger.info("Cleared active asset type cache")
-
-
-def _get_project_active(self):
-    return prefs._zproject_active.name
-
-
-def _get_sequences(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
-    zproject_active = prefs._zproject_active
-
-    if not zproject_active or not addon_prefs.session.is_auth:
-        return [("None", "None", "")]
-
-    enum_list = [(s.name, s.name, "") for s in zproject_active.get_sequences_all()]
-    return enum_list
-
-
-def _gen_shot_preview(self):
-    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
-    shot_counter_increment = addon_prefs.shot_counter_increment
-    shot_counter_digits = addon_prefs.shot_counter_digits
-    shot_counter_start = self.shot_counter_start
-    shot_pattern = addon_prefs.shot_pattern
-    strip = bpy.context.scene.sequence_editor.active_strip
-    examples: List[str] = []
-    sequence = self.sequence_enum
-    var_project = (
-        self.var_project_custom
-        if self.var_use_custom_project
-        else self.var_project_active
-    )
-    var_sequence = self.var_sequence_custom if self.var_use_custom_seq else sequence
-    var_lookup_table = {"Sequence": var_sequence, "Project": var_project}
-
-    for count in range(3):
-        counter_number = shot_counter_start + (shot_counter_increment * count)
-        counter = str(counter_number).rjust(shot_counter_digits, "0")
-        var_lookup_table["Counter"] = counter
-        examples.append(opsdata._resolve_pattern(shot_pattern, var_lookup_table))
-
-    return " | ".join(examples) + "..."
-
-
 def _add_window_manager_props():
 
     # Multi Edit Properties
@@ -264,18 +170,18 @@ def _add_window_manager_props():
     bpy.types.WindowManager.shot_preview = bpy.props.StringProperty(
         name="Shot Pattern",
         description="Preview result of current settings on how a shot will be named.",
-        get=_gen_shot_preview,
+        get=propsdata._gen_shot_preview,
     )
 
     bpy.types.WindowManager.var_project_active = bpy.props.StringProperty(
         name="Active Project",
         description="Value that will be inserted in <Project> wildcard.",
-        get=_get_project_active,
+        get=propsdata._get_project_active,
     )
 
     bpy.types.WindowManager.sequence_enum = bpy.props.EnumProperty(
         name="Sequences",
-        items=_get_sequences,
+        items=propsdata._get_sequences,
         description="Name of Sequence the generated Shots will be assinged to.",
     )
 
@@ -297,11 +203,6 @@ def _clear_window_manager_props():
     del bpy.types.WindowManager.shot_preview
     del bpy.types.WindowManager.var_project_active
     del bpy.types.WindowManager.sequence_enum
-
-
-@persistent
-def load_post_handler(dummy):
-    clear_cache_variables()
 
 
 # ----------------REGISTER--------------
@@ -329,19 +230,10 @@ def register():
     # Window Manager Properties
     _add_window_manager_props()
 
-    # Handlers
-    bpy.app.handlers.load_post.append(load_post_handler)
-
 
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
-    # clear cache
-    clear_cache_variables()
-
     # clear properties
     _clear_window_manager_props()
-
-    # clear handlers
-    bpy.app.handlers.load_post.remove(load_post_handler)

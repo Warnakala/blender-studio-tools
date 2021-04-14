@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import bpy
 
-from . import util
+from . import cache, prefs
 from .logger import ZLoggerFactory
 from .types import ZSequence, ZProjectList
 
@@ -142,7 +142,7 @@ def _get_projects(
 ) -> List[Tuple[str, str, str]]:
     global _projects_list
 
-    if not util.zsession_auth(context):
+    if not prefs.zsession_auth(context):
         return []
 
     zprojectlist = ZProjectList()
@@ -158,7 +158,7 @@ def _get_sequences(
 ) -> List[Tuple[str, str, str]]:
     global _sequence_enum_list
 
-    zproject_active = util.zproject_active_get()
+    zproject_active = cache.zproject_active_get()
     if not zproject_active:
         return []
 
@@ -194,7 +194,7 @@ def _get_shots_from_active_seq(
 ) -> List[Tuple[str, str, str]]:
     global _shot_enum_list
 
-    zseq_active = util.zsequence_active_get()
+    zseq_active = cache.zsequence_active_get()
 
     if not zseq_active:
         return []
@@ -211,7 +211,7 @@ def _get_assetypes(
 ) -> List[Tuple[str, str, str]]:
     global _asset_types_enum_list
 
-    zproject_active = util.zproject_active_get()
+    zproject_active = cache.zproject_active_get()
     if not zproject_active:
         return []
 
@@ -227,8 +227,8 @@ def _get_assets_from_active_asset_type(
 ) -> List[Tuple[str, str, str]]:
     global _asset_enum_list
 
-    zproject_active = util.zproject_active_get()
-    zasset_type_active = util.zasset_type_active_get()
+    zproject_active = cache.zproject_active_get()
+    zasset_type_active = cache.zasset_type_active_get()
 
     if not zproject_active or not zasset_type_active:
         return []

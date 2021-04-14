@@ -2,15 +2,17 @@ from typing import Optional
 
 import bpy
 
-from . import gazu, util
+from . import gazu
 from .types import ZSequence, ZProject, ZShot, ZCache
 from .logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
+VALID_STRIP_TYPES = {"MOVIE", "COLOR"}
+
 
 def is_valid_type(strip: bpy.types.Sequence) -> bool:
-    if not strip.type in util.VALID_STRIP_TYPES:
+    if not strip.type in VALID_STRIP_TYPES:
         logger.info("Strip: %s. Invalid type.", strip.type)
         return False
     return True

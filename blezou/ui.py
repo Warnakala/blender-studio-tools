@@ -2,8 +2,10 @@ from typing import Optional
 
 import bpy
 
+from . import cache
+from . import checkstrip
 from . import props
-from . import util
+from . import prefs
 from .ops import (
     BLEZOU_OT_assets_load,
     BLEZOU_OT_asset_types_load,
@@ -52,14 +54,14 @@ class BLEZOU_PT_vi3d_auth(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = util.addon_prefs_get(context)
-        zsession = util.zsession_get(context)
+        addon_prefs = prefs.addon_prefs_get(context)
+        zsession = prefs.zsession_get(context)
 
         layout = self.layout
 
         row = layout.row(align=True)
         if not zsession.is_auth():
-            row.label(text=f"Email: {prefs.email}")
+            row.label(text=f"Email: {addon_prefs.email}")
             row = layout.row(align=True)
             row.operator(BLEZOU_OT_session_start.bl_idname, text="Login", icon="PLAY")
         else:
@@ -86,21 +88,21 @@ class BLEZOU_PT_vi3d_context(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return util.zsession_auth(context)
+        return prefs.zsession_auth(context)
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = util.addon_prefs_get(context)
+        addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
-        category = prefs.category  # can be either 'SHOTS' or 'ASSETS'
-        zproject_active = util.zproject_active_get()
+        category = addon_prefs.category  # can be either 'SHOTS' or 'ASSETS'
+        zproject_active = cache.zproject_active_get()
         item_group_data = {
             "name": "Sequence",
-            "zobject": util.zsequence_active_get(),
+            "zobject": cache.zsequence_active_get(),
             "operator": BLEZOU_OT_sequences_load.bl_idname,
         }
         item_data = {
             "name": "Shot",
-            "zobject": util.zshot_active_get(),
+            "zobject": cache.zshot_active_get(),
             "operator": BLEZOU_OT_shots_load.bl_idname,
         }
         # Production
@@ -109,15 +111,15 @@ class BLEZOU_PT_vi3d_context(bpy.types.Panel):
         # Category
         box = layout.box()
         row = box.row(align=True)
-        row.prop(prefs, "category", expand=True)
+        row.prop(addon_prefs, "category", expand=True)
 
-        if not util.zsession_auth(context) or not zproject_active:
+        if not prefs.zsession_auth(context) or not zproject_active:
             row.enabled = False
 
         # Sequence / AssetType
         if category == "ASSETS":
             item_group_data["name"] = "AssetType"
-            item_group_data["zobject"] = util.zasset_type_active_get()
+            item_group_data["zobject"] = cache.zasset_type_active_get()
             item_group_data["operator"] = BLEZOU_OT_asset_types_load.bl_idname
 
         row = box.row(align=True)
@@ -135,7 +137,7 @@ class BLEZOU_PT_vi3d_context(bpy.types.Panel):
         # Shot / Asset
         if category == "ASSETS":
             item_data["name"] = "Asset"
-            item_data["zobject"] = util.zasset_active_get()
+            item_data["zobject"] = cache.zasset_active_get()
             item_data["operator"] = BLEZOU_OT_assets_load.bl_idname
 
         row = box.row(align=True)
@@ -163,17 +165,17 @@ class BLEZOU_PT_sqe_auth(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(not util.zsession_auth(context))
+        return bool(not prefs.zsession_auth(context))
 
     def draw(self, context: bpy.types.Context) -> None:
-        prefs = util.addon_prefs_get(context)
-        zsession = util.zsession_get(context)
+        addon_prefs = prefs.addon_prefs_get(context)
+        zsession = prefs.zsession_get(context)
 
         layout = self.layout
 
         row = layout.row(align=True)
         if not zsession.is_auth():
-            row.label(text=f"Email: {prefs.email}")
+            row.label(text=f"Email: {addon_prefs.email}")
             row = layout.row(align=True)
             row.operator(BLEZOU_OT_session_start.bl_idname, text="Login", icon="PLAY")
         else:
@@ -216,7 +218,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(util.zsession_auth(context) or context.selected_sequences)
+        return bool(prefs.zsession_auth(context) or context.selected_sequences)
 
     def draw(self, context: bpy.types.Context) -> None:
 
@@ -252,14 +254,14 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         selshots = context.selected_sequences
         nr_of_shots = len(selshots)
         noun = get_selshots_noun(nr_of_shots)
-        zproject_active = util.zproject_active_get()
+        zproject_active = cache.zproject_active_get()
 
         strips_to_init = []
         strips_to_uninit = []
         strips_to_unlink = []
 
         for s in selshots:
-            if s.type not in util.VALID_STRIP_TYPES:
+            if s.type not in checkstrip.VALID_STRIP_TYPES:
                 continue
             if not s.blezou.initialized:
                 strips_to_init.append(s)
@@ -274,7 +276,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         box.label(text="Setup Shots", icon="TOOL_SETTINGS")
 
         # Production
-        if util.zsession_auth(context):
+        if prefs.zsession_auth(context):
             box.row().label(text=f"Production: {zproject_active.name}")
 
         # Single Selection
@@ -282,9 +284,9 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
             row = box.row(align=True)
 
             # initialize
-            if strip.type not in util.VALID_STRIP_TYPES:
+            if strip.type not in checkstrip.VALID_STRIP_TYPES:
                 row.label(
-                    text=f"Only sequence strips of types: {util.VALID_STRIP_TYPES}"
+                    text=f"Only sequence strips of types: {checkstrip.VALID_STRIP_TYPES }"
                 )
                 return
 
@@ -403,7 +405,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         Mostly used to quickly initialize lots of shots with an increasing counter.
         """
 
-        addon_prefs = util.addon_prefs_get(context)
+        addon_prefs = prefs.addon_prefs_get(context)
         nr_of_shots = len(context.selected_sequences)
         noun = get_selshots_noun(nr_of_shots)
 
@@ -474,7 +476,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
     @classmethod
     def poll_push(cls, context: bpy.types.Context) -> bool:
         # if only one strip is selected and it is not init then hide panel
-        if not util.zsession_auth(context):
+        if not prefs.zsession_auth(context):
             return False
 
         selshots = context.selected_sequences
@@ -580,7 +582,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
     @classmethod
     def poll_pull(cls, context: bpy.types.Context) -> bool:
         # if only one strip is selected and it is not init then hide panel
-        if not util.zsession_auth(context):
+        if not prefs.zsession_auth(context):
             return False
 
         selshots = context.selected_sequences
@@ -629,7 +631,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
 
     @classmethod
     def poll_debug(cls, context: bpy.types.Context) -> bool:
-        return util.addon_prefs_get(context).enable_debug
+        return prefs.addon_prefs_get(context).enable_debug
 
     def draw_debug(self, context: bpy.types.Context) -> None:
         nr_of_shots = len(context.selected_sequences)

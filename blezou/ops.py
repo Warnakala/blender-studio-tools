@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 import bpy
 
-from . import gazu, opsdata, prefs, props, util, push, pull, checkstrip
+from . import gazu, cache, opsdata, prefs, push, pull, checkstrip
 from .logger import ZLoggerFactory
 from .types import (
     ZProjectList,
@@ -24,6 +24,15 @@ from .types import (
 )
 
 logger = ZLoggerFactory.getLogger(name=__name__)
+
+
+def ui_redraw() -> None:
+    """
+    Forces blender to redraw the UI.
+    """
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            area.tag_redraw()
 
 
 class BLEZOU_OT_session_start(bpy.types.Operator):
@@ -42,19 +51,18 @@ class BLEZOU_OT_session_start(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        zsession = util.zsession_get(context)
+        zsession = prefs.zsession_get(context)
 
         zsession.set_config(self.get_config(context))
         zsession.start()
 
         # init cache variables
-        prefs.init_cache_variables(context=context)
-        props.init_cache_variables(context=context)
+        cache.init_cache_variables(context=context)
 
         return {"FINISHED"}
 
     def get_config(self, context: bpy.types.Context) -> Dict[str, str]:
-        addon_prefs = util.addon_prefs_get(context)
+        addon_prefs = prefs.addon_prefs_get(context)
         return {
             "email": addon_prefs.email,
             "host": addon_prefs.host,
@@ -73,14 +81,13 @@ class BLEZOU_OT_session_end(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return util.zsession_auth(context)
+        return prefs.zsession_auth(context)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        zsession = util.zsession_get(context)
+        zsession = prefs.zsession_get(context)
         zsession.end()
         # clear cache variables
-        props.clear_cache_variables()
-        prefs.clear_cache_variables()
+        cache.clear_cache_variables()
         return {"FINISHED"}
 
 
@@ -98,23 +105,23 @@ class BLEZOU_OT_productions_load(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return util.zsession_auth(context)
+        return prefs.zsession_auth(context)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # store vars to check if project / seq / shot changed
-        project_prev_id = util.zproject_active_get().id
+        project_prev_id = cache.zproject_active_get().id
 
         # update blezou metadata
-        util.zproject_active_set_by_id(context, self.enum_prop)
+        cache.zproject_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
         if self.enum_prop != project_prev_id:
-            util.zsequence_active_reset(context)
-            util.zasset_type_active_reset(context)
-            util.zshot_active_reset(context)
-            util.zasset_active_reset(context)
+            cache.zsequence_active_reset(context)
+            cache.zasset_type_active_reset(context)
+            cache.zshot_active_reset(context)
+            cache.zasset_active_reset(context)
 
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -138,21 +145,21 @@ class BLEZOU_OT_sequences_load(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(util.zsession_auth(context) and util.zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # store vars to check if project / seq / shot changed
-        zseq_prev_id = util.zsequence_active_get().id
+        zseq_prev_id = cache.zsequence_active_get().id
 
         # update blezou metadata
-        util.zsequence_active_set_by_id(context, self.enum_prop)
+        cache.zsequence_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
         if self.enum_prop != zseq_prev_id:
-            util.zshot_active_reset(context)
+            cache.zshot_active_reset(context)
 
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -178,16 +185,16 @@ class BLEZOU_OT_shots_load(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         # only if session is auth active_project and active sequence selected
         return bool(
-            util.zsession_auth(context)
-            and util.zsequence_active_get()
-            and util.zproject_active_get()
+            prefs.zsession_auth(context)
+            and cache.zsequence_active_get()
+            and cache.zproject_active_get()
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # update blezou metadata
         if self.enum_prop:
-            util.zshot_active_set_by_id(context, self.enum_prop)
-        util.ui_redraw()
+            cache.zshot_active_set_by_id(context, self.enum_prop)
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -211,20 +218,20 @@ class BLEZOU_OT_asset_types_load(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(util.zsession_auth(context) and util.zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # store vars to check if project / seq / shot changed
-        asset_type_prev_id = util.zasset_type_active_get().id
+        asset_type_prev_id = cache.zasset_type_active_get().id
 
         # update blezou metadata
-        util.zasset_type_active_set_by_id(context, self.enum_prop)
+        cache.zasset_type_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
         if self.enum_prop != asset_type_prev_id:
-            util.zasset_active_reset(context)
+            cache.zasset_active_reset(context)
 
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -248,9 +255,9 @@ class BLEZOU_OT_assets_load(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(
-            util.zsession_auth(context)
-            and util.zproject_active_get()
-            and util.zasset_type_active_get()
+            prefs.zsession_auth(context)
+            and cache.zproject_active_get()
+            and cache.zasset_type_active_get()
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -258,8 +265,8 @@ class BLEZOU_OT_assets_load(bpy.types.Operator):
             return {"CANCELLED"}
 
         # update blezou metadata
-        util.zasset_active_set_by_id(context, self.enum_prop)
-        util.ui_redraw()
+        cache.zasset_active_set_by_id(context, self.enum_prop)
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -279,7 +286,7 @@ class BLEZOU_OT_sqe_push_shot_meta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(util.zsession_auth(context))
+        return bool(prefs.zsession_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -345,13 +352,13 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
         if nr_of_shots == 1:
             strip = context.scene.sequence_editor.active_strip
             return bool(
-                util.zsession_auth(context)
-                and util.zproject_active_get()
+                prefs.zsession_auth(context)
+                and cache.zproject_active_get()
                 and strip.blezou.sequence_name
                 and strip.blezou.shot_name
             )
 
-        return bool(util.zsession_auth(context) and util.zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -359,7 +366,7 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
             self.report({"WARNING"}, "Submit new shots aborted.")
             return {"CANCELLED"}
 
-        zproject_active = util.zproject_active_get()
+        zproject_active = cache.zproject_active_get()
         succeeded = []
         failed = []
         logger.info("-START- Blezou submitting new shots to: %s", zproject_active.name)
@@ -421,7 +428,7 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
             f"Submitted {len(succeeded)} new shots | Failed: {len(failed)}",
         )
         logger.info("-END- Blezou submitting new shots to: %s", zproject_active.name)
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -429,7 +436,7 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):
-        zproject_active = util.zproject_active_get()
+        zproject_active = cache.zproject_active_get()
         selected_sequences = context.selected_sequences
 
         if not selected_sequences:
@@ -484,7 +491,7 @@ class BLEZOU_OT_sqe_push_new_sequence(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # needs to be logged in, active project
-        return bool(util.zsession_auth(context) and util.zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -496,7 +503,7 @@ class BLEZOU_OT_sqe_push_new_sequence(bpy.types.Operator):
             self.report({"WARNING"}, "Invalid sequence name.")
             return {"CANCELLED"}
 
-        zproject_active = util.zproject_active_get()
+        zproject_active = cache.zproject_active_get()
 
         zsequence = zproject_active.get_sequence_by_name(self.sequence_name)
 
@@ -527,7 +534,7 @@ class BLEZOU_OT_sqe_push_new_sequence(bpy.types.Operator):
     def draw(self, context):
         # UI
         layout = self.layout
-        zproject_active = util.zproject_active_get()
+        zproject_active = cache.zproject_active_get()
 
         # Production
         row = layout.row()
@@ -590,7 +597,7 @@ class BLEZOU_OT_sqe_init_strip(bpy.types.Operator):
             f"Initialized {len(succeeded)} shots | Failed: {len(failed)}.",
         )
         logger.info("-END- Initializing shots")
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
 
@@ -612,8 +619,8 @@ class BLEZOU_OT_sqe_link_sequence(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         strip = context.scene.sequence_editor.active_strip
         return bool(
-            util.zsession_auth(context)
-            and util.zproject_active_get()
+            prefs.zsession_auth(context)
+            and cache.zproject_active_get()
             and strip
             and context.selected_sequences
             and checkstrip.is_valid_type(strip)
@@ -630,7 +637,7 @@ class BLEZOU_OT_sqe_link_sequence(bpy.types.Operator):
         strip.blezou.sequence_name = zseq.name
         strip.blezou.sequence_id = zseq.id
 
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -667,8 +674,8 @@ class BLEZOU_OT_sqe_link_shot(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         strip = context.scene.sequence_editor.active_strip
         return bool(
-            util.zsession_auth(context)
-            and util.zproject_active_get()
+            prefs.zsession_auth(context)
+            and cache.zproject_active_get()
             and strip
             and context.selected_sequences
             and checkstrip.is_valid_type(strip)
@@ -714,7 +721,7 @@ class BLEZOU_OT_sqe_link_shot(bpy.types.Operator):
         )
         logger.info(t)
         self.report({"INFO"}, t)
-        util.ui_redraw()
+        ui_redraw()
 
         return {"FINISHED"}
 
@@ -769,7 +776,7 @@ class BLEZOU_OT_sqe_multi_edit_strip(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        addon_prefs = util.addon_prefs_get(context)
+        addon_prefs = prefs.addon_prefs_get(context)
         shot_counter_increment = addon_prefs.shot_counter_increment
         shot_counter_digits = addon_prefs.shot_counter_digits
         shot_counter_start = context.window_manager.shot_counter_start
@@ -825,7 +832,7 @@ class BLEZOU_OT_sqe_multi_edit_strip(bpy.types.Operator):
             f"Assigned {len(succeeded)} Shots | Failed: {len(failed)}.",
         )
         logger.info("-END- Multi Edit Shot")
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
 
@@ -841,7 +848,7 @@ class BLEZOU_OT_sqe_pull_shot_meta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(util.zsession_auth(context))
+        return bool(prefs.zsession_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -885,7 +892,7 @@ class BLEZOU_OT_sqe_pull_shot_meta(bpy.types.Operator):
             f"Pulled metadata for {len(succeeded)} shots | Failed: {len(failed)}.",
         )
         logger.info("-END- Pulling shot metadata")
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
 
@@ -937,7 +944,7 @@ class BLEZOU_OT_sqe_uninit_strip(bpy.types.Operator):
             f"Uninitialized {len(succeeded)} strips | Failed: {len(failed)}.",
         )
         logger.info("-END- Uninitializing strips")
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1016,7 +1023,7 @@ class BLEZOU_OT_sqe_unlink_shot(bpy.types.Operator):
             f"Unlinked {len(succeeded)} shots | Failed: {len(failed)}.",
         )
         logger.info("-END- Unlinking shots")
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1056,7 +1063,7 @@ class BLEZOU_OT_sqe_push_del_shot(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(util.zsession_auth(context) and context.selected_sequences)
+        return bool(prefs.zsession_auth(context) and context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.confirm:
@@ -1103,7 +1110,7 @@ class BLEZOU_OT_sqe_push_del_shot(bpy.types.Operator):
             f"Deleted {len(succeeded)} shots | Failed: {len(failed)}",
         )
         logger.info("-END- Blezou deleting shots")
-        util.ui_redraw()
+        ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1142,7 +1149,7 @@ class BLEZOU_OT_sqe_push_thumbnail(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(util.zsession_auth(context))
+        return bool(prefs.zsession_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         nr_of_strips: int = len(context.selected_sequences)
@@ -1232,7 +1239,7 @@ class BLEZOU_OT_sqe_push_thumbnail(bpy.types.Operator):
     def _save_render(self, datablock: bpy.types.Image, file_name: str) -> Path:
         """Save the current render image to disk"""
 
-        addon_prefs = util.addon_prefs_get(bpy.context)
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
         folder_name = addon_prefs.folder_thumbnail
 
         # Ensure folder exists
