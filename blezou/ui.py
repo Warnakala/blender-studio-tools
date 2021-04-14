@@ -322,18 +322,18 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
             row = box.row(align=True)
 
             # init
-            if len(strips_to_init):
+            if strips_to_init:
                 row.operator(
                     BZ_OT_SQE_InitStrip.bl_idname,
                     text=f"Init {len(strips_to_init)} Shots",
                     icon="ADD",
                 )
             # make row
-            if len(strips_to_uninit) or len(strips_to_unlink):
+            if strips_to_uninit or strips_to_unlink:
                 row = box.row(align=True)
 
             # uninitialize
-            if len(strips_to_uninit):
+            if strips_to_uninit:
                 row.operator(
                     BZ_OT_SQE_UninitStrip.bl_idname,
                     text=f"Uninitialize {len(strips_to_uninit)} Shots",
@@ -341,7 +341,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
                 )
 
             # unlink all
-            if len(strips_to_unlink):
+            if strips_to_unlink:
                 row.operator(
                     BZ_OT_SQE_UnlinkShot.bl_idname,
                     text=f"Unlink {len(strips_to_unlink)} Shots",
@@ -539,7 +539,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
 
         # metadata operator
         row = box.row()
-        if len(strips_to_meta):
+        if strips_to_meta:
             col = row.column(align=True)
             noun = get_selshots_noun(
                 len(strips_to_meta), prefix=f"{len(strips_to_meta)}"
@@ -551,7 +551,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
             )
 
         # thumbnail operator
-        if len(strips_to_tb):
+        if strips_to_tb:
             noun = get_selshots_noun(len(strips_to_tb), prefix=f"{len(strips_to_meta)}")
             col.operator(
                 BZ_OT_SQE_PushThumbnail.bl_idname,
@@ -561,7 +561,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
 
         # submit operator
         if nr_of_shots > 0:
-            if len(strips_to_submit):
+            if strips_to_submit:
                 noun = get_selshots_noun(
                     len(strips_to_submit), prefix=f"{len(strips_to_submit)}"
                 )
@@ -612,7 +612,7 @@ class BZ_PT_SQE_ShotTools(bpy.types.Panel):
         box.label(text="Pull", icon="IMPORT")
 
         layout = self.layout
-        if len(strips_to_meta):
+        if strips_to_meta:
             noun = get_selshots_noun(
                 len(strips_to_meta), prefix=f"{len(strips_to_meta)}"
             )
