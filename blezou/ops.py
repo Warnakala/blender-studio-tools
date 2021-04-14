@@ -102,10 +102,7 @@ class BZ_OT_ProductionsLoad(bpy.types.Operator):
             return []
 
         zprojectlist = ZProjectList()
-        enum_list = [
-            (p.id, p.name, p.description if p.description else "")
-            for p in zprojectlist.projects
-        ]
+        enum_list = [(p.id, p.name, p.description or "") for p in zprojectlist.projects]
         return enum_list
 
     enum_prop: bpy.props.EnumProperty(items=_get_productions)  # type: ignore
@@ -152,7 +149,7 @@ class BZ_OT_SequencesLoad(bpy.types.Operator):
         zproject_active = util.zproject_active_get()
 
         enum_list = [
-            (s.id, s.name, s.description if s.description else "")
+            (s.id, s.name, s.description or "")
             for s in zproject_active.get_sequences_all()
         ]
         return enum_list
@@ -199,8 +196,7 @@ class BZ_OT_ShotsLoad(bpy.types.Operator):
         zseq_active = util.zsequence_active_get()
 
         enum_list = [
-            (s.id, s.name, s.description if s.description else "")
-            for s in zseq_active.get_all_shots()
+            (s.id, s.name, s.description or "") for s in zseq_active.get_all_shots()
         ]
         return enum_list
 
@@ -288,7 +284,7 @@ class BZ_OT_AssetsLoad(bpy.types.Operator):
         zasset_type_active = util.zasset_type_active_get()
 
         enum_list = [
-            (a.id, a.name, a.description if a.description else "")
+            (a.id, a.name, a.description or "")
             for a in zproject_active.get_all_assets_for_type(zasset_type_active)
         ]
         return enum_list
@@ -661,7 +657,7 @@ class BZ_OT_SQE_LinkSequence(bpy.types.Operator):
             return []
 
         enum_list = [
-            (s.id, s.name, s.description if s.description else "")
+            (s.id, s.name, s.description or "")
             for s in zproject_active.get_sequences_all()
         ]
         return enum_list
@@ -718,7 +714,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
             return []
 
         enum_list = [
-            (s.id, s.name, s.description if s.description else "")
+            (s.id, s.name, s.description or "")
             for s in zproject_active.get_sequences_all()
         ]
         return enum_list
@@ -731,8 +727,7 @@ class BZ_OT_SQE_LinkShot(bpy.types.Operator):
         zseq_active = ZSequence.by_id(self.sequence_enum)
 
         enum_list = [
-            (s.id, s.name, s.description if s.description else "")
-            for s in zseq_active.get_all_shots()
+            (s.id, s.name, s.description or "") for s in zseq_active.get_all_shots()
         ]
         return enum_list
 
