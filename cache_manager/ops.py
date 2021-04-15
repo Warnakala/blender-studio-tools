@@ -3,11 +3,20 @@ from typing import List, Any, Set, cast
 from pathlib import Path
 
 from .logger import LoggerFactory
-from . import blend, prefs, props
+from . import blend, prefs, props, opsdata
 
 logger = LoggerFactory.getLogger(__name__)
 
 VALID_OBJECT_TYPES = {"MESH"}
+
+
+def ui_redraw() -> None:
+    """
+    Forces blender to redraw the UI.
+    """
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            area.tag_redraw()
 
 
 class CM_OT_cache_export(bpy.types.Operator):
@@ -19,7 +28,8 @@ class CM_OT_cache_export(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return [context.scene.collection] and prefs.is_cachedir_valid(context)
+        addon_prefs = prefs.addon_prefs_get(context)
+        return [context.scene.collection] and addon_prefs.is_cachedir_valid
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
@@ -151,9 +161,46 @@ class CM_OT_cache_list_actions(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CM_OT_assign_cachefile(bpy.types.Operator):
+    """
+    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    """
+
+    bl_idname = "cm.assign_cachefile"
+    bl_label = "Assign Cachefile"
+    bl_options = {"INTERNAL"}
+    bl_property = "cachefile"
+
+    cachefile: bpy.props.EnumProperty(
+        items=opsdata.get_cachefiles_enum, name="Cachefiles"
+    )
+    index: bpy.props.IntProperty(name="Index")
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        # collections = scn.cm_collections[scn.cm_collections_index]
+        if not self.cachefile:
+            self.report({"WARNING"}, f"Please select a valid cachefile")
+            return {"CANCELLED"}
+
+        collection = context.scene.cm_collections[self.index].coll_ptr
+        collection.cm.cachefile = self.cachefile
+
+        self.report({"INFO"}, f"{collection.name} assigned cachefile {self.cachefile}")
+        ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
-classes: List[Any] = [CM_OT_cache_export, CM_OT_cache_list_actions]
+classes: List[Any] = [
+    CM_OT_cache_export,
+    CM_OT_cache_list_actions,
+    CM_OT_assign_cachefile,
+]
 
 
 def register():

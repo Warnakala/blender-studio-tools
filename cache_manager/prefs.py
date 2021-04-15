@@ -22,24 +22,24 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
     def cachedir_path(self) -> Path:
         return Path(bpy.path.abspath(self.cachedir)).absolute()
 
+    @property
+    def is_cachedir_valid(self) -> bool:
+
+        # check if file is saved
+        if not self.cachedir:
+            return False
+
+        if not bpy.data.filepath and self.cachedir.startswith("//"):
+            return False
+
+        return True
+
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """
     shortcut to get cache_manager addon preferences
     """
     return context.preferences.addons["cache_manager"].preferences
-
-
-def is_cachedir_valid(context: bpy.types.Context) -> bool:
-    addon_prefs = addon_prefs_get(context)
-    # check if file is saved
-    if not addon_prefs.cachedir:
-        return False
-
-    if not bpy.data.filepath and addon_prefs.cachedir.startswith("//"):
-        return False
-
-    return True
 
 
 # ---------REGISTER ----------
