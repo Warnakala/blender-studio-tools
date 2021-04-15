@@ -123,7 +123,7 @@ class CM_OT_cache_list_actions(bpy.types.Operator):
 
     action: bpy.props.EnumProperty(items=(("ADD", "Add", ""), ("REMOVE", "Remove", "")))
 
-    def execute(self, context: bpy.types.Context) -> Set[str]:
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         scn = context.scene
         idx = scn.cm_collections_index
 
@@ -131,15 +131,14 @@ class CM_OT_cache_list_actions(bpy.types.Operator):
             item = scn.cm_collections[idx]
         except IndexError:
             pass
-
-        info = "Nothing happened"
-
-        if self.action == "REMOVE":
-            item = scn.cm_collections[scn.cm_collections_index]
-            item_name = item.name
-            scn.cm_collections.remove(idx)
-            scn.cm_collections_index -= 1
-            info = "Item %s removed from cache list" % (item_name)
+        else:
+            if self.action == "REMOVE":
+                item = scn.cm_collections[scn.cm_collections_index]
+                item_name = item.name
+                scn.cm_collections.remove(idx)
+                scn.cm_collections_index -= 1
+                info = "Item %s removed from cache list" % (item_name)
+                self.report({"INFO"}, info)
 
         if self.action == "ADD":
             act_coll = context.view_layer.active_layer_collection.collection
@@ -150,9 +149,9 @@ class CM_OT_cache_list_actions(bpy.types.Operator):
                 item.coll_ptr = act_coll
                 item.name = item.coll_ptr.name
                 scn.cm_collections_index = len(scn.cm_collections) - 1
-                info = "%s added to list" % (item.name)
+            info = "%s added to list" % (item.name)
+            self.report({"INFO"}, info)
 
-        self.report({"INFO"}, info)
         return {"FINISHED"}
 
 
