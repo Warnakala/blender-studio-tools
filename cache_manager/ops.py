@@ -18,6 +18,15 @@ def ui_redraw() -> None:
             area.tag_redraw()
 
 
+def get_valid_cache_objects(collection: bpy.types.Collection) -> List[bpy.types.Object]:
+    object_list = [
+        obj
+        for obj in collection.all_objects
+        if obj.type in cmglobals.VALID_OBJECT_TYPES and obj.name.startswith("GEO")
+    ]
+    return object_list
+
+
 class CM_OT_cache_export(bpy.types.Operator):
     """"""
 
@@ -51,12 +60,9 @@ class CM_OT_cache_export(bpy.types.Operator):
             bpy.ops.object.select_all(action="DESELECT")
 
             # create selection for alembic_export operator
-            for obj in coll.all_objects:
-                if obj.type in cmglobals.VALID_OBJECT_TYPES and obj.name.startswith(
-                    "GEO"
-                ):
-                    logger.info("Valid object: %s", obj.name)
-                    obj.select_set(True)
+            object_list = get_valid_cache_objects(coll)
+            for obj in object_list:
+                obj.select_set(True)
 
             filepath = cachedir_path / blend.gen_filename_collection(coll)
 
@@ -237,13 +243,8 @@ class CM_OT_cache_import(bpy.types.Operator):
             abc_cache = bpy.data.cache_files[cachefile_name]
             abc_cache.scale = 1
 
-            # Create a List with all selected Objects
-            object_list = [
-                obj
-                for obj in coll.all_objects
-                if obj.type in cmglobals.VALID_OBJECT_TYPES
-                and obj.name.startswith("GEO")
-            ]
+            # get list with valid objects to apply cache to
+            object_list = get_valid_cache_objects(coll)
 
             # Loop Through All Objects except Active Object and add Modifier and Constraint
             for obj in object_list:
@@ -320,6 +321,94 @@ class CM_OT_cache_import(bpy.types.Operator):
         return a_index
 
 
+class CM_OT_cache_hide(bpy.types.Operator):
+    bl_idname = "cm.cache_hide"
+    bl_label = "Hide Cache"
+    bl_description = "Hide mesh sequence cache modifier and transform cache constraint"
+
+    index: bpy.props.IntProperty(name="Index")
+
+    def execute(self, context):
+        modifier_name = cmglobals.MODIFIER_NAME
+        constraint_name = cmglobals.CONSTRAINT_NAME
+
+        # get collection by index (index is the index that the operator has in the UIList)
+        collection = context.scene.cm_collections[self.index].coll_ptr
+
+        # Create a List with all selected Objects
+        object_list = get_valid_cache_objects(collection)
+
+        # Loop Through All Objects
+        for obj in object_list:
+            # Set Settings of Modifier
+            mod = obj.modifiers.get(modifier_name)
+            con = obj.constraints.get(constraint_name)
+            mod.show_viewport = False
+            mod.show_render = False
+            con.mute = True
+
+        self.report({"INFO"}, f"Hide cache for {collection.name}")
+        return {"FINISHED"}
+
+
+class CM_OT_cache_show(bpy.types.Operator):
+    bl_idname = "cm.cache_show"
+    bl_label = "Show Cache"
+    bl_description = "Show mesh sequence cache modifier and transform cache constraint"
+
+    index: bpy.props.IntProperty(name="Index")
+
+    def execute(self, context):
+        modifier_name = cmglobals.MODIFIER_NAME
+        constraint_name = cmglobals.CONSTRAINT_NAME
+
+        # get collection by index (index is the index that the operator has in the UIList)
+        collection = context.scene.cm_collections[self.index].coll_ptr
+
+        # Create a List with all selected Objects
+        object_list = get_valid_cache_objects(collection)
+
+        # Loop Through All Objects
+        for obj in object_list:
+            # Set Settings of Modifier and Constraint
+            mod = obj.modifiers.get(modifier_name)
+            con = obj.constraints.get(constraint_name)
+            mod.show_viewport = True
+            mod.show_render = True
+            con.mute = False
+
+        self.report({"INFO"}, f"Unhide cache for {collection.name}")
+        return {"FINISHED"}
+
+
+class CM_OT_cache_remove(bpy.types.Operator):
+    bl_idname = "cm.cache_remove"
+    bl_label = "Remove Cache"
+
+    index: bpy.props.IntProperty(name="Index")
+
+    def execute(self, context):
+        context = bpy.context
+        modifier_name = cmglobals.MODIFIER_NAME
+        constraint_name = cmglobals.CONSTRAINT_NAME
+
+        # get collection by index (index is the index that the operator has in the UIList)
+        collection = context.scene.cm_collections[self.index].coll_ptr
+
+        # Create a List with all selected Objects
+        object_list = get_valid_cache_objects(collection)
+
+        # Loop Through All Objects and remove Modifier and Constraint
+        for obj in object_list:
+            mod = obj.modifiers.get(modifier_name)
+            con = obj.constraints.get(constraint_name)
+            obj.constraints.remove(con)
+            obj.modifiers.remove(mod)
+
+        self.report({"INFO"}, f"Remove cache for {collection.name}")
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
 classes: List[Any] = [
@@ -327,6 +416,9 @@ classes: List[Any] = [
     CM_OT_cache_import,
     CM_OT_cache_list_actions,
     CM_OT_assign_cachefile,
+    CM_OT_cache_show,
+    CM_OT_cache_hide,
+    CM_OT_cache_remove,
 ]
 
 
