@@ -3,7 +3,7 @@ from typing import List, Any, Set, cast
 from pathlib import Path
 
 from .logger import LoggerFactory
-from . import blend, prefs
+from . import blend, prefs, props
 
 logger = LoggerFactory.getLogger(__name__)
 
@@ -26,14 +26,15 @@ class CM_OT_cache_export(bpy.types.Operator):
         succeeded = []
         failed = []
         logger.info("-START- Exporting Cache")
+
         # already of type Path, convenience auto complete
         cachedir_path = Path(addon_prefs.cachedir_path)
-        sel_cols = self._get_collections(context)
+        collections = list(props.get_cache_collections(context))
 
         # begin progress udpate
-        context.window_manager.progress_begin(0, len(sel_cols))
+        context.window_manager.progress_begin(0, len(collections))
 
-        for idx, col in enumerate(sel_cols):
+        for idx, col in enumerate(collections):
             context.window_manager.progress_update(idx)
             # identifier if col is valid?
 
@@ -96,7 +97,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             logger.info("Exported %s to %s", col.name, filepath.as_posix())
 
         # end progress update
-        context.window_manager.progress_update(len(sel_cols))
+        context.window_manager.progress_update(len(collections))
         context.window_manager.progress_end()
 
         self.report(
@@ -106,11 +107,6 @@ class CM_OT_cache_export(bpy.types.Operator):
 
         logger.info("-END- Exporting Cache")
         return {"FINISHED"}
-
-    def _get_collections(
-        self, context: bpy.types.Context
-    ) -> List[bpy.types.Collection]:
-        return [context.view_layer.active_layer_collection.collection]
 
 
 class CM_OT_cache_list_actions(bpy.types.Operator):

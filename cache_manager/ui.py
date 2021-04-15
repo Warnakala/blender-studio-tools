@@ -2,7 +2,7 @@ from pathlib import Path
 
 import bpy
 from .ops import CM_OT_cache_export, CM_OT_cache_list_actions
-from . import blend, prefs
+from . import blend, prefs, props
 
 
 class CM_PT_vi3d_CacheExport(bpy.types.Panel):
@@ -19,7 +19,13 @@ class CM_PT_vi3d_CacheExport(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
 
         layout = self.layout
+        collections = list(props.get_cache_collections(context))
 
+        # filepath
+        row = layout.row()
+        row.label(text=f"Cache Directory: {self._get_cachedir_path(context)}")
+
+        # uilist
         row = layout.row()
         row.template_list(
             "CM_UL_collection_cache_list",
@@ -28,7 +34,7 @@ class CM_PT_vi3d_CacheExport(bpy.types.Panel):
             "cm_collections",
             context.scene,
             "cm_collections_index",
-            rows=2,
+            rows=5,
             type="DEFAULT",
         )
         col = row.column(align=True)
@@ -39,24 +45,16 @@ class CM_PT_vi3d_CacheExport(bpy.types.Panel):
             CM_OT_cache_list_actions.bl_idname, icon="REMOVE", text=""
         ).action = "REMOVE"
 
-        collection = context.view_layer.active_layer_collection.collection
         row = layout.row(align=True)
-        export_text = "Select Collection"
-        if collection:
-            export_text = f"Export {collection.name}"
+        row.operator(
+            CM_OT_cache_export.bl_idname, text=f"Cache {len(collections)} Collections"
+        )
 
-        row.operator(CM_OT_cache_export.bl_idname, text=export_text)
-        row = layout.row()
-        row.label(text=f"filepath: {self._get_col_filepath(context, collection)}")
-
-    def _get_col_filepath(
-        self, context: bpy.types.Context, collection: bpy.types.Collection
-    ) -> Path:
+    def _get_cachedir_path(self, context: bpy.types.Context) -> str:
         addon_prefs = prefs.addon_prefs_get(context)
-        cachedir_path = Path(addon_prefs.cachedir_path)
         if prefs.is_cachedir_valid(context):
-            return cachedir_path / blend.gen_filename_collection(collection)
-        return Path()
+            return Path(addon_prefs.cachedir_path).as_posix()
+        return "Invalid"
 
 
 class CM_UL_collection_cache_list(bpy.types.UIList):
@@ -64,8 +62,7 @@ class CM_UL_collection_cache_list(bpy.types.UIList):
         self, context, layout, data, item, icon, active_data, active_propname, index
     ):
         if self.layout_type in {"DEFAULT", "COMPACT"}:
-            split = layout.split(factor=0.3)
-            split.label(text="Index: %d" % (index))
+            split = layout.split(factor=0.6)
             split.prop(
                 item.coll_ptr,
                 "name",
@@ -73,13 +70,11 @@ class CM_UL_collection_cache_list(bpy.types.UIList):
                 emboss=False,
                 icon="OUTLINER_COLLECTION",
             )
+            split.label(text=f"/{blend.gen_filename_collection(item.coll_ptr)}")
 
         elif self.layout_type in {"GRID"}:
             layout.alignment = "CENTER"
             layout.label(text="", icon_value=layout.icon(item.coll_ptr))
-
-    def invoke(self, context, event):
-        pass
 
 
 class CM_PT_vi3d_CacheImport(bpy.types.Panel):

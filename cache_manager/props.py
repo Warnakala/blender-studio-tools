@@ -1,10 +1,17 @@
-from typing import List, Any
+from typing import List, Any, Generator
 import bpy
 
 
 class CM_property_group_scene(bpy.types.PropertyGroup):
     # name: StringProperty() -> Instantiated by default
     coll_ptr: bpy.props.PointerProperty(name="Collection", type=bpy.types.Collection)
+
+
+def get_cache_collections(
+    context: bpy.types.Context,
+) -> Generator[bpy.types.Collection, None, None]:
+    for item in context.scene.cm_collections:
+        yield item.coll_ptr
 
 
 # ---------REGISTER ----------

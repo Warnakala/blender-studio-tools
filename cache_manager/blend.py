@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import bpy
 
