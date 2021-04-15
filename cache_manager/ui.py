@@ -2,7 +2,12 @@ from pathlib import Path
 from typing import List, Tuple
 
 import bpy
-from .ops import CM_OT_cache_export, CM_OT_cache_list_actions, CM_OT_assign_cachefile
+from .ops import (
+    CM_OT_cache_export,
+    CM_OT_cache_import,
+    CM_OT_cache_list_actions,
+    CM_OT_assign_cachefile,
+)
 from . import blend, prefs, props
 
 
@@ -149,7 +154,8 @@ class CM_PT_vi3d_cache_import(bpy.types.Panel):
 
         row = layout.row(align=True)
         row.operator(
-            CM_OT_cache_export.bl_idname, text=f"Cache {len(collections)} Collections"
+            CM_OT_cache_import.bl_idname,
+            text=f"Import Cache for {len(collections)} Collections",
         )
 
 

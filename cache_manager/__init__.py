@@ -1,7 +1,9 @@
 import bpy
+from . import cmglobals
 from . import blend
 from . import prefs
 from . import props
+from . import opsdata
 from . import ops
 from . import ui
 from .logger import LoggerFactory
@@ -27,9 +29,11 @@ if _need_reload:
     import importlib
 
     logger.info("-START- Reloading Cache Manager")
+    cmglobals = importlib.reload(cmglobals)
     blend = importlib.reload(blend)
     prefs = importlib.reload(prefs)
     props = importlib.reload(props)
+    opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
     logger.info("-END- Reloading Cache Manager")

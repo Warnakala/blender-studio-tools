@@ -1,0 +1,3 @@
+MODIFIER_NAME = "cm_cache"
+CONSTRAINT_NAME = "cm_cache"
+VALID_OBJECT_TYPES = {"MESH"}

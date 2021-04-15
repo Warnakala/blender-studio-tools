@@ -1,13 +1,12 @@
 import bpy
+import re
 from typing import List, Any, Set, cast
 from pathlib import Path
 
 from .logger import LoggerFactory
-from . import blend, prefs, props, opsdata
+from . import blend, prefs, props, opsdata, cmglobals
 
 logger = LoggerFactory.getLogger(__name__)
-
-VALID_OBJECT_TYPES = {"MESH"}
 
 
 def ui_redraw() -> None:
@@ -44,20 +43,22 @@ class CM_OT_cache_export(bpy.types.Operator):
         # begin progress udpate
         context.window_manager.progress_begin(0, len(collections))
 
-        for idx, col in enumerate(collections):
+        for idx, coll in enumerate(collections):
             context.window_manager.progress_update(idx)
-            # identifier if col is valid?
+            # identifier if coll is valid?
 
             # deselect all
             bpy.ops.object.select_all(action="DESELECT")
 
             # create selection for alembic_export operator
-            for obj in col.all_objects:
-                if obj.type in VALID_OBJECT_TYPES and obj.name.startswith("GEO"):
+            for obj in coll.all_objects:
+                if obj.type in cmglobals.VALID_OBJECT_TYPES and obj.name.startswith(
+                    "GEO"
+                ):
                     logger.info("Valid object: %s", obj.name)
                     obj.select_set(True)
 
-            filepath = cachedir_path / blend.gen_filename_collection(col)
+            filepath = cachedir_path / blend.gen_filename_collection(coll)
 
             if filepath.exists():
                 logger.warning(
@@ -77,7 +78,7 @@ class CM_OT_cache_export(bpy.types.Operator):
                     selected=True,
                     renderable_only=False,
                     visible_objects_only=False,
-                    flatten=False,
+                    flatten=True,
                     uvs=True,
                     packuv=True,
                     normals=True,
@@ -98,13 +99,13 @@ class CM_OT_cache_export(bpy.types.Operator):
                     init_scene_frame_range=False,
                 )
             except Exception as e:
-                logger.info("Failed to export %s", col.name)
+                logger.info("Failed to export %s", coll.name)
                 logger.exception(str(e))
-                failed.append(col)
+                failed.append(coll)
                 continue
 
-            succeeded.append(col)
-            logger.info("Exported %s to %s", col.name, filepath.as_posix())
+            succeeded.append(coll)
+            logger.info("Exported %s to %s", coll.name, filepath.as_posix())
 
         # end progress update
         context.window_manager.progress_update(len(collections))
@@ -194,10 +195,136 @@ class CM_OT_assign_cachefile(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CM_OT_cache_import(bpy.types.Operator):
+    bl_idname = "cm.cache_import"
+    bl_label = "Import Cache"
+    bl_description = "Imports alembic cache for collections"
+
+    def execute(self, context):
+        addon_prefs = prefs.addon_prefs_get(context)
+        succeeded = []
+        failed = []
+        modifier_name = cmglobals.MODIFIER_NAME
+        constraint_name = cmglobals.CONSTRAINT_NAME
+        collections = list(props.get_cache_collections(context))
+
+        logger.info("-START- Importing Cache")
+
+        # begin progress udpate
+        context.window_manager.progress_begin(0, len(collections))
+
+        for idx, coll in enumerate(collections):
+            context.window_manager.progress_update(idx)
+
+            # skip if  no cachefile assigned
+            if not coll.cm.cachefile:
+                failed.append(coll)
+                logger.warning("%s has no cachefile assigned. Skip.", coll.name)
+                continue
+
+            # get cachefile path for this collection
+            cachefile_path = coll.cm.cachefile
+            cachefile_name = Path(cachefile_path).name
+
+            # import Alembic Cache. if its already imported reload it
+            try:
+                bpy.data.cache_files[cachefile_name]
+            except KeyError:
+                bpy.ops.cachefile.open(filepath=cachefile_path)
+            else:
+                bpy.ops.cachefile.reload()
+
+            abc_cache = bpy.data.cache_files[cachefile_name]
+            abc_cache.scale = 1
+
+            # Create a List with all selected Objects
+            object_list = [
+                obj
+                for obj in coll.all_objects
+                if obj.type in cmglobals.VALID_OBJECT_TYPES
+                and obj.name.startswith("GEO")
+            ]
+
+            # Loop Through All Objects except Active Object and add Modifier and Constraint
+            for obj in object_list:
+                # remove all armature modifiers
+                index = self._rm_armature_modifier(obj)
+                modifier_index = index if index != -1 else 0
+
+                # modifier_index = 0
+
+                # if modifier does not exist yet create it
+                # move modifier and constraint to index 0 in stack
+                # as we need to use bpy.ops for that object needs to be active
+                bpy.context.view_layer.objects.active = obj
+                if obj.modifiers.find(modifier_name) != 0:
+                    mod = obj.modifiers.new(modifier_name, "MESH_SEQUENCE_CACHE")
+                    bpy.ops.object.modifier_move_to_index(
+                        modifier=modifier_name, index=modifier_index
+                    )  # TODO: does not work with library overwritten files
+
+                # if constraint does not exist yet create it
+                if obj.constraints.find(constraint_name) != 0:
+                    con = obj.constraints.new("TRANSFORM_CACHE")
+                    con.name = constraint_name
+                    bpy.ops.constraint.move_to_index(
+                        constraint=constraint_name, index=0
+                    )  # TODO: does not work with library overwritten files
+
+                # Set Settings of Modifier and Constraints
+                mod = obj.modifiers.get(modifier_name)
+                mod.cache_file = abc_cache
+
+                # if object is duplicated (multiple copys of the same object that get different cachses)
+                # we have to kill the .001 postfix that gets created auto on duplication
+                # otherwise object path is not valid
+                object_name = self._kill_increment(obj.name)
+                object_data_name = self._kill_increment(obj.data.name)
+
+                mod.object_path = "/" + object_name + "/" + object_data_name
+
+                con = obj.constraints.get(constraint_name)
+                con.cache_file = abc_cache
+                con.object_path = "/" + object_name + "/" + object_data_name
+
+            logger.info("%s imported cache %s", coll.name, cachefile_path)
+
+        # end progress update
+        context.window_manager.progress_update(len(collections))
+        context.window_manager.progress_end()
+
+        self.report(
+            {"INFO"},
+            f"Importing Cache for {len(succeeded)} Collections | Failed: {len(failed)}.",
+        )
+
+        logger.info("-END- Importing Cache")
+        return {"FINISHED"}
+
+    def _kill_increment(self, str_value: str) -> str:
+        return str_value
+        match = re.search("\.\d\d\d", str_value)
+        if match:
+            return str_value.replace(match.group(0), "")
+        return str_value
+
+    def _rm_armature_modifier(self, obj: bpy.types.Object) -> int:
+        modifiers = list(obj.modifiers)
+        a_index: int = -1
+        for idx, m in enumerate(modifiers):
+            if m.type == "ARMATURE":
+                logger.info("Removing modifier: %s", m.name)
+                obj.modifiers.remove(m)
+                if a_index == -1:
+                    a_index = idx
+        return a_index
+
+
 # ---------REGISTER ----------
 
 classes: List[Any] = [
     CM_OT_cache_export,
+    CM_OT_cache_import,
     CM_OT_cache_list_actions,
     CM_OT_assign_cachefile,
 ]
