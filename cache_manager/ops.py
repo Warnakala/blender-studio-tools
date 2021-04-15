@@ -28,7 +28,7 @@ class CM_OT_cache_export(bpy.types.Operator):
         logger.info("-START- Exporting Cache")
         # already of type Path, convenience auto complete
         cachedir_path = Path(addon_prefs.cachedir_path)
-        sel_cols = [context.collection]
+        sel_cols = self._get_collections(context)
 
         # begin progress udpate
         context.window_manager.progress_begin(0, len(sel_cols))
@@ -107,10 +107,58 @@ class CM_OT_cache_export(bpy.types.Operator):
         logger.info("-END- Exporting Cache")
         return {"FINISHED"}
 
+    def _get_collections(
+        self, context: bpy.types.Context
+    ) -> List[bpy.types.Collection]:
+        return [context.view_layer.active_layer_collection.collection]
+
+
+class CM_OT_cache_list_actions(bpy.types.Operator):
+    """Move items up and down, add and remove"""
+
+    bl_idname = "cm.cache_list_actions"
+    bl_label = "Cache List Actions"
+    bl_description = "Add and remove items"
+    bl_options = {"REGISTER"}
+
+    action: bpy.props.EnumProperty(items=(("ADD", "Add", ""), ("REMOVE", "Remove", "")))
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        scn = context.scene
+        idx = scn.cm_collections_index
+
+        try:
+            item = scn.cm_collections[idx]
+        except IndexError:
+            pass
+
+        info = "Nothing happened"
+
+        if self.action == "REMOVE":
+            item = scn.cm_collections[scn.cm_collections_index]
+            item_name = item.name
+            scn.cm_collections.remove(idx)
+            scn.cm_collections_index -= 1
+            info = "Item %s removed from cache list" % (item_name)
+
+        if self.action == "ADD":
+            act_coll = context.view_layer.active_layer_collection.collection
+            if act_coll.name in [c[1].name for c in scn.cm_collections.items()]:
+                info = '"%s" already in the list' % (act_coll.name)
+            else:
+                item = scn.cm_collections.add()
+                item.coll_ptr = act_coll
+                item.name = item.coll_ptr.name
+                scn.cm_collections_index = len(scn.cm_collections) - 1
+                info = "%s added to list" % (item.name)
+
+        self.report({"INFO"}, info)
+        return {"FINISHED"}
+
 
 # ---------REGISTER ----------
 
-classes: List[Any] = [CM_OT_cache_export]
+classes: List[Any] = [CM_OT_cache_export, CM_OT_cache_list_actions]
 
 
 def register():

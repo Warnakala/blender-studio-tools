@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import bpy
-from .ops import CM_OT_cache_export
+from .ops import CM_OT_cache_export, CM_OT_cache_list_actions
 from . import blend, prefs
 
 
@@ -19,8 +19,27 @@ class CM_PT_vi3d_CacheExport(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
 
         layout = self.layout
-        collection = context.collection
 
+        row = layout.row()
+        row.template_list(
+            "CM_UL_collection_cache_list",
+            "collection_cache_list",
+            context.scene,
+            "cm_collections",
+            context.scene,
+            "cm_collections_index",
+            rows=2,
+            type="DEFAULT",
+        )
+        col = row.column(align=True)
+        col.operator(
+            CM_OT_cache_list_actions.bl_idname, icon="ADD", text=""
+        ).action = "ADD"
+        col.operator(
+            CM_OT_cache_list_actions.bl_idname, icon="REMOVE", text=""
+        ).action = "REMOVE"
+
+        collection = context.view_layer.active_layer_collection.collection
         row = layout.row(align=True)
         export_text = "Select Collection"
         if collection:
@@ -38,6 +57,29 @@ class CM_PT_vi3d_CacheExport(bpy.types.Panel):
         if prefs.is_cachedir_valid(context):
             return cachedir_path / blend.gen_filename_collection(collection)
         return Path()
+
+
+class CM_UL_collection_cache_list(bpy.types.UIList):
+    def draw_item(
+        self, context, layout, data, item, icon, active_data, active_propname, index
+    ):
+        if self.layout_type in {"DEFAULT", "COMPACT"}:
+            split = layout.split(factor=0.3)
+            split.label(text="Index: %d" % (index))
+            split.prop(
+                item.coll_ptr,
+                "name",
+                text="",
+                emboss=False,
+                icon="OUTLINER_COLLECTION",
+            )
+
+        elif self.layout_type in {"GRID"}:
+            layout.alignment = "CENTER"
+            layout.label(text="", icon_value=layout.icon(item.coll_ptr))
+
+    def invoke(self, context, event):
+        pass
 
 
 class CM_PT_vi3d_CacheImport(bpy.types.Panel):
@@ -61,7 +103,11 @@ class CM_PT_vi3d_CacheImport(bpy.types.Panel):
 
 # ---------REGISTER ----------
 
-classes = [CM_PT_vi3d_CacheExport, CM_PT_vi3d_CacheImport]
+classes = [
+    CM_PT_vi3d_CacheExport,
+    CM_UL_collection_cache_list,
+    CM_PT_vi3d_CacheImport,
+]
 
 
 def register():

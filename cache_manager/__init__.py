@@ -1,6 +1,7 @@
 import bpy
 from . import blend
 from . import prefs
+from . import props
 from . import ops
 from . import ui
 from .logger import LoggerFactory
@@ -28,6 +29,7 @@ if _need_reload:
     logger.info("-START- Reloading Cache Manager")
     blend = importlib.reload(blend)
     prefs = importlib.reload(prefs)
+    props = importlib.reload(props)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
     logger.info("-END- Reloading Cache Manager")
@@ -36,6 +38,7 @@ if _need_reload:
 def register():
     logger.info("-START- Registering Cache Manager")
     prefs.register()
+    props.register()
     ops.register()
     ui.register()
     logger.info("-END- Registering Cache Manager")
@@ -43,9 +46,10 @@ def register():
 
 def unregister():
     logger.info("-START- Unregistering Cache Manager")
-    prefs.unregister()
     ui.unregister()
     ops.unregister()
+    props.unregister()
+    prefs.unregister()
     logger.info("-END- Unregistering Cache Manager")
 
 
