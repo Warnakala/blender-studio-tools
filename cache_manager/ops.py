@@ -257,7 +257,7 @@ class CM_OT_cache_import(bpy.types.Operator):
             # Loop Through All Objects except Active Object and add Modifier and Constraint
             for obj in object_list:
                 # remove all armature modifiers, get index of first one, use that index for cache modifier
-                index = self._rm_armature_modifier(obj)
+                index = self._disable_armature_modifier(obj)
                 modifier_index = index if index != -1 else 0
 
                 # ensure cache modifier and constraint
@@ -297,6 +297,19 @@ class CM_OT_cache_import(bpy.types.Operator):
             if m.type == "ARMATURE":
                 logger.info("Removing modifier: %s", m.name)
                 obj.modifiers.remove(m)
+                if a_index == -1:
+                    a_index = idx
+        return a_index
+
+    def _disable_armature_modifier(self, obj: bpy.types.Object) -> int:
+        modifiers = list(obj.modifiers)
+        a_index: int = -1
+        for idx, m in enumerate(modifiers):
+            if m.type == "ARMATURE":
+                logger.info("Disabling modifier: %s", m.name)
+                m.show_viewport = False
+                m.show_render = False
+                m.show_in_editmode = False
                 if a_index == -1:
                     a_index = idx
         return a_index
