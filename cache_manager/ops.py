@@ -261,12 +261,12 @@ class CM_OT_cache_import(bpy.types.Operator):
                 modifier_index = index if index != -1 else 0
 
                 # ensure cache modifier and constraint
-                mod = self._ensure_cache_modifier(obj, modifier_index)
+                mod = self._ensure_cache_modifier(obj)
                 con = self._ensure_cache_constraint(obj)
 
                 # config cache modifier and constraint
-                self._config_cache_modifier(mod, obj, cachefile)
-                self._config_cache_constraint(con, obj, cachefile)
+                self._config_cache_modifier(context, mod, modifier_index, cachefile)
+                self._config_cache_constraint(context, con, cachefile)
 
             logger.info("%s imported cache %s", coll.name, cachefile.filepath)
             succeeded.append(coll)
@@ -331,25 +331,20 @@ class CM_OT_cache_import(bpy.types.Operator):
         return cachefile
 
     def _ensure_cache_modifier(
-        self, obj: bpy.types.Object, modifier_index: int
+        self, obj: bpy.types.Object
     ) -> bpy.types.MeshSequenceCacheModifier:
         modifier_name = cmglobals.MODIFIER_NAME
         # if modifier does not exist yet create it
-        # move modifier and constraint to index 0 in stack
-        # as we need to use bpy.ops for that object needs to be active
-        bpy.context.view_layer.objects.active = obj
         if obj.modifiers.find(modifier_name) == -1:  # not found
             mod = obj.modifiers.new(modifier_name, "MESH_SEQUENCE_CACHE")
-            bpy.ops.object.modifier_move_to_index(
-                modifier=modifier_name, index=modifier_index
-            )  # TODO: does not work with library overwritten files
         else:
             logger.info(
                 "Object: %s already has %s modifier. Will use that.",
                 obj.name,
                 modifier_name,
             )
-        return obj.modifiers.get(modifier_name)
+        mod = obj.modifiers.get(modifier_name)
+        return mod
 
     def _ensure_cache_constraint(
         self, obj: bpy.types.Object
@@ -359,34 +354,56 @@ class CM_OT_cache_import(bpy.types.Operator):
         if obj.constraints.find(constraint_name) == -1:  # not found
             con = obj.constraints.new("TRANSFORM_CACHE")
             con.name = constraint_name
-            bpy.ops.constraint.move_to_index(
-                constraint=constraint_name, index=0
-            )  # TODO: does not work with library overwritten files
         else:
             logger.info(
                 "Object: %s already has %s constraint. Will use that.",
                 obj.name,
                 constraint_name,
             )
-        return obj.constraints.get(constraint_name)
+        con = obj.constraints.get(constraint_name)
+        return con
 
     def _config_cache_modifier(
         self,
+        context: bpy.types.Context,
         mod: bpy.types.MeshSequenceCacheModifier,
-        obj: bpy.types.Object,
+        modifier_index: int,
         cachefile: bpy.types.CacheFile,
-    ) -> None:
+    ) -> bpy.types.MeshSequenceCacheModifier:
+        obj = mod.id_data
+        # move to index
+        # as we need to use bpy.ops for that object needs to be active
+        bpy.context.view_layer.objects.active = obj
+        override = context.copy()
+        override["modifier"] = mod
+        bpy.ops.object.modifier_move_to_index(
+            override, modifier=mod.name, index=modifier_index
+        )
+        # adjust settings
         mod.cache_file = cachefile
         mod.object_path = self._gen_object_path(obj)
 
+        return mod
+
     def _config_cache_constraint(
         self,
+        context: bpy.types.Context,
         con: bpy.types.TransformCacheConstraint,
-        obj: bpy.types.Object,
         cachefile: bpy.types.CacheFile,
-    ) -> None:
+    ) -> bpy.types.TransformCacheConstraint:
+        obj = con.id_data
+        # move to index
+        # as we need to use bpy.ops for that object needs to be active
+        bpy.context.view_layer.objects.active = obj
+        override = context.copy()
+        override["constraint"] = con
+        bpy.ops.constraint.move_to_index(override, constraint=con.name, index=0)
+
+        # adjust settings
         con.cache_file = cachefile
         con.object_path = self._gen_object_path(obj)
+
+        return con
 
     def _gen_object_path(self, obj: bpy.types.Object) -> str:
         # if object is duplicated (multiple copys of the same object that get different cachses)
