@@ -1,6 +1,7 @@
 import bpy
 from . import cmglobals
 from . import blend
+from . import prefsdata
 from . import prefs
 from . import props
 from . import opsdata
@@ -31,6 +32,7 @@ if _need_reload:
     logger.info("-START- Reloading Cache Manager")
     cmglobals = importlib.reload(cmglobals)
     blend = importlib.reload(blend)
+    prefsdata = importlib.reload(prefsdata)
     prefs = importlib.reload(prefs)
     props = importlib.reload(props)
     opsdata = importlib.reload(opsdata)

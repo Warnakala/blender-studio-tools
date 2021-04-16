@@ -2,6 +2,8 @@ from pathlib import Path
 
 import bpy
 
+from . import prefsdata
+
 
 class CM_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
@@ -11,6 +13,10 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
         default="//cache",
         options={"HIDDEN", "SKIP_SAVE"},
         subtype="DIR_PATH",
+    )
+
+    cacheconfig: bpy.props.StringProperty(
+        name="Cachefile", subtype="FILE_PATH", get=prefsdata.get_cacheconfig_file
     )
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -33,6 +39,10 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
             return False
 
         return True
+
+    @property
+    def cacheconfig_path(self) -> Path:
+        return Path(bpy.path.abspath(self.cacheconfig)).absolute()
 
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:

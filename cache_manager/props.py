@@ -28,6 +28,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
+    # Scene Properties
     bpy.types.Scene.cm_collections = bpy.props.CollectionProperty(
         type=CM_property_group_scene
     )
@@ -35,7 +36,7 @@ def register():
         name="Index", default=0
     )
 
-    # Sequence Properties
+    # Collection Properties
     bpy.types.Collection.cm = bpy.props.PointerProperty(
         name="Cache Manager",
         type=CM_property_group_collection,

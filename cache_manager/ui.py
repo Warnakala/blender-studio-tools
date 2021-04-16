@@ -154,13 +154,17 @@ class CM_PT_vi3d_cache_import(bpy.types.Panel):
     bl_order = 20
 
     def draw(self, context: bpy.types.Context) -> None:
-
+        addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
         collections = list(props.get_cache_collections(context))
 
-        # filepath
+        # cachedir
         row = layout.row()
         row.label(text=f"Cache Directory: {get_cachedir_path(context)}")
+
+        # cacheconfig
+        row = layout.row()
+        row.prop(addon_prefs, "cacheconfig", text="Cacheconfig")
 
         # uilist
         row = layout.row()
