@@ -23,15 +23,20 @@ from shot_builder.project import *
 from shot_builder.builder import ShotBuilder
 from shot_builder.task_type import TaskType
 
+_production_task_type_items: List[Tuple[str, str, str]] = []
+
 
 def production_task_type_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-    production = get_active_production()
-    return production.get_task_type_items(context=context)
+    global _production_task_type_items
+    return _production_task_type_items
+
+
+_production_shot_id_items: List[Tuple[str, str, str]] = []
 
 
 def production_shot_id_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-    production = get_active_production()
-    return production.get_shot_items(context=context)
+    global _production_shot_id_items
+    return _production_shot_id_items
 
 
 class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
@@ -42,8 +47,7 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
     production_root: bpy.props.StringProperty(  # type: ignore
         name="Production Root",
         description="Root of the production",
-        subtype='DIR_PATH',
-    )
+        subtype='DIR_PATH')
 
     production_name: bpy.props.StringProperty(  # type: ignore
         name="Production",
@@ -73,6 +77,12 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
         production = get_active_production()
         self.production_root = str(production.path)
         self.production_name = production.get_name(context=context)
+
+        global _production_task_type_items
+        _production_task_type_items = production.get_task_type_items(
+            context=context)
+        global _production_shot_id_items
+        _production_shot_id_items = production.get_shot_items(context=context)
 
         return cast(Set[str], context.window_manager.invoke_props_dialog(self, width=400))
 
