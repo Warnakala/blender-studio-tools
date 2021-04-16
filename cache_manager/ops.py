@@ -34,6 +34,11 @@ class CM_OT_cache_export(bpy.types.Operator):
     bl_label = "Export Cache"
     bl_description = "Exports alembic cache for selected collections"
 
+    do_all: bpy.props.BoolProperty(
+        name="Process All", description="Process all cache collections", default=False
+    )
+    index: bpy.props.IntProperty(name="Index")
+
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
@@ -48,6 +53,12 @@ class CM_OT_cache_export(bpy.types.Operator):
         # already of type Path, convenience auto complete
         cachedir_path = Path(addon_prefs.cachedir_path)
         collections = list(props.get_cache_collections(context))
+
+        # get collections to be processed
+        if self.do_all:
+            collections = list(props.get_cache_collections(context))
+        else:
+            collections = [context.scene.cm_collections[self.index].coll_ptr]
 
         # begin progress udpate
         context.window_manager.progress_begin(0, len(collections))
@@ -110,8 +121,8 @@ class CM_OT_cache_export(bpy.types.Operator):
                 failed.append(coll)
                 continue
 
-            succeeded.append(coll)
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
+            succeeded.append(coll)
 
         # end progress update
         context.window_manager.progress_update(len(collections))
@@ -206,16 +217,25 @@ class CM_OT_cache_import(bpy.types.Operator):
     bl_label = "Import Cache"
     bl_description = "Imports alembic cache for collections"
 
+    do_all: bpy.props.BoolProperty(
+        name="Process All", description="Process all cache collections", default=False
+    )
+    index: bpy.props.IntProperty(name="Index")
+
     def execute(self, context):
         addon_prefs = prefs.addon_prefs_get(context)
         succeeded = []
         failed = []
         modifier_name = cmglobals.MODIFIER_NAME
         constraint_name = cmglobals.CONSTRAINT_NAME
-        collections = list(props.get_cache_collections(context))
+
+        # get collections to be processed
+        if self.do_all:
+            collections = list(props.get_cache_collections(context))
+        else:
+            collections = [context.scene.cm_collections[self.index].coll_ptr]
 
         logger.info("-START- Importing Cache")
-
         # begin progress udpate
         context.window_manager.progress_begin(0, len(collections))
 
@@ -228,67 +248,28 @@ class CM_OT_cache_import(bpy.types.Operator):
                 logger.warning("%s has no cachefile assigned. Skip.", coll.name)
                 continue
 
-            # get cachefile path for this collection
-            cachefile_path = coll.cm.cachefile
-            cachefile_name = Path(cachefile_path).name
-
-            # import Alembic Cache. if its already imported reload it
-            try:
-                bpy.data.cache_files[cachefile_name]
-            except KeyError:
-                bpy.ops.cachefile.open(filepath=cachefile_path)
-            else:
-                bpy.ops.cachefile.reload()
-
-            abc_cache = bpy.data.cache_files[cachefile_name]
-            abc_cache.scale = 1
+            # ensure cachefile is loaded or reloaded
+            cachefile = self._ensure_cachefile(coll.cm.cachefile)
 
             # get list with valid objects to apply cache to
             object_list = get_valid_cache_objects(coll)
 
             # Loop Through All Objects except Active Object and add Modifier and Constraint
             for obj in object_list:
-                # remove all armature modifiers
+                # remove all armature modifiers, get index of first one, use that index for cache modifier
                 index = self._rm_armature_modifier(obj)
                 modifier_index = index if index != -1 else 0
 
-                # modifier_index = 0
+                # ensure cache modifier and constraint
+                mod = self._ensure_cache_modifier(obj, modifier_index)
+                con = self._ensure_cache_constraint(obj)
 
-                # if modifier does not exist yet create it
-                # move modifier and constraint to index 0 in stack
-                # as we need to use bpy.ops for that object needs to be active
-                bpy.context.view_layer.objects.active = obj
-                if obj.modifiers.find(modifier_name) != 0:
-                    mod = obj.modifiers.new(modifier_name, "MESH_SEQUENCE_CACHE")
-                    bpy.ops.object.modifier_move_to_index(
-                        modifier=modifier_name, index=modifier_index
-                    )  # TODO: does not work with library overwritten files
+                # config cache modifier and constraint
+                self._config_cache_modifier(mod, obj, cachefile)
+                self._config_cache_constraint(con, obj, cachefile)
 
-                # if constraint does not exist yet create it
-                if obj.constraints.find(constraint_name) != 0:
-                    con = obj.constraints.new("TRANSFORM_CACHE")
-                    con.name = constraint_name
-                    bpy.ops.constraint.move_to_index(
-                        constraint=constraint_name, index=0
-                    )  # TODO: does not work with library overwritten files
-
-                # Set Settings of Modifier and Constraints
-                mod = obj.modifiers.get(modifier_name)
-                mod.cache_file = abc_cache
-
-                # if object is duplicated (multiple copys of the same object that get different cachses)
-                # we have to kill the .001 postfix that gets created auto on duplication
-                # otherwise object path is not valid
-                object_name = self._kill_increment(obj.name)
-                object_data_name = self._kill_increment(obj.data.name)
-
-                mod.object_path = "/" + object_name + "/" + object_data_name
-
-                con = obj.constraints.get(constraint_name)
-                con.cache_file = abc_cache
-                con.object_path = "/" + object_name + "/" + object_data_name
-
-            logger.info("%s imported cache %s", coll.name, cachefile_path)
+            logger.info("%s imported cache %s", coll.name, cachefile.filepath)
+            succeeded.append(coll)
 
         # end progress update
         context.window_manager.progress_update(len(collections))
@@ -320,6 +301,89 @@ class CM_OT_cache_import(bpy.types.Operator):
                     a_index = idx
         return a_index
 
+    def _ensure_cachefile(self, cachefile_path: str) -> bpy.types.CacheFile:
+        # get cachefile path for this collection
+        cachefile_name = Path(cachefile_path).name
+
+        # import Alembic Cache. if its already imported reload it
+        try:
+            bpy.data.cache_files[cachefile_name]
+        except KeyError:
+            bpy.ops.cachefile.open(filepath=cachefile_path)
+        else:
+            bpy.ops.cachefile.reload()
+
+        cachefile = bpy.data.cache_files[cachefile_name]
+        cachefile.scale = 1
+        return cachefile
+
+    def _ensure_cache_modifier(
+        self, obj: bpy.types.Object, modifier_index: int
+    ) -> bpy.types.MeshSequenceCacheModifier:
+        modifier_name = cmglobals.MODIFIER_NAME
+        # if modifier does not exist yet create it
+        # move modifier and constraint to index 0 in stack
+        # as we need to use bpy.ops for that object needs to be active
+        bpy.context.view_layer.objects.active = obj
+        if obj.modifiers.find(modifier_name) == -1:  # not found
+            mod = obj.modifiers.new(modifier_name, "MESH_SEQUENCE_CACHE")
+            bpy.ops.object.modifier_move_to_index(
+                modifier=modifier_name, index=modifier_index
+            )  # TODO: does not work with library overwritten files
+        else:
+            logger.info(
+                "Object: %s already has %s modifier. Will use that.",
+                obj.name,
+                modifier_name,
+            )
+        return obj.modifiers.get(modifier_name)
+
+    def _ensure_cache_constraint(
+        self, obj: bpy.types.Object
+    ) -> bpy.types.TransformCacheConstraint:
+        constraint_name = cmglobals.CONSTRAINT_NAME
+        # if constraint does not exist yet create it
+        if obj.constraints.find(constraint_name) == -1:  # not found
+            con = obj.constraints.new("TRANSFORM_CACHE")
+            con.name = constraint_name
+            bpy.ops.constraint.move_to_index(
+                constraint=constraint_name, index=0
+            )  # TODO: does not work with library overwritten files
+        else:
+            logger.info(
+                "Object: %s already has %s constraint. Will use that.",
+                obj.name,
+                constraint_name,
+            )
+        return obj.constraints.get(constraint_name)
+
+    def _config_cache_modifier(
+        self,
+        mod: bpy.types.MeshSequenceCacheModifier,
+        obj: bpy.types.Object,
+        cachefile: bpy.types.CacheFile,
+    ) -> None:
+        mod.cache_file = cachefile
+        mod.object_path = self._gen_object_path(obj)
+
+    def _config_cache_constraint(
+        self,
+        con: bpy.types.TransformCacheConstraint,
+        obj: bpy.types.Object,
+        cachefile: bpy.types.CacheFile,
+    ) -> None:
+        con.cache_file = cachefile
+        con.object_path = self._gen_object_path(obj)
+
+    def _gen_object_path(self, obj: bpy.types.Object) -> str:
+        # if object is duplicated (multiple copys of the same object that get different cachses)
+        # we have to kill the .001 postfix that gets created auto on duplication
+        # otherwise object path is not valid
+        object_name = self._kill_increment(obj.name)
+        object_data_name = self._kill_increment(obj.data.name)
+        object_path = "/" + object_name + "/" + object_data_name
+        return object_path
+
 
 class CM_OT_cache_hide(bpy.types.Operator):
     bl_idname = "cm.cache_hide"
@@ -327,27 +391,43 @@ class CM_OT_cache_hide(bpy.types.Operator):
     bl_description = "Hide mesh sequence cache modifier and transform cache constraint"
 
     index: bpy.props.IntProperty(name="Index")
+    do_all: bpy.props.BoolProperty(
+        name="Process All", description="Process all cache collections", default=False
+    )
 
     def execute(self, context):
         modifier_name = cmglobals.MODIFIER_NAME
         constraint_name = cmglobals.CONSTRAINT_NAME
 
-        # get collection by index (index is the index that the operator has in the UIList)
-        collection = context.scene.cm_collections[self.index].coll_ptr
+        # get collections to be processed
+        if self.do_all:
+            collections = list(props.get_cache_collections(context))
+        else:
+            collections = [context.scene.cm_collections[self.index].coll_ptr]
 
-        # Create a List with all selected Objects
-        object_list = get_valid_cache_objects(collection)
+        logger.info("-START- Hiding Cache")
 
-        # Loop Through All Objects
-        for obj in object_list:
-            # Set Settings of Modifier
-            mod = obj.modifiers.get(modifier_name)
-            con = obj.constraints.get(constraint_name)
-            mod.show_viewport = False
-            mod.show_render = False
-            con.mute = True
+        for idx, coll in enumerate(collections):
+            # Create a List with all selected Objects
+            object_list = get_valid_cache_objects(coll)
 
-        self.report({"INFO"}, f"Hide cache for {collection.name}")
+            # Loop Through All Objects
+            for obj in object_list:
+                # Set Settings of Modifier
+                mod = obj.modifiers.get(modifier_name)
+                con = obj.constraints.get(constraint_name)
+                mod.show_viewport = False
+                mod.show_render = False
+                con.mute = True
+            logger.info("Hide Cache for %s", coll.name)
+
+        self.report(
+            {"INFO"},
+            f"Hid Cache of {len(collections)} Collections",
+        )
+
+        logger.info("-END- Hiding Cache")
+
         return {"FINISHED"}
 
 
@@ -357,27 +437,42 @@ class CM_OT_cache_show(bpy.types.Operator):
     bl_description = "Show mesh sequence cache modifier and transform cache constraint"
 
     index: bpy.props.IntProperty(name="Index")
+    do_all: bpy.props.BoolProperty(
+        name="Process All", description="Process all cache collections", default=False
+    )
 
     def execute(self, context):
         modifier_name = cmglobals.MODIFIER_NAME
         constraint_name = cmglobals.CONSTRAINT_NAME
 
-        # get collection by index (index is the index that the operator has in the UIList)
-        collection = context.scene.cm_collections[self.index].coll_ptr
+        # get collections to be processed
+        if self.do_all:
+            collections = list(props.get_cache_collections(context))
+        else:
+            collections = [context.scene.cm_collections[self.index].coll_ptr]
 
-        # Create a List with all selected Objects
-        object_list = get_valid_cache_objects(collection)
+        logger.info("-START- Unhiding Cache")
 
-        # Loop Through All Objects
-        for obj in object_list:
-            # Set Settings of Modifier and Constraint
-            mod = obj.modifiers.get(modifier_name)
-            con = obj.constraints.get(constraint_name)
-            mod.show_viewport = True
-            mod.show_render = True
-            con.mute = False
+        for idx, coll in enumerate(collections):
+            # Create a List with all selected Objects
+            object_list = get_valid_cache_objects(coll)
 
-        self.report({"INFO"}, f"Unhide cache for {collection.name}")
+            # Loop Through All Objects
+            for obj in object_list:
+                # Set Settings of Modifier and Constraint
+                mod = obj.modifiers.get(modifier_name)
+                con = obj.constraints.get(constraint_name)
+                mod.show_viewport = True
+                mod.show_render = True
+                con.mute = False
+            logger.info("Unhid Cache for %s", coll.name)
+
+        self.report(
+            {"INFO"},
+            f"Unhid Cache of {len(collections)} Collections",
+        )
+
+        logger.info("-END- Hiding Cache")
         return {"FINISHED"}
 
 
@@ -386,26 +481,40 @@ class CM_OT_cache_remove(bpy.types.Operator):
     bl_label = "Remove Cache"
 
     index: bpy.props.IntProperty(name="Index")
+    do_all: bpy.props.BoolProperty(
+        name="Process All", description="Process all cache collections", default=False
+    )
 
     def execute(self, context):
         context = bpy.context
         modifier_name = cmglobals.MODIFIER_NAME
         constraint_name = cmglobals.CONSTRAINT_NAME
 
-        # get collection by index (index is the index that the operator has in the UIList)
-        collection = context.scene.cm_collections[self.index].coll_ptr
+        # get collections to be processed
+        if self.do_all:
+            collections = list(props.get_cache_collections(context))
+        else:
+            collections = [context.scene.cm_collections[self.index].coll_ptr]
 
-        # Create a List with all selected Objects
-        object_list = get_valid_cache_objects(collection)
+        logger.info("-START- Removing Cache")
 
-        # Loop Through All Objects and remove Modifier and Constraint
-        for obj in object_list:
-            mod = obj.modifiers.get(modifier_name)
-            con = obj.constraints.get(constraint_name)
-            obj.constraints.remove(con)
-            obj.modifiers.remove(mod)
+        for idx, coll in enumerate(collections):
+            # Create a List with all selected Objects
+            object_list = get_valid_cache_objects(coll)
 
-        self.report({"INFO"}, f"Remove cache for {collection.name}")
+            # Loop Through All Objects and remove Modifier and Constraint
+            for obj in object_list:
+                mod = obj.modifiers.get(modifier_name)
+                con = obj.constraints.get(constraint_name)
+                obj.constraints.remove(con)
+                obj.modifiers.remove(mod)
+            logger.info("Remove Cache for %s", coll.name)
+
+        self.report(
+            {"INFO"},
+            f"Removed Cache of {len(collections)} Collections",
+        )
+        logger.info("-END- Removing Cache")
         return {"FINISHED"}
 
 

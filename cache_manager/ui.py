@@ -63,8 +63,10 @@ class CM_PT_vi3d_cache_export(bpy.types.Panel):
 
         row = layout.row(align=True)
         row.operator(
-            CM_OT_cache_export.bl_idname, text=f"Cache {len(collections)} Collections"
-        )
+            CM_OT_cache_export.bl_idname,
+            text=f"Cache {len(collections)} Collections",
+            icon="EXPORT",
+        ).do_all = True
 
 
 class CM_UL_collection_cache_list_export(bpy.types.UIList):
@@ -72,7 +74,7 @@ class CM_UL_collection_cache_list_export(bpy.types.UIList):
         self, context, layout, data, item, icon, active_data, active_propname, index
     ):
         if self.layout_type in {"DEFAULT", "COMPACT"}:
-            split = layout.split(factor=0.6)
+            split = layout.split(factor=0.6, align=True)
             split.prop(
                 item.coll_ptr,
                 "name",
@@ -80,7 +82,13 @@ class CM_UL_collection_cache_list_export(bpy.types.UIList):
                 emboss=False,
                 icon="OUTLINER_COLLECTION",
             )
+            split = split.split(factor=0.75, align=True)
             split.label(text=f"/{blend.gen_filename_collection(item.coll_ptr)}")
+            split.operator(
+                CM_OT_cache_export.bl_idname,
+                text="",
+                icon="EXPORT",
+            ).index = index
 
         elif self.layout_type in {"GRID"}:
             layout.alignment = "CENTER"
@@ -109,6 +117,12 @@ class CM_UL_collection_cache_list_import(bpy.types.UIList):
 
             split.operator(
                 CM_OT_assign_cachefile.bl_idname, text=op_text, icon="DOWNARROW_HLT"
+            ).index = index
+
+            split.operator(
+                CM_OT_cache_import.bl_idname,
+                text="",
+                icon="IMPORT",
             ).index = index
 
             split.operator(
@@ -172,7 +186,13 @@ class CM_PT_vi3d_cache_import(bpy.types.Panel):
         row.operator(
             CM_OT_cache_import.bl_idname,
             text=f"Import Cache for {len(collections)} Collections",
-        )
+            icon="IMPORT",
+        ).do_all = True
+        row.operator(CM_OT_cache_show.bl_idname, text="", icon="HIDE_OFF").do_all = True
+
+        row.operator(CM_OT_cache_hide.bl_idname, text="", icon="HIDE_ON").do_all = True
+
+        row.operator(CM_OT_cache_remove.bl_idname, text="", icon="REMOVE").do_all = True
 
 
 # ---------REGISTER ----------
