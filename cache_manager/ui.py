@@ -5,6 +5,7 @@ import bpy
 from .ops import (
     CM_OT_cache_export,
     CM_OT_cache_import,
+    CM_OT_process_cacheconfig,
     CM_OT_cache_list_actions,
     CM_OT_assign_cachefile,
     CM_OT_cache_show,
@@ -165,6 +166,7 @@ class CM_PT_vi3d_cache_import(bpy.types.Panel):
         # cacheconfig
         row = layout.row()
         row.prop(addon_prefs, "cacheconfig", text="Cacheconfig")
+        row.operator(CM_OT_process_cacheconfig.bl_idname, icon="PLAY", text="")
 
         # uilist
         row = layout.row()

@@ -1,4 +1,5 @@
 import bpy
+from . import cacheconfig
 from . import cmglobals
 from . import blend
 from . import prefsdata
@@ -30,6 +31,7 @@ if _need_reload:
     import importlib
 
     logger.info("-START- Reloading Cache Manager")
+    cacheconfig = importlib.reload(cacheconfig)
     cmglobals = importlib.reload(cmglobals)
     blend = importlib.reload(blend)
     prefsdata = importlib.reload(prefsdata)

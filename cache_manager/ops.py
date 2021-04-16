@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .logger import LoggerFactory
 from . import blend, prefs, props, opsdata, cmglobals
+from .cacheconfig import CacheConfig
 
 logger = LoggerFactory.getLogger(__name__)
 
@@ -175,6 +176,30 @@ class CM_OT_cache_list_actions(bpy.types.Operator):
                 scn.cm_collections_index = len(scn.cm_collections) - 1
             info = "%s added to list" % (item.name)
             self.report({"INFO"}, info)
+
+        return {"FINISHED"}
+
+
+class CM_OT_process_cacheconfig(bpy.types.Operator):
+    """Move items up and down, add and remove"""
+
+    bl_idname = "cm.process_cacheconfig"
+    bl_label = "Cache List Actions"
+    bl_description = "Add and remove items"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        return addon_prefs.is_cachedir_valid
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        addon_prefs = prefs.addon_prefs_get(context)
+        cacheconfig_path = addon_prefs.cacheconfig_path
+
+        cacheconfig = CacheConfig()
+        cacheconfig.load(cacheconfig_path)
+        cacheconfig.process(context)
 
         return {"FINISHED"}
 
@@ -570,6 +595,7 @@ classes: List[Any] = [
     CM_OT_cache_show,
     CM_OT_cache_hide,
     CM_OT_cache_remove,
+    CM_OT_process_cacheconfig,
 ]
 
 
