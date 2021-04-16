@@ -414,11 +414,15 @@ class CM_OT_cache_hide(bpy.types.Operator):
             # Loop Through All Objects
             for obj in object_list:
                 # Set Settings of Modifier
-                mod = obj.modifiers.get(modifier_name)
-                con = obj.constraints.get(constraint_name)
-                mod.show_viewport = False
-                mod.show_render = False
-                con.mute = True
+                if not obj.modifiers.find(modifier_name) == -1:
+                    mod = obj.modifiers.get(modifier_name)
+                    mod.show_viewport = False
+                    mod.show_render = False
+
+                if not obj.constraints.find(constraint_name) == -1:
+                    con = obj.constraints.get(constraint_name)
+                    con.mute = True
+
             logger.info("Hide Cache for %s", coll.name)
 
         self.report(
@@ -460,11 +464,15 @@ class CM_OT_cache_show(bpy.types.Operator):
             # Loop Through All Objects
             for obj in object_list:
                 # Set Settings of Modifier and Constraint
-                mod = obj.modifiers.get(modifier_name)
-                con = obj.constraints.get(constraint_name)
-                mod.show_viewport = True
-                mod.show_render = True
-                con.mute = False
+                if not obj.modifiers.find(modifier_name) == -1:
+                    mod = obj.modifiers.get(modifier_name)
+                    mod.show_viewport = True
+                    mod.show_render = True
+
+                if not obj.constraints.find(constraint_name) == -1:
+                    con = obj.constraints.get(constraint_name)
+                    con.mute = False
+
             logger.info("Unhid Cache for %s", coll.name)
 
         self.report(
@@ -504,10 +512,14 @@ class CM_OT_cache_remove(bpy.types.Operator):
 
             # Loop Through All Objects and remove Modifier and Constraint
             for obj in object_list:
-                mod = obj.modifiers.get(modifier_name)
-                con = obj.constraints.get(constraint_name)
-                obj.constraints.remove(con)
-                obj.modifiers.remove(mod)
+                if not obj.modifiers.find(modifier_name) == -1:
+                    mod = obj.modifiers.get(modifier_name)
+                    obj.modifiers.remove(mod)
+
+                if not obj.constraints.find(constraint_name) == -1:
+                    con = obj.constraints.get(constraint_name)
+                    obj.constraints.remove(con)
+
             logger.info("Remove Cache for %s", coll.name)
 
         self.report(
