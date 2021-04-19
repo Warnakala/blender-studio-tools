@@ -9,13 +9,13 @@ from .logger import ZLoggerFactory
 logger = ZLoggerFactory.getLogger(name=__name__)
 
 
-class ZProjectList:
+class ProjectList:
     """
     Class to get object oriented representation of backend productions data structure.
     """
 
     def __init__(self):
-        self._projects: List[ZProject] = []
+        self._projects: List[Project] = []
         self._init_projects()
 
     @property
@@ -23,16 +23,16 @@ class ZProjectList:
         return [p.name for p in self._projects]
 
     @property
-    def projects(self) -> List[ZProject]:
+    def projects(self) -> List[Project]:
         return self._projects
 
     def _init_projects(self) -> None:
         for project in gazu.project.all_projects():
-            self._projects.append(ZProject(**project))
+            self._projects.append(Project(**project))
 
 
 @dataclass
-class ZProject:
+class Project:
     """
     Class to get object oriented representation of backend project data structure.
     Can shortcut some functions from gazu api because active project is given through class instance.
@@ -67,7 +67,7 @@ class ZProject:
     task_statuses: List[Any] = field(default_factory=list)
 
     @classmethod
-    def by_name(cls, project_name: str) -> Optional[ZProject]:
+    def by_name(cls, project_name: str) -> Optional[Project]:
         # can return None if seq does not exist
         project_dict = gazu.project.get_project_by_name(project_name)
         if project_dict:
@@ -75,98 +75,98 @@ class ZProject:
         return None
 
     @classmethod
-    def by_id(cls, project_id: str) -> ZProject:
+    def by_id(cls, project_id: str) -> Project:
         project_dict = gazu.project.get_project(project_id)
         return cls(**project_dict)
 
     # SEQUENCES
     # ---------------
 
-    def get_sequence(self, seq_id: str) -> ZSequence:
-        return ZSequence.by_id(seq_id)
+    def get_sequence(self, seq_id: str) -> Sequence:
+        return Sequence.by_id(seq_id)
 
     def get_sequence_by_name(
         self, seq_name: str, episode: Union[str, Dict[str, Any], None] = None
-    ) -> Optional[ZSequence]:
-        return ZSequence.by_name(self, seq_name, episode=episode)
+    ) -> Optional[Sequence]:
+        return Sequence.by_name(self, seq_name, episode=episode)
 
-    def get_sequences_all(self) -> List[ZSequence]:
-        zsequences = [
-            ZSequence(**s) for s in gazu.shot.all_sequences_for_project(asdict(self))
+    def get_sequences_all(self) -> List[Sequence]:
+        sequences = [
+            Sequence(**s) for s in gazu.shot.all_sequences_for_project(asdict(self))
         ]
-        return sorted(zsequences, key=lambda x: x.name)
+        return sorted(sequences, key=lambda x: x.name)
 
-    def create_sequence(self, sequence_name: str) -> ZSequence:
+    def create_sequence(self, sequence_name: str) -> Sequence:
         # this function returns a seq dict even if seq already exists, it does not override
         seq_dict = gazu.shot.new_sequence(asdict(self), sequence_name, episode=None)
-        return ZSequence(**seq_dict)
+        return Sequence(**seq_dict)
 
     # SHOT
     # ---------------
 
-    def get_shot(self, shot_id: str) -> ZShot:
-        return ZShot.by_id(shot_id)
+    def get_shot(self, shot_id: str) -> Shot:
+        return Shot.by_id(shot_id)
 
-    def get_shots_all(self) -> List[ZShot]:
-        shots = [ZShot(**s) for s in gazu.shot.all_shots_for_project(asdict(self))]
+    def get_shots_all(self) -> List[Shot]:
+        shots = [Shot(**s) for s in gazu.shot.all_shots_for_project(asdict(self))]
         return sorted(shots, key=lambda x: x.name)
 
-    def get_shot_by_name(self, zsequence: ZSequence, name: str) -> Optional[ZShot]:
-        return ZShot.by_name(zsequence, name)
+    def get_shot_by_name(self, sequence: Sequence, name: str) -> Optional[Shot]:
+        return Shot.by_name(sequence, name)
 
     def create_shot(
         self,
         shot_name: str,
-        zsequence: ZSequence,
+        sequence: Sequence,
         frame_in: Optional[int] = None,
         frame_out: Optional[int] = None,
         data: Dict[str, Any] = {},
-    ) -> ZShot:
+    ) -> Shot:
         # this function returns a shot dict even if shot already exists, it does not override
         shot_dict = gazu.shot.new_shot(
             asdict(self),
-            asdict(zsequence),
+            asdict(sequence),
             shot_name,
             frame_in=frame_in,
             frame_out=frame_out,
             data=data,
         )
-        return ZShot(**shot_dict)
+        return Shot(**shot_dict)
 
-    def update_shot(self, zshot: ZShot) -> Dict[str, Any]:
-        return gazu.shot.update_shot(asdict(zshot))  # type: ignore
+    def update_shot(self, shot: Shot) -> Dict[str, Any]:
+        return gazu.shot.update_shot(asdict(shot))  # type: ignore
 
     # ASSET TYPES
     # ---------------
 
-    def get_all_asset_types(self) -> List[ZAssetType]:
-        zassettypes = [
-            ZAssetType(**at)
+    def get_all_asset_types(self) -> List[AssetType]:
+        assettypes = [
+            AssetType(**at)
             for at in gazu.asset.all_asset_types_for_project(asdict(self))
         ]
-        return sorted(zassettypes, key=lambda x: x.name)
+        return sorted(assettypes, key=lambda x: x.name)
 
-    def get_asset_type_by_name(self, asset_type_name: str) -> Optional[ZAssetType]:
-        return ZAssetType.by_name(asset_type_name)
+    def get_asset_type_by_name(self, asset_type_name: str) -> Optional[AssetType]:
+        return AssetType.by_name(asset_type_name)
 
     # ASSETS
     # ---------------
 
-    def get_all_assets(self) -> List[ZAsset]:
-        zassets = [ZAsset(**a) for a in gazu.asset.all_assets_for_project(asdict(self))]
-        return sorted(zassets, key=lambda x: x.name)
+    def get_all_assets(self) -> List[Asset]:
+        assets = [Asset(**a) for a in gazu.asset.all_assets_for_project(asdict(self))]
+        return sorted(assets, key=lambda x: x.name)
 
-    def get_asset_by_name(self, asset_name: str) -> Optional[ZAsset]:
-        return ZAsset.by_name(self, asset_name)
+    def get_asset_by_name(self, asset_name: str) -> Optional[Asset]:
+        return Asset.by_name(self, asset_name)
 
-    def get_all_assets_for_type(self, zassettype: ZAssetType) -> List[ZAsset]:
-        zassets = [
-            ZAsset(**a)
+    def get_all_assets_for_type(self, assettype: AssetType) -> List[Asset]:
+        assets = [
+            Asset(**a)
             for a in gazu.asset.all_assets_for_project_and_type(
-                asdict(self), asdict(zassettype)
+                asdict(self), asdict(assettype)
             )
         ]
-        return sorted(zassets, key=lambda x: x.name)
+        return sorted(assets, key=lambda x: x.name)
 
     # TASKS
     # ---------------
@@ -176,7 +176,7 @@ class ZProject:
 
 
 @dataclass
-class ZSequence:
+class Sequence:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
@@ -203,43 +203,43 @@ class ZSequence:
     @classmethod
     def by_name(
         cls,
-        zproject: ZProject,
+        project: Project,
         seq_name: str,
         episode: Union[str, Dict[str, Any], None] = None,
-    ) -> Optional[ZSequence]:
+    ) -> Optional[Sequence]:
         # can return None if seq does not exist
         seq_dict = gazu.shot.get_sequence_by_name(
-            asdict(zproject), seq_name, episode=episode
+            asdict(project), seq_name, episode=episode
         )
         if seq_dict:
             return cls(**seq_dict)
         return None
 
     @classmethod
-    def by_id(cls, seq_id: str) -> ZSequence:
+    def by_id(cls, seq_id: str) -> Sequence:
         seq_dict = gazu.shot.get_sequence(seq_id)
         return cls(**seq_dict)
 
-    def get_all_shots(self) -> List[ZShot]:
+    def get_all_shots(self) -> List[Shot]:
         shots = [
-            ZShot(**shot) for shot in gazu.shot.all_shots_for_sequence(asdict(self))
+            Shot(**shot) for shot in gazu.shot.all_shots_for_sequence(asdict(self))
         ]
         return sorted(shots, key=lambda x: x.name)
 
-    def get_all_task_types(self) -> List[ZTaskType]:
+    def get_all_task_types(self) -> List[TaskType]:
         return [
-            ZTaskType(**t) for t in gazu.task.all_task_types_for_sequence(asdict(self))
+            TaskType(**t) for t in gazu.task.all_task_types_for_sequence(asdict(self))
         ]
 
-    def get_all_tasks(self) -> List[ZTask]:
-        return [ZTask(**t) for t in gazu.task.all_tasks_for_sequence(asdict(self))]
+    def get_all_tasks(self) -> List[Task]:
+        return [Task(**t) for t in gazu.task.all_tasks_for_sequence(asdict(self))]
 
     def __bool__(self):
         return bool(self.id)
 
 
 @dataclass
-class ZAssetType:
+class AssetType:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
@@ -252,7 +252,7 @@ class ZAssetType:
     type: str = ""
 
     @classmethod
-    def by_name(cls, asset_type_name: str) -> Optional[ZAssetType]:
+    def by_name(cls, asset_type_name: str) -> Optional[AssetType]:
         # can return None if seq does not exist
         tpye_dict = gazu.asset.get_asset_type_by_name(asset_type_name)
         if tpye_dict:
@@ -260,7 +260,7 @@ class ZAssetType:
         return None
 
     @classmethod
-    def by_id(cls, type_id: str) -> ZAssetType:
+    def by_id(cls, type_id: str) -> AssetType:
         tpye_dict = gazu.asset.get_asset_type(type_id)
         return cls(**tpye_dict)
 
@@ -269,7 +269,7 @@ class ZAssetType:
 
 
 @dataclass
-class ZShot:
+class Shot:
     """
     Class to get object oriented representation of backend shot data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict
@@ -302,28 +302,28 @@ class ZShot:
     tasks: List[Dict[str, Any]] = field(default_factory=list)
 
     @classmethod
-    def by_name(cls, zsequence: ZSequence, shot_name: str) -> Optional[ZShot]:
+    def by_name(cls, sequence: Sequence, shot_name: str) -> Optional[Shot]:
         # can return None if seq does not exist
-        shot_dict = gazu.shot.get_shot_by_name(asdict(zsequence), shot_name)
+        shot_dict = gazu.shot.get_shot_by_name(asdict(sequence), shot_name)
         if shot_dict:
             return cls(**shot_dict)
         return None
 
     @classmethod
-    def by_id(cls, shot_id: str) -> ZShot:
+    def by_id(cls, shot_id: str) -> Shot:
         shot_dict = gazu.shot.get_shot(shot_id)
         return cls(**shot_dict)
 
-    def get_all_task_types(self) -> List[ZTaskType]:
-        return [ZTaskType(**t) for t in gazu.task.all_task_types_for_shot(asdict(self))]
+    def get_all_task_types(self) -> List[TaskType]:
+        return [TaskType(**t) for t in gazu.task.all_task_types_for_shot(asdict(self))]
 
-    def get_all_tasks(self) -> List[ZTask]:
-        return [ZTask(**t) for t in gazu.task.all_tasks_for_shot(asdict(self))]
+    def get_all_tasks(self) -> List[Task]:
+        return [Task(**t) for t in gazu.task.all_tasks_for_shot(asdict(self))]
 
-    def get_sequence(self) -> ZSequence:
-        return ZSequence(**gazu.shot.get_sequence_from_shot(asdict(self)))
+    def get_sequence(self) -> Sequence:
+        return Sequence(**gazu.shot.get_sequence_from_shot(asdict(self)))
 
-    def update(self) -> ZShot:
+    def update(self) -> Shot:
         gazu.shot.update_shot(asdict(self))
         return self
 
@@ -335,7 +335,7 @@ class ZShot:
 
 
 @dataclass
-class ZAsset:
+class Asset:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
@@ -369,10 +369,10 @@ class ZAsset:
     @classmethod
     def by_name(
         cls,
-        project: ZProject,
+        project: Project,
         asset_name: str,
-        asset_type: Optional[ZAssetType] = None,
-    ) -> Optional[ZAsset]:
+        asset_type: Optional[AssetType] = None,
+    ) -> Optional[Asset]:
 
         # convert args to dict for api call
         project_dict = asdict(project)
@@ -387,24 +387,24 @@ class ZAsset:
         return None
 
     @classmethod
-    def by_id(cls, asset_id: str) -> ZAsset:
+    def by_id(cls, asset_id: str) -> Asset:
         asset_dict = gazu.asset.get_asset(asset_id)
         return cls(**asset_dict)
 
-    def get_all_task_types(self) -> List[ZTaskType]:
+    def get_all_task_types(self) -> List[TaskType]:
         return [
-            ZTaskType(**t) for t in gazu.task.all_task_types_for_asset(asdict(self))
+            TaskType(**t) for t in gazu.task.all_task_types_for_asset(asdict(self))
         ]
 
-    def get_all_tasks(self) -> List[ZTask]:
-        return [ZTask(**t) for t in gazu.task.all_tasks_for_asset(asdict(self))]
+    def get_all_tasks(self) -> List[Task]:
+        return [Task(**t) for t in gazu.task.all_tasks_for_asset(asdict(self))]
 
     def __bool__(self):
         return bool(self.id)
 
 
 @dataclass
-class ZTaskType:
+class TaskType:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
@@ -427,7 +427,7 @@ class ZTaskType:
     type: str = ""
 
     @classmethod
-    def by_name(cls, task_type_name: str) -> Optional[ZTaskType]:
+    def by_name(cls, task_type_name: str) -> Optional[TaskType]:
         # can return None if seq does not exist
         task_type_dict = gazu.task.get_task_type_by_name(task_type_name)
 
@@ -436,7 +436,7 @@ class ZTaskType:
         return None
 
     @classmethod
-    def by_id(cls, task_type_id: str) -> ZTaskType:
+    def by_id(cls, task_type_id: str) -> TaskType:
         task_type_dict = gazu.task.get_task_type(task_type_id)
         return cls(**task_type_dict)
 
@@ -449,7 +449,7 @@ class ZTaskType:
 
 
 @dataclass
-class ZTask:
+class Task:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
@@ -501,14 +501,14 @@ class ZTask:
     @classmethod
     def by_name(
         cls,
-        zasset_zshot: Union[ZAsset, ZShot],
-        ztask_type: ZTaskType,
+        asset_shot: Union[Asset, Shot],
+        task_type: TaskType,
         name: str = "main",
-    ) -> Optional[ZTask]:
+    ) -> Optional[Task]:
 
         # convert args to dict for api call
-        asset_shotdict = asdict(zasset_zshot)
-        task_type_dict = asdict(ztask_type)
+        asset_shotdict = asdict(asset_shot)
+        task_type_dict = asdict(task_type)
 
         # can return None if seq does not exist
         task_dict = gazu.task.get_task_by_name(asset_shotdict, task_type_dict, name)
@@ -518,7 +518,7 @@ class ZTask:
         return None
 
     @classmethod
-    def by_id(cls, task_id: str) -> ZTask:
+    def by_id(cls, task_id: str) -> Task:
         task_dict = gazu.task.get_task(task_id)
         return cls(**task_dict)
 
@@ -526,21 +526,21 @@ class ZTask:
     def new_task(
         cls,
         zentity: Any,
-        ztask_type: ZTaskType,
+        task_type: TaskType,
         name: str = "main",
-        ztask_status: Optional[ZTaskStatus] = None,
-        zassigner: Optional[ZUser] = None,
-        zassignees: Optional[List[ZUser]] = None,
-    ) -> ZTask:
+        task_status: Optional[TaskStatus] = None,
+        zassigner: Optional[User] = None,
+        zassignees: Optional[List[User]] = None,
+    ) -> Task:
 
         # convert args
         assigner = asdict(zassigner) if zassigner else zassigner
-        task_status = asdict(ztask_status) if ztask_status else ztask_status
+        task_status = asdict(task_status) if task_status else task_status
         assignees = asdict(zassignees) if zassignees else zassignees
 
         task_dict = gazu.task.new_task(
             asdict(zentity),
-            asdict(ztask_type),
+            asdict(task_type),
             name=name,
             task_status=task_status,
             assigner=assigner,
@@ -550,69 +550,69 @@ class ZTask:
 
     @classmethod
     def all_tasks_for_entity_and_task_type(
-        cls, zentity: Any, ztask_type: ZTaskType
-    ) -> List[ZTask]:
+        cls, zentity: Any, task_type: TaskType
+    ) -> List[Task]:
         task_list = gazu.task.all_tasks_for_entity_and_task_type(
-            asdict(zentity), asdict(ztask_type)
+            asdict(zentity), asdict(task_type)
         )
         return [cls(**t) for t in task_list]
 
     @classmethod
     def all_tasks_for_task_type(
-        cls, zproject: ZProject, ztask_type: ZTaskType
-    ) -> List[ZTask]:
+        cls, project: Project, task_type: TaskType
+    ) -> List[Task]:
         task_list = gazu.task.all_tasks_for_task_type(
-            asdict(zproject), asdict(ztask_type)
+            asdict(project), asdict(task_type)
         )
         return [cls(**t) for t in task_list]
 
-    def get_last_comment(self) -> ZComment:
+    def get_last_comment(self) -> Comment:
         comment_dict = gazu.task.get_last_comment_for_task(asdict(self))
-        return ZComment(**comment_dict)
+        return Comment(**comment_dict)
 
-    def get_all_comments(self) -> List[ZComment]:
-        return [ZComment(**c) for c in gazu.task.all_comments_for_task(asdict(self))]
+    def get_all_comments(self) -> List[Comment]:
+        return [Comment(**c) for c in gazu.task.all_comments_for_task(asdict(self))]
 
     def add_comment(
         self,
-        ztask_status: ZTaskStatus,
+        task_status: TaskStatus,
         comment: str = "",
-        zuser: Optional[ZUser] = None,
+        user: Optional[User] = None,
         checklist: List[Dict[str, Any]] = [],
         attachments: List[Dict[str, Any]] = [],
-        # i think equal to attachment_files in ZComment
+        # i think equal to attachment_files in Comment
         created_at: Optional[str] = None,
-    ) -> ZComment:
+    ) -> Comment:
 
         # convert args
-        person = asdict(zuser) if zuser else zuser
+        person = asdict(user) if user else user
 
         comment_dict = gazu.task.add_comment(
             asdict(self),
-            asdict(ztask_status),
+            asdict(task_status),
             comment=comment,
             person=person,
             checklist=checklist,
             attachments=attachments,
             created_at=created_at,
         )
-        zcomment = ZComment(**comment_dict)
-        return zcomment
+        comment = Comment(**comment_dict)
+        return comment
 
     def add_preview_to_comment(
-        self, zcomment: ZComment, preview_file_path: str
-    ) -> ZPreview:
+        self, comment: Comment, preview_file_path: str
+    ) -> Preview:
         preview_dict = gazu.task.add_preview(
-            asdict(self), asdict(zcomment), preview_file_path
+            asdict(self), asdict(comment), preview_file_path
         )
-        return ZPreview(**preview_dict)
+        return Preview(**preview_dict)
 
     def __bool__(self):
         return bool(self.id)
 
 
 @dataclass
-class ZTaskStatus:
+class TaskStatus:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
@@ -633,7 +633,7 @@ class ZTaskStatus:
     type: str = ""
 
     @classmethod
-    def by_short_name(cls, short_name: str) -> Optional[ZTaskStatus]:
+    def by_short_name(cls, short_name: str) -> Optional[TaskStatus]:
 
         # can return None if seq does not exist
         task_status_dict = gazu.task.get_task_status_by_short_name(short_name)
@@ -643,7 +643,7 @@ class ZTaskStatus:
         return None
 
     @classmethod
-    def by_name(cls, name: str) -> Optional[ZTaskStatus]:
+    def by_name(cls, name: str) -> Optional[TaskStatus]:
 
         # can return None if seq does not exist
         task_status_dict = gazu.task.get_task_status_by_name(name)
@@ -653,7 +653,7 @@ class ZTaskStatus:
         return None
 
     @classmethod
-    def by_id(cls, task_status_id: str) -> ZTaskStatus:
+    def by_id(cls, task_status_id: str) -> TaskStatus:
         task_status_dict = gazu.task.get_task_status(task_status_id)
         return cls(**task_status_dict)
 
@@ -662,7 +662,7 @@ class ZTaskStatus:
 
 
 @dataclass
-class ZComment:
+class Comment:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
@@ -694,7 +694,7 @@ class ZComment:
 
 
 @dataclass
-class ZPreview:
+class Preview:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
@@ -732,7 +732,7 @@ class ZPreview:
 
 
 @dataclass
-class ZUser:
+class User:
     """
     Class to get object oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
@@ -764,7 +764,7 @@ class ZUser:
         return bool(self.id)
 
 
-class ZCache:
+class Cache:
     @classmethod
     def clear_all(cls):
         logger.info("Cleared Server Cache")

@@ -16,9 +16,9 @@ from .logger import ZLoggerFactory, ZLoggerLevelManager
 logger = ZLoggerFactory.getLogger(__name__)
 
 bl_info = {
-    "name": "Blezou",
+    "name": "Blender Kitsu",
     "author": "Paul Golter",
-    "description": "Blender addon to interact with gazou data base",
+    "description": "Blender addon to interact with Kitsu",
     "blender": (2, 93, 0),
     "version": (0, 1, 0),
     "location": "View3D",
@@ -33,7 +33,7 @@ _need_reload = "ops" in locals()
 if _need_reload:
     import importlib
 
-    logger.info("-START- Reloading Blezou")
+    logger.info("-START- Reloading blender-kitsu")
     cache = importlib.reload(cache)
     types = importlib.reload(types)
     checkstrip = importlib.reload(checkstrip)
@@ -46,29 +46,29 @@ if _need_reload:
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
     ZLoggerLevelManager.configure_levels()
-    logger.info("-END- Reloading Blezou")
+    logger.info("-END- Reloading blender-kitsu")
 
 
 def register():
-    logger.info("-START- Registering Blezou")
+    logger.info("-START- Registering blender-kitsu")
     cache.register()
     props.register()
     prefs.register()
     ops.register()
     ui.register()
     ZLoggerLevelManager.configure_levels()
-    logger.info("-END- Registering Blezou")
+    logger.info("-END- Registering blender-kitsu")
 
 
 def unregister():
-    logger.info("-START- Unregistering Blezou")
+    logger.info("-START- Unregistering blender-kitsu")
     ui.unregister()
     ops.unregister()
     prefs.unregister()
     props.unregister()
     cache.unregister()
     ZLoggerLevelManager.restore_levels()
-    logger.info("-END- Unregistering Blezou")
+    logger.info("-END- Unregistering blender-kitsu")
 
 
 if __name__ == "__main__":

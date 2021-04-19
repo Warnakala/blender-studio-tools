@@ -6,7 +6,7 @@ from .logger import ZLoggerFactory
 logger = ZLoggerFactory.getLogger(name=__name__)
 
 
-class BLEZOU_property_group_sequence(bpy.types.PropertyGroup):
+class KITSU_property_group_sequence(bpy.types.PropertyGroup):
     """
     Property group that will be registered on sequence strips.
     They hold metadata that will be used to compose a data structure that can
@@ -34,10 +34,10 @@ class BLEZOU_property_group_sequence(bpy.types.PropertyGroup):
 
     # meta
     initialized: bpy.props.BoolProperty(  # type: ignore
-        name="Initialized", default=False, description="Is Blezou shot"
+        name="Initialized", default=False, description="Is Kitsu shot"
     )
     linked: bpy.props.BoolProperty(  # type: ignore
-        name="Linked", default=False, description="Is linked to an ID in gazou"
+        name="Linked", default=False, description="Is linked to an ID on server"
     )
 
     # display props
@@ -75,7 +75,7 @@ class BLEZOU_property_group_sequence(bpy.types.PropertyGroup):
         self.linked = False
 
 
-class BLEZOU_property_group_scene(bpy.types.PropertyGroup):
+class KITSU_property_group_scene(bpy.types.PropertyGroup):
     """"""
 
     sequence_active_id: bpy.props.StringProperty(  # type: ignore
@@ -110,7 +110,7 @@ class BLEZOU_property_group_scene(bpy.types.PropertyGroup):
         self.asset_type_active_id = ""
 
 
-class BLEZOU_property_group_window(bpy.types.PropertyGroup):
+class KITSU_property_group_window(bpy.types.PropertyGroup):
     """"""
 
     multi_edit_seq: bpy.props.StringProperty(  # type: ignore
@@ -202,7 +202,7 @@ def _clear_window_manager_props():
 
 # ----------------REGISTER--------------
 
-classes = [BLEZOU_property_group_sequence, BLEZOU_property_group_scene]
+classes = [KITSU_property_group_sequence, KITSU_property_group_scene]
 
 
 def register():
@@ -211,16 +211,16 @@ def register():
         bpy.utils.register_class(cls)
 
     # Sequence Properties
-    bpy.types.Sequence.blezou = bpy.props.PointerProperty(
-        name="Blezou",
-        type=BLEZOU_property_group_sequence,
-        description="Metadata that is required for blezou",
+    bpy.types.Sequence.kitsu = bpy.props.PointerProperty(
+        name="Kitsu",
+        type=KITSU_property_group_sequence,
+        description="Metadata that is required for blender_kitsu",
     )
     # Scene Properties
-    bpy.types.Scene.blezou = bpy.props.PointerProperty(
-        name="Blezou",
-        type=BLEZOU_property_group_scene,
-        description="Metadata that is required for blezou",
+    bpy.types.Scene.kitsu = bpy.props.PointerProperty(
+        name="Kitsu",
+        type=KITSU_property_group_scene,
+        description="Metadata that is required for blender_kitsu",
     )
     # Window Manager Properties
     _add_window_manager_props()

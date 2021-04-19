@@ -7,18 +7,18 @@ import bpy
 from .auth import ZSession
 from .logger import ZLoggerFactory
 from .ops import (
-    BLEZOU_OT_productions_load,
-    BLEZOU_OT_session_end,
-    BLEZOU_OT_session_start,
+    KITSU_OT_productions_load,
+    KITSU_OT_session_end,
+    KITSU_OT_session_start,
 )
 from . import cache
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
 
-class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
+class KITSU_addon_preferences(bpy.types.AddonPreferences):
     """
-    Addon preferences to blezou. Holds variables that are important for authentification.
+    Addon preferences to kitsu. Holds variables that are important for authentification.
     During runtime new attributes are created that get initialized in: bz_prefs_init_properties()
     """
 
@@ -48,7 +48,7 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
         Note: If a file is moved, the thumbnails will need to be recomputed.
         """
         hashed_filename = hashlib.md5(bpy.data.filepath.encode()).hexdigest()
-        storage_dir = self.get_datadir() / "blezou" / hashed_filename
+        storage_dir = self.get_datadir() / "blender_kitsu" / hashed_filename
         # storage_dir.mkdir(parents=True, exist_ok=True)
         return storage_dir.as_posix()
 
@@ -82,7 +82,7 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
 
     project_active_id: bpy.props.StringProperty(  # type: ignore
         name="Project Active ID",
-        description="GazouId that refers to the last active project",
+        description="Server Id that refers to the last active project",
         default="",
         options={"HIDDEN", "SKIP_SAVE"},
     )
@@ -120,7 +120,7 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
-        zproject_active = cache.zproject_active_get()
+        project_active = cache.project_active_get()
 
         # login
         box = layout.box()
@@ -130,7 +130,7 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
             box.row().prop(self, "email")
             box.row().prop(self, "passwd")
             box.row().operator(
-                BLEZOU_OT_session_start.bl_idname, text="Login", icon="PLAY"
+                KITSU_OT_session_start.bl_idname, text="Login", icon="PLAY"
             )
         else:
             row = box.row()
@@ -138,7 +138,7 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
             row.enabled = False
             box.row().label(text=f"Logged in: {self.session.email}")
             box.row().operator(
-                BLEZOU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
+                KITSU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
             )
 
         # Production
@@ -146,13 +146,13 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
         box.label(text="Project settings", icon="FILEBROWSER")
         row = box.row(align=True)
 
-        if not zproject_active:
+        if not project_active:
             prod_load_text = "Select Production"
         else:
-            prod_load_text = zproject_active.name
+            prod_load_text = project_active.name
 
         row.operator(
-            BLEZOU_OT_productions_load.bl_idname,
+            KITSU_OT_productions_load.bl_idname,
             text=prod_load_text,
             icon="DOWNARROW_HLT",
         )
@@ -171,17 +171,17 @@ class BLEZOU_addon_preferences(bpy.types.AddonPreferences):
 
 def zsession_get(context: bpy.types.Context) -> ZSession:
     """
-    shortcut to get zsession from blezou addon preferences
+    shortcut to get zsession from blender_kitsu addon preferences
     """
-    prefs = context.preferences.addons["blezou"].preferences
+    prefs = context.preferences.addons["blender_kitsu"].preferences
     return prefs.session  # type: ignore
 
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """
-    shortcut to get blezou addon preferences
+    shortcut to get blender_kitsu addon preferences
     """
-    return context.preferences.addons["blezou"].preferences
+    return context.preferences.addons["blender_kitsu"].preferences
 
 
 def zsession_auth(context: bpy.types.Context) -> bool:
@@ -193,7 +193,7 @@ def zsession_auth(context: bpy.types.Context) -> bool:
 
 # ---------REGISTER ----------
 
-classes = [BLEZOU_addon_preferences]
+classes = [KITSU_addon_preferences]
 
 
 def register():
@@ -204,7 +204,7 @@ def register():
 def unregister():
 
     # log user out
-    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
+    addon_prefs = bpy.context.preferences.addons["blender_kitsu"].preferences
     if addon_prefs.session.is_auth():
         addon_prefs.session.end()
 

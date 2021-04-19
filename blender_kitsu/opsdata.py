@@ -5,7 +5,7 @@ import bpy
 
 from . import cache, prefs
 from .logger import ZLoggerFactory
-from .types import ZSequence, ZProjectList
+from .types import Sequence, ProjectList
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
@@ -42,7 +42,7 @@ def _sqe_update_not_linked(context: bpy.types.Context) -> List[Tuple[str, str, s
         strips = context.scene.sequence_editor.sequences_all
 
     for strip in strips:
-        if strip.blezou.initialized and not strip.blezou.linked:
+        if strip.kitsu.initialized and not strip.kitsu.linked:
             enum_list.append((strip.name, strip.name, ""))
 
     return enum_list
@@ -60,10 +60,10 @@ def _sqe_update_duplicates(context: bpy.types.Context) -> List[Tuple[str, str, s
     # create data dict that holds all shots ids and the corresponding strips that are linked to it
     for i in range(len(strips)):
 
-        if strips[i].blezou.linked:
+        if strips[i].kitsu.linked:
             # get shot_id, shot_name, create entry in data_dict if id not existent
-            shot_id = strips[i].blezou.shot_id
-            shot_name = strips[i].blezou.shot_name
+            shot_id = strips[i].kitsu.shot_id
+            shot_name = strips[i].kitsu.shot_name
             if shot_id not in data_dict:
                 data_dict[shot_id] = {"name": shot_name, "strips": []}
 
@@ -73,7 +73,7 @@ def _sqe_update_duplicates(context: bpy.types.Context) -> List[Tuple[str, str, s
 
             # comparet to all other strip
             for j in range(i + 1, len(strips)):
-                if shot_id == strips[j].blezou.shot_id:
+                if shot_id == strips[j].kitsu.shot_id:
                     data_dict[shot_id]["strips"].append(strips[j])
 
     # convert in data strucutre for enum property
@@ -98,8 +98,8 @@ def _sqe_update_multi_project(context: bpy.types.Context) -> List[Tuple[str, str
 
     # create data dict that holds project names as key and values the corresponding sequence strips
     for strip in strips:
-        if strip.blezou.linked:
-            project = strip.blezou.project_name
+        if strip.kitsu.linked:
+            project = strip.kitsu.project_name
             if project not in data_dict:
                 data_dict[project] = []
 
@@ -145,10 +145,10 @@ def _get_projects(
     if not prefs.zsession_auth(context):
         return []
 
-    zprojectlist = ZProjectList()
+    projectlist = ProjectList()
     _projects_list.clear()
     _projects_list.extend(
-        [(p.id, p.name, p.description or "") for p in zprojectlist.projects]
+        [(p.id, p.name, p.description or "") for p in projectlist.projects]
     )
     return _projects_list
 
@@ -158,15 +158,15 @@ def _get_sequences(
 ) -> List[Tuple[str, str, str]]:
     global _sequence_enum_list
 
-    zproject_active = cache.zproject_active_get()
-    if not zproject_active:
+    project_active = cache.project_active_get()
+    if not project_active:
         return []
 
     _sequence_enum_list.clear()
     _sequence_enum_list.extend(
         [
             (s.id, s.name, s.description or "")
-            for s in zproject_active.get_sequences_all()
+            for s in project_active.get_sequences_all()
         ]
     )
     return _sequence_enum_list
@@ -180,7 +180,7 @@ def _get_shots_from_op_enum(
     if not self.sequence_enum:
         return []
 
-    zseq_active = ZSequence.by_id(self.sequence_enum)
+    zseq_active = Sequence.by_id(self.sequence_enum)
 
     _shot_enum_list.clear()
     _shot_enum_list.extend(
@@ -194,7 +194,7 @@ def _get_shots_from_active_seq(
 ) -> List[Tuple[str, str, str]]:
     global _shot_enum_list
 
-    zseq_active = cache.zsequence_active_get()
+    zseq_active = cache.sequence_active_get()
 
     if not zseq_active:
         return []
@@ -211,13 +211,13 @@ def _get_assetypes(
 ) -> List[Tuple[str, str, str]]:
     global _asset_types_enum_list
 
-    zproject_active = cache.zproject_active_get()
-    if not zproject_active:
+    project_active = cache.project_active_get()
+    if not project_active:
         return []
 
     _asset_types_enum_list.clear()
     _asset_types_enum_list.extend(
-        [(at.id, at.name, "") for at in zproject_active.get_all_asset_types()]
+        [(at.id, at.name, "") for at in project_active.get_all_asset_types()]
     )
     return _asset_types_enum_list
 
@@ -227,17 +227,17 @@ def _get_assets_from_active_asset_type(
 ) -> List[Tuple[str, str, str]]:
     global _asset_enum_list
 
-    zproject_active = cache.zproject_active_get()
-    zasset_type_active = cache.zasset_type_active_get()
+    project_active = cache.project_active_get()
+    asset_type_active = cache.asset_type_active_get()
 
-    if not zproject_active or not zasset_type_active:
+    if not project_active or not asset_type_active:
         return []
 
     _asset_enum_list.clear()
     _asset_enum_list.extend(
         [
             (a.id, a.name, a.description or "")
-            for a in zproject_active.get_all_assets_for_type(zasset_type_active)
+            for a in project_active.get_all_assets_for_type(asset_type_active)
         ]
     )
     return _asset_enum_list

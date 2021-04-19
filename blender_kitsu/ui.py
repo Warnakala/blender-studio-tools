@@ -4,28 +4,28 @@ from . import cache
 from . import checkstrip
 from . import prefs
 from .ops import (
-    BLEZOU_OT_assets_load,
-    BLEZOU_OT_asset_types_load,
-    BLEZOU_OT_productions_load,
-    BLEZOU_OT_sequences_load,
-    BLEZOU_OT_session_end,
-    BLEZOU_OT_session_start,
-    BLEZOU_OT_shots_load,
-    BLEZOU_OT_sqe_debug_duplicates,
-    BLEZOU_OT_sqe_debug_multi_project,
-    BLEZOU_OT_sqe_debug_not_linked,
-    BLEZOU_OT_sqe_init_strip,
-    BLEZOU_OT_sqe_link_sequence,
-    BLEZOU_OT_sqe_link_shot,
-    BLEZOU_OT_sqe_multi_edit_strip,
-    BLEZOU_OT_sqe_pull_shot_meta,
-    BLEZOU_OT_sqe_push_del_shot,
-    BLEZOU_OT_sqe_push_new_sequence,
-    BLEZOU_OT_sqe_push_new_shot,
-    BLEZOU_OT_sqe_push_shot_meta,
-    BLEZOU_OT_sqe_push_thumbnail,
-    BLEZOU_OT_sqe_uninit_strip,
-    BLEZOU_OT_sqe_unlink_shot,
+    KITSU_OT_assets_load,
+    KITSU_OT_asset_types_load,
+    KITSU_OT_productions_load,
+    KITSU_OT_sequences_load,
+    KITSU_OT_session_end,
+    KITSU_OT_session_start,
+    KITSU_OT_shots_load,
+    KITSU_OT_sqe_debug_duplicates,
+    KITSU_OT_sqe_debug_multi_project,
+    KITSU_OT_sqe_debug_not_linked,
+    KITSU_OT_sqe_init_strip,
+    KITSU_OT_sqe_link_sequence,
+    KITSU_OT_sqe_link_shot,
+    KITSU_OT_sqe_multi_edit_strip,
+    KITSU_OT_sqe_pull_shot_meta,
+    KITSU_OT_sqe_push_del_shot,
+    KITSU_OT_sqe_push_new_sequence,
+    KITSU_OT_sqe_push_new_shot,
+    KITSU_OT_sqe_push_shot_meta,
+    KITSU_OT_sqe_push_thumbnail,
+    KITSU_OT_sqe_uninit_strip,
+    KITSU_OT_sqe_unlink_shot,
 )
 
 
@@ -39,12 +39,12 @@ def get_selshots_noun(nr_of_shots: int, prefix: str = "Active") -> str:
     return noun
 
 
-class BLEZOU_PT_vi3d_auth(bpy.types.Panel):
+class KITSU_PT_vi3d_auth(bpy.types.Panel):
     """
     Panel in 3dview that displays email, password and login operator.
     """
 
-    bl_category = "Blezou"
+    bl_category = "Kitsu"
     bl_label = "Login"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -60,23 +60,23 @@ class BLEZOU_PT_vi3d_auth(bpy.types.Panel):
         if not zsession.is_auth():
             row.label(text=f"Email: {addon_prefs.email}")
             row = layout.row(align=True)
-            row.operator(BLEZOU_OT_session_start.bl_idname, text="Login", icon="PLAY")
+            row.operator(KITSU_OT_session_start.bl_idname, text="Login", icon="PLAY")
         else:
             row.label(text=f"Logged in: {zsession.email}")
             row = layout.row(align=True)
             row.operator(
-                BLEZOU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
+                KITSU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
             )
 
 
-class BLEZOU_PT_vi3d_context(bpy.types.Panel):
+class KITSU_PT_vi3d_context(bpy.types.Panel):
     """
     Panel in 3dview that enables browsing through backend data structure.
     Thought of as a menu to setup a context by selecting active production
     active sequence, shot etc.
     """
 
-    bl_category = "Blezou"
+    bl_category = "Kitsu"
     bl_label = "Context"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -91,38 +91,38 @@ class BLEZOU_PT_vi3d_context(bpy.types.Panel):
         addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
         category = addon_prefs.category  # can be either 'SHOTS' or 'ASSETS'
-        zproject_active = cache.zproject_active_get()
+        project_active = cache.project_active_get()
         item_group_data = {
             "name": "Sequence",
-            "zobject": cache.zsequence_active_get(),
-            "operator": BLEZOU_OT_sequences_load.bl_idname,
+            "zobject": cache.sequence_active_get(),
+            "operator": KITSU_OT_sequences_load.bl_idname,
         }
         item_data = {
             "name": "Shot",
-            "zobject": cache.zshot_active_get(),
-            "operator": BLEZOU_OT_shots_load.bl_idname,
+            "zobject": cache.shot_active_get(),
+            "operator": KITSU_OT_shots_load.bl_idname,
         }
         # Production
-        layout.row().label(text=f"Production: {zproject_active.name}")
+        layout.row().label(text=f"Production: {project_active.name}")
 
         # Category
         box = layout.box()
         row = box.row(align=True)
         row.prop(addon_prefs, "category", expand=True)
 
-        if not prefs.zsession_auth(context) or not zproject_active:
+        if not prefs.zsession_auth(context) or not project_active:
             row.enabled = False
 
         # Sequence / AssetType
         if category == "ASSETS":
             item_group_data["name"] = "AssetType"
-            item_group_data["zobject"] = cache.zasset_type_active_get()
-            item_group_data["operator"] = BLEZOU_OT_asset_types_load.bl_idname
+            item_group_data["zobject"] = cache.asset_type_active_get()
+            item_group_data["operator"] = KITSU_OT_asset_types_load.bl_idname
 
         row = box.row(align=True)
         item_group_text = f"Select {item_group_data['name']}"
 
-        if not zproject_active:
+        if not project_active:
             row.enabled = False
 
         elif item_group_data["zobject"]:
@@ -134,13 +134,13 @@ class BLEZOU_PT_vi3d_context(bpy.types.Panel):
         # Shot / Asset
         if category == "ASSETS":
             item_data["name"] = "Asset"
-            item_data["zobject"] = cache.zasset_active_get()
-            item_data["operator"] = BLEZOU_OT_assets_load.bl_idname
+            item_data["zobject"] = cache.asset_active_get()
+            item_data["operator"] = KITSU_OT_assets_load.bl_idname
 
         row = box.row(align=True)
         item_text = f"Select {item_data['name']}"
 
-        if not zproject_active and item_group_data["zobject"]:
+        if not project_active and item_group_data["zobject"]:
             row.enabled = False
 
         elif item_data["zobject"]:
@@ -149,12 +149,12 @@ class BLEZOU_PT_vi3d_context(bpy.types.Panel):
         row.operator(item_data["operator"], text=item_text, icon="DOWNARROW_HLT")
 
 
-class BLEZOU_PT_sqe_auth(bpy.types.Panel):
+class KITSU_PT_sqe_auth(bpy.types.Panel):
     """
     Panel in sequence editor that displays email, password and login operator.
     """
 
-    bl_category = "Blezou"
+    bl_category = "Kitsu"
     bl_label = "Login"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
@@ -174,40 +174,40 @@ class BLEZOU_PT_sqe_auth(bpy.types.Panel):
         if not zsession.is_auth():
             row.label(text=f"Email: {addon_prefs.email}")
             row = layout.row(align=True)
-            row.operator(BLEZOU_OT_session_start.bl_idname, text="Login", icon="PLAY")
+            row.operator(KITSU_OT_session_start.bl_idname, text="Login", icon="PLAY")
         else:
             row.label(text=f"Logged in: {zsession.email}")
             row = layout.row(align=True)
             row.operator(
-                BLEZOU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
+                KITSU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
             )
 
 
-class BLEZOU_MT_sqe_advanced_delete(bpy.types.Menu):
+class KITSU_MT_sqe_advanced_delete(bpy.types.Menu):
     bl_label = "Advanced Delete"
 
     def draw(self, context: bpy.types.Context) -> None:
 
         selshots = context.selected_sequences
-        strips_to_unlink = [s for s in selshots if s.blezou.linked]
+        strips_to_unlink = [s for s in selshots if s.kitsu.linked]
 
         layout = self.layout
         layout.operator(
-            BLEZOU_OT_sqe_push_del_shot.bl_idname,
+            KITSU_OT_sqe_push_del_shot.bl_idname,
             text=f"Unlink and Delete {len(strips_to_unlink)} Shots",
             icon="CANCEL",
         )
 
 
-class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
+class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
     """
-    Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
+    Panel in sequence editor that shows .kitsu properties of active strip. (shot, sequence)
     """
 
     # TODO: Because each draw function was previously a seperate Panel there might be a lot of
     # code duplication now, needs to be refactored at some point
 
-    bl_category = "Blezou"
+    bl_category = "Kitsu"
     bl_label = "Shot Tools"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
@@ -251,7 +251,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         selshots = context.selected_sequences
         nr_of_shots = len(selshots)
         noun = get_selshots_noun(nr_of_shots)
-        zproject_active = cache.zproject_active_get()
+        project_active = cache.project_active_get()
 
         strips_to_init = []
         strips_to_uninit = []
@@ -260,11 +260,11 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         for s in selshots:
             if s.type not in checkstrip.VALID_STRIP_TYPES:
                 continue
-            if not s.blezou.initialized:
+            if not s.kitsu.initialized:
                 strips_to_init.append(s)
-            elif s.blezou.linked:
+            elif s.kitsu.linked:
                 strips_to_unlink.append(s)
-            elif s.blezou.initialized:
+            elif s.kitsu.initialized:
                 strips_to_uninit.append(s)
 
         # create box
@@ -274,7 +274,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
 
         # Production
         if prefs.zsession_auth(context):
-            box.row().label(text=f"Production: {zproject_active.name}")
+            box.row().label(text=f"Production: {project_active.name}")
 
         # Single Selection
         if nr_of_shots == 1:
@@ -287,35 +287,35 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
                 )
                 return
 
-            if not strip.blezou.initialized:
+            if not strip.kitsu.initialized:
                 # init active
                 row.operator(
-                    BLEZOU_OT_sqe_init_strip.bl_idname, text=f"Init {noun}", icon="ADD"
+                    KITSU_OT_sqe_init_strip.bl_idname, text=f"Init {noun}", icon="ADD"
                 )
                 # link active
                 row.operator(
-                    BLEZOU_OT_sqe_link_shot.bl_idname,
+                    KITSU_OT_sqe_link_shot.bl_idname,
                     text=f"Link {noun}",
                     icon="LINKED",
                 )
 
             # unlink
-            elif strip.blezou.linked:
+            elif strip.kitsu.linked:
 
                 row = box.row(align=True)
                 row.operator(
-                    BLEZOU_OT_sqe_unlink_shot.bl_idname,
+                    KITSU_OT_sqe_unlink_shot.bl_idname,
                     text=f"Unlink {noun}",
                     icon="UNLINKED",
                 )
-                row.menu("BLEZOU_MT_sqe_advanced_delete", icon="DOWNARROW_HLT", text="")
+                row.menu("KITSU_MT_sqe_advanced_delete", icon="DOWNARROW_HLT", text="")
 
             # uninitialize
             else:
                 row = box.row(align=True)
                 # unlink active
                 row.operator(
-                    BLEZOU_OT_sqe_uninit_strip.bl_idname,
+                    KITSU_OT_sqe_uninit_strip.bl_idname,
                     text=f"Uninitialize {noun}",
                     icon="REMOVE",
                 )
@@ -327,7 +327,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
             # init
             if strips_to_init:
                 row.operator(
-                    BLEZOU_OT_sqe_init_strip.bl_idname,
+                    KITSU_OT_sqe_init_strip.bl_idname,
                     text=f"Init {len(strips_to_init)} Shots",
                     icon="ADD",
                 )
@@ -338,7 +338,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
             # uninitialize
             if strips_to_uninit:
                 row.operator(
-                    BLEZOU_OT_sqe_uninit_strip.bl_idname,
+                    KITSU_OT_sqe_uninit_strip.bl_idname,
                     text=f"Uninitialize {len(strips_to_uninit)} Shots",
                     icon="REMOVE",
                 )
@@ -346,23 +346,23 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
             # unlink all
             if strips_to_unlink:
                 row.operator(
-                    BLEZOU_OT_sqe_unlink_shot.bl_idname,
+                    KITSU_OT_sqe_unlink_shot.bl_idname,
                     text=f"Unlink {len(strips_to_unlink)} Shots",
                     icon="UNLINKED",
                 )
-                row.menu("BLEZOU_MT_sqe_advanced_delete", icon="DOWNARROW_HLT", text="")
+                row.menu("KITSU_MT_sqe_advanced_delete", icon="DOWNARROW_HLT", text="")
 
     @classmethod
     def poll_metadata(cls, context: bpy.types.Context) -> bool:
         nr_of_shots = len(context.selected_sequences)
         strip = context.scene.sequence_editor.active_strip
         if nr_of_shots == 1:
-            return strip.blezou.initialized
+            return strip.kitsu.initialized
         return False
 
     def draw_metadata(self, context: bpy.types.Context) -> None:
         """
-        Panel in sequence editor that shows .blezou properties of active strip. (shot, sequence)
+        Panel in sequence editor that shows .kitsu properties of active strip. (shot, sequence)
         """
 
         strip = context.scene.sequence_editor.active_strip
@@ -376,24 +376,24 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
 
         # sequence
         sub_row = col.row(align=True)
-        sub_row.prop(strip.blezou, "sequence_name_display")
+        sub_row.prop(strip.kitsu, "sequence_name_display")
         sub_row.operator(
-            BLEZOU_OT_sqe_link_sequence.bl_idname, text="", icon="DOWNARROW_HLT"
+            KITSU_OT_sqe_link_sequence.bl_idname, text="", icon="DOWNARROW_HLT"
         )
-        sub_row.operator(BLEZOU_OT_sqe_push_new_sequence.bl_idname, text="", icon="ADD")
+        sub_row.operator(KITSU_OT_sqe_push_new_sequence.bl_idname, text="", icon="ADD")
 
         # shot
-        col.prop(strip.blezou, "shot_name")
+        col.prop(strip.kitsu, "shot_name")
 
         # description
-        col.prop(strip.blezou, "shot_description_display", text="Description")
-        col.enabled = False if not strip.blezou.initialized else True
+        col.prop(strip.kitsu, "shot_description_display", text="Description")
+        col.enabled = False if not strip.kitsu.initialized else True
 
     @classmethod
     def poll_multi_edit(cls, context: bpy.types.Context) -> bool:
         sel_shots = context.selected_sequences
         nr_of_shots = len(sel_shots)
-        unvalid = [s for s in sel_shots if s.blezou.linked or not s.blezou.initialized]
+        unvalid = [s for s in sel_shots if s.kitsu.linked or not s.kitsu.initialized]
         return bool(not unvalid and nr_of_shots > 1)
 
     def draw_multi_edit(self, context: bpy.types.Context) -> None:
@@ -417,7 +417,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         sub_row = col.row(align=True)
         # sub_row.prop(context.window_manager, "sequence_name_display")
         sub_row.prop(context.window_manager, "sequence_enum", text="Sequence")
-        sub_row.operator(BLEZOU_OT_sqe_push_new_sequence.bl_idname, text="", icon="ADD")
+        sub_row.operator(KITSU_OT_sqe_push_new_sequence.bl_idname, text="", icon="ADD")
 
         # Counter
         row = box.row()
@@ -465,7 +465,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
 
         row = box.row(align=True)
         row.operator(
-            BLEZOU_OT_sqe_multi_edit_strip.bl_idname,
+            KITSU_OT_sqe_multi_edit_strip.bl_idname,
             text=f"Edit {noun}",
             icon="TRIA_RIGHT",
         )
@@ -485,11 +485,11 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         strips_to_submit = []
 
         for s in selshots:
-            if s.blezou.linked:
+            if s.kitsu.linked:
                 strips_to_tb.append(s)
                 strips_to_meta.append(s)
 
-            elif s.blezou.initialized:
+            elif s.kitsu.initialized:
                 strips_to_submit.append(s)
 
         return bool(strips_to_meta or strips_to_tb or strips_to_submit)
@@ -512,13 +512,13 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         strips_to_delete = []
 
         for s in selshots:
-            if s.blezou.linked:
+            if s.kitsu.linked:
                 strips_to_tb.append(s)
                 strips_to_meta.append(s)
                 strips_to_delete.append(s)
 
-            elif s.blezou.initialized:
-                if s.blezou.shot_name and s.blezou.sequence_name:
+            elif s.kitsu.initialized:
+                if s.kitsu.shot_name and s.kitsu.sequence_name:
                     strips_to_submit.append(s)
 
         # create box
@@ -527,12 +527,12 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         box.label(text="Push", icon="EXPORT")
         # special case if one shot is selected and it is init but not linked
         # shows the operator but it is not enabled until user types in required metadata
-        if nr_of_shots == 1 and not strip.blezou.linked:
+        if nr_of_shots == 1 and not strip.kitsu.linked:
             # new operator
             row = box.row()
             col = row.column(align=True)
             col.operator(
-                BLEZOU_OT_sqe_push_new_shot.bl_idname,
+                KITSU_OT_sqe_push_new_shot.bl_idname,
                 text="Submit New Shot",
                 icon="ADD",
             )
@@ -548,7 +548,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
                 len(strips_to_meta), prefix=f"{len(strips_to_meta)}"
             )
             col.operator(
-                BLEZOU_OT_sqe_push_shot_meta.bl_idname,
+                KITSU_OT_sqe_push_shot_meta.bl_idname,
                 text=f"Metadata {noun}",
                 icon="ALIGN_LEFT",
             )
@@ -557,7 +557,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         if strips_to_tb:
             noun = get_selshots_noun(len(strips_to_tb), prefix=f"{len(strips_to_meta)}")
             col.operator(
-                BLEZOU_OT_sqe_push_thumbnail.bl_idname,
+                KITSU_OT_sqe_push_thumbnail.bl_idname,
                 text=f"Thumbnail {noun}",
                 icon="IMAGE_DATA",
             )
@@ -571,7 +571,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
                 row = box.row()
                 col = row.column(align=True)
                 col.operator(
-                    BLEZOU_OT_sqe_push_new_shot.bl_idname,
+                    KITSU_OT_sqe_push_new_shot.bl_idname,
                     text=f"Submit {noun}",
                     icon="ADD",
                 )
@@ -589,7 +589,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         strips_to_meta = []
 
         for s in selshots:
-            if s.blezou.linked:
+            if s.kitsu.linked:
                 strips_to_meta.append(s)
 
         return bool(strips_to_meta)
@@ -606,7 +606,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
         strips_to_meta = []
 
         for s in selshots:
-            if s.blezou.linked:
+            if s.kitsu.linked:
                 strips_to_meta.append(s)
 
         # create box
@@ -621,7 +621,7 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
             )
             row = box.row()
             row.operator(
-                BLEZOU_OT_sqe_pull_shot_meta.bl_idname,
+                KITSU_OT_sqe_pull_shot_meta.bl_idname,
                 text=f"Metadata {noun}",
                 icon="ALIGN_LEFT",
             )
@@ -641,19 +641,19 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
 
         row = box.row()
         row.operator(
-            BLEZOU_OT_sqe_debug_duplicates.bl_idname,
+            KITSU_OT_sqe_debug_duplicates.bl_idname,
             text=f"Duplicates {noun}",
             icon="MODIFIER_ON",
         )
         row = box.row()
         row.operator(
-            BLEZOU_OT_sqe_debug_not_linked.bl_idname,
+            KITSU_OT_sqe_debug_not_linked.bl_idname,
             text=f"Not Linked {noun}",
             icon="MODIFIER_ON",
         )
         row = box.row()
         row.operator(
-            BLEZOU_OT_sqe_debug_multi_project.bl_idname,
+            KITSU_OT_sqe_debug_multi_project.bl_idname,
             text=f"Multi Projects {noun}",
             icon="MODIFIER_ON",
         )
@@ -662,11 +662,11 @@ class BLEZOU_PT_sqe_shot_tools(bpy.types.Panel):
 # ---------REGISTER ----------
 
 classes = [
-    BLEZOU_PT_vi3d_auth,
-    BLEZOU_PT_sqe_auth,
-    BLEZOU_PT_vi3d_context,
-    BLEZOU_MT_sqe_advanced_delete,
-    BLEZOU_PT_sqe_shot_tools,
+    KITSU_PT_vi3d_auth,
+    KITSU_PT_sqe_auth,
+    KITSU_PT_vi3d_context,
+    KITSU_MT_sqe_advanced_delete,
+    KITSU_PT_sqe_shot_tools,
 ]
 
 

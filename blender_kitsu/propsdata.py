@@ -9,7 +9,7 @@ logger = ZLoggerFactory.getLogger(name=__name__)
 
 # get functions for window manager properties
 def _get_project_active(self):
-    return cache.zproject_active_get().name
+    return cache.project_active_get().name
 
 
 def _resolve_pattern(pattern: str, var_lookup_table: Dict[str, str]) -> str:
@@ -34,18 +34,18 @@ def _resolve_pattern(pattern: str, var_lookup_table: Dict[str, str]) -> str:
 
 
 def _get_sequences(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
-    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
-    zproject_active = cache.zproject_active_get()
+    addon_prefs = bpy.context.preferences.addons["blender_kitsu"].preferences
+    project_active = cache.project_active_get()
 
-    if not zproject_active or not addon_prefs.session.is_auth:
+    if not project_active or not addon_prefs.session.is_auth:
         return [("None", "None", "")]
 
-    enum_list = [(s.name, s.name, "") for s in zproject_active.get_sequences_all()]
+    enum_list = [(s.name, s.name, "") for s in project_active.get_sequences_all()]
     return enum_list
 
 
 def _gen_shot_preview(self: Any) -> str:
-    addon_prefs = bpy.context.preferences.addons["blezou"].preferences
+    addon_prefs = bpy.context.preferences.addons["blender_kitsu"].preferences
     shot_counter_increment = addon_prefs.shot_counter_increment
     shot_counter_digits = addon_prefs.shot_counter_digits
     shot_counter_start = self.shot_counter_start
