@@ -140,7 +140,9 @@ class CM_OT_cache_export(bpy.types.Operator):
         logger.info("-END- Exporting Cache")
         return {"FINISHED"}
 
-
+    def _mute_drivers(self)
+        #TOOD: context manager
+        pass
 class CM_OT_cache_list_actions(bpy.types.Operator):
     """Move items up and down, add and remove"""
 
@@ -285,7 +287,7 @@ class CM_OT_cache_import(bpy.types.Operator):
             # Loop Through All Objects except Active Object and add Modifier and Constraint
             for obj in object_list:
                 # remove all armature modifiers, get index of first one, use that index for cache modifier
-                index = self._disable_armature_modifier(obj)
+                index = self._rm_modifiers(obj)
                 modifier_index = index if index != -1 else 0
 
                 # ensure cache modifier and constraint
@@ -318,22 +320,24 @@ class CM_OT_cache_import(bpy.types.Operator):
             return str_value.replace(match.group(0), "")
         return str_value
 
-    def _rm_armature_modifier(self, obj: bpy.types.Object) -> int:
+    def _rm_modifiers(self, obj: bpy.types.Object) -> int:
         modifiers = list(obj.modifiers)
         a_index: int = -1
         for idx, m in enumerate(modifiers):
-            if m.type == "ARMATURE":
+            if m.type not in opsdata.MODIFIERS_KEEP:
+                #TODO: get index of aramture and return that
                 logger.info("Removing modifier: %s", m.name)
                 obj.modifiers.remove(m)
                 if a_index == -1:
                     a_index = idx
         return a_index
 
-    def _disable_armature_modifier(self, obj: bpy.types.Object) -> int:
+    def _disable_modifiers(self, obj: bpy.types.Object) -> int:
         modifiers = list(obj.modifiers)
         a_index: int = -1
         for idx, m in enumerate(modifiers):
-            if m.type == "ARMATURE":
+            if m.type not in opsdata.MODIFIERS_KEEP:
+                #TODO: get index of aramture and return that
                 logger.info("Disabling modifier: %s", m.name)
                 m.show_viewport = False
                 m.show_render = False

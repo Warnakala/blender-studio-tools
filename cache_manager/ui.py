@@ -12,7 +12,7 @@ from .ops import (
     CM_OT_cache_hide,
     CM_OT_cache_remove,
 )
-from . import blend, prefs, props
+from . import cache, prefs, props
 
 
 def get_cachedir_path_display(context: bpy.types.Context) -> str:
@@ -84,7 +84,7 @@ class CM_UL_collection_cache_list_export(bpy.types.UIList):
                 icon="OUTLINER_COLLECTION",
             )
             split = split.split(factor=0.75, align=True)
-            split.label(text=f"/{blend.gen_filename_collection(item.coll_ptr)}")
+            split.label(text=f"/{cache.gen_filename_collection(item.coll_ptr)}")
             split.operator(
                 CM_OT_cache_export.bl_idname,
                 text="",

@@ -4,6 +4,9 @@ from typing import List, Tuple
 import bpy
 from . import prefs
 
+MODIFIERS_KEEP: List[str] = ["SUBSURF"]  # DATA_TRANSFER
+DRIVERS_MUTE: List[str] = ["hide_viewport", "hide_render"]
+
 _cachefiles_enum_list: List[Tuple[str, str, str]] = []
 
 
