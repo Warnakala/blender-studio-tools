@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -29,7 +30,7 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
     def cachedir_path(self) -> Optional[Path]:
         if not self.is_cachedir_valid:
             return None
-        return Path(bpy.path.abspath(self.cachedir)).absolute()
+        return Path(os.path.abspath(bpy.path.abspath(self.cachedir)))
 
     @property
     def is_cachedir_valid(self) -> bool:
@@ -59,7 +60,7 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
     def cacheconfig_path(self) -> Optional[Path]:
         if not self.is_cacheconfig_valid:
             return None
-        return Path(bpy.path.abspath(self.cacheconfig)).absolute()
+        return Path(os.path.abspath(bpy.path.abspath(self.cacheconfig)))
 
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
