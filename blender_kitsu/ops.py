@@ -27,15 +27,15 @@ def ui_redraw() -> None:
             area.tag_redraw()
 
 
-class BLEZOU_OT_session_start(bpy.types.Operator):
+class KITSU_OT_session_start(bpy.types.Operator):
     """
-    Starts the ZSession, which  is stored in Blezou addon preferences.
+    Starts the ZSession, which  is stored in blender_kitsu addon preferences.
     Authenticates user with server until session ends.
-    Host, email and password are retrieved from Blezou addon preferences.
+    Host, email and password are retrieved from blender_kitsu addon preferences.
     """
 
-    bl_idname = "blezou.session_start"
-    bl_label = "Start Gazou Session"
+    bl_idname = "kitsu.session_start"
+    bl_label = "Start Kitsu Session"
     bl_options = {"INTERNAL"}
 
     @classmethod
@@ -62,13 +62,13 @@ class BLEZOU_OT_session_start(bpy.types.Operator):
         }
 
 
-class BLEZOU_OT_session_end(bpy.types.Operator):
+class KITSU_OT_session_end(bpy.types.Operator):
     """
-    Ends the ZSession which is stored in Blezou addon preferences.
+    Ends the ZSession which is stored in blender_kitsu addon preferences.
     """
 
-    bl_idname = "blezou.session_end"
-    bl_label = "End Gazou Session"
+    bl_idname = "kitsu.session_end"
+    bl_label = "End Kitsu Session"
     bl_options = {"INTERNAL"}
 
     @classmethod
@@ -83,12 +83,12 @@ class BLEZOU_OT_session_end(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BLEZOU_OT_productions_load(bpy.types.Operator):
+class KITSU_OT_productions_load(bpy.types.Operator):
     """
     Gets all productions that are available in server and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "blezou.productions_load"
+    bl_idname = "kitsu.productions_load"
     bl_label = "Productions Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -103,7 +103,7 @@ class BLEZOU_OT_productions_load(bpy.types.Operator):
         # store vars to check if project / seq / shot changed
         project_prev_id = cache.zproject_active_get().id
 
-        # update blezou metadata
+        # update kitsu metadata
         cache.zproject_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
@@ -121,12 +121,12 @@ class BLEZOU_OT_productions_load(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BLEZOU_OT_sequences_load(bpy.types.Operator):
+class KITSU_OT_sequences_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "blezou.sequences_load"
+    bl_idname = "kitsu.sequences_load"
     bl_label = "Sequences Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -144,7 +144,7 @@ class BLEZOU_OT_sequences_load(bpy.types.Operator):
         # store vars to check if project / seq / shot changed
         zseq_prev_id = cache.zsequence_active_get().id
 
-        # update blezou metadata
+        # update kitsu metadata
         cache.zsequence_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
@@ -159,12 +159,12 @@ class BLEZOU_OT_sequences_load(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BLEZOU_OT_shots_load(bpy.types.Operator):
+class KITSU_OT_shots_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "blezou.shots_load"
+    bl_idname = "kitsu.shots_load"
     bl_label = "Shots Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -183,7 +183,7 @@ class BLEZOU_OT_shots_load(bpy.types.Operator):
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # update blezou metadata
+        # update kitsu metadata
         if self.enum_prop:
             cache.zshot_active_set_by_id(context, self.enum_prop)
         ui_redraw()
@@ -194,12 +194,12 @@ class BLEZOU_OT_shots_load(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BLEZOU_OT_asset_types_load(bpy.types.Operator):
+class KITSU_OT_asset_types_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "blezou.asset_types_load"
+    bl_idname = "kitsu.asset_types_load"
     bl_label = "Assettyes Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -216,7 +216,7 @@ class BLEZOU_OT_asset_types_load(bpy.types.Operator):
         # store vars to check if project / seq / shot changed
         asset_type_prev_id = cache.zasset_type_active_get().id
 
-        # update blezou metadata
+        # update kitsu metadata
         cache.zasset_type_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
@@ -231,12 +231,12 @@ class BLEZOU_OT_asset_types_load(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BLEZOU_OT_assets_load(bpy.types.Operator):
+class KITSU_OT_assets_load(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "blezou.assets_load"
+    bl_idname = "kitsu.assets_load"
     bl_label = "Assets Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -256,7 +256,7 @@ class BLEZOU_OT_assets_load(bpy.types.Operator):
         if not self.enum_prop:
             return {"CANCELLED"}
 
-        # update blezou metadata
+        # update kitsu metadata
         cache.zasset_active_set_by_id(context, self.enum_prop)
         ui_redraw()
         return {"FINISHED"}
@@ -266,13 +266,13 @@ class BLEZOU_OT_assets_load(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BLEZOU_OT_sqe_push_shot_meta(bpy.types.Operator):
+class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
     """
     Operator that pushes metadata of all selected sequencce strips to sevrer
-    after performing various checks. Metadata is saved in strip.blezou.
+    after performing various checks. Metadata is saved in strip.kitsu.
     """
 
-    bl_idname = "blezou.sqe_push_shot_meta"
+    bl_idname = "kitsu.sqe_push_shot_meta"
     bl_label = "Push Shot Metadata"
     bl_options = {"INTERNAL"}
 
@@ -283,7 +283,7 @@ class BLEZOU_OT_sqe_push_shot_meta(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
         failed = []
-        logger.info("-START- Blezou Pushing Metadata")
+        logger.info("-START- Pushing Metadata")
         # begin progress update
         selected_sequences = context.selected_sequences
         if not selected_sequences:
@@ -321,17 +321,17 @@ class BLEZOU_OT_sqe_push_shot_meta(bpy.types.Operator):
             {"INFO"},
             f"Pushed Metadata of {len(succeeded)} Shots | Failed: {len(failed)}.",
         )
-        logger.info("-END- Blezou Pushing Metadata")
+        logger.info("-END- Pushing Metadata")
         return {"FINISHED"}
 
 
-class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
+class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
     """
     Operator that creates a new shot based on all selected sequencce strips to sevrer
     after performing various checks. Does not create shot if already exists to sevrer .
     """
 
-    bl_idname = "blezou.sqe_push_new_shot"
+    bl_idname = "kitsu.sqe_push_new_shot"
     bl_label = "Submit New Shot"
     bl_options = {"INTERNAL"}
 
@@ -346,8 +346,8 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
             return bool(
                 prefs.zsession_auth(context)
                 and cache.zproject_active_get()
-                and strip.blezou.sequence_name
-                and strip.blezou.shot_name
+                and strip.kitsu.sequence_name
+                and strip.kitsu.shot_name
             )
 
         return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
@@ -361,7 +361,7 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
         zproject_active = cache.zproject_active_get()
         succeeded = []
         failed = []
-        logger.info("-START- Blezou submitting new shots to: %s", zproject_active.name)
+        logger.info("-START- Submitting new shots to: %s", zproject_active.name)
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -419,7 +419,7 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
             {"INFO"},
             f"Submitted {len(succeeded)} new shots | Failed: {len(failed)}",
         )
-        logger.info("-END- Blezou submitting new shots to: %s", zproject_active.name)
+        logger.info("-END- Submitting new shots to: %s", zproject_active.name)
         ui_redraw()
         return {"FINISHED"}
 
@@ -437,10 +437,10 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
         strips_to_submit = [
             s
             for s in selected_sequences
-            if s.blezou.initialized
-            and not s.blezou.linked
-            and s.blezou.shot_name
-            and s.blezou.sequence_name
+            if s.kitsu.initialized
+            and not s.kitsu.linked
+            and s.kitsu.shot_name
+            and s.kitsu.sequence_name
         ]
 
         if len(selected_sequences) > 1:
@@ -465,13 +465,13 @@ class BLEZOU_OT_sqe_push_new_shot(bpy.types.Operator):
         )
 
 
-class BLEZOU_OT_sqe_push_new_sequence(bpy.types.Operator):
+class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
     """
     Operator with input dialog that creates a new sequence on server.
     Does not create sequence if already exists on server.
     """
 
-    bl_idname = "blezou.sqe_push_new_sequence"
+    bl_idname = "kitsu.sqe_push_new_sequence"
     bl_label = "Submit New Sequence"
     bl_options = {"INTERNAL"}
 
@@ -545,14 +545,14 @@ class BLEZOU_OT_sqe_push_new_sequence(bpy.types.Operator):
         )
 
 
-class BLEZOU_OT_sqe_init_strip(bpy.types.Operator):
+class KITSU_OT_sqe_init_strip(bpy.types.Operator):
     """
-    Operator that initializes a regular sequence strip to a 'blezou' shot.
-    Only sets strip.blezou.initialized = True. But this is required for further
-    operations and to  differentiate between regular sequence strip and blezou shot strip.
+    Operator that initializes a regular sequence strip to a 'kitsu' shot.
+    Only sets strip.kitsu.initialized = True. But this is required for further
+    operations and to  differentiate between regular sequence strip and kitsu shot strip.
     """
 
-    bl_idname = "blezou.sqe_init_strip"
+    bl_idname = "kitsu.sqe_init_strip"
     bl_label = "Initialize Shot"
     bl_description = "Adds required shot metadata to selecetd strips"
 
@@ -575,12 +575,12 @@ class BLEZOU_OT_sqe_init_strip(bpy.types.Operator):
                 # failed.append(strip)
                 continue
 
-            if strip.blezou.initialized:
+            if strip.kitsu.initialized:
                 logger.info("%s already initialized.", strip.name)
                 # failed.append(strip)
                 continue
 
-            strip.blezou.initialized = True
+            strip.kitsu.initialized = True
             succeeded.append(strip)
             logger.info("Initiated strip: %s as shot.", strip.name)
 
@@ -593,12 +593,12 @@ class BLEZOU_OT_sqe_init_strip(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BLEZOU_OT_sqe_link_sequence(bpy.types.Operator):
+class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
     """
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "blezou.sqe_link_sequence"
+    bl_idname = "kitsu.sqe_link_sequence"
     bl_label = "Link Sequence"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -626,8 +626,8 @@ class BLEZOU_OT_sqe_link_sequence(bpy.types.Operator):
 
         # set sequence properties
         zseq = ZSequence.by_id(sequence_id)
-        strip.blezou.sequence_name = zseq.name
-        strip.blezou.sequence_id = zseq.id
+        strip.kitsu.sequence_name = zseq.name
+        strip.kitsu.sequence_id = zseq.id
 
         ui_redraw()
         return {"FINISHED"}
@@ -637,14 +637,14 @@ class BLEZOU_OT_sqe_link_sequence(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BLEZOU_OT_sqe_link_shot(bpy.types.Operator):
+class KITSU_OT_sqe_link_shot(bpy.types.Operator):
     """
     Operator that invokes ui which shows user all available shots on server.
     It is used to 'link' a seqeunce strip to an alredy existent shot on server.
     Fills out all metadata after selecting shot.
     """
 
-    bl_idname = "blezou.sqe_link_shot"
+    bl_idname = "kitsu.sqe_link_shot"
     bl_label = "Link Shot"
     bl_description = (
         "Adds required shot metadata to selecetd strip based on data from server."
@@ -738,10 +738,10 @@ class BLEZOU_OT_sqe_link_shot(bpy.types.Operator):
             row = layout.row()
 
 
-class BLEZOU_OT_sqe_multi_edit_strip(bpy.types.Operator):
+class KITSU_OT_sqe_multi_edit_strip(bpy.types.Operator):
     """"""
 
-    bl_idname = "blezou.sqe_multi_edit_strip"
+    bl_idname = "kitsu.sqe_multi_edit_strip"
     bl_label = "Multi Edit Strip"
     bl_options = {"INTERNAL"}
 
@@ -755,15 +755,15 @@ class BLEZOU_OT_sqe_multi_edit_strip(bpy.types.Operator):
         if not nr_of_shots > 1:
             return False
 
-        seq_name = sel_shots[0].blezou.sequence_name
+        seq_name = sel_shots[0].kitsu.sequence_name
         for s in sel_shots:
             if (
-                s.blezou.linked
-                or not s.blezou.initialized
+                s.kitsu.linked
+                or not s.kitsu.initialized
                 or not checkstrip.is_valid_type(s)
             ):
                 return False
-            if s.blezou.sequence_name != seq_name:
+            if s.kitsu.sequence_name != seq_name:
                 return False
         return True
 
@@ -810,8 +810,8 @@ class BLEZOU_OT_sqe_multi_edit_strip(bpy.types.Operator):
             shot = opsdata._resolve_pattern(shot_pattern, var_lookup_table)
 
             # set metadata
-            strip.blezou.sequence_name = sequence
-            strip.blezou.shot_name = shot
+            strip.kitsu.sequence_name = sequence
+            strip.kitsu.shot_name = shot
 
             succeeded.append(strip)
             logger.info(
@@ -828,13 +828,13 @@ class BLEZOU_OT_sqe_multi_edit_strip(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BLEZOU_OT_sqe_pull_shot_meta(bpy.types.Operator):
+class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
     """
     Operator that pulls metadata of all selected sequencce strips from server
-    after performing various checks. Metadata will be saved in strip.blezou.
+    after performing various checks. Metadata will be saved in strip.kitsu.
     """
 
-    bl_idname = "blezou.sqe_pull_shot_meta"
+    bl_idname = "kitsu.sqe_pull_shot_meta"
     bl_label = "Pull Shot Metadata"
     bl_options = {"INTERNAL"}
 
@@ -888,13 +888,13 @@ class BLEZOU_OT_sqe_pull_shot_meta(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BLEZOU_OT_sqe_uninit_strip(bpy.types.Operator):
+class KITSU_OT_sqe_uninit_strip(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything on server.
     """
 
-    bl_idname = "blezou.sqe_uninit_strip"
+    bl_idname = "kitsu.sqe_uninit_strip"
     bl_label = "Uninitialize"
     bl_description = "c selecetd strips. Only affects Sequence Editor. "
     confirm: bpy.props.BoolProperty(name="Confirm")
@@ -926,8 +926,8 @@ class BLEZOU_OT_sqe_uninit_strip(bpy.types.Operator):
                 # failed.append(strip)
                 continue
 
-            # clear blezou properties
-            strip.blezou.clear()
+            # clear kitsu properties
+            strip.kitsu.clear()
             succeeded.append(strip)
             logger.info("Uninitialized strip: %s", strip.name)
 
@@ -949,7 +949,7 @@ class BLEZOU_OT_sqe_uninit_strip(bpy.types.Operator):
 
         selshots = context.selected_sequences
         strips_to_uninit = [
-            s for s in selshots if s.blezou.initialized and not s.blezou.linked
+            s for s in selshots if s.kitsu.initialized and not s.kitsu.linked
         ]
 
         if len(strips_to_uninit) > 1:
@@ -964,13 +964,13 @@ class BLEZOU_OT_sqe_uninit_strip(bpy.types.Operator):
         )
 
 
-class BLEZOU_OT_sqe_unlink_shot(bpy.types.Operator):
+class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything on server.
     """
 
-    bl_idname = "blezou.sqe_unlink_shot"
+    bl_idname = "kitsu.sqe_unlink_shot"
     bl_label = "Unlink"
     bl_description = (
         "Deletes link to the server of selecetd shots. Only affects Sequence Editor."
@@ -1004,9 +1004,9 @@ class BLEZOU_OT_sqe_unlink_shot(bpy.types.Operator):
                 # failed.append(strip)
                 continue
 
-            # clear blezou properties
-            shot_name = strip.blezou.shot_name
-            strip.blezou.unlink()
+            # clear kitsu properties
+            shot_name = strip.kitsu.shot_name
+            strip.kitsu.unlink()
             succeeded.append(strip)
             logger.info("Unlinked shot: %s", shot_name)
 
@@ -1027,7 +1027,7 @@ class BLEZOU_OT_sqe_unlink_shot(bpy.types.Operator):
         col = layout.column()
 
         selshots = context.selected_sequences
-        strips_to_unlink = [s for s in selshots if s.blezou.linked]
+        strips_to_unlink = [s for s in selshots if s.kitsu.linked]
 
         if len(strips_to_unlink) > 1:
             noun = "%i shots" % len(strips_to_unlink)
@@ -1041,13 +1041,13 @@ class BLEZOU_OT_sqe_unlink_shot(bpy.types.Operator):
         )
 
 
-class BLEZOU_OT_sqe_push_del_shot(bpy.types.Operator):
+class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
     """
     Operator that deletes all  metadata of all selected sequencce strips
     after performing various checks. It does NOT change anything on server.
     """
 
-    bl_idname = "blezou.sqe_push_del_shot"
+    bl_idname = "kitsu.sqe_push_del_shot"
     bl_label = "Delete Shot"
     bl_description = "Deletes shot on server and clears metadata of selected strips."
 
@@ -1064,7 +1064,7 @@ class BLEZOU_OT_sqe_push_del_shot(bpy.types.Operator):
 
         succeeded = []
         failed = []
-        logger.info("-START- Blezou deleting shots")
+        logger.info("-START- Deleting shots")
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -1101,7 +1101,7 @@ class BLEZOU_OT_sqe_push_del_shot(bpy.types.Operator):
             {"INFO"},
             f"Deleted {len(succeeded)} shots | Failed: {len(failed)}",
         )
-        logger.info("-END- Blezou deleting shots")
+        logger.info("-END- Deleting shots")
         ui_redraw()
         return {"FINISHED"}
 
@@ -1114,7 +1114,7 @@ class BLEZOU_OT_sqe_push_del_shot(bpy.types.Operator):
         col = layout.column()
 
         selshots = context.selected_sequences
-        strips_to_delete = [s for s in selshots if s.blezou.linked]
+        strips_to_delete = [s for s in selshots if s.kitsu.linked]
 
         if len(selshots) > 1:
             noun = "%i shots" % len(strips_to_delete)
@@ -1128,14 +1128,14 @@ class BLEZOU_OT_sqe_push_del_shot(bpy.types.Operator):
         )
 
 
-class BLEZOU_OT_sqe_push_thumbnail(bpy.types.Operator):
+class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
     """
     Operator that takes thumbnail of all selected sequencce strips and saves them
     in tmp directory. Loops through all thumbnails and uploads them to sevrer .
     uses Animation task type to create task and set main thumbnail in wip state.
     """
 
-    bl_idname = "blezou.sqe_push_thumbnail"
+    bl_idname = "kitsu.sqe_push_thumbnail"
     bl_label = "Push Thumbnail"
     bl_options = {"INTERNAL"}
 
@@ -1221,10 +1221,10 @@ class BLEZOU_OT_sqe_push_thumbnail(bpy.types.Operator):
         self, context: bpy.types.Context, strip: bpy.types.Sequence
     ) -> Path:
         bpy.ops.render.render()
-        file_name = f"{strip.blezou.shot_id}_{str(context.scene.frame_current)}.jpg"
+        file_name = f"{strip.kitsu.shot_id}_{str(context.scene.frame_current)}.jpg"
         path = self._save_render(bpy.data.images["Render Result"], file_name)
         logger.info(
-            f"Saved thumbnail of shot {strip.blezou.shot_name} to {path.as_posix()}"
+            f"Saved thumbnail of shot {strip.kitsu.shot_name} to {path.as_posix()}"
         )
         return path
 
@@ -1332,10 +1332,10 @@ class BLEZOU_OT_sqe_push_thumbnail(bpy.types.Operator):
         return middle
 
 
-class BLEZOU_OT_sqe_debug_duplicates(bpy.types.Operator):
+class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
     """"""
 
-    bl_idname = "blezou.sqe_debug_duplicates"
+    bl_idname = "kitsu.sqe_debug_duplicates"
     bl_label = "Debug Duplicates"
     bl_options = {"REGISTER", "UNDO"}
     bl_property = "duplicates"
@@ -1368,10 +1368,10 @@ class BLEZOU_OT_sqe_debug_duplicates(bpy.types.Operator):
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
-class BLEZOU_OT_sqe_debug_not_linked(bpy.types.Operator):
+class KITSU_OT_sqe_debug_not_linked(bpy.types.Operator):
     """"""
 
-    bl_idname = "blezou.sqe_debug_not_linked"
+    bl_idname = "kitsu.sqe_debug_not_linked"
     bl_label = "Debug Not Linked"
     bl_options = {"REGISTER", "UNDO"}
     bl_property = "not_linked"
@@ -1405,10 +1405,10 @@ class BLEZOU_OT_sqe_debug_not_linked(bpy.types.Operator):
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
-class BLEZOU_OT_sqe_debug_multi_project(bpy.types.Operator):
+class KITSU_OT_sqe_debug_multi_project(bpy.types.Operator):
     """"""
 
-    bl_idname = "blezou.sqe_debug_multi_project"
+    bl_idname = "kitsu.sqe_debug_multi_project"
     bl_label = "Debug Multi Projects"
     bl_options = {"REGISTER", "UNDO"}
     bl_property = "multi_project"
@@ -1445,28 +1445,28 @@ class BLEZOU_OT_sqe_debug_multi_project(bpy.types.Operator):
 # ---------REGISTER ----------
 
 classes = [
-    BLEZOU_OT_session_start,
-    BLEZOU_OT_session_end,
-    BLEZOU_OT_productions_load,
-    BLEZOU_OT_sequences_load,
-    BLEZOU_OT_shots_load,
-    BLEZOU_OT_asset_types_load,
-    BLEZOU_OT_assets_load,
-    BLEZOU_OT_sqe_push_new_sequence,
-    BLEZOU_OT_sqe_push_new_shot,
-    BLEZOU_OT_sqe_push_shot_meta,
-    BLEZOU_OT_sqe_uninit_strip,
-    BLEZOU_OT_sqe_unlink_shot,
-    BLEZOU_OT_sqe_init_strip,
-    BLEZOU_OT_sqe_link_shot,
-    BLEZOU_OT_sqe_link_sequence,
-    BLEZOU_OT_sqe_push_thumbnail,
-    BLEZOU_OT_sqe_push_del_shot,
-    BLEZOU_OT_sqe_pull_shot_meta,
-    BLEZOU_OT_sqe_multi_edit_strip,
-    BLEZOU_OT_sqe_debug_duplicates,
-    BLEZOU_OT_sqe_debug_not_linked,
-    BLEZOU_OT_sqe_debug_multi_project,
+    KITSU_OT_session_start,
+    KITSU_OT_session_end,
+    KITSU_OT_productions_load,
+    KITSU_OT_sequences_load,
+    KITSU_OT_shots_load,
+    KITSU_OT_asset_types_load,
+    KITSU_OT_assets_load,
+    KITSU_OT_sqe_push_new_sequence,
+    KITSU_OT_sqe_push_new_shot,
+    KITSU_OT_sqe_push_shot_meta,
+    KITSU_OT_sqe_uninit_strip,
+    KITSU_OT_sqe_unlink_shot,
+    KITSU_OT_sqe_init_strip,
+    KITSU_OT_sqe_link_shot,
+    KITSU_OT_sqe_link_sequence,
+    KITSU_OT_sqe_push_thumbnail,
+    KITSU_OT_sqe_push_del_shot,
+    KITSU_OT_sqe_pull_shot_meta,
+    KITSU_OT_sqe_multi_edit_strip,
+    KITSU_OT_sqe_debug_duplicates,
+    KITSU_OT_sqe_debug_not_linked,
+    KITSU_OT_sqe_debug_multi_project,
 ]
 
 

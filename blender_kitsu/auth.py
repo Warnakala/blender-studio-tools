@@ -12,7 +12,7 @@ logger = ZLoggerFactory.getLogger(name=__name__)
 class ZSession:
 
     """
-    Class that will be instanced to blezou addon preferences.
+    Class that will be instanced to blender_kitsu addon preferences.
     It's used to authenticate user against backend.
     If instance gets deleted authentication will be lost.
     """

@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "blezou"
+name = "blender_kitsu"
 version = "0.1.0"
-description = "Blender Addon to interact with Gazou Data Base"
+description = "Blender Addon to interact with Kitsu Data Base"
 authors = ["Paul Golter <paul@blender.org>"]
 
 [tool.poetry.dependencies]

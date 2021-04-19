@@ -19,9 +19,9 @@ _cache_initialized: bool = False
 
 def _addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """
-    shortcut to get blezou addon preferences
+    shortcut to get blender_kitsu addon preferences
     """
-    return context.preferences.addons["blezou"].preferences
+    return context.preferences.addons["blender_kitsu"].preferences
 
 
 def zproject_active_get() -> ZProject:
@@ -51,14 +51,14 @@ def zsequence_active_set_by_id(context: bpy.types.Context, entity_id: str) -> No
     global _zsequence_active
 
     _zsequence_active = ZSequence.by_id(entity_id)
-    context.scene.blezou.sequence_active_id = entity_id
+    context.scene.kitsu.sequence_active_id = entity_id
 
 
 def zsequence_active_reset(context: bpy.types.Context) -> None:
     global _zsequence_active
 
     _zsequence_active = ZSequence()
-    context.scene.blezou.sequence_active_id = ""
+    context.scene.kitsu.sequence_active_id = ""
 
 
 def zshot_active_get() -> ZShot:
@@ -71,14 +71,14 @@ def zshot_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
     global _zshot_active
 
     _zshot_active = ZShot.by_id(entity_id)
-    context.scene.blezou.shot_active_id = entity_id
+    context.scene.kitsu.shot_active_id = entity_id
 
 
 def zshot_active_reset(context: bpy.types.Context) -> None:
     global _zshot_active
 
     _zshot_active = ZShot()
-    context.scene.blezou.shot_active_id = ""
+    context.scene.kitsu.shot_active_id = ""
 
 
 def zasset_active_get() -> ZAsset:
@@ -91,14 +91,14 @@ def zasset_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
     global _zasset_active
 
     _zasset_active = ZAsset.by_id(entity_id)
-    context.scene.blezou.asset_active_id = entity_id
+    context.scene.kitsu.asset_active_id = entity_id
 
 
 def zasset_active_reset(context: bpy.types.Context) -> None:
     global _zasset_active
 
     _zasset_active = ZAsset()
-    context.scene.blezou.asset_active_id = ""
+    context.scene.kitsu.asset_active_id = ""
 
 
 def zasset_type_active_get() -> ZAssetType:
@@ -111,14 +111,14 @@ def zasset_type_active_set_by_id(context: bpy.types.Context, entity_id: str) -> 
     global _zasset_type_active
 
     _zasset_type_active = ZAssetType.by_id(entity_id)
-    context.scene.blezou.asset_type_active_id = entity_id
+    context.scene.kitsu.asset_type_active_id = entity_id
 
 
 def zasset_type_active_reset(context: bpy.types.Context) -> None:
     global _zasset_type_active
 
     _zasset_type_active = ZAssetType()
-    context.scene.blezou.asset_type_active_id = ""
+    context.scene.kitsu.asset_type_active_id = ""
 
 
 def init_cache_variables() -> None:
@@ -131,10 +131,10 @@ def init_cache_variables() -> None:
 
     addon_prefs = _addon_prefs_get(bpy.context)
     project_active_id = addon_prefs.project_active_id
-    sequence_active_id = bpy.context.scene.blezou.sequence_active_id
-    shot_active_id = bpy.context.scene.blezou.shot_active_id
-    asset_active_id = bpy.context.scene.blezou.asset_active_id
-    asset_type_active_id = bpy.context.scene.blezou.asset_type_active_id
+    sequence_active_id = bpy.context.scene.kitsu.sequence_active_id
+    shot_active_id = bpy.context.scene.kitsu.shot_active_id
+    asset_active_id = bpy.context.scene.kitsu.asset_active_id
+    asset_type_active_id = bpy.context.scene.kitsu.asset_type_active_id
 
     if not addon_prefs.session.is_auth():
         logger.info("Skip initiating cache. Session not authorized.")
