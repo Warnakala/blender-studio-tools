@@ -120,7 +120,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
-        zproject_active = cache.zproject_active_get()
+        project_active = cache.project_active_get()
 
         # login
         box = layout.box()
@@ -146,10 +146,10 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         box.label(text="Project settings", icon="FILEBROWSER")
         row = box.row(align=True)
 
-        if not zproject_active:
+        if not project_active:
             prod_load_text = "Select Production"
         else:
-            prod_load_text = zproject_active.name
+            prod_load_text = project_active.name
 
         row.operator(
             KITSU_OT_productions_load.bl_idname,

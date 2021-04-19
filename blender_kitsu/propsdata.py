@@ -9,7 +9,7 @@ logger = ZLoggerFactory.getLogger(name=__name__)
 
 # get functions for window manager properties
 def _get_project_active(self):
-    return cache.zproject_active_get().name
+    return cache.project_active_get().name
 
 
 def _resolve_pattern(pattern: str, var_lookup_table: Dict[str, str]) -> str:
@@ -35,12 +35,12 @@ def _resolve_pattern(pattern: str, var_lookup_table: Dict[str, str]) -> str:
 
 def _get_sequences(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
     addon_prefs = bpy.context.preferences.addons["blender_kitsu"].preferences
-    zproject_active = cache.zproject_active_get()
+    project_active = cache.project_active_get()
 
-    if not zproject_active or not addon_prefs.session.is_auth:
+    if not project_active or not addon_prefs.session.is_auth:
         return [("None", "None", "")]
 
-    enum_list = [(s.name, s.name, "") for s in zproject_active.get_sequences_all()]
+    enum_list = [(s.name, s.name, "") for s in project_active.get_sequences_all()]
     return enum_list
 
 

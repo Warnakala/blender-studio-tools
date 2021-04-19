@@ -91,38 +91,38 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
         category = addon_prefs.category  # can be either 'SHOTS' or 'ASSETS'
-        zproject_active = cache.zproject_active_get()
+        project_active = cache.project_active_get()
         item_group_data = {
             "name": "Sequence",
-            "zobject": cache.zsequence_active_get(),
+            "zobject": cache.sequence_active_get(),
             "operator": KITSU_OT_sequences_load.bl_idname,
         }
         item_data = {
             "name": "Shot",
-            "zobject": cache.zshot_active_get(),
+            "zobject": cache.shot_active_get(),
             "operator": KITSU_OT_shots_load.bl_idname,
         }
         # Production
-        layout.row().label(text=f"Production: {zproject_active.name}")
+        layout.row().label(text=f"Production: {project_active.name}")
 
         # Category
         box = layout.box()
         row = box.row(align=True)
         row.prop(addon_prefs, "category", expand=True)
 
-        if not prefs.zsession_auth(context) or not zproject_active:
+        if not prefs.zsession_auth(context) or not project_active:
             row.enabled = False
 
         # Sequence / AssetType
         if category == "ASSETS":
             item_group_data["name"] = "AssetType"
-            item_group_data["zobject"] = cache.zasset_type_active_get()
+            item_group_data["zobject"] = cache.asset_type_active_get()
             item_group_data["operator"] = KITSU_OT_asset_types_load.bl_idname
 
         row = box.row(align=True)
         item_group_text = f"Select {item_group_data['name']}"
 
-        if not zproject_active:
+        if not project_active:
             row.enabled = False
 
         elif item_group_data["zobject"]:
@@ -134,13 +134,13 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         # Shot / Asset
         if category == "ASSETS":
             item_data["name"] = "Asset"
-            item_data["zobject"] = cache.zasset_active_get()
+            item_data["zobject"] = cache.asset_active_get()
             item_data["operator"] = KITSU_OT_assets_load.bl_idname
 
         row = box.row(align=True)
         item_text = f"Select {item_data['name']}"
 
-        if not zproject_active and item_group_data["zobject"]:
+        if not project_active and item_group_data["zobject"]:
             row.enabled = False
 
         elif item_data["zobject"]:
@@ -251,7 +251,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         selshots = context.selected_sequences
         nr_of_shots = len(selshots)
         noun = get_selshots_noun(nr_of_shots)
-        zproject_active = cache.zproject_active_get()
+        project_active = cache.project_active_get()
 
         strips_to_init = []
         strips_to_uninit = []
@@ -274,7 +274,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
         # Production
         if prefs.zsession_auth(context):
-            box.row().label(text=f"Production: {zproject_active.name}")
+            box.row().label(text=f"Production: {project_active.name}")
 
         # Single Selection
         if nr_of_shots == 1:

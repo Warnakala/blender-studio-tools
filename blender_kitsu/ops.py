@@ -7,12 +7,12 @@ import bpy
 from . import gazu, cache, opsdata, prefs, push, pull, checkstrip
 from .logger import ZLoggerFactory
 from .types import (
-    ZCache,
-    ZSequence,
-    ZShot,
-    ZTask,
-    ZTaskStatus,
-    ZTaskType,
+    Cache,
+    Sequence,
+    Shot,
+    Task,
+    TaskStatus,
+    TaskType,
 )
 
 logger = ZLoggerFactory.getLogger(name=__name__)
@@ -101,17 +101,17 @@ class KITSU_OT_productions_load(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # store vars to check if project / seq / shot changed
-        project_prev_id = cache.zproject_active_get().id
+        project_prev_id = cache.project_active_get().id
 
         # update kitsu metadata
-        cache.zproject_active_set_by_id(context, self.enum_prop)
+        cache.project_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
         if self.enum_prop != project_prev_id:
-            cache.zsequence_active_reset(context)
-            cache.zasset_type_active_reset(context)
-            cache.zshot_active_reset(context)
-            cache.zasset_active_reset(context)
+            cache.sequence_active_reset(context)
+            cache.asset_type_active_reset(context)
+            cache.shot_active_reset(context)
+            cache.asset_active_reset(context)
 
         ui_redraw()
         return {"FINISHED"}
@@ -137,19 +137,19 @@ class KITSU_OT_sequences_load(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # store vars to check if project / seq / shot changed
-        zseq_prev_id = cache.zsequence_active_get().id
+        zseq_prev_id = cache.sequence_active_get().id
 
         # update kitsu metadata
-        cache.zsequence_active_set_by_id(context, self.enum_prop)
+        cache.sequence_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
         if self.enum_prop != zseq_prev_id:
-            cache.zshot_active_reset(context)
+            cache.shot_active_reset(context)
 
         ui_redraw()
         return {"FINISHED"}
@@ -178,14 +178,14 @@ class KITSU_OT_shots_load(bpy.types.Operator):
         # only if session is auth active_project and active sequence selected
         return bool(
             prefs.zsession_auth(context)
-            and cache.zsequence_active_get()
-            and cache.zproject_active_get()
+            and cache.sequence_active_get()
+            and cache.project_active_get()
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # update kitsu metadata
         if self.enum_prop:
-            cache.zshot_active_set_by_id(context, self.enum_prop)
+            cache.shot_active_set_by_id(context, self.enum_prop)
         ui_redraw()
         return {"FINISHED"}
 
@@ -210,18 +210,18 @@ class KITSU_OT_asset_types_load(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # store vars to check if project / seq / shot changed
-        asset_type_prev_id = cache.zasset_type_active_get().id
+        asset_type_prev_id = cache.asset_type_active_get().id
 
         # update kitsu metadata
-        cache.zasset_type_active_set_by_id(context, self.enum_prop)
+        cache.asset_type_active_set_by_id(context, self.enum_prop)
 
         # clear active shot when sequence changes
         if self.enum_prop != asset_type_prev_id:
-            cache.zasset_active_reset(context)
+            cache.asset_active_reset(context)
 
         ui_redraw()
         return {"FINISHED"}
@@ -248,8 +248,8 @@ class KITSU_OT_assets_load(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(
             prefs.zsession_auth(context)
-            and cache.zproject_active_get()
-            and cache.zasset_type_active_get()
+            and cache.project_active_get()
+            and cache.asset_type_active_get()
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -257,7 +257,7 @@ class KITSU_OT_assets_load(bpy.types.Operator):
             return {"CANCELLED"}
 
         # update kitsu metadata
-        cache.zasset_active_set_by_id(context, self.enum_prop)
+        cache.asset_active_set_by_id(context, self.enum_prop)
         ui_redraw()
         return {"FINISHED"}
 
@@ -304,13 +304,13 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
                 continue
 
             # check if shot is still available by id
-            zshot = checkstrip.shot_exists_by_id(strip)
-            if not zshot:
+            shot = checkstrip.shot_exists_by_id(strip)
+            if not shot:
                 failed.append(strip)
                 continue
 
             # push update to shot
-            push.shot_meta(strip, zshot)
+            push.shot_meta(strip, shot)
             succeeded.append(strip)
 
         # end progress update
@@ -345,12 +345,12 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
             strip = context.scene.sequence_editor.active_strip
             return bool(
                 prefs.zsession_auth(context)
-                and cache.zproject_active_get()
+                and cache.project_active_get()
                 and strip.kitsu.sequence_name
                 and strip.kitsu.shot_name
             )
 
-        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -358,10 +358,10 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
             self.report({"WARNING"}, "Submit new shots aborted.")
             return {"CANCELLED"}
 
-        zproject_active = cache.zproject_active_get()
+        project_active = cache.project_active_get()
         succeeded = []
         failed = []
-        logger.info("-START- Submitting new shots to: %s", zproject_active.name)
+        logger.info("-START- Submitting new shots to: %s", project_active.name)
 
         # begin progress update
         selected_sequences = context.selected_sequences
@@ -393,19 +393,19 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
                 continue
 
             # check if seq already to sevrer  > create it
-            zseq = checkstrip.seq_exists_by_name(strip, zproject_active)
+            zseq = checkstrip.seq_exists_by_name(strip, project_active)
             if not zseq:
-                zseq = push.new_sequence(strip, zproject_active)
+                zseq = push.new_sequence(strip, project_active)
 
             # check if shot already to sevrer  > create it
-            zshot = checkstrip.shot_exists_by_name(strip, zproject_active, zseq)
-            if zshot:
+            shot = checkstrip.shot_exists_by_name(strip, project_active, zseq)
+            if shot:
                 failed.append(strip)
                 continue
 
             # push update to shot
-            zshot = push.new_shot(strip, zseq, zproject_active)
-            pull.shot_meta(strip, zshot)
+            shot = push.new_shot(strip, zseq, project_active)
+            pull.shot_meta(strip, shot)
             succeeded.append(strip)
 
         # end progress update
@@ -413,13 +413,13 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
         context.window_manager.progress_end()
 
         # clear cache
-        ZCache.clear_all()
+        Cache.clear_all()
 
         self.report(
             {"INFO"},
             f"Submitted {len(succeeded)} new shots | Failed: {len(failed)}",
         )
-        logger.info("-END- Submitting new shots to: %s", zproject_active.name)
+        logger.info("-END- Submitting new shots to: %s", project_active.name)
         ui_redraw()
         return {"FINISHED"}
 
@@ -428,7 +428,7 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):
-        zproject_active = cache.zproject_active_get()
+        project_active = cache.project_active_get()
         selected_sequences = context.selected_sequences
 
         if not selected_sequences:
@@ -453,7 +453,7 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
 
         # Production
         row = layout.row()
-        row.label(text=f"Production: {zproject_active.name}", icon="FILEBROWSER")
+        row.label(text=f"Production: {project_active.name}", icon="FILEBROWSER")
 
         # confirm dialog
         col = layout.column()
@@ -483,7 +483,7 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # needs to be logged in, active project
-        return bool(prefs.zsession_auth(context) and cache.zproject_active_get())
+        return bool(prefs.zsession_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -495,28 +495,28 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
             self.report({"WARNING"}, "Invalid sequence name.")
             return {"CANCELLED"}
 
-        zproject_active = cache.zproject_active_get()
+        project_active = cache.project_active_get()
 
-        zsequence = zproject_active.get_sequence_by_name(self.sequence_name)
+        sequence = project_active.get_sequence_by_name(self.sequence_name)
 
-        if zsequence:
+        if sequence:
             self.report(
                 {"WARNING"},
-                f"Sequence: {zsequence.name} already exists on server.",
+                f"Sequence: {sequence.name} already exists on server.",
             )
             return {"CANCELLED"}
 
         # create sequence
-        zsequence = zproject_active.create_sequence(self.sequence_name)
+        sequence = project_active.create_sequence(self.sequence_name)
 
         # clear cache
-        ZCache.clear_all()
+        Cache.clear_all()
 
         self.report(
             {"INFO"},
-            f"Submitted new sequence: {zsequence.name}",
+            f"Submitted new sequence: {sequence.name}",
         )
-        logger.info("Submitted new sequence: %s", zsequence.name)
+        logger.info("Submitted new sequence: %s", sequence.name)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -526,11 +526,11 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
     def draw(self, context):
         # UI
         layout = self.layout
-        zproject_active = cache.zproject_active_get()
+        project_active = cache.project_active_get()
 
         # Production
         row = layout.row()
-        row.label(text=f"Production: {zproject_active.name}", icon="FILEBROWSER")
+        row.label(text=f"Production: {project_active.name}", icon="FILEBROWSER")
 
         # sequence name
         row = layout.row()
@@ -612,7 +612,7 @@ class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
         strip = context.scene.sequence_editor.active_strip
         return bool(
             prefs.zsession_auth(context)
-            and cache.zproject_active_get()
+            and cache.project_active_get()
             and strip
             and context.selected_sequences
             and checkstrip.is_valid_type(strip)
@@ -625,7 +625,7 @@ class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
             return {"CANCELLED"}
 
         # set sequence properties
-        zseq = ZSequence.by_id(sequence_id)
+        zseq = Sequence.by_id(sequence_id)
         strip.kitsu.sequence_name = zseq.name
         strip.kitsu.sequence_id = zseq.id
 
@@ -667,7 +667,7 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
         strip = context.scene.sequence_editor.active_strip
         return bool(
             prefs.zsession_auth(context)
-            and cache.zproject_active_get()
+            and cache.project_active_get()
             and strip
             and context.selected_sequences
             and checkstrip.is_valid_type(strip)
@@ -693,7 +693,7 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
 
         # check if id availalbe on server (mainly for url option)
         try:
-            zshot = ZShot.by_id(shot_id)
+            shot = Shot.by_id(shot_id)
 
         except (TypeError, gazu.exception.ServerErrorException):
             self.report({"WARNING"}, "Invalid URL: %s" % self.url)
@@ -704,12 +704,12 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
             return {"CANCELLED"}
 
         # pull shot meta
-        pull.shot_meta(strip, zshot)
+        pull.shot_meta(strip, shot)
 
         t = "Linked strip: %s to shot: %s with ID: %s" % (
             strip.name,
-            zshot.name,
-            zshot.id,
+            shot.name,
+            shot.id,
         )
         logger.info(t)
         self.report({"INFO"}, t)
@@ -867,13 +867,13 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
                 continue
 
             # check if shot is still available by id
-            zshot = checkstrip.shot_exists_by_id(strip)
-            if not zshot:
+            shot = checkstrip.shot_exists_by_id(strip)
+            if not shot:
                 failed.append(strip)
                 continue
 
             # push update to shot
-            pull.shot_meta(strip, zshot)
+            pull.shot_meta(strip, shot)
             succeeded.append(strip)
 
         # end progress update
@@ -1084,13 +1084,13 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
                 continue
 
             # check if shot still exists to sevrer
-            zshot = checkstrip.shot_exists_by_id(strip)
-            if not zshot:
+            shot = checkstrip.shot_exists_by_id(strip)
+            if not shot:
                 failed.append(strip)
                 continue
 
             # delete shot
-            push.delete_shot(strip, zshot)
+            push.delete_shot(strip, shot)
             succeeded.append(strip)
 
         # end progress update
@@ -1175,8 +1175,8 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
                         continue
 
                     # check if shot is still available by id
-                    zshot = checkstrip.shot_exists_by_id(strip)
-                    if not zshot:
+                    shot = checkstrip.shot_exists_by_id(strip)
+                    if not shot:
                         failed.append(strip)
                         continue
 
@@ -1245,42 +1245,42 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
     def _upload_thumbnail(self, filepath: Path) -> None:
         # get shot by id which is in filename of thumbnail
         shot_id = filepath.name.split("_")[0]
-        zshot = ZShot.by_id(shot_id)
+        shot = Shot.by_id(shot_id)
 
         # get task status 'wip' and task type 'Animation'
-        ztask_status = ZTaskStatus.by_short_name("wip")
-        ztask_type = ZTaskType.by_name("Animation")
+        task_status = TaskStatus.by_short_name("wip")
+        task_type = TaskType.by_name("Animation")
 
-        if not ztask_status:
+        if not task_status:
             raise RuntimeError(
                 "Failed to upload thumbnails. Task status: 'wip' is missing."
             )
-        if not ztask_type:
+        if not task_type:
             raise RuntimeError(
                 "Failed to upload thumbnails. Task type: 'Animation' is missing."
             )
 
         # find / get latest task
-        ztask = ZTask.by_name(zshot, ztask_type)
-        if not ztask:
+        task = Task.by_name(shot, task_type)
+        if not task:
             # turns out a entitiy on server can have 0 tasks even tough task types exist
             # you have to create a task first before being able to upload a thumbnail
-            ztasks = zshot.get_all_tasks()  # list of ztasks
-            if not ztasks:
-                ztask = ZTask.new_task(zshot, ztask_type, ztask_status=ztask_status)
+            tasks = shot.get_all_tasks()  # list of tasks
+            if not tasks:
+                task = Task.new_task(shot, task_type, task_status=task_status)
             else:
-                ztask = ztasks[-1]
+                task = tasks[-1]
 
         # create a comment, e.G 'set main thumbnail'
-        zcomment = ztask.add_comment(ztask_status, comment="set main thumbnail")
+        comment = task.add_comment(task_status, comment="set main thumbnail")
 
         # add_preview_to_comment
-        zpreview = ztask.add_preview_to_comment(zcomment, filepath.as_posix())
+        preview = task.add_preview_to_comment(comment, filepath.as_posix())
 
         # preview.set_main_preview()
-        zpreview.set_main_preview()
+        preview.set_main_preview()
         logger.info(
-            f"Uploaded thumbnail for shot: {zshot.name} under: {ztask_type.name}"
+            f"Uploaded thumbnail for shot: {shot.name} under: {task_type.name}"
         )
 
     @contextlib.contextmanager
