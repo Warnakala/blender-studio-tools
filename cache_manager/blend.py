@@ -18,7 +18,3 @@ def get_version(format: type = str) -> Union[str, int, None]:
         if format == int:
             return int(version.replace("v", ""))
     return None
-
-
-def gen_filename_collection(collection: bpy.types.Collection) -> str:
-    return f"{collection.name}.abc"

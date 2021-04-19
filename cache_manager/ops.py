@@ -4,8 +4,8 @@ from typing import List, Any, Set, cast
 from pathlib import Path
 
 from .logger import LoggerFactory
-from . import blend, prefs, props, opsdata, cmglobals
-from .cacheconfig import CacheConfig
+from . import cache, prefs, props, opsdata, cmglobals
+from .cache import CacheConfigFactory
 
 logger = LoggerFactory.getLogger(__name__)
 
@@ -47,12 +47,12 @@ class CM_OT_cache_export(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
+        cacheconfig_path = addon_prefs.cacheconfig_path
         succeeded = []
         failed = []
         logger.info("-START- Exporting Cache")
 
         # already of type Path, convenience auto complete
-        cachedir_path = Path(addon_prefs.cachedir_path)
         collections = list(props.get_cache_collections(context))
 
         # get collections to be processed
@@ -76,7 +76,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             for obj in object_list:
                 obj.select_set(True)
 
-            filepath = cachedir_path / blend.gen_filename_collection(coll)
+            filepath = cache.gen_cachepath_collection(coll, context)
 
             if filepath.exists():
                 logger.warning(
@@ -124,6 +124,9 @@ class CM_OT_cache_export(bpy.types.Operator):
 
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
             succeeded.append(coll)
+
+        # generate cacheconfig
+        CacheConfigFactory.gen_config_from_scene(context, cacheconfig_path)
 
         # end progress update
         context.window_manager.progress_update(len(collections))
@@ -197,7 +200,7 @@ class CM_OT_process_cacheconfig(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
         cacheconfig_path = addon_prefs.cacheconfig_path
 
-        cacheconfig = CacheConfig()
+        cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
         cacheconfig.load(cacheconfig_path)
         cacheconfig.process(context)
 

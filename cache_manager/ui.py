@@ -15,11 +15,11 @@ from .ops import (
 from . import blend, prefs, props
 
 
-def get_cachedir_path(context: bpy.types.Context) -> str:
+def get_cachedir_path_display(context: bpy.types.Context) -> str:
     addon_prefs = prefs.addon_prefs_get(context)
-    if addon_prefs.is_cachedir_valid:
-        return Path(addon_prefs.cachedir_path).as_posix()
-    return "Invalid"
+    if not addon_prefs.cachedir_path:
+        return "Invalid"
+    return addon_prefs.cachedir_path.as_posix()
 
 
 class CM_PT_vi3d_cache_export(bpy.types.Panel):
@@ -40,7 +40,7 @@ class CM_PT_vi3d_cache_export(bpy.types.Panel):
 
         # filepath
         row = layout.row()
-        row.label(text=f"Cache Directory: {get_cachedir_path(context)}")
+        row.label(text=f"Cache Directory: {get_cachedir_path_display(context)}")
 
         # uilist
         row = layout.row()
@@ -161,7 +161,7 @@ class CM_PT_vi3d_cache_import(bpy.types.Panel):
 
         # cachedir
         row = layout.row()
-        row.label(text=f"Cache Directory: {get_cachedir_path(context)}")
+        row.label(text=f"Cache Directory: {get_cachedir_path_display(context)}")
 
         # cacheconfig
         row = layout.row()

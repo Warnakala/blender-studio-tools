@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 import bpy
 
@@ -25,7 +26,9 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
         box.row().prop(self, "cachedir")
 
     @property
-    def cachedir_path(self) -> Path:
+    def cachedir_path(self) -> Optional[Path]:
+        if not self.is_cachedir_valid:
+            return None
         return Path(bpy.path.abspath(self.cachedir)).absolute()
 
     @property
@@ -41,7 +44,21 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
         return True
 
     @property
-    def cacheconfig_path(self) -> Path:
+    def is_cacheconfig_valid(self) -> bool:
+
+        # check if file is saved
+        if not self.cacheconfig:
+            return False
+
+        if not bpy.data.filepath and self.cacheconfig.startswith("//"):
+            return False
+
+        return True
+
+    @property
+    def cacheconfig_path(self) -> Optional[Path]:
+        if not self.is_cacheconfig_valid:
+            return None
         return Path(bpy.path.abspath(self.cacheconfig)).absolute()
 
 
