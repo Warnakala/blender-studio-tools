@@ -1,5 +1,6 @@
 import json
 import os
+import contextlib
 
 from datetime import datetime
 from pathlib import Path
@@ -8,7 +9,7 @@ from copy import deepcopy
 
 import bpy
 
-from . import prefs, props
+from . import prefs, props, cmglobals
 from .logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(__name__)
@@ -18,10 +19,12 @@ _CACHECONFIG_TEMPL: Dict[str, Any] = {
     "meta": {"name": "", "creation_date": ""},
     "libs": {},  # {filepath_to_lib: _LIBDICT_TEMPL}
 }
-
 _LIBDICT_TEMPL: Dict[str, Any] = {
     "data_from": {"collections": {}},  # {'colname': {'cachefile': cachepath}}
+    "animation_data": {},
 }
+_OBJECTDICT_TEMPL = {"type": "", "drivers": []}
+_DRIVERDICT_TEMPL = {"data_path": "", "value": []}
 
 _DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
@@ -43,6 +46,17 @@ def gen_cachepath_collection(
     return cachedir_path.joinpath(gen_filename_collection(collection)).absolute()
 
 
+def is_valid_cache_object(obj: bpy.types.Object) -> bool:
+    if obj.type in cmglobals.VALID_OBJECT_TYPES and obj.name.startswith("GEO"):
+        return True
+    return False
+
+
+def get_valid_cache_objects(collection: bpy.types.Collection) -> List[bpy.types.Object]:
+    object_list = [obj for obj in collection.all_objects if is_valid_cache_object(obj)]
+    return object_list
+
+
 def get_current_time_string(date_format: str) -> str:
     now = datetime.now()
     current_time_string = now.strftime(date_format)
@@ -58,6 +72,19 @@ def read_json(filepath: Path) -> List[Dict[str, Any]]:
 def save_as_json(data: Any, filepath: Path) -> None:
     with open(filepath.as_posix(), "w+") as file:
         json.dump(data, file, indent=4)
+
+
+@contextlib.contextmanager
+def temporary_current_frame(context):
+    """Allows the context to set the scene current frame, restores it on exit.
+
+    Yields the initial current frame, so it can be used for reference in the context.
+    """
+    current_frame = context.scene.frame_current
+    try:
+        yield current_frame
+    finally:
+        context.scene.frame_current = current_frame
 
 
 class CacheConfig:
@@ -218,11 +245,67 @@ class CacheConfigFactory:
                 coll.name
             ] = _col_dict
 
+            cls._populate_with_drivers(_json_obj, libfile, coll)
+
+        # get drive values for each frame
+        cls._store_driver_values(context, _json_obj)
+
         # save json obj to disk
         save_as_json(_json_obj, filepath)
         logger.info("Generated cacheconfig and saved to: %s", filepath.as_posix())
 
         return CacheConfig(filepath)
+
+    @classmethod
+    def _populate_with_drivers(cls, _json_obj, libfile, coll):
+        # loop over all objects in that collection
+        for obj in coll.all_objects:
+            if not is_valid_cache_object(obj):
+                continue
+
+            if not obj.animation_data:
+                continue
+
+            if not obj.animation_data.drivers:
+                continue
+
+            for driver in obj.animation_data.drivers:
+                driven_value = driver.id_data.path_resolve(driver.data_path)
+
+                # gen obj.name key in _json_obj["animation_data"] if not existent
+                if obj.name not in _json_obj["libs"][libfile]["animation_data"]:
+                    _json_obj["libs"][libfile]["animation_data"][obj.name] = deepcopy(
+                        _OBJECTDICT_TEMPL
+                    )
+
+                # append driver dict
+                object_key = _json_obj["libs"][libfile]["animation_data"][obj.name]
+                drivers_key = object_key["drivers"]
+
+                # set type
+                object_key["type"] = str(obj.type)
+
+                # gen driver dict
+                driver_dict = deepcopy(_DRIVERDICT_TEMPL)
+                driver_dict["data_path"] = driver.data_path
+                drivers_key.append(driver_dict)
+
+    @classmethod
+    def _store_driver_values(cls, context, _json_obj):
+        # get driver values for each frame
+        with temporary_current_frame(context) as original_curframe:
+            for frame in range(context.scene.frame_start, context.scene.frame_end + 1):
+                context.scene.frame_current = frame
+
+                for libfile in _json_obj["libs"]:
+                    for obj_str in _json_obj["libs"][libfile]["animation_data"]:
+                        obj = bpy.data.objects[obj_str]
+                        for driver_dict in _json_obj["libs"][libfile]["animation_data"][
+                            obj_str
+                        ]["drivers"]:
+                            data_path_str = driver_dict["data_path"]
+                            driven_value = obj.path_resolve(data_path_str)
+                            driver_dict["value"].append(driven_value)
 
     @classmethod
     def load_config_from_file(cls, filepath: Path) -> CacheConfig:

@@ -20,15 +20,6 @@ def ui_redraw() -> None:
             area.tag_redraw()
 
 
-def get_valid_cache_objects(collection: bpy.types.Collection) -> List[bpy.types.Object]:
-    object_list = [
-        obj
-        for obj in collection.all_objects
-        if obj.type in cmglobals.VALID_OBJECT_TYPES and obj.name.startswith("GEO")
-    ]
-    return object_list
-
-
 class CM_OT_cache_export(bpy.types.Operator):
     """"""
 
@@ -73,7 +64,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             bpy.ops.object.select_all(action="DESELECT")
 
             # create selection for alembic_export operator
-            object_list = get_valid_cache_objects(coll)
+            object_list = cache.get_valid_cache_objects(coll)
             for obj in object_list:
                 obj.select_set(True)
 
@@ -317,7 +308,7 @@ class CM_OT_cache_import(bpy.types.Operator):
             cachefile = self._ensure_cachefile(coll.cm.cachefile)
 
             # get list with valid objects to apply cache to
-            object_list = get_valid_cache_objects(coll)
+            object_list = cache.get_valid_cache_objects(coll)
 
             # Loop Through All Objects except Active Object and add Modifier and Constraint
             for obj in object_list:
@@ -513,7 +504,7 @@ class CM_OT_cache_hide(bpy.types.Operator):
 
         for idx, coll in enumerate(collections):
             # Create a List with all selected Objects
-            object_list = get_valid_cache_objects(coll)
+            object_list = cache.get_valid_cache_objects(coll)
 
             # Loop Through All Objects
             for obj in object_list:
@@ -563,7 +554,7 @@ class CM_OT_cache_show(bpy.types.Operator):
 
         for idx, coll in enumerate(collections):
             # Create a List with all selected Objects
-            object_list = get_valid_cache_objects(coll)
+            object_list = cache.get_valid_cache_objects(coll)
 
             # Loop Through All Objects
             for obj in object_list:
@@ -612,7 +603,7 @@ class CM_OT_cache_remove(bpy.types.Operator):
 
         for idx, coll in enumerate(collections):
             # Create a List with all selected Objects
-            object_list = get_valid_cache_objects(coll)
+            object_list = cache.get_valid_cache_objects(coll)
 
             # Loop Through All Objects and remove Modifier and Constraint
             for obj in object_list:
