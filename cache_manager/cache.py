@@ -9,7 +9,7 @@ from copy import deepcopy
 
 import bpy
 
-from . import prefs, props, cmglobals
+from . import prefs, props, cmglobals, opsdata
 from .logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(__name__)
@@ -108,15 +108,19 @@ class CacheConfig:
         if not self._is_filepath():
             raise RuntimeError("Failed to process CacheConfig. Filepath is not valid")
 
-        colls = self._process_json_obj(context)
+        colls = self._import_collections(context)
+        self._import_animation_data(colls)
+
         logger.info("-END- Processing cacheconfig: %s", self.filepath.as_posix())
 
-    def _process_json_obj(
+    def _import_collections(
         self, context: bpy.types.Context
     ) -> List[bpy.types.Collection]:
 
         # list of collections to track which ones got imported
         colls: List[bpy.types.Collection] = []
+
+        logger.info("-START- Importing collections")
 
         for libfile in self._json_obj["libs"]:
 
@@ -166,7 +170,96 @@ class CacheConfig:
                 self._add_coll_to_cm_collections(context, coll)
                 colls.append(coll)
 
+        logger.info("-END- Importing collections")
         return colls
+
+    def _import_animation_data(self, colls: List[bpy.types.Collection]) -> None:
+
+        frame_in = self._json_obj["meta"]["frame_start"]
+        frame_out = self._json_obj["meta"]["frame_end"]
+
+        logger.info("-START- Importing animation data")
+
+        coll_to_lib_mapping = self._get_coll_to_lib_mapping()
+
+        for coll in colls:
+
+            libfile = coll_to_lib_mapping[coll.name]
+
+            # if there is no animation_data for this libfile skip
+            if not self._json_obj["libs"][libfile]["animation_data"]:
+                logger.info("No animation data available for collection %s", coll.name)
+                continue
+
+            # for each object in this lib file that has animation data set keyframes on each frame
+            for obj_str in self._json_obj["libs"][libfile]["animation_data"]:
+
+                # get object from string
+                obj = bpy.data.objects[obj_str]
+
+                # disable drivers
+                self._disable_drivers(obj)
+
+                # only if obj in the filter collections
+                if not coll in obj.users_collection:
+                    continue
+
+                logger.info("Importing animation data for object %s", obj.name)
+                # get property that was driven and set keyframes
+                for driver_dict in self._json_obj["libs"][libfile]["animation_data"][
+                    obj_str
+                ]["drivers"]:
+                    data_path_str = driver_dict["data_path"]
+                    driven_prop = f"bpy.data.objects[{obj_str}].{data_path_str}"
+                    logger.info(
+                        "Importing data %s for frame range(%s, %s)",
+                        driven_prop,
+                        frame_in,
+                        frame_out,
+                    )
+                    # insert keyframe for frames in json_obj
+                    for frame in range(frame_in, frame_out + 1):
+
+                        # get value to set prop to
+                        prop_value = driver_dict["value"][frame - frame_in]
+
+                        deliminater = "."
+                        # set property to value
+                        if data_path_str.startswith("["):
+                            deliminater = ""
+                        exec(
+                            f'bpy.data.objects["{obj_str}"]{deliminater}{data_path_str}={prop_value}'
+                        )
+                        obj.keyframe_insert(data_path=data_path_str, frame=frame)
+
+                        print(
+                            f"Frame {frame}: Keying {obj.name} with value: {prop_value}"
+                        )
+
+        logger.info("-END- Importing animation data")
+
+    def _get_coll_to_lib_mapping(self) -> Dict[str, str]:
+        remapping = {}
+        for libfile in self._json_obj["libs"]:
+            for coll_str in self._json_obj["libs"][libfile]["data_from"]["collections"]:
+                remapping[coll_str] = libfile
+
+        return remapping
+
+    def _disable_drivers(self, obj: bpy.types.Object) -> List[bpy.types.Driver]:
+        # store driver that were muted to entmute them after
+        muted_drivers: List[bpy.types.Driver] = []
+        if obj.animation_data:
+            for driver in obj.animation_data.drivers:
+                if driver.data_path not in opsdata.DRIVERS_MUTE:
+                    continue
+                if driver.mute == True:
+                    continue
+                driver.mute = True
+                logger.info("Object %s disabled driver: %s", obj.name, driver.data_path)
+                muted_drivers.append(driver)
+
+        return muted_drivers
 
     def _add_coll_to_cm_collections(
         self, context: bpy.types.Context, coll: bpy.types.Collection
@@ -196,34 +289,44 @@ class CacheConfig:
 
         return True
 
-    """
-    def save(self) -> None:
-        if not self._is_filepath():
-            raise RuntimeError("Failed to save CacheConfig. Filepath is not valid")
-
-        if not self._json_obj:
-            raise RuntimeError("Failed to save CacheConfig. No data to save.")
-
-        save_as_json(self._json_obj, self.filepath)
-    """
-
 
 class CacheConfigFactory:
     @classmethod
     def gen_config_from_scene(
-        cls, context: bpy.types.Context, filepath: Path
+        cls,
+        context: bpy.types.Context,
+        filepath: Path,  # TODO: list of collections as filter input
     ) -> CacheConfig:
-        addon_prefs = prefs.addon_prefs_get(context)
-        cachedir_path = Path(addon_prefs.cachedir_path)
         _json_obj: Dict[str, Any] = deepcopy(_CACHECONFIG_TEMPL)
-        scn = context.scene
 
         # populate metadata
+        cls._populate_metadata(context, _json_obj)
+
+        # poulate cacheconfig with libs based on collections
+        cls._populate_libs(context, _json_obj)
+
+        # get drive values for each frame
+        cls._store_driver_values(context, _json_obj)
+
+        # save json obj to disk
+        save_as_json(_json_obj, filepath)
+        logger.info("Generated cacheconfig and saved to: %s", filepath.as_posix())
+
+        return CacheConfig(filepath)
+
+    @classmethod
+    def _populate_metadata(cls, context, _json_obj):
         _json_obj["meta"]["name"] = Path(bpy.data.filepath).name
         _json_obj["meta"]["creation_date"] = get_current_time_string(_DATE_FORMAT)
+        _json_obj["meta"]["frame_start"] = context.scene.frame_start
+        _json_obj["meta"]["frame_end"] = context.scene.frame_end
 
+    @classmethod
+    def _populate_libs(
+        cls, context, _json_obj
+    ):  # TODO: list of collections as filter input
         # get librarys
-        for coll in props.get_cache_collections(bpy.context):
+        for coll in props.get_cache_collections(context):
             lib = coll.override_library.reference.library
             libfile = Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
 
@@ -237,7 +340,7 @@ class CacheConfigFactory:
 
             # create collection dict based on this collection
             _col_dict = {
-                "cachefile": gen_cachepath_collection(coll, bpy.context).as_posix(),
+                "cachefile": gen_cachepath_collection(coll, context).as_posix(),
             }
 
             # append collection dict to libdict
@@ -245,19 +348,13 @@ class CacheConfigFactory:
                 coll.name
             ] = _col_dict
 
-            cls._populate_with_drivers(_json_obj, libfile, coll)
-
-        # get drive values for each frame
-        cls._store_driver_values(context, _json_obj)
-
-        # save json obj to disk
-        save_as_json(_json_obj, filepath)
-        logger.info("Generated cacheconfig and saved to: %s", filepath.as_posix())
-
-        return CacheConfig(filepath)
+            cls._populate_with_drivers(_json_obj, coll)
 
     @classmethod
-    def _populate_with_drivers(cls, _json_obj, libfile, coll):
+    def _populate_with_drivers(cls, _json_obj, coll):
+        lib = coll.override_library.reference.library
+        libfile = Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
+
         # loop over all objects in that collection
         for obj in coll.all_objects:
             if not is_valid_cache_object(obj):
@@ -291,11 +388,13 @@ class CacheConfigFactory:
                 drivers_key.append(driver_dict)
 
     @classmethod
-    def _store_driver_values(cls, context, _json_obj):
+    def _store_driver_values(
+        cls, context, _json_obj
+    ):  # TODO: list of collections as filter input
         # get driver values for each frame
         with temporary_current_frame(context) as original_curframe:
             for frame in range(context.scene.frame_start, context.scene.frame_end + 1):
-                context.scene.frame_current = frame
+                context.scene.frame_set(frame)
 
                 for libfile in _json_obj["libs"]:
                     for obj_str in _json_obj["libs"][libfile]["animation_data"]:

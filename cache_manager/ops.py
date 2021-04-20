@@ -76,7 +76,7 @@ class CM_OT_cache_export(bpy.types.Operator):
                 )
 
             # mute drivers
-            muted_drivers = self._disable_drivers(context)
+            muted_drivers = self._disable_drivers(context.selected_objects)
 
             try:
                 # for each collection create seperate alembic
@@ -139,10 +139,12 @@ class CM_OT_cache_export(bpy.types.Operator):
         logger.info("-END- Exporting Cache")
         return {"FINISHED"}
 
-    def _disable_drivers(self, context: bpy.types.Context) -> List[bpy.types.Driver]:
+    def _disable_drivers(
+        self, objects: List[bpy.types.Context]
+    ) -> List[bpy.types.Driver]:
         # store driver that were muted to entmute them after
         muted_drivers: List[bpy.types.Driver] = []
-        for obj in context.selected_objects:
+        for obj in objects:
             if obj.animation_data:
                 for driver in obj.animation_data.drivers:
                     if driver.data_path not in opsdata.DRIVERS_MUTE:
