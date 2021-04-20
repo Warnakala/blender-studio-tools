@@ -195,45 +195,28 @@ class CacheConfigFactory:
         _json_obj["meta"]["name"] = Path(bpy.data.filepath).name
         _json_obj["meta"]["creation_date"] = get_current_time_string(_DATE_FORMAT)
 
-        for lib in bpy.data.libraries:
-            lib_items = lib.users_id
+        # get librarys
+        for coll in props.get_cache_collections(bpy.context):
+            lib = coll.override_library.reference.library
             libfile = Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
 
-            for item in lib_items:
-                # skip if not collection
-                if item.bl_rna.identifier != "Collection":
-                    continue
+            # gen libfile key in _json_obj["libs"] if not existent
+            if libfile not in _json_obj["libs"]:
+                _json_obj["libs"][libfile] = deepcopy(_LIBDICT_TEMPL)
 
-                # skip if this collection is not in the cache collection list
-                if bpy.data.collections[item.name] not in list(
-                    props.get_cache_collections(bpy.context)
-                ):
-                    continue
+            # gen collk key in _json_obj["libs"][libfile]['data_from']["collections"] if not existent
+            if coll.name not in _json_obj["libs"][libfile]["data_from"]["collections"]:
+                _json_obj["libs"][libfile]["data_from"]["collections"][coll.name] = {}
 
-                coll = item
+            # create collection dict based on this collection
+            _col_dict = {
+                "cachefile": gen_cachepath_collection(coll, bpy.context).as_posix(),
+            }
 
-                # gen libfile key in _json_obj["libs"] if not existent
-                if libfile not in _json_obj["libs"]:
-                    _json_obj["libs"][libfile] = deepcopy(_LIBDICT_TEMPL)
-
-                # gen collk key in _json_obj["libs"][libfile]['data_from']["collections"] if not existent
-                if (
-                    coll.name
-                    not in _json_obj["libs"][libfile]["data_from"]["collections"]
-                ):
-                    _json_obj["libs"][libfile]["data_from"]["collections"][
-                        coll.name
-                    ] = {}
-
-                # create collection dict based on this collection
-                _col_dict = {
-                    "cachefile": gen_cachepath_collection(coll, bpy.context).as_posix(),
-                }
-
-                # append collection dict to libdict
-                _json_obj["libs"][libfile]["data_from"]["collections"][
-                    coll.name
-                ] = _col_dict
+            # append collection dict to libdict
+            _json_obj["libs"][libfile]["data_from"]["collections"][
+                coll.name
+            ] = _col_dict
 
         # save json obj to disk
         save_as_json(_json_obj, filepath)
