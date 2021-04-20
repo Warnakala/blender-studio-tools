@@ -151,17 +151,18 @@ class CM_OT_cache_export(bpy.types.Operator):
     def _disable_drivers(self, context: bpy.types.Context) -> List[bpy.types.Driver]:
         # store driver that were muted to entmute them after
         muted_drivers: List[bpy.types.Driver] = []
-
         for obj in context.selected_objects:
-            for driver in obj.animation_data.drivers:
-                if driver.data_path not in opsdata.DRIVERS_MUTE:
-                    continue
-                if driver.mute == True:
-                    continue
-
-                driver.mute = True
-                logger.info("Object %s disabled driver: %s", obj.name, driver.data_path)
-                muted_drivers.append(driver)
+            if obj.animation_data:
+                for driver in obj.animation_data.drivers:
+                    if driver.data_path not in opsdata.DRIVERS_MUTE:
+                        continue
+                    if driver.mute == True:
+                        continue
+                    driver.mute = True
+                    logger.info(
+                        "Object %s disabled driver: %s", obj.name, driver.data_path
+                    )
+                    muted_drivers.append(driver)
 
         return muted_drivers
 
