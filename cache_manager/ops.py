@@ -1,5 +1,6 @@
 import bpy
 import re
+import contextlib
 from typing import List, Any, Set, cast
 from pathlib import Path
 
@@ -83,6 +84,9 @@ class CM_OT_cache_export(bpy.types.Operator):
                     "Filepath %s already exists. Will overwrite.", filepath.as_posix()
                 )
 
+            # mute drivers
+            muted_drivers = self._disable_drivers(context)
+
             try:
                 # for each collection create seperate alembic
                 bpy.ops.wm.alembic_export(
@@ -122,6 +126,10 @@ class CM_OT_cache_export(bpy.types.Operator):
                 failed.append(coll)
                 continue
 
+            # entmute driver
+            self._enable_drivers(muted_drivers)
+
+            # success log for this collections
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
             succeeded.append(coll)
 
@@ -140,9 +148,35 @@ class CM_OT_cache_export(bpy.types.Operator):
         logger.info("-END- Exporting Cache")
         return {"FINISHED"}
 
-    def _mute_drivers(self)
-        #TOOD: context manager
-        pass
+    def _disable_drivers(self, context: bpy.types.Context) -> List[bpy.types.Driver]:
+        # store driver that were muted to entmute them after
+        muted_drivers: List[bpy.types.Driver] = []
+
+        for obj in context.selected_objects:
+            for driver in obj.animation_data.drivers:
+                if driver.data_path not in opsdata.DRIVERS_MUTE:
+                    continue
+                if driver.mute == True:
+                    continue
+
+                driver.mute = True
+                logger.info("Object %s disabled driver: %s", obj.name, driver.data_path)
+                muted_drivers.append(driver)
+
+        return muted_drivers
+
+    def _enable_drivers(
+        self, muted_drivers: List[bpy.types.Driver]
+    ) -> List[bpy.types.Driver]:
+        for driver in muted_drivers:
+            driver.mute = False
+            logger.info(
+                "Object %s enabled driver: %s", driver.id_data.name, driver.data_path
+            )
+
+        return muted_drivers
+
+
 class CM_OT_cache_list_actions(bpy.types.Operator):
     """Move items up and down, add and remove"""
 
@@ -325,7 +359,7 @@ class CM_OT_cache_import(bpy.types.Operator):
         a_index: int = -1
         for idx, m in enumerate(modifiers):
             if m.type not in opsdata.MODIFIERS_KEEP:
-                #TODO: get index of aramture and return that
+                # TODO: get index of aramture and return that
                 logger.info("Removing modifier: %s", m.name)
                 obj.modifiers.remove(m)
                 if a_index == -1:
@@ -337,7 +371,7 @@ class CM_OT_cache_import(bpy.types.Operator):
         a_index: int = -1
         for idx, m in enumerate(modifiers):
             if m.type not in opsdata.MODIFIERS_KEEP:
-                #TODO: get index of aramture and return that
+                # TODO: get index of aramture and return that
                 logger.info("Disabling modifier: %s", m.name)
                 m.show_viewport = False
                 m.show_render = False
@@ -441,9 +475,16 @@ class CM_OT_cache_import(bpy.types.Operator):
         # if object is duplicated (multiple copys of the same object that get different cachses)
         # we have to kill the .001 postfix that gets created auto on duplication
         # otherwise object path is not valid
+
         object_name = self._kill_increment(obj.name)
         object_data_name = self._kill_increment(obj.data.name)
         object_path = "/" + object_name + "/" + object_data_name
+
+        # dot and whitespace not valid in abc tree will be replaced with underscore
+        replace = [" ", "."]
+        for char in replace:
+            object_path = object_path.replace(char, "_")
+
         return object_path
 
 

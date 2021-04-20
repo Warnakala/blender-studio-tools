@@ -56,9 +56,6 @@ def read_json(filepath: Path) -> List[Dict[str, Any]]:
 
 
 def save_as_json(data: Any, filepath: Path) -> None:
-    print("SAVE AS JSON")
-    print(filepath.as_posix())
-    print(f"DATA: {str(data)}")
     with open(filepath.as_posix(), "w+") as file:
         json.dump(data, file, indent=4)
 
