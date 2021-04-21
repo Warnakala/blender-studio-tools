@@ -247,9 +247,11 @@ class CacheConfig:
                         )
                         obj.keyframe_insert(data_path=data_path_str, frame=frame)
 
+                        """
                         print(
                             f"Frame {frame}: Keying {obj.name} with value: {prop_value}"
                         )
+                        """
 
         logger.info("-END- Importing animation data")
 

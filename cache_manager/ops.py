@@ -65,19 +65,27 @@ class CM_OT_cache_export(bpy.types.Operator):
 
             # create selection for alembic_export operator
             object_list = cache.get_valid_cache_objects(coll)
+
+            # mute drivers
+            muted_drivers = opsdata.disable_drivers(object_list)
+
+            # ensure that objects that have their drivers muted are visible for export
+            objs_to_be_hidden = opsdata.ensure_obj_vis_for_disabled_drivers(
+                muted_drivers
+            )
+
+            # select objects for bpy.ops.wm.alembic_export
             for obj in object_list:
                 obj.select_set(True)
 
+            # filepath
             filepath = cache.gen_cachepath_collection(coll, context)
-
             if filepath.exists():
                 logger.warning(
                     "Filepath %s already exists. Will overwrite.", filepath.as_posix()
                 )
 
-            # mute drivers
-            muted_drivers = opsdata.disable_drivers(context.selected_objects)
-
+            # export
             try:
                 # for each collection create seperate alembic
                 bpy.ops.wm.alembic_export(
@@ -116,6 +124,11 @@ class CM_OT_cache_export(bpy.types.Operator):
                 logger.exception(str(e))
                 failed.append(coll)
                 continue
+
+            # hide objs again
+            for obj in objs_to_be_hidden:
+                obj.hide_viewport = True
+                logger.info("Hide object in viewport after export %s", obj.name)
 
             # entmute driver
             opsdata.enable_drivers(muted_drivers)

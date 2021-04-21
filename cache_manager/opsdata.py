@@ -58,7 +58,6 @@ def disable_drivers(objects: List[bpy.types.Context]) -> List[bpy.types.Driver]:
     for obj in objects:
         if obj.animation_data:
             for driver in obj.animation_data.drivers:
-
                 # get suffix of data path, if modifiers modifier name is at the beginning
                 data_path_suffix = driver.data_path.split(".")[-1]
 
@@ -70,9 +69,28 @@ def disable_drivers(objects: List[bpy.types.Context]) -> List[bpy.types.Driver]:
 
                 driver.mute = True
                 logger.info("Object %s disabled driver: %s", obj.name, driver.data_path)
+
                 muted_drivers.append(driver)
 
     return muted_drivers
+
+
+def ensure_obj_vis_for_disabled_drivers(
+    drivers: List[bpy.types.Driver],
+) -> List[bpy.types.Object]:
+    objs: List[bpy.types.Object] = []
+
+    for driver in drivers:
+        obj = driver.id_data
+        # only show objects that have hidden initial state
+        if obj.hide_viewport and obj not in objs:
+            objs.append(obj)
+    # show viewport to ensure export
+    for obj in objs:
+        obj.hide_viewport = False
+        logger.info("Show object in viewport for export %s", obj.name)
+
+    return objs
 
 
 def enable_drivers(muted_drivers: List[bpy.types.Driver]) -> List[bpy.types.Driver]:
