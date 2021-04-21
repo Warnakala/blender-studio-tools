@@ -18,7 +18,7 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
     )
 
     cacheconfig: bpy.props.StringProperty(
-        name="Cachefile", subtype="FILE_PATH", get=prefsdata.get_cacheconfig_file
+        name="Cachefile", get=prefsdata.get_cacheconfig_file
     )
 
     def draw(self, context: bpy.types.Context) -> None:

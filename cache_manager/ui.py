@@ -22,52 +22,108 @@ def get_cachedir_path_display(context: bpy.types.Context) -> str:
     return addon_prefs.cachedir_path.as_posix()
 
 
-class CM_PT_vi3d_cache_export(bpy.types.Panel):
+class CM_PT_vi3d_cache(bpy.types.Panel):
     """
     Panel in sequence editor that displays email, password and login operator.
     """
 
     bl_category = "CacheManager"
-    bl_label = "Export"
+    bl_label = "Cache"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
 
+        addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
-        collections = list(props.get_cache_collections(context))
 
-        # filepath
+        # category to choose between export / import
+        row = layout.row(align=True)
+        row.prop(context.scene, "cm_category", expand=True)
+
+        # cachedir
         row = layout.row()
         row.label(text=f"Cache Directory: {get_cachedir_path_display(context)}")
 
-        # uilist
-        row = layout.row()
-        row.template_list(
-            "CM_UL_collection_cache_list_export",
-            "collection_cache_list_export",
-            context.scene,
-            "cm_collections",
-            context.scene,
-            "cm_collections_index",
-            rows=5,
-            type="DEFAULT",
-        )
-        col = row.column(align=True)
-        col.operator(
-            CM_OT_cache_list_actions.bl_idname, icon="ADD", text=""
-        ).action = "ADD"
-        col.operator(
-            CM_OT_cache_list_actions.bl_idname, icon="REMOVE", text=""
-        ).action = "REMOVE"
+        if context.scene.cm_category == "EXPORT":
 
-        row = layout.row(align=True)
-        row.operator(
-            CM_OT_cache_export.bl_idname,
-            text=f"Cache {len(collections)} Collections",
-            icon="EXPORT",
-        ).do_all = True
+            # get collections
+            collections = list(props.get_cache_collections(context))
+
+            # uilist
+            row = layout.row()
+            row.template_list(
+                "CM_UL_collection_cache_list_export",
+                "collection_cache_list_export",
+                context.scene,
+                "cm_collections",
+                context.scene,
+                "cm_collections_index",
+                rows=5,
+                type="DEFAULT",
+            )
+            col = row.column(align=True)
+            col.operator(
+                CM_OT_cache_list_actions.bl_idname, icon="ADD", text=""
+            ).action = "ADD"
+            col.operator(
+                CM_OT_cache_list_actions.bl_idname, icon="REMOVE", text=""
+            ).action = "REMOVE"
+
+            row = layout.row(align=True)
+            row.operator(
+                CM_OT_cache_export.bl_idname,
+                text=f"Cache {len(collections)} Collections",
+                icon="EXPORT",
+            ).do_all = True
+
+        else:
+            # get collections
+            collections = list(props.get_cache_collections(context))
+
+            # cacheconfig
+            row = layout.row()
+            row.prop(addon_prefs, "cacheconfig", text="Cacheconfig")
+            row.operator(CM_OT_import_collections.bl_idname, icon="PLAY", text="")
+
+            # uilist
+            row = layout.row()
+            row.template_list(
+                "CM_UL_collection_cache_list_import",
+                "collection_cache_list_import",
+                context.scene,
+                "cm_collections",
+                context.scene,
+                "cm_collections_index",
+                rows=5,
+                type="DEFAULT",
+            )
+            col = row.column(align=True)
+            col.operator(
+                CM_OT_cache_list_actions.bl_idname, icon="ADD", text=""
+            ).action = "ADD"
+            col.operator(
+                CM_OT_cache_list_actions.bl_idname, icon="REMOVE", text=""
+            ).action = "REMOVE"
+
+            row = layout.row(align=True)
+            row.operator(
+                CM_OT_import_cache.bl_idname,
+                text=f"Import Cache for {len(collections)} Collections",
+                icon="IMPORT",
+            ).do_all = True
+            row.operator(
+                CM_OT_cache_show.bl_idname, text="", icon="HIDE_OFF"
+            ).do_all = True
+
+            row.operator(
+                CM_OT_cache_hide.bl_idname, text="", icon="HIDE_ON"
+            ).do_all = True
+
+            row.operator(
+                CM_OT_cache_remove.bl_idname, text="", icon="REMOVE"
+            ).do_all = True
 
 
 class CM_UL_collection_cache_list_export(bpy.types.UIList):
@@ -143,71 +199,12 @@ class CM_UL_collection_cache_list_import(bpy.types.UIList):
             layout.label(text="", icon_value=layout.icon(item.coll_ptr))
 
 
-class CM_PT_vi3d_cache_import(bpy.types.Panel):
-    """
-    Panel in sequence editor that displays email, password and login operator.
-    """
-
-    bl_category = "CacheManager"
-    bl_label = "Import"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_order = 20
-
-    def draw(self, context: bpy.types.Context) -> None:
-        addon_prefs = prefs.addon_prefs_get(context)
-        layout = self.layout
-        collections = list(props.get_cache_collections(context))
-
-        # cachedir
-        row = layout.row()
-        row.label(text=f"Cache Directory: {get_cachedir_path_display(context)}")
-
-        # cacheconfig
-        row = layout.row()
-        row.prop(addon_prefs, "cacheconfig", text="Cacheconfig")
-        row.operator(CM_OT_import_collections.bl_idname, icon="PLAY", text="")
-
-        # uilist
-        row = layout.row()
-        row.template_list(
-            "CM_UL_collection_cache_list_import",
-            "collection_cache_list_import",
-            context.scene,
-            "cm_collections",
-            context.scene,
-            "cm_collections_index",
-            rows=5,
-            type="DEFAULT",
-        )
-        col = row.column(align=True)
-        col.operator(
-            CM_OT_cache_list_actions.bl_idname, icon="ADD", text=""
-        ).action = "ADD"
-        col.operator(
-            CM_OT_cache_list_actions.bl_idname, icon="REMOVE", text=""
-        ).action = "REMOVE"
-
-        row = layout.row(align=True)
-        row.operator(
-            CM_OT_import_cache.bl_idname,
-            text=f"Import Cache for {len(collections)} Collections",
-            icon="IMPORT",
-        ).do_all = True
-        row.operator(CM_OT_cache_show.bl_idname, text="", icon="HIDE_OFF").do_all = True
-
-        row.operator(CM_OT_cache_hide.bl_idname, text="", icon="HIDE_ON").do_all = True
-
-        row.operator(CM_OT_cache_remove.bl_idname, text="", icon="REMOVE").do_all = True
-
-
 # ---------REGISTER ----------
 
 classes = [
     CM_UL_collection_cache_list_export,
     CM_UL_collection_cache_list_import,
-    CM_PT_vi3d_cache_export,
-    CM_PT_vi3d_cache_import,
+    CM_PT_vi3d_cache,
 ]
 
 

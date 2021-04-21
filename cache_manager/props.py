@@ -32,6 +32,15 @@ def register():
     bpy.types.Scene.cm_collections = bpy.props.CollectionProperty(
         type=CM_property_group_scene
     )
+
+    bpy.types.Scene.cm_category = bpy.props.EnumProperty(  # type: ignore
+        items=(
+            ("EXPORT", "Export", "Import Cache Collections", "EXPORT", 0),
+            ("IMPORT", "Import", "Export Cache Collections", "IMPORT", 1),
+        ),
+        default="EXPORT",
+    )
+
     bpy.types.Scene.cm_collections_index = bpy.props.IntProperty(
         name="Index", default=0
     )
