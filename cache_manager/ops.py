@@ -76,7 +76,7 @@ class CM_OT_cache_export(bpy.types.Operator):
                 )
 
             # mute drivers
-            muted_drivers = self._disable_drivers(context.selected_objects)
+            muted_drivers = opsdata.disable_drivers(context.selected_objects)
 
             try:
                 # for each collection create seperate alembic
@@ -118,7 +118,7 @@ class CM_OT_cache_export(bpy.types.Operator):
                 continue
 
             # entmute driver
-            self._enable_drivers(muted_drivers)
+            opsdata.enable_drivers(muted_drivers)
 
             # success log for this collections
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
@@ -138,37 +138,6 @@ class CM_OT_cache_export(bpy.types.Operator):
 
         logger.info("-END- Exporting Cache")
         return {"FINISHED"}
-
-    def _disable_drivers(
-        self, objects: List[bpy.types.Context]
-    ) -> List[bpy.types.Driver]:
-        # store driver that were muted to entmute them after
-        muted_drivers: List[bpy.types.Driver] = []
-        for obj in objects:
-            if obj.animation_data:
-                for driver in obj.animation_data.drivers:
-                    if driver.data_path not in opsdata.DRIVERS_MUTE:
-                        continue
-                    if driver.mute == True:
-                        continue
-                    driver.mute = True
-                    logger.info(
-                        "Object %s disabled driver: %s", obj.name, driver.data_path
-                    )
-                    muted_drivers.append(driver)
-
-        return muted_drivers
-
-    def _enable_drivers(
-        self, muted_drivers: List[bpy.types.Driver]
-    ) -> List[bpy.types.Driver]:
-        for driver in muted_drivers:
-            driver.mute = False
-            logger.info(
-                "Object %s enabled driver: %s", driver.id_data.name, driver.data_path
-            )
-
-        return muted_drivers
 
 
 class CM_OT_cache_list_actions(bpy.types.Operator):
@@ -315,8 +284,8 @@ class CM_OT_cache_import(bpy.types.Operator):
             # Loop Through All Objects except Active Object and add Modifier and Constraint
             for obj in object_list:
                 # remove all armature modifiers, get index of first one, use that index for cache modifier
-                index = self._rm_modifiers(obj)
-                modifier_index = index if index != -1 else 0
+                a_index = self._disable_modifiers(obj)
+                modifier_index = a_index if a_index != -1 else 0
 
                 # ensure cache modifier and constraint
                 mod = self._ensure_cache_modifier(obj)
@@ -353,10 +322,12 @@ class CM_OT_cache_import(bpy.types.Operator):
         a_index: int = -1
         for idx, m in enumerate(modifiers):
             if m.type not in opsdata.MODIFIERS_KEEP:
-                # TODO: get index of aramture and return that
+
                 logger.info("Removing modifier: %s", m.name)
                 obj.modifiers.remove(m)
-                if a_index == -1:
+
+                # save index of first armature modifier to
+                if a_index == -1 and m.type == "ARMATURE":
                     a_index = idx
         return a_index
 
@@ -365,13 +336,15 @@ class CM_OT_cache_import(bpy.types.Operator):
         a_index: int = -1
         for idx, m in enumerate(modifiers):
             if m.type not in opsdata.MODIFIERS_KEEP:
-                # TODO: get index of aramture and return that
                 logger.info("Disabling modifier: %s", m.name)
                 m.show_viewport = False
                 m.show_render = False
                 m.show_in_editmode = False
-                if a_index == -1:
+
+                # save index of first armature modifier to
+                if a_index == -1 and m.type == "ARMATURE":
                     a_index = idx
+
         return a_index
 
     def _ensure_cachefile(self, cachefile_path: str) -> bpy.types.CacheFile:

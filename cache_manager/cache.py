@@ -103,18 +103,18 @@ class CacheConfig:
     def json_obj(self) -> List[Dict[str, Any]]:
         return self._json_obj
 
-    def process(self, context: bpy.types.Context) -> None:
+    def process(self, context: bpy.types.Context, link: bool = True) -> None:
         logger.info("-START- Processing cacheconfig: %s", self.filepath.as_posix())
         if not self._is_filepath():
             raise RuntimeError("Failed to process CacheConfig. Filepath is not valid")
 
-        colls = self._import_collections(context)
+        colls = self._import_collections(context, link=link)
         self._import_animation_data(colls)
 
         logger.info("-END- Processing cacheconfig: %s", self.filepath.as_posix())
 
     def _import_collections(
-        self, context: bpy.types.Context
+        self, context: bpy.types.Context, link: bool = True
     ) -> List[bpy.types.Collection]:
 
         # list of collections to track which ones got imported
@@ -127,7 +127,9 @@ class CacheConfig:
             libpath = Path(libfile)
             colldata = self._json_obj["libs"][libfile]["data_from"]["collections"]
 
-            with bpy.data.libraries.load(libpath.as_posix(), relative=True) as (
+            with bpy.data.libraries.load(
+                libpath.as_posix(), relative=True, link=link
+            ) as (
                 data_from,
                 data_to,
             ):
@@ -158,12 +160,25 @@ class CacheConfig:
             for coll_name in colldata:
                 cachefile = colldata[coll_name]["cachefile"]
 
-                coll = bpy.data.collections[coll_name]
-
+                # link collection in scene
+                """
                 try:
                     bpy.context.scene.collection.children.link(coll)
                 except RuntimeError:
                     logger.warning("Collection %s already in blendfile.", coll_name)
+                """
+                bpy.ops.object.collection_instance_add(collection=coll_name)
+
+                # deselect all
+                bpy.ops.object.select_all(action="DESELECT")
+                # needs active object (coll instance)
+                obj = bpy.data.objects[coll_name]
+                context.view_layer.objects.active = obj
+                # add lib override
+                bpy.ops.object.make_override_library()
+
+                # get collection by name
+                coll = bpy.data.collections[coll_name]
 
                 # set cm.cachefile property
                 coll.cm.cachefile = cachefile
@@ -198,7 +213,7 @@ class CacheConfig:
                 obj = bpy.data.objects[obj_str]
 
                 # disable drivers
-                self._disable_drivers(obj)
+                opsdata.disable_drivers([obj])
 
                 # only if obj in the filter collections
                 if not coll in obj.users_collection:
@@ -245,21 +260,6 @@ class CacheConfig:
                 remapping[coll_str] = libfile
 
         return remapping
-
-    def _disable_drivers(self, obj: bpy.types.Object) -> List[bpy.types.Driver]:
-        # store driver that were muted to entmute them after
-        muted_drivers: List[bpy.types.Driver] = []
-        if obj.animation_data:
-            for driver in obj.animation_data.drivers:
-                if driver.data_path not in opsdata.DRIVERS_MUTE:
-                    continue
-                if driver.mute == True:
-                    continue
-                driver.mute = True
-                logger.info("Object %s disabled driver: %s", obj.name, driver.data_path)
-                muted_drivers.append(driver)
-
-        return muted_drivers
 
     def _add_coll_to_cm_collections(
         self, context: bpy.types.Context, coll: bpy.types.Collection
@@ -367,6 +367,14 @@ class CacheConfigFactory:
                 continue
 
             for driver in obj.animation_data.drivers:
+
+                # don't export animation for vis of modifiers
+                data_path = driver.data_path.split(".")
+                if len(data_path) > 1:
+                    if data_path[0].startswith("modifiers"):
+                        if data_path[-1] in opsdata.DRIVERS_MUTE:
+                            continue
+
                 driven_value = driver.id_data.path_resolve(driver.data_path)
 
                 # gen obj.name key in _json_obj["animation_data"] if not existent
