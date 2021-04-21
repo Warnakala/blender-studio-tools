@@ -49,7 +49,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
         if context.scene.cm_category == "EXPORT":
 
             # get collections
-            collections = list(props.get_cache_collections(context))
+            collections = list(props.get_cache_collections_export(context))
 
             # uilist
             row = layout.row()
@@ -57,9 +57,9 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 "CM_UL_collection_cache_list_export",
                 "collection_cache_list_export",
                 context.scene,
-                "cm_collections",
+                "cm_collections_export",
                 context.scene,
-                "cm_collections_index",
+                "cm_collections_export_index",
                 rows=5,
                 type="DEFAULT",
             )
@@ -80,7 +80,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
 
         else:
             # get collections
-            collections = list(props.get_cache_collections(context))
+            collections = list(props.get_cache_collections_import(context))
 
             # cacheconfig
             row = layout.row()
@@ -93,9 +93,9 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 "CM_UL_collection_cache_list_import",
                 "collection_cache_list_import",
                 context.scene,
-                "cm_collections",
+                "cm_collections_import",
                 context.scene,
-                "cm_collections_index",
+                "cm_collections_import_index",
                 rows=5,
                 type="DEFAULT",
             )

@@ -2,25 +2,33 @@ from typing import List, Any, Generator
 import bpy
 
 
-class CM_property_group_scene(bpy.types.PropertyGroup):
+class CM_collection_property(bpy.types.PropertyGroup):
     # name: StringProperty() -> Instantiated by default
     coll_ptr: bpy.props.PointerProperty(name="Collection", type=bpy.types.Collection)
 
 
 class CM_property_group_collection(bpy.types.PropertyGroup):
     cachefile: bpy.props.StringProperty(name="Cachefile", subtype="FILE_PATH")
+    is_cache_loaded: bpy.props.BoolProperty(name="Cache Loaded", default=False)
 
 
-def get_cache_collections(
+def get_cache_collections_import(
     context: bpy.types.Context,
 ) -> Generator[bpy.types.Collection, None, None]:
-    for item in context.scene.cm_collections:
+    for item in context.scene.cm_collections_import:
+        yield item.coll_ptr
+
+
+def get_cache_collections_export(
+    context: bpy.types.Context,
+) -> Generator[bpy.types.Collection, None, None]:
+    for item in context.scene.cm_collections_export:
         yield item.coll_ptr
 
 
 # ---------REGISTER ----------
 
-classes: List[Any] = [CM_property_group_scene, CM_property_group_collection]
+classes: List[Any] = [CM_collection_property, CM_property_group_collection]
 
 
 def register():
@@ -29,8 +37,12 @@ def register():
         bpy.utils.register_class(cls)
 
     # Scene Properties
-    bpy.types.Scene.cm_collections = bpy.props.CollectionProperty(
-        type=CM_property_group_scene
+    bpy.types.Scene.cm_collections_export = bpy.props.CollectionProperty(
+        type=CM_collection_property
+    )
+
+    bpy.types.Scene.cm_collections_import = bpy.props.CollectionProperty(
+        type=CM_collection_property
     )
 
     bpy.types.Scene.cm_category = bpy.props.EnumProperty(  # type: ignore
@@ -41,7 +53,11 @@ def register():
         default="EXPORT",
     )
 
-    bpy.types.Scene.cm_collections_index = bpy.props.IntProperty(
+    bpy.types.Scene.cm_collections_export_index = bpy.props.IntProperty(
+        name="Index", default=0
+    )
+
+    bpy.types.Scene.cm_collections_import_index = bpy.props.IntProperty(
         name="Index", default=0
     )
 
