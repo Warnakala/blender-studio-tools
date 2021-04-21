@@ -1,4 +1,5 @@
 import bpy
+from . import logger
 from . import cache
 from . import cmglobals
 from . import blend
@@ -8,9 +9,8 @@ from . import props
 from . import opsdata
 from . import ops
 from . import ui
-from .logger import LoggerFactory
 
-logger = LoggerFactory.getLogger(__name__)
+logg = logger.LoggerFactory.getLogger(__name__)
 
 bl_info = {
     "name": "Cache Manager",
@@ -30,7 +30,8 @@ _need_reload = "ops" in locals()
 if _need_reload:
     import importlib
 
-    logger.info("-START- Reloading Cache Manager")
+    logg.info("-START- Reloading Cache Manager")
+    logger = importlib.reload(logger)
     cache = importlib.reload(cache)
     cmglobals = importlib.reload(cmglobals)
     blend = importlib.reload(blend)
@@ -40,25 +41,25 @@ if _need_reload:
     opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
-    logger.info("-END- Reloading Cache Manager")
+    logg.info("-END- Reloading Cache Manager")
 
 
 def register():
-    logger.info("-START- Registering Cache Manager")
+    logg.info("-START- Registering Cache Manager")
     prefs.register()
     props.register()
     ops.register()
     ui.register()
-    logger.info("-END- Registering Cache Manager")
+    logg.info("-END- Registering Cache Manager")
 
 
 def unregister():
-    logger.info("-START- Unregistering Cache Manager")
+    logg.info("-START- Unregistering Cache Manager")
     ui.unregister()
     ops.unregister()
     props.unregister()
     prefs.unregister()
-    logger.info("-END- Unregistering Cache Manager")
+    logg.info("-END- Unregistering Cache Manager")
 
 
 if __name__ == "__main__":

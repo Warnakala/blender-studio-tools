@@ -4,7 +4,7 @@ import contextlib
 from typing import List, Any, Set, cast
 from pathlib import Path
 
-from .logger import LoggerFactory
+from .logger import LoggerFactory, gen_processing_string, log_new_lines
 from . import cache, prefs, props, opsdata, cmglobals
 from .cache import CacheConfigFactory
 
@@ -57,21 +57,41 @@ class CM_OT_cache_export(bpy.types.Operator):
         context.window_manager.progress_begin(0, len(collections))
 
         for idx, coll in enumerate(collections):
+            log_new_lines(2)
+            logger.info("%s", gen_processing_string(coll.name))
+
             context.window_manager.progress_update(idx)
             # identifier if coll is valid?
 
             # deselect all
             bpy.ops.object.select_all(action="DESELECT")
 
-            # create selection for alembic_export operator
+            # create object list to be exported
             object_list = cache.get_valid_cache_objects(coll)
 
             # mute drivers
             muted_drivers = opsdata.disable_drivers(object_list)
 
-            # ensure that objects that have their drivers muted are visible for export
-            objs_to_be_hidden = opsdata.ensure_obj_vis_for_disabled_drivers(
-                muted_drivers
+            logger.info(
+                "Disabled drivers for export %s",
+                ", ".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
+            )
+
+            # ensure that all objects are visible for export
+            objs_to_be_hidden = opsdata.ensure_obj_vis(object_list)
+
+            logger.info(
+                "Show objects in viewport for export %s",
+                ", ".join([obj.name for obj in objs_to_be_hidden]),
+            )
+
+            # ensure the all collections are visible for export
+            # otherwise object in it will not be exported
+            colls_to_be_hidden = opsdata.ensure_coll_vis(coll)
+
+            logger.info(
+                "Show collections in viewport for export %s",
+                ", ".join([coll.name for coll in colls_to_be_hidden]),
             )
 
             # select objects for bpy.ops.wm.alembic_export
@@ -128,10 +148,28 @@ class CM_OT_cache_export(bpy.types.Operator):
             # hide objs again
             for obj in objs_to_be_hidden:
                 obj.hide_viewport = True
-                logger.info("Hide object in viewport after export %s", obj.name)
+
+            logger.info(
+                "Hide objects in viewport after export %s",
+                ", ".join([obj.name for obj in objs_to_be_hidden]),
+            )
+
+            # hide colls again
+            for coll in colls_to_be_hidden:
+                obj.hide_viewport = True
+
+            logger.info(
+                "Hide collections in viewport after export %s",
+                ", ".join([coll.name for coll in colls_to_be_hidden]),
+            )
 
             # entmute driver
             opsdata.enable_drivers(muted_drivers)
+
+            logger.info(
+                "Enabled drivers after export %s",
+                ", ".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
+            )
 
             # success log for this collections
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
@@ -281,7 +319,8 @@ class CM_OT_cache_import(bpy.types.Operator):
 
         for idx, coll in enumerate(collections):
             context.window_manager.progress_update(idx)
-
+            log_new_lines(2)
+            logger.info("%s", gen_processing_string(coll.name))
             # skip if  no cachefile assigned
             if not coll.cm.cachefile:
                 failed.append(coll)
@@ -333,31 +372,36 @@ class CM_OT_cache_import(bpy.types.Operator):
     def _rm_modifiers(self, obj: bpy.types.Object) -> int:
         modifiers = list(obj.modifiers)
         a_index: int = -1
+        rm_mods = []
         for idx, m in enumerate(modifiers):
             if m.type not in opsdata.MODIFIERS_KEEP:
 
-                logger.info("Removing modifier: %s", m.name)
                 obj.modifiers.remove(m)
+                rm_mods.append(m.name)
 
                 # save index of first armature modifier to
                 if a_index == -1 and m.type == "ARMATURE":
                     a_index = idx
+
+        logger.info("%s Removed modifiers: %s", obj.name, ", ".join(rm_mods))
         return a_index
 
     def _disable_modifiers(self, obj: bpy.types.Object) -> int:
         modifiers = list(obj.modifiers)
         a_index: int = -1
+        disabled_mods = []
         for idx, m in enumerate(modifiers):
             if m.type not in opsdata.MODIFIERS_KEEP:
-                logger.info("Disabling modifier: %s", m.name)
                 m.show_viewport = False
                 m.show_render = False
                 m.show_in_editmode = False
+                disabled_mods.append(m.name)
 
                 # save index of first armature modifier to
                 if a_index == -1 and m.type == "ARMATURE":
                     a_index = idx
 
+        logger.info("%s Disabled modifiers: %s", obj.name, ", ".join(disabled_mods))
         return a_index
 
     def _ensure_cachefile(self, cachefile_path: str) -> bpy.types.CacheFile:

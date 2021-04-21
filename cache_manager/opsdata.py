@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Generator
 
 import bpy
 
@@ -50,6 +50,14 @@ def get_cachefiles_enum(
     return _cachefiles_enum_list
 
 
+def traverse_collection_tree(
+    collection: bpy.types.Collection,
+) -> Generator[bpy.types.Collection, None, None]:
+    yield collection
+    for child in collection.children:
+        yield from traverse_collection_tree(child)
+
+
 def disable_drivers(objects: List[bpy.types.Context]) -> List[bpy.types.Driver]:
     global DRIVERS_MUTE
 
@@ -68,8 +76,6 @@ def disable_drivers(objects: List[bpy.types.Context]) -> List[bpy.types.Driver]:
                     continue
 
                 driver.mute = True
-                logger.info("Object %s disabled driver: %s", obj.name, driver.data_path)
-
                 muted_drivers.append(driver)
 
     return muted_drivers
@@ -93,11 +99,31 @@ def ensure_obj_vis_for_disabled_drivers(
     return objs
 
 
+def ensure_obj_vis(
+    objects: List[bpy.types.Object],
+) -> List[bpy.types.Object]:
+
+    objs_to_show: List[bpy.types.Object] = [obj for obj in objects if obj.hide_viewport]
+
+    # show viewport to ensure export
+    for obj in objs_to_show:
+        obj.hide_viewport = False
+
+    return objs_to_show
+
+
+def ensure_coll_vis(parent_coll: bpy.types.Collection) -> List[bpy.types.Collection]:
+    colls_to_show: List[bpy.types.Collection] = [
+        coll for coll in traverse_collection_tree(parent_coll) if coll.hide_viewport
+    ]
+
+    for coll in colls_to_show:
+        coll.hide_viewport = False
+
+    return colls_to_show
+
+
 def enable_drivers(muted_drivers: List[bpy.types.Driver]) -> List[bpy.types.Driver]:
     for driver in muted_drivers:
         driver.mute = False
-        logger.info(
-            "Object %s enabled driver: %s", driver.id_data.name, driver.data_path
-        )
-
     return muted_drivers

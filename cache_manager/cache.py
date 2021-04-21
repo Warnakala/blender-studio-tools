@@ -10,7 +10,7 @@ from copy import deepcopy
 import bpy
 
 from . import prefs, props, cmglobals, opsdata
-from .logger import LoggerFactory
+from .logger import LoggerFactory, gen_processing_string, log_new_lines
 
 logger = LoggerFactory.getLogger(__name__)
 
@@ -198,6 +198,7 @@ class CacheConfig:
         coll_to_lib_mapping = self._get_coll_to_lib_mapping()
 
         for coll in colls:
+            logger.info("%s", gen_processing_string(coll.name + " animation data"))
 
             libfile = coll_to_lib_mapping[coll.name]
 
@@ -219,19 +220,16 @@ class CacheConfig:
                 if not coll in obj.users_collection:
                     continue
 
-                logger.info("Importing animation data for object %s", obj.name)
+                driven_props_list = []  # for log
                 # get property that was driven and set keyframes
                 for driver_dict in self._json_obj["libs"][libfile]["animation_data"][
                     obj_str
                 ]["drivers"]:
+
                     data_path_str = driver_dict["data_path"]
-                    driven_prop = f"bpy.data.objects[{obj_str}].{data_path_str}"
-                    logger.info(
-                        "Importing data %s for frame range(%s, %s)",
-                        driven_prop,
-                        frame_in,
-                        frame_out,
-                    )
+                    # for log
+                    driven_props_list.append(data_path_str)
+
                     # insert keyframe for frames in json_obj
                     for frame in range(frame_in, frame_out + 1):
 
@@ -252,6 +250,13 @@ class CacheConfig:
                             f"Frame {frame}: Keying {obj.name} with value: {prop_value}"
                         )
                         """
+                logger.info(
+                    "%s imported animation (%s, %s) for props: %s",
+                    obj.name,
+                    frame_in,
+                    frame_out,
+                    " ,".join(driven_props_list),
+                )
 
         logger.info("-END- Importing animation data")
 
@@ -301,6 +306,9 @@ class CacheConfigFactory:
     ) -> CacheConfig:
         _json_obj: Dict[str, Any] = deepcopy(_CACHECONFIG_TEMPL)
 
+        log_new_lines(2)
+        logger.info("-START- Creating CacheConfig")
+
         # populate metadata
         cls._populate_metadata(context, _json_obj)
 
@@ -308,11 +316,12 @@ class CacheConfigFactory:
         cls._populate_libs(context, _json_obj)
 
         # get drive values for each frame
-        cls._store_driver_values(context, _json_obj)
+        cls._read_and_store_animation_data(context, _json_obj)
 
         # save json obj to disk
         save_as_json(_json_obj, filepath)
         logger.info("Generated cacheconfig and saved to: %s", filepath.as_posix())
+        logger.info("-END- Creating CacheConfig")
 
         return CacheConfig(filepath)
 
@@ -322,6 +331,7 @@ class CacheConfigFactory:
         _json_obj["meta"]["creation_date"] = get_current_time_string(_DATE_FORMAT)
         _json_obj["meta"]["frame_start"] = context.scene.frame_start
         _json_obj["meta"]["frame_end"] = context.scene.frame_end
+        logger.info("Created metadata")
 
     @classmethod
     def _populate_libs(
@@ -350,10 +360,18 @@ class CacheConfigFactory:
                 coll.name
             ] = _col_dict
 
-            cls._populate_with_drivers(_json_obj, coll)
+            cls._populate_with_animation_data(_json_obj, coll)
+
+        # log
+        for libfile in _json_obj["libs"]:
+            logger.info(
+                "Gathered libfile: %s with collections: %s",
+                libfile,
+                ", ".join(_json_obj["libs"][libfile]["data_from"]["collections"]),
+            )
 
     @classmethod
-    def _populate_with_drivers(cls, _json_obj, coll):
+    def _populate_with_animation_data(cls, _json_obj, coll):
         lib = coll.override_library.reference.library
         libfile = Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
 
@@ -396,15 +414,22 @@ class CacheConfigFactory:
                 driver_dict = deepcopy(_DRIVERDICT_TEMPL)
                 driver_dict["data_path"] = driver.data_path
                 drivers_key.append(driver_dict)
+        # log
+        logger.info("Populated CacheConfig with animated properties.")
 
     @classmethod
-    def _store_driver_values(
+    def _read_and_store_animation_data(
         cls, context, _json_obj
     ):  # TODO: list of collections as filter input
         # get driver values for each frame
+        fin = context.scene.frame_start
+        fout = context.scene.frame_end
+        frame_range = range(fin, fout + 1)
+
         with temporary_current_frame(context) as original_curframe:
-            for frame in range(context.scene.frame_start, context.scene.frame_end + 1):
+            for frame in frame_range:
                 context.scene.frame_set(frame)
+                logger.info("Storing animation data for frame %i", frame)
 
                 for libfile in _json_obj["libs"]:
                     for obj_str in _json_obj["libs"][libfile]["animation_data"]:
@@ -412,9 +437,17 @@ class CacheConfigFactory:
                         for driver_dict in _json_obj["libs"][libfile]["animation_data"][
                             obj_str
                         ]["drivers"]:
+
                             data_path_str = driver_dict["data_path"]
                             driven_value = obj.path_resolve(data_path_str)
                             driver_dict["value"].append(driven_value)
+
+        # log
+        logger.info(
+            "Stored data for animated properties (%i, %i).",
+            fin,
+            fout,
+        )
 
     @classmethod
     def load_config_from_file(cls, filepath: Path) -> CacheConfig:

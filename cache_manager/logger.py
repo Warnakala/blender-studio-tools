@@ -49,3 +49,11 @@ class LoggerLevelManager:
         for logger, level in cls.logger_levels:
             logger.setLevel(level)
         logger.info("Restored logging Levels.")
+
+
+def gen_processing_string(item: str) -> str:
+    return f"---Processing {item}".ljust(50, "-")
+
+
+def log_new_lines(multiplier: int) -> None:
+    print("\n" * multiplier)
