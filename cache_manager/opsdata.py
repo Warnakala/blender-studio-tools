@@ -8,7 +8,12 @@ from .logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(__name__)
 
-MODIFIERS_KEEP: List[str] = ["SUBSURF", "PARTICLE_SYSTEM"]  # DATA_TRANSFER
+MODIFIERS_KEEP: List[str] = [
+    "SUBSURF",
+    "PARTICLE_SYSTEM",
+    "MESH_SEQUENCE_CACHE",
+]  # DATA_TRANSFER
+
 DRIVERS_MUTE: List[str] = [
     "hide_viewport",
     "hide_render",

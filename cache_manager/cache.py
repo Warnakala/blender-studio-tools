@@ -119,24 +119,12 @@ class CacheConfig:
     def json_obj(self) -> List[Dict[str, Any]]:
         return self._json_obj
 
-    def process(self, context: bpy.types.Context, link: bool = True) -> None:
-        logger.info("-START- Processing cacheconfig: %s", self.filepath.as_posix())
-        if not self._is_filepath():
-            raise RuntimeError("Failed to process CacheConfig. Filepath is not valid")
-
-        colls = self._import_collections(context, link=link)
-        self._import_animation_data(colls)
-
-        logger.info("-END- Processing cacheconfig: %s", self.filepath.as_posix())
-
-    def _import_collections(
+    def import_collections(
         self, context: bpy.types.Context, link: bool = True
     ) -> List[bpy.types.Collection]:
 
         # list of collections to track which ones got imported
         colls: List[bpy.types.Collection] = []
-
-        logger.info("-START- Importing collections")
 
         for libfile in self._json_obj["libs"]:
 
@@ -176,20 +164,22 @@ class CacheConfig:
             for coll_name in colldata:
                 cachefile = colldata[coll_name]["cachefile"]
 
-                # link collection in scene
                 """
                 try:
                     bpy.context.scene.collection.children.link(coll)
                 except RuntimeError:
                     logger.warning("Collection %s already in blendfile.", coll_name)
                 """
+                # instance collection to scene so adding override works properly
                 bpy.ops.object.collection_instance_add(collection=coll_name)
 
                 # deselect all
                 bpy.ops.object.select_all(action="DESELECT")
+
                 # needs active object (coll instance)
                 obj = bpy.data.objects[coll_name]
                 context.view_layer.objects.active = obj
+
                 # add lib override
                 bpy.ops.object.make_override_library()
 
@@ -201,19 +191,20 @@ class CacheConfig:
                 self._add_coll_to_cm_collections(context, coll)
                 colls.append(coll)
 
-        logger.info("-END- Importing collections")
         return colls
 
-    def _import_animation_data(self, colls: List[bpy.types.Collection]) -> None:
+    def import_animation_data(self, colls: List[bpy.types.Collection]) -> None:
 
         frame_in = self._json_obj["meta"]["frame_start"]
         frame_out = self._json_obj["meta"]["frame_end"]
 
-        logger.info("-START- Importing animation data")
+        log_new_lines(1)
+        logger.info("-START- Importing Animation Data")
 
         coll_to_lib_mapping = _get_coll_to_lib_mapping(self._json_obj)
 
         for coll in colls:
+            log_new_lines(1)
             logger.info("%s", gen_processing_string(coll.name + " animation data"))
 
             libfile = coll_to_lib_mapping[coll.name]
@@ -273,8 +264,8 @@ class CacheConfig:
                     frame_out,
                     " ,".join(driven_props_list),
                 )
-
-        logger.info("-END- Importing animation data")
+        log_new_lines(1)
+        logger.info("-END- Importing Animation Data")
 
     def _add_coll_to_cm_collections(
         self, context: bpy.types.Context, coll: bpy.types.Collection
@@ -343,6 +334,8 @@ class CacheConfigFactory:
         # save json obj to disk
         save_as_json(_json_obj, filepath)
         logger.info("Generated cacheconfig and saved to: %s", filepath.as_posix())
+
+        log_new_lines(1)
         logger.info("-END- %s CacheConfig", noun)
 
         return CacheConfig(filepath)

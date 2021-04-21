@@ -4,8 +4,8 @@ from typing import List, Tuple
 import bpy
 from .ops import (
     CM_OT_cache_export,
-    CM_OT_cache_import,
-    CM_OT_process_cacheconfig,
+    CM_OT_import_cache,
+    CM_OT_import_collections,
     CM_OT_cache_list_actions,
     CM_OT_assign_cachefile,
     CM_OT_cache_show,
@@ -121,7 +121,7 @@ class CM_UL_collection_cache_list_import(bpy.types.UIList):
             ).index = index
 
             split.operator(
-                CM_OT_cache_import.bl_idname,
+                CM_OT_import_cache.bl_idname,
                 text="",
                 icon="IMPORT",
             ).index = index
@@ -166,7 +166,7 @@ class CM_PT_vi3d_cache_import(bpy.types.Panel):
         # cacheconfig
         row = layout.row()
         row.prop(addon_prefs, "cacheconfig", text="Cacheconfig")
-        row.operator(CM_OT_process_cacheconfig.bl_idname, icon="PLAY", text="")
+        row.operator(CM_OT_import_collections.bl_idname, icon="PLAY", text="")
 
         # uilist
         row = layout.row()
@@ -190,7 +190,7 @@ class CM_PT_vi3d_cache_import(bpy.types.Panel):
 
         row = layout.row(align=True)
         row.operator(
-            CM_OT_cache_import.bl_idname,
+            CM_OT_import_cache.bl_idname,
             text=f"Import Cache for {len(collections)} Collections",
             icon="IMPORT",
         ).do_all = True

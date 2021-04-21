@@ -42,6 +42,7 @@ class CM_OT_cache_export(bpy.types.Operator):
         cacheconfig_path = addon_prefs.cacheconfig_path
         succeeded = []
         failed = []
+        log_new_lines(1)
         logger.info("-START- Exporting Cache")
 
         # already of type Path, convenience auto complete
@@ -187,6 +188,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             f"Exported {len(succeeded)} Collections | Failed: {len(failed)}.",
         )
 
+        log_new_lines(1)
         logger.info("-END- Exporting Cache")
         return {"FINISHED"}
 
@@ -233,26 +235,31 @@ class CM_OT_cache_list_actions(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CM_OT_process_cacheconfig(bpy.types.Operator):
+class CM_OT_import_collections(bpy.types.Operator):
     """Move items up and down, add and remove"""
 
-    bl_idname = "cm.process_cacheconfig"
-    bl_label = "Cache List Actions"
-    bl_description = "Add and remove items"
+    bl_idname = "cm.import_collections"
+    bl_label = "Import Colletions"
+    bl_description = "Import Colletions from Cacheconfig"
     bl_options = {"REGISTER"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return addon_prefs.is_cachedir_valid
+        return addon_prefs.is_cacheconfig_valid
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
         cacheconfig_path = addon_prefs.cacheconfig_path
 
+        log_new_lines(1)
+        logger.info("-START- Importing Collections")
+
         cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
-        cacheconfig.load(cacheconfig_path)
-        cacheconfig.process(context)
+        cacheconfig.import_collections(context)
+
+        log_new_lines(1)
+        logger.info("-END- Importing Collections")
 
         return {"FINISHED"}
 
@@ -290,18 +297,30 @@ class CM_OT_assign_cachefile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CM_OT_cache_import(bpy.types.Operator):
-    bl_idname = "cm.cache_import"
+class CM_OT_import_cache(bpy.types.Operator):
+    bl_idname = "cm.import_cache"
     bl_label = "Import Cache"
-    bl_description = "Imports alembic cache for collections"
+    bl_description = (
+        "Imports alembic cache and animationdata from cacheconfig for collections"
+    )
 
     do_all: bpy.props.BoolProperty(
         name="Process All", description="Process all cache collections", default=False
     )
     index: bpy.props.IntProperty(name="Index")
 
-    def execute(self, context):
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
+        return addon_prefs.is_cacheconfig_valid
+
+    def execute(self, context):
+        log_new_lines(1)
+        logger.info("-START- Importing Cache")
+        addon_prefs = prefs.addon_prefs_get(context)
+        cacheconfig_path = addon_prefs.cacheconfig_path
+        cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
+
         succeeded = []
         failed = []
         modifier_name = cmglobals.MODIFIER_NAME
@@ -313,19 +332,30 @@ class CM_OT_cache_import(bpy.types.Operator):
         else:
             collections = [context.scene.cm_collections[self.index].coll_ptr]
 
-        logger.info("-START- Importing Cache")
-        # begin progress udpate
-        context.window_manager.progress_begin(0, len(collections))
-
-        for idx, coll in enumerate(collections):
-            context.window_manager.progress_update(idx)
-            log_new_lines(2)
-            logger.info("%s", gen_processing_string(coll.name))
-            # skip if  no cachefile assigned
+        # skip if  no cachefile assigned
+        valid_colls = []
+        for coll in collections:
             if not coll.cm.cachefile:
                 failed.append(coll)
                 logger.warning("%s has no cachefile assigned. Skip.", coll.name)
                 continue
+            valid_colls.append(coll)
+
+        collections = valid_colls
+
+        # load animation data from config
+        cacheconfig.import_animation_data(collections)
+
+        log_new_lines(1)
+        logger.info("-START- Importing Alembic Cache")
+        # begin progress udpate
+        context.window_manager.progress_begin(0, len(collections))
+
+        # load alembic as mesh sequence cache
+        for idx, coll in enumerate(collections):
+            context.window_manager.progress_update(idx)
+            log_new_lines(2)
+            logger.info("%s", gen_processing_string(coll.name))
 
             # ensure cachefile is loaded or reloaded
             cachefile = self._ensure_cachefile(coll.cm.cachefile)
@@ -359,6 +389,9 @@ class CM_OT_cache_import(bpy.types.Operator):
             f"Importing Cache for {len(succeeded)} Collections | Failed: {len(failed)}.",
         )
 
+        log_new_lines(1)
+        logger.info("-END- Importing Alembic Cache")
+        log_new_lines(1)
         logger.info("-END- Importing Cache")
         return {"FINISHED"}
 
@@ -653,6 +686,7 @@ class CM_OT_cache_remove(bpy.types.Operator):
             {"INFO"},
             f"Removed Cache of {len(collections)} Collections",
         )
+
         logger.info("-END- Removing Cache")
         return {"FINISHED"}
 
@@ -661,13 +695,13 @@ class CM_OT_cache_remove(bpy.types.Operator):
 
 classes: List[Any] = [
     CM_OT_cache_export,
-    CM_OT_cache_import,
+    CM_OT_import_cache,
     CM_OT_cache_list_actions,
     CM_OT_assign_cachefile,
     CM_OT_cache_show,
     CM_OT_cache_hide,
     CM_OT_cache_remove,
-    CM_OT_process_cacheconfig,
+    CM_OT_import_collections,
 ]
 
 
