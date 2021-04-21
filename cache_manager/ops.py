@@ -176,7 +176,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             succeeded.append(coll)
 
         # generate cacheconfig
-        CacheConfigFactory.gen_config_from_scene(context, cacheconfig_path)
+        CacheConfigFactory.gen_config_from_colls(context, collections, cacheconfig_path)
 
         # end progress update
         context.window_manager.progress_update(len(collections))
