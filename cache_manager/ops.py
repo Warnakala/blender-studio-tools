@@ -68,7 +68,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             object_list = cache.get_valid_cache_objects(coll)
 
             # mute drivers
-            muted_drivers = opsdata.disable_drivers(object_list)
+            muted_drivers = opsdata.disable_drivers(object_list, modifiers=False)
 
             logger.info(
                 "Disabled drivers for export:\n%s",

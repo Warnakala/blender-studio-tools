@@ -63,7 +63,9 @@ def traverse_collection_tree(
         yield from traverse_collection_tree(child)
 
 
-def disable_drivers(objects: List[bpy.types.Object]) -> List[bpy.types.Driver]:
+def disable_drivers(
+    objects: List[bpy.types.Object], modifiers: bool = True
+) -> List[bpy.types.Driver]:
     global DRIVERS_MUTE
 
     # store driver that were muted to entmute them after
@@ -76,10 +78,11 @@ def disable_drivers(objects: List[bpy.types.Object]) -> List[bpy.types.Driver]:
                 data_path_split = driver.data_path.split(".")
                 data_path_suffix = data_path_split[-1]
 
-                # only disable drivers on object not on modifiers
-                if len(data_path_split) > 1:
-                    if data_path_split[0].startswith("modifiers"):
-                        continue
+                if not modifiers:
+                    # only disable drivers on object not on modifiers
+                    if len(data_path_split) > 1:
+                        if data_path_split[0].startswith("modifiers"):
+                            continue
 
                 if data_path_suffix not in DRIVERS_MUTE:
                     continue
