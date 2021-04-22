@@ -167,8 +167,7 @@ class CacheConfig:
 
                 instance_objs = []
 
-                coll_variants = sorted(colldata[coll_name], key=lambda x: x["name"])
-
+                coll_variants = colldata[coll_name]
                 # for each variant add instance object
                 for variant_name in coll_variants:
 
@@ -401,34 +400,22 @@ class CacheConfigFactory:
             libfile = Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
 
             # gen libfile key in _json_obj["libs"] if not existent
-            if libfile not in _json_obj["libs"]:
-                _json_obj["libs"][libfile] = deepcopy(_LIBDICT_TEMPL)
+            _json_obj["libs"].setdefault(libfile, deepcopy(_LIBDICT_TEMPL))
 
             # gen coll_ref key in _json_obj["libs"][libfile]['data_from']["collections"] if not existent
-            if (
-                coll_ref.name
-                not in _json_obj["libs"][libfile]["data_from"]["collections"]
-            ):
-                _json_obj["libs"][libfile]["data_from"]["collections"][
-                    coll_ref.name
-                ] = {}
+            _json_obj["libs"][libfile]["data_from"]["collections"].setdefault(
+                coll_ref.name, {}
+            )
 
             # gen coll variant key in _json_obj["libs"][libfile]['data_from']["collections"][coll_ref] if not existent
-            if (
-                coll.name
-                not in _json_obj["libs"][libfile]["data_from"]["collections"][
-                    coll_ref.name
-                ]
-            ):
-                _json_obj["libs"][libfile]["data_from"]["collections"][coll_ref.name][
-                    coll.name
-                ] = {}
+            _json_obj["libs"][libfile]["data_from"]["collections"][
+                coll_ref.name
+            ].setdefault(coll.name, {})
 
             # create collection dict based on this variant collection
             _col_dict = {
                 "cachefile": gen_cachepath_collection(coll, context).as_posix(),
             }
-
             # update variant collection dict
             _json_obj["libs"][libfile]["data_from"]["collections"][coll_ref.name][
                 coll.name
@@ -483,10 +470,9 @@ class CacheConfigFactory:
                     driven_value = driver.id_data.path_resolve(driver.data_path)
 
                     # gen obj.name key in _json_obj["animation_data"] if not existent
-                    if obj.name not in _json_obj["libs"][libfile]["animation_data"]:
-                        _json_obj["libs"][libfile]["animation_data"][
-                            obj.name
-                        ] = deepcopy(_OBJECTDICT_TEMPL)
+                    _json_obj["libs"][libfile]["animation_data"].setdefault(
+                        obj.name, deepcopy(_OBJECTDICT_TEMPL)
+                    )
 
                     # append driver dict
                     object_key = _json_obj["libs"][libfile]["animation_data"][obj.name]
