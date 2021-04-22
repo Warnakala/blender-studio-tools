@@ -67,11 +67,6 @@ class CM_OT_cache_export(bpy.types.Operator):
             # create object list to be exported
             object_list = cache.get_valid_cache_objects(coll)
 
-            """
-            dlist = [ #TODO: driver hide leads to wrong export on teeth for sprite
-                o for o in object_list if not o.name.startswith("GEO-sprite_teeth_btm")
-            ]
-            """
             # mute drivers
             muted_drivers = opsdata.disable_drivers(object_list)
 

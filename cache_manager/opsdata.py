@@ -63,7 +63,7 @@ def traverse_collection_tree(
         yield from traverse_collection_tree(child)
 
 
-def disable_drivers(objects: List[bpy.types.Context]) -> List[bpy.types.Driver]:
+def disable_drivers(objects: List[bpy.types.Object]) -> List[bpy.types.Driver]:
     global DRIVERS_MUTE
 
     # store driver that were muted to entmute them after
