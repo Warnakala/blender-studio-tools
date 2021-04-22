@@ -71,7 +71,7 @@ def read_json(filepath: Path) -> Any:
 
 def save_as_json(data: Any, filepath: Path) -> None:
     with open(filepath.as_posix(), "w+") as file:
-        json.dump(data, file, indent=4)
+        json.dump(data, file)
 
 
 @contextlib.contextmanager
@@ -163,13 +163,13 @@ class CacheConfig:
                     )
 
             # link collections in current scene and add cm.cachfile property
-            for coll_name in colldata:
+            for coll_name in sorted(colldata):
 
                 instance_objs = []
 
                 coll_variants = colldata[coll_name]
                 # for each variant add instance object
-                for variant_name in coll_variants:
+                for variant_name in sorted(coll_variants):
 
                     source_collection = bpy.data.collections[coll_name]
 
@@ -224,9 +224,11 @@ class CacheConfig:
                         variant_name,
                     )
 
-        return colls
+        return sorted(colls, key=lambda x: x.name)
 
     def import_animation_data(self, colls: List[bpy.types.Collection]) -> None:
+
+        colls = sorted(colls, key=lambda x: x.name)
 
         frame_in = self._json_obj["meta"]["frame_start"]
         frame_out = self._json_obj["meta"]["frame_end"]
@@ -340,6 +342,8 @@ class CacheConfigFactory:
 
         _json_obj: Dict[str, Any] = deepcopy(_CACHECONFIG_TEMPL)
 
+        colls = sorted(colls, key=lambda x: x.name)
+
         # if cacheconfig already exists load it and update entries
         if filepath.exists():
             logger.info(
@@ -392,6 +396,8 @@ class CacheConfigFactory:
         colls: List[bpy.types.Collection],
         _json_obj: Dict[str, Any],
     ) -> Dict[str, Any]:
+
+        colls = sorted(colls, key=lambda x: x.name)
 
         # get librarys
         for coll in colls:
