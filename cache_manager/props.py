@@ -10,6 +10,7 @@ class CM_collection_property(bpy.types.PropertyGroup):
 class CM_property_group_collection(bpy.types.PropertyGroup):
     cachefile: bpy.props.StringProperty(name="Cachefile", subtype="FILE_PATH")
     is_cache_loaded: bpy.props.BoolProperty(name="Cache Loaded", default=False)
+    is_cache_hidden: bpy.props.BoolProperty(name="Cache Hidden", default=False)
 
 
 def get_cache_collections_import(

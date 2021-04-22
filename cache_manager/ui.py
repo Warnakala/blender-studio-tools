@@ -156,10 +156,12 @@ class CM_UL_collection_cache_list_import(bpy.types.UIList):
     def draw_item(
         self, context, layout, data, item, icon, active_data, active_propname, index
     ):
+        coll = item.coll_ptr
+
         if self.layout_type in {"DEFAULT", "COMPACT"}:
             split = layout.split(factor=0.4, align=True)
             split.prop(
-                item.coll_ptr,
+                coll,
                 "name",
                 text="",
                 emboss=False,
@@ -167,7 +169,7 @@ class CM_UL_collection_cache_list_import(bpy.types.UIList):
             )
             split = split.split(factor=0.7, align=True)
 
-            cachefile = item.coll_ptr.cm.cachefile
+            cachefile = coll.cm.cachefile
             op_text = "Select Cachefile"
             if cachefile:
                 op_text = Path(cachefile).name
@@ -176,23 +178,25 @@ class CM_UL_collection_cache_list_import(bpy.types.UIList):
                 CM_OT_assign_cachefile.bl_idname, text=op_text, icon="DOWNARROW_HLT"
             ).index = index
 
-            split.operator(
-                CM_OT_import_cache.bl_idname,
-                text="",
-                icon="IMPORT",
-            ).index = index
+            if not coll.cm.is_cache_loaded:
+                split.operator(
+                    CM_OT_import_cache.bl_idname,
+                    text="",
+                    icon="IMPORT",
+                ).index = index
+            else:
+                split.operator(
+                    CM_OT_cache_remove.bl_idname, text="", icon="REMOVE"
+                ).index = index
 
-            split.operator(
-                CM_OT_cache_show.bl_idname, text="", icon="HIDE_OFF"
-            ).index = index
-
-            split.operator(
-                CM_OT_cache_hide.bl_idname, text="", icon="HIDE_ON"
-            ).index = index
-
-            split.operator(
-                CM_OT_cache_remove.bl_idname, text="", icon="REMOVE"
-            ).index = index
+            if coll.cm.is_cache_hidden:
+                split.operator(
+                    CM_OT_cache_show.bl_idname, text="", icon="HIDE_ON"
+                ).index = index
+            else:
+                split.operator(
+                    CM_OT_cache_hide.bl_idname, text="", icon="HIDE_OFF"
+                ).index = index
 
         elif self.layout_type in {"GRID"}:
             layout.alignment = "CENTER"

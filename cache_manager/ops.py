@@ -380,6 +380,9 @@ class CM_OT_import_cache(bpy.types.Operator):
                 self._config_cache_modifier(context, mod, modifier_index, cachefile)
                 self._config_cache_constraint(context, con, cachefile)
 
+            # set is_cache_loaded property
+            coll.cm.is_cache_loaded = True
+
             logger.info("%s imported cache %s", coll.name, cachefile.filepath)
             succeeded.append(coll)
 
@@ -586,6 +589,9 @@ class CM_OT_cache_hide(bpy.types.Operator):
                     con = obj.constraints.get(constraint_name)
                     con.mute = True
 
+            # set is_cache_hidden prop for ui
+            coll.cm.is_cache_hidden = True
+
             logger.info("Hide Cache for %s", coll.name)
 
         self.report(
@@ -636,6 +642,9 @@ class CM_OT_cache_show(bpy.types.Operator):
                     con = obj.constraints.get(constraint_name)
                     con.mute = False
 
+            #set is_cache_hidden prop for ui
+            coll.cm.is_cache_hidden = False
+
             logger.info("Unhid Cache for %s", coll.name)
 
         self.report(
@@ -682,6 +691,9 @@ class CM_OT_cache_remove(bpy.types.Operator):
                 if not obj.constraints.find(constraint_name) == -1:
                     con = obj.constraints.get(constraint_name)
                     obj.constraints.remove(con)
+
+            # set is_cache_loaded property
+            coll.cm.is_cache_loaded = False
 
             logger.info("Remove Cache for %s", coll.name)
 
