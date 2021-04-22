@@ -71,8 +71,15 @@ def disable_drivers(objects: List[bpy.types.Context]) -> List[bpy.types.Driver]:
     for obj in objects:
         if obj.animation_data:
             for driver in obj.animation_data.drivers:
+
                 # get suffix of data path, if modifiers modifier name is at the beginning
-                data_path_suffix = driver.data_path.split(".")[-1]
+                data_path_split = driver.data_path.split(".")
+                data_path_suffix = data_path_split[-1]
+
+                # only disable drivers on object not on modifiers
+                if len(data_path_split) > 1:
+                    if data_path_split[0].startswith("modifiers"):
+                        continue
 
                 if data_path_suffix not in DRIVERS_MUTE:
                     continue

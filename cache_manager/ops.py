@@ -67,20 +67,24 @@ class CM_OT_cache_export(bpy.types.Operator):
             # create object list to be exported
             object_list = cache.get_valid_cache_objects(coll)
 
+            """
+            dlist = [ #TODO: driver hide leads to wrong export on teeth for sprite
+                o for o in object_list if not o.name.startswith("GEO-sprite_teeth_btm")
+            ]
+            """
             # mute drivers
             muted_drivers = opsdata.disable_drivers(object_list)
 
             logger.info(
-                "Disabled drivers for export %s",
-                ", ".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
+                "Disabled drivers for export:\n%s",
+                ",\n".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
             )
-
             # ensure that all objects are visible for export
             objs_to_be_hidden = opsdata.ensure_obj_vis(object_list)
 
             logger.info(
-                "Show objects in viewport for export %s",
-                ", ".join([obj.name for obj in objs_to_be_hidden]),
+                "Show objects in viewport for export:\n%s",
+                ",\n".join([obj.name for obj in objs_to_be_hidden]),
             )
 
             # ensure the all collections are visible for export
@@ -88,8 +92,8 @@ class CM_OT_cache_export(bpy.types.Operator):
             colls_to_be_hidden = opsdata.ensure_coll_vis(coll)
 
             logger.info(
-                "Show collections in viewport for export %s",
-                ", ".join([coll.name for coll in colls_to_be_hidden]),
+                "Show collections in viewport for export:\n%s",
+                ",\n".join([coll.name for coll in colls_to_be_hidden]),
             )
 
             # select objects for bpy.ops.wm.alembic_export
@@ -148,8 +152,8 @@ class CM_OT_cache_export(bpy.types.Operator):
                 obj.hide_viewport = True
 
             logger.info(
-                "Hide objects in viewport after export %s",
-                ", ".join([obj.name for obj in objs_to_be_hidden]),
+                "Hide objects in viewport after export:\n%s",
+                ",\n".join([obj.name for obj in objs_to_be_hidden]),
             )
 
             # hide colls again
@@ -157,16 +161,16 @@ class CM_OT_cache_export(bpy.types.Operator):
                 obj.hide_viewport = True
 
             logger.info(
-                "Hide collections in viewport after export %s",
-                ", ".join([coll.name for coll in colls_to_be_hidden]),
+                "Hide collections in viewport after export:\n%s",
+                ",\n".join([coll.name for coll in colls_to_be_hidden]),
             )
 
             # entmute driver
             opsdata.enable_drivers(muted_drivers)
 
             logger.info(
-                "Enabled drivers after export %s",
-                ", ".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
+                "Enabled drivers after export:\n%s",
+                ",\n".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
             )
 
             # success log for this collections
@@ -642,7 +646,7 @@ class CM_OT_cache_show(bpy.types.Operator):
                     con = obj.constraints.get(constraint_name)
                     con.mute = False
 
-            #set is_cache_hidden prop for ui
+            # set is_cache_hidden prop for ui
             coll.cm.is_cache_hidden = False
 
             logger.info("Unhid Cache for %s", coll.name)
