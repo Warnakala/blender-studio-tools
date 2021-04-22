@@ -91,10 +91,10 @@ def _get_coll_to_lib_mapping(_json_obj: Dict[str, Any]) -> Dict[str, str]:
     remapping = {}
     for libfile in _json_obj["libs"]:
         for coll_str in _json_obj["libs"][libfile]["data_from"]["collections"]:
-            for variant in _json_obj["libs"][libfile]["data_from"]["collections"][
+            for variant_name in _json_obj["libs"][libfile]["data_from"]["collections"][
                 coll_str
             ]:
-                remapping[variant["name"]] = libfile
+                remapping[variant_name] = libfile
     return remapping
 
 
@@ -170,12 +170,12 @@ class CacheConfig:
                 coll_variants = sorted(colldata[coll_name], key=lambda x: x["name"])
 
                 # for each variant add instance object
-                for variant in coll_variants:
+                for variant_name in coll_variants:
 
                     source_collection = bpy.data.collections[coll_name]
 
                     instance_obj = bpy.data.objects.new(
-                        name=variant["name"], object_data=None
+                        name=variant_name, object_data=None
                     )
                     instance_obj.instance_collection = source_collection
                     instance_obj.instance_type = "COLLECTION"
@@ -183,16 +183,22 @@ class CacheConfig:
                     parent_collection = bpy.context.view_layer.active_layer_collection
                     parent_collection.collection.objects.link(instance_obj)
 
-                    instance_objs.append((instance_obj, variant))
+                    instance_objs.append(
+                        (
+                            instance_obj,
+                            variant_name,
+                            coll_variants[variant_name]["cachefile"],
+                        )
+                    )
                     logger.info(
                         "Instanced collection: %s as: %s (variant: %s)",
                         source_collection.name,
                         instance_obj.name,
-                        variant["name"],
+                        variant_name,
                     )
 
                 # override the instance objects
-                for obj, variant in instance_objs:
+                for obj, variant_name, cachefile in instance_objs:
 
                     # deselect all
                     bpy.ops.object.select_all(action="DESELECT")
@@ -205,10 +211,9 @@ class CacheConfig:
                     bpy.ops.object.make_override_library()
 
                     # get collection by name
-                    coll = bpy.data.collections[variant["name"]]
-                    # set cm.cachefile property
-                    cachefile = variant["cachefile"]
+                    coll = bpy.data.collections[variant_name]
 
+                    # set cm.cachefile property
                     coll.cm.cachefile = cachefile
                     self._add_coll_to_cm_collections(context, coll)
                     colls.append(coll)
@@ -217,7 +222,7 @@ class CacheConfig:
                         "%s added override and assigned cachefile: %s (variant: %s)",
                         coll.name,
                         cachefile,
-                        variant["name"],
+                        variant_name,
                     )
 
         return colls
@@ -399,25 +404,35 @@ class CacheConfigFactory:
             if libfile not in _json_obj["libs"]:
                 _json_obj["libs"][libfile] = deepcopy(_LIBDICT_TEMPL)
 
-            # gen collk key in _json_obj["libs"][libfile]['data_from']["collections"] if not existent
+            # gen coll_ref key in _json_obj["libs"][libfile]['data_from']["collections"] if not existent
             if (
                 coll_ref.name
                 not in _json_obj["libs"][libfile]["data_from"]["collections"]
             ):
                 _json_obj["libs"][libfile]["data_from"]["collections"][
                     coll_ref.name
-                ] = []
+                ] = {}
 
-            # create collection dict based on this collection
+            # gen coll variant key in _json_obj["libs"][libfile]['data_from']["collections"][coll_ref] if not existent
+            if (
+                coll.name
+                not in _json_obj["libs"][libfile]["data_from"]["collections"][
+                    coll_ref.name
+                ]
+            ):
+                _json_obj["libs"][libfile]["data_from"]["collections"][coll_ref.name][
+                    coll.name
+                ] = {}
+
+            # create collection dict based on this variant collection
             _col_dict = {
-                "name": coll.name,
                 "cachefile": gen_cachepath_collection(coll, context).as_posix(),
             }
 
-            # append collection dict to libdict
-            _json_obj["libs"][libfile]["data_from"]["collections"][
-                coll_ref.name
-            ].append(_col_dict)
+            # update variant collection dict
+            _json_obj["libs"][libfile]["data_from"]["collections"][coll_ref.name][
+                coll.name
+            ] = _col_dict
 
         # log
         for libfile in _json_obj["libs"]:
