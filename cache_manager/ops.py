@@ -68,12 +68,21 @@ class CM_OT_cache_export(bpy.types.Operator):
             object_list = cache.get_valid_cache_objects(coll)
 
             # mute drivers
-            muted_drivers = opsdata.disable_drivers(object_list, modifiers=False)
+            muted_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
 
             logger.info(
                 "Disabled drivers for export:\n%s",
                 ",\n".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
             )
+
+            # ensure modifiers vis have render vis settings does not include MODIFIERS_KEEP
+            mods_to_restore_vis = opsdata.sync_modifier_vis_with_render_setting(
+                object_list
+            )
+
+            # ensure MODIFIERS_KEEP are disabled for export (they will be enabled on import)
+            opsdata.config_modifiers_keep_state(object_list, enable=False)
+
             # ensure that all objects are visible for export
             objs_to_be_hidden = opsdata.ensure_obj_vis(object_list)
 
@@ -159,6 +168,12 @@ class CM_OT_cache_export(bpy.types.Operator):
                 "Hide collections in viewport after export:\n%s",
                 ",\n".join([coll.name for coll in colls_to_be_hidden]),
             )
+
+            # ensure MODIFIERS_KEEP are enabled after export
+            opsdata.config_modifiers_keep_state(object_list, enable=True)
+
+            # restore original modifier vis setting
+            opsdata.restore_modifier_vis(mods_to_restore_vis)
 
             # entmute driver
             opsdata.enable_drivers(muted_drivers)
@@ -345,11 +360,12 @@ class CM_OT_import_cache(bpy.types.Operator):
 
         collections = valid_colls
 
-        # load animation data from config
+        # load animation data from config #disables drivers #TODO: driver disabling should happen here
         cacheconfig.import_animation_data(collections)
 
         log_new_lines(1)
         logger.info("-START- Importing Alembic Cache")
+
         # begin progress udpate
         context.window_manager.progress_begin(0, len(collections))
 
@@ -367,8 +383,9 @@ class CM_OT_import_cache(bpy.types.Operator):
 
             # Loop Through All Objects except Active Object and add Modifier and Constraint
             for obj in object_list:
-                # remove all armature modifiers, get index of first one, use that index for cache modifier
-                a_index = self._disable_modifiers(obj)
+
+                # disable all armature modifiers, get index of first one, use that index for cache modifier
+                a_index = self._config_modifiers(obj)
                 modifier_index = a_index if a_index != -1 else 0
 
                 # ensure cache modifier and constraint
@@ -378,6 +395,9 @@ class CM_OT_import_cache(bpy.types.Operator):
                 # config cache modifier and constraint
                 self._config_cache_modifier(context, mod, modifier_index, cachefile)
                 self._config_cache_constraint(context, con, cachefile)
+
+            # ensure MODIFIERS_KEEP are enabled after import
+            opsdata.config_modifiers_keep_state(object_list, enable=True)
 
             # set is_cache_loaded property
             coll.cm.is_cache_loaded = True
@@ -424,7 +444,7 @@ class CM_OT_import_cache(bpy.types.Operator):
         logger.info("%s Removed modifiers: %s", obj.name, ", ".join(rm_mods))
         return a_index
 
-    def _disable_modifiers(self, obj: bpy.types.Object) -> int:
+    def _config_modifiers(self, obj: bpy.types.Object) -> int:
         modifiers = list(obj.modifiers)
         a_index: int = -1
         disabled_mods = []

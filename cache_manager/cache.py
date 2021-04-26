@@ -256,7 +256,7 @@ class CacheConfig:
                 obj = bpy.data.objects[obj_str]
 
                 # disable drivers
-                opsdata.disable_drivers([obj])
+                opsdata.disable_vis_drivers([obj])
 
                 # only if obj in the filter collections
                 if not coll in obj.users_collection:

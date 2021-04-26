@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Tuple, Generator
+from typing import List, Tuple, Generator, Dict, Union
 
 import bpy
 
@@ -12,7 +12,9 @@ MODIFIERS_KEEP: List[str] = [
     "SUBSURF",
     "PARTICLE_SYSTEM",
     "MESH_SEQUENCE_CACHE",
-]  # DATA_TRANSFER
+    "DATA_TRANSFER",
+    "NORMAL_EDIT",
+]
 
 DRIVERS_MUTE: List[str] = [
     "hide_viewport",
@@ -63,7 +65,7 @@ def traverse_collection_tree(
         yield from traverse_collection_tree(child)
 
 
-def disable_drivers(
+def disable_vis_drivers(
     objects: List[bpy.types.Object], modifiers: bool = True
 ) -> List[bpy.types.Driver]:
     global DRIVERS_MUTE
@@ -96,24 +98,6 @@ def disable_drivers(
     return muted_drivers
 
 
-def ensure_obj_vis_for_disabled_drivers(
-    drivers: List[bpy.types.Driver],
-) -> List[bpy.types.Object]:
-    objs: List[bpy.types.Object] = []
-
-    for driver in drivers:
-        obj = driver.id_data
-        # only show objects that have hidden initial state
-        if obj.hide_viewport and obj not in objs:
-            objs.append(obj)
-    # show viewport to ensure export
-    for obj in objs:
-        obj.hide_viewport = False
-        logger.info("Show object in viewport for export %s", obj.name)
-
-    return objs
-
-
 def ensure_obj_vis(
     objects: List[bpy.types.Object],
 ) -> List[bpy.types.Object]:
@@ -142,3 +126,97 @@ def enable_drivers(muted_drivers: List[bpy.types.Driver]) -> List[bpy.types.Driv
     for driver in muted_drivers:
         driver.mute = False
     return muted_drivers
+
+
+def sync_modifier_vis_with_render_setting(
+    objs: List[bpy.types.Object],
+) -> List[Tuple[bpy.types.Modifier, bool]]:
+
+    synced_mods: List[Tuple[bpy.types.Modifier, bool]] = []
+
+    for obj in objs:
+
+        log_list: List[str] = []
+
+        for idx, m in enumerate(list(obj.modifiers)):
+
+            # do not affect those for export
+            if m.type in MODIFIERS_KEEP:
+                continue
+
+            show_viewport_cache = m.show_viewport
+
+            if show_viewport_cache != m.show_render:
+                m.show_viewport = m.show_render
+                synced_mods.append((m, show_viewport_cache))
+
+                log_list.append(f"{m.name}: {show_viewport_cache} -> {m.show_viewport}")
+
+        if log_list:
+            logger.info(
+                "%s synced modifiers display with render vis: \n%s",
+                obj.name,
+                ",\n".join(log_list),
+            )
+
+    return synced_mods
+
+
+def restore_modifier_vis(modifiers: List[Tuple[bpy.types.Modifier, bool]]) -> None:
+
+    log_list: Dict[str, List[str]] = {}
+
+    for mod, show_viewport in modifiers:
+        show_viewport_cache = mod.show_viewport
+        mod.show_viewport = show_viewport
+
+        log_list.setdefault(mod.id_data.name, [])
+        log_list[mod.id_data.name].append(
+            f"{mod.name}: {show_viewport_cache} -> {mod.show_viewport}"
+        )
+
+    for obj_name in log_list:
+        logger.info(
+            "%s restored modifiers display: \n%s",
+            obj_name,
+            ",\n".join(log_list[obj_name]),
+        )
+
+
+def config_modifiers_keep_state(
+    objs: List[bpy.types.Object],
+    enable: bool = True,
+) -> List[bpy.types.Modifier]:
+
+    modifiers: List[bpy.types.Modifier] = []
+
+    noun = "enabled" if enable else "disabled"
+    for obj in objs:
+
+        log_list: List[str] = []
+
+        for m in list(obj.modifiers):
+
+            if m.type not in MODIFIERS_KEEP:
+                continue
+
+            if enable:
+                m.show_viewport = True
+                m.show_render = True
+
+            else:
+                m.show_viewport = False
+                m.show_render = False
+
+            log_list.append(f"{m.name}")
+            modifiers.append(m)
+
+        if log_list:
+            logger.info(
+                "%s %s modifier show_viewport show_render: \n%s",
+                obj.name,
+                noun,
+                ",\n".join(log_list),
+            )
+
+    return modifiers
