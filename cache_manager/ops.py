@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .logger import LoggerFactory, gen_processing_string, log_new_lines
 from . import cache, prefs, props, opsdata, cmglobals
-from .cache import CacheConfigFactory
+from .cache import CacheConfigFactory, CacheConfigProcessor
 
 logger = LoggerFactory.getLogger(__name__)
 
@@ -273,7 +273,7 @@ class CM_OT_import_collections(bpy.types.Operator):
         logger.info("-START- Importing Collections")
 
         cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
-        cacheconfig.import_collections(context)
+        CacheConfigProcessor.import_collections(cacheconfig, context)
 
         log_new_lines(1)
         logger.info("-END- Importing Collections")
@@ -361,7 +361,7 @@ class CM_OT_import_cache(bpy.types.Operator):
         collections = valid_colls
 
         # load animation data from config #disables drivers #TODO: driver disabling should happen here
-        cacheconfig.import_animation_data(collections)
+        CacheConfigProcessor.import_animation_data(cacheconfig, collections)
 
         log_new_lines(1)
         logger.info("-START- Importing Alembic Cache")
