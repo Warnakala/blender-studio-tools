@@ -8,18 +8,17 @@ from . import opsdata
 import bpy
 
 
-def category_upate_version_model(self: Any, context: bpy.types.Context):
-    opsdata.VERSION_DIR_MODEL.reload()
-
-    opsdata.init_version_dir_model(context)
-
+def update_cache_version_property(context: bpy.types.Context) -> None:
     items = opsdata.VERSION_DIR_MODEL.items
     if not items:
         context.scene.cm.cache_version = ""
     else:
         context.scene.cm.cache_version = items[0]
-    # if self.category == "IMPORT":
-    # if self.category == "EXPORT":
+
+
+def category_upate_version_model(self: Any, context: bpy.types.Context) -> None:
+    opsdata.init_version_dir_model(context)
+    update_cache_version_property(context)
 
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
@@ -30,11 +29,17 @@ def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
 
 
 def _get_scene_name() -> str:
+    if not bpy.data.filepath:
+        return ""
+
     filepath = Path(os.path.abspath(bpy.path.abspath(bpy.data.filepath)))
     return filepath.parents[1].name
 
 
 def _get_shot_name() -> str:
+    if not bpy.data.filepath:
+        return ""
+
     filepath = Path(os.path.abspath(bpy.path.abspath(bpy.data.filepath)))
     return filepath.parents[0].name
 

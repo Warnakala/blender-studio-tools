@@ -477,7 +477,12 @@ class CacheConfigFactory:
         cls, context: bpy.types.Context, blueprint: CacheConfigBlueprint
     ) -> CacheConfigBlueprint:
 
-        blueprint.set_meta_key("name", Path(bpy.data.filepath).name)
+        blueprint.set_meta_key(
+            "name",
+            Path(bpy.data.filepath).name
+            if bpy.data.filepath
+            else "not_saved_blendfile",
+        )
         blueprint.set_meta_key(
             "creation_date", get_current_time_string(cls._DATE_FORMAT)
         )

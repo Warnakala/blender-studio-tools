@@ -49,6 +49,12 @@ class CM_OT_cache_export(bpy.types.Operator):
         else:
             collections = [context.scene.cm.colls_export[self.index].coll_ptr]
 
+        # create ouput dir if not existent
+        filedir = Path(context.scene.cm.cachedir_path)
+        if not filedir.exists():
+            filedir.mkdir(parents=True, exist_ok=True)
+            logger.info("Created directory %s", filedir.as_posix())
+
         # begin progress udpate
         context.window_manager.progress_begin(0, len(collections))
 
@@ -103,7 +109,7 @@ class CM_OT_cache_export(bpy.types.Operator):
                 obj.select_set(True)
 
             # filepath
-            filepath = propsdata.gen_cachepath_collection(coll, context)
+            filepath = Path(propsdata.gen_cachepath_collection(coll, context))
             if filepath.exists():
                 logger.warning(
                     "Filepath %s already exists. Will overwrite.", filepath.as_posix()
@@ -192,6 +198,10 @@ class CM_OT_cache_export(bpy.types.Operator):
         context.window_manager.progress_update(len(collections))
         context.window_manager.progress_end()
 
+        # update cache version property
+        propsdata.update_cache_version_property(context)
+
+        # log
         self.report(
             {"INFO"},
             f"Exported {len(succeeded)} Collections | Failed: {len(failed)}.",
