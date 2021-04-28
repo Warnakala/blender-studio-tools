@@ -29,18 +29,22 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
 
     cache_version: bpy.props.StringProperty(name="Version", default="")
 
+    colls_export: bpy.props.CollectionProperty(type=CM_collection_property)
+
+    colls_import: bpy.props.CollectionProperty(type=CM_collection_property)
+
 
 def get_cache_collections_import(
     context: bpy.types.Context,
 ) -> Generator[bpy.types.Collection, None, None]:
-    for item in context.scene.cm_collections_import:
+    for item in context.scene.cm.colls_import:
         yield item.coll_ptr
 
 
 def get_cache_collections_export(
     context: bpy.types.Context,
 ) -> Generator[bpy.types.Collection, None, None]:
-    for item in context.scene.cm_collections_export:
+    for item in context.scene.cm.colls_export:
         yield item.coll_ptr
 
 
@@ -59,14 +63,6 @@ def register():
         bpy.utils.register_class(cls)
 
     # Scene Properties
-    bpy.types.Scene.cm_collections_export = bpy.props.CollectionProperty(
-        type=CM_collection_property
-    )
-
-    bpy.types.Scene.cm_collections_import = bpy.props.CollectionProperty(
-        type=CM_collection_property
-    )
-
     bpy.types.Scene.cm = bpy.props.PointerProperty(type=CM_property_group_scene)
 
     # Collection Properties

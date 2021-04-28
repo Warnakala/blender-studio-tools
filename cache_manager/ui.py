@@ -75,8 +75,8 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
             row.template_list(
                 "CM_UL_collection_cache_list_export",
                 "collection_cache_list_export",
-                context.scene,
-                "cm_collections_export",
+                context.scene.cm,
+                "colls_export",
                 context.scene.cm,
                 "colls_export_index",
                 rows=5,
@@ -111,8 +111,8 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
             row.template_list(
                 "CM_UL_collection_cache_list_import",
                 "collection_cache_list_import",
-                context.scene,
-                "cm_collections_import",
+                context.scene.cm,
+                "colls_import",
                 context.scene.cm,
                 "colls_import_index",
                 rows=5,

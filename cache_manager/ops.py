@@ -49,7 +49,7 @@ class CM_OT_cache_export(bpy.types.Operator):
         if self.do_all:
             collections = list(props.get_cache_collections_export(context))
         else:
-            collections = [context.scene.cm_collections_export[self.index].coll_ptr]
+            collections = [context.scene.cm.colls_export[self.index].coll_ptr]
 
         # begin progress udpate
         context.window_manager.progress_begin(0, len(collections))
@@ -217,11 +217,11 @@ class CM_OT_cache_list_actions(bpy.types.Operator):
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
         scn = context.scene
 
-        scn_category = scn.cm_collections_export
+        scn_category = scn.cm.colls_export
         idx = scn.cm.colls_export_index
 
         if context.scene.cm.category == "IMPORT":
-            scn_category = scn.cm_collections_import
+            scn_category = scn.cm.colls_import
             idx = scn.cm.colls_import_index
 
         try:
@@ -302,7 +302,7 @@ class CM_OT_assign_cachefile(bpy.types.Operator):
             self.report({"WARNING"}, f"Please select a valid cachefile")
             return {"CANCELLED"}
 
-        collection = context.scene.cm_collections_import[self.index].coll_ptr
+        collection = context.scene.cm.colls_import[self.index].coll_ptr
         collection.cm.cachefile = self.cachefile
 
         self.report({"INFO"}, f"{collection.name} assigned cachefile {self.cachefile}")
@@ -347,7 +347,7 @@ class CM_OT_import_cache(bpy.types.Operator):
         if self.do_all:
             collections = list(props.get_cache_collections_import(context))
         else:
-            collections = [context.scene.cm_collections_import[self.index].coll_ptr]
+            collections = [context.scene.cm.colls_import[self.index].coll_ptr]
 
         # skip if  no cachefile assigned
         valid_colls = []
@@ -588,7 +588,7 @@ class CM_OT_cache_hide(bpy.types.Operator):
         if self.do_all:
             collections = list(props.get_cache_collections_import(context))
         else:
-            collections = [context.scene.cm_collections_import[self.index].coll_ptr]
+            collections = [context.scene.cm.colls_import[self.index].coll_ptr]
 
         logger.info("-START- Hiding Cache")
 
@@ -641,7 +641,7 @@ class CM_OT_cache_show(bpy.types.Operator):
         if self.do_all:
             collections = list(props.get_cache_collections_import(context))
         else:
-            collections = [context.scene.cm_collections_import[self.index].coll_ptr]
+            collections = [context.scene.cm.colls_import[self.index].coll_ptr]
 
         logger.info("-START- Unhiding Cache")
 
@@ -693,7 +693,7 @@ class CM_OT_cache_remove(bpy.types.Operator):
         if self.do_all:
             collections = list(props.get_cache_collections_import(context))
         else:
-            collections = [context.scene.cm_collections_import[self.index].coll_ptr]
+            collections = [context.scene.cm.colls_import[self.index].coll_ptr]
 
         logger.info("-START- Removing Cache")
 
