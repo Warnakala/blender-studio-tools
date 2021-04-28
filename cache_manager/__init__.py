@@ -1,7 +1,8 @@
 import bpy
+from . import cmglobals
 from . import logger
 from . import cache
-from . import cmglobals
+from . import models
 from . import blend
 from . import prefsdata
 from . import prefs
@@ -31,9 +32,10 @@ if _need_reload:
     import importlib
 
     logg.info("-START- Reloading Cache Manager")
+    cmglobals = importlib.reload(cmglobals)
     logger = importlib.reload(logger)
     cache = importlib.reload(cache)
-    cmglobals = importlib.reload(cmglobals)
+    models = importlib.reload(models)
     blend = importlib.reload(blend)
     prefsdata = importlib.reload(prefsdata)
     prefs = importlib.reload(prefs)

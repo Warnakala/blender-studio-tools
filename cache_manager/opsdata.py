@@ -1,10 +1,11 @@
 from pathlib import Path
-from typing import List, Tuple, Generator, Dict, Union
+from typing import List, Tuple, Generator, Dict, Union, Any
 
 import bpy
 
 from . import prefs
 from .logger import LoggerFactory
+from .models import FolderListModel
 
 logger = LoggerFactory.getLogger(__name__)
 
@@ -23,7 +24,32 @@ DRIVERS_MUTE: List[str] = [
     "show_render",
 ]
 
+VERSION_DIR_MODEL = FolderListModel()
+
 _cachefiles_enum_list: List[Tuple[str, str, str]] = []
+_versions_enum_list_export: List[Tuple[str, str, str]] = []
+_versions_enum_list_import: List[Tuple[str, str, str]] = []
+
+
+def get_versions_enum_list_export(
+    self: Any,
+    context: bpy.types.Context,
+) -> List[Tuple[str, str, str]]:
+
+    global _versions_enum_list_export
+    global VERSION_DIR_MODEL
+
+    addon_prefs = prefs.addon_prefs_get(context)
+    cachedir_path = addon_prefs.cachedir_path
+
+    cachedir_path = Path().home()
+
+    VERSION_DIR_MODEL.reset()
+    VERSION_DIR_MODEL.root_path = cachedir_path
+
+    _versions_enum_list_export.clear()
+    _versions_enum_list_export.extend(VERSION_DIR_MODEL.items_as_enum_list)
+    return _versions_enum_list_export
 
 
 def _get_cachefiles(cachedir_path: Path, file_ext: str = ".abc") -> List[Path]:

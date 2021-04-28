@@ -725,6 +725,36 @@ class CM_OT_cache_remove(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CM_OT_set_cache_version_export(bpy.types.Operator):
+    """"""
+
+    bl_idname = "cm.set_cache_version_export"
+    bl_label = "Version"
+    # bl_options = {"REGISTER", "UNDO"}
+    bl_property = "versions"
+
+    versions: bpy.props.EnumProperty(
+        items=opsdata.get_versions_enum_list_export, name="Versions"
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        version = self.versions
+
+        if not version:
+            return {"CANCELLED"}
+
+        # update cache path
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        context.window_manager.invoke_search_popup(self)  # type: ignore
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
 classes: List[Any] = [
@@ -736,6 +766,7 @@ classes: List[Any] = [
     CM_OT_cache_hide,
     CM_OT_cache_remove,
     CM_OT_import_collections,
+    CM_OT_set_cache_version_export,
 ]
 
 
