@@ -103,7 +103,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
 
             # cacheconfig
             row = layout.row()
-            row.prop(addon_prefs, "cacheconfig", text="Cacheconfig")
+            row.prop(context.scene.cm, "cacheconfig", text="Cacheconfig")
             row.operator(CM_OT_import_collections.bl_idname, icon="PLAY", text="")
 
             # uilist
