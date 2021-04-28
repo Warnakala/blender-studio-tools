@@ -781,6 +781,11 @@ class CM_OT_add_cache_version(bpy.types.Operator):
 
         opsdata.add_version_custom(version)
 
+        # update cache_version prop
+        context.scene.cm.cache_version = version
+
+        ui_redraw()
+
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
