@@ -725,16 +725,16 @@ class CM_OT_cache_remove(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CM_OT_set_cache_version_export(bpy.types.Operator):
+class CM_OT_set_cache_version(bpy.types.Operator):
     """"""
 
-    bl_idname = "cm.set_cache_version_export"
+    bl_idname = "cm.set_cache_version"
     bl_label = "Version"
     # bl_options = {"REGISTER", "UNDO"}
     bl_property = "versions"
 
     versions: bpy.props.EnumProperty(
-        items=opsdata.get_versions_enum_list_export, name="Versions"
+        items=opsdata.get_versions_enum_list, name="Versions"
     )
 
     @classmethod

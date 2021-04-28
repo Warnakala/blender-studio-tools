@@ -27,16 +27,15 @@ DRIVERS_MUTE: List[str] = [
 VERSION_DIR_MODEL = FolderListModel()
 
 _cachefiles_enum_list: List[Tuple[str, str, str]] = []
-_versions_enum_list_export: List[Tuple[str, str, str]] = []
-_versions_enum_list_import: List[Tuple[str, str, str]] = []
+_versions_enum_list: List[Tuple[str, str, str]] = []
 
 
-def get_versions_enum_list_export(
+def get_versions_enum_list(
     self: Any,
     context: bpy.types.Context,
 ) -> List[Tuple[str, str, str]]:
 
-    global _versions_enum_list_export
+    global _versions_enum_list
     global VERSION_DIR_MODEL
 
     addon_prefs = prefs.addon_prefs_get(context)
@@ -47,9 +46,9 @@ def get_versions_enum_list_export(
     VERSION_DIR_MODEL.reset()
     VERSION_DIR_MODEL.root_path = cachedir_path
 
-    _versions_enum_list_export.clear()
-    _versions_enum_list_export.extend(VERSION_DIR_MODEL.items_as_enum_list)
-    return _versions_enum_list_export
+    _versions_enum_list.clear()
+    _versions_enum_list.extend(VERSION_DIR_MODEL.items_as_enum_list)
+    return _versions_enum_list
 
 
 def _get_cachefiles(cachedir_path: Path, file_ext: str = ".abc") -> List[Path]:
