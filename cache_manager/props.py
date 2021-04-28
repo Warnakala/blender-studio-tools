@@ -33,7 +33,7 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
 
     colls_import_index: bpy.props.IntProperty(name="Index", default=0)
 
-    cache_version: bpy.props.StringProperty(name="Version", default="")
+    cache_version: bpy.props.StringProperty(name="Version", default="v001")
 
     colls_export: bpy.props.CollectionProperty(type=CM_collection_property)
 

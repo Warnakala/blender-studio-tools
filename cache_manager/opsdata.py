@@ -39,9 +39,7 @@ def init_version_dir_model(
     global _version_dir_model_init
 
     if not _version_dir_model_init:
-        addon_prefs = prefs.addon_prefs_get(context)
         cachedir_path = context.scene.cm.cachedir_path
-        cachedir_path = Path().home()
 
         VERSION_DIR_MODEL.reset()
         VERSION_DIR_MODEL.root_path = cachedir_path
@@ -61,6 +59,9 @@ def get_versions_enum_list(
 
     _versions_enum_list.clear()
     _versions_enum_list.extend(VERSION_DIR_MODEL.items_as_enum_list)
+
+    if not _versions_enum_list:
+        _versions_enum_list.append(("v001", "v001", ""))
 
     return _versions_enum_list
 

@@ -34,11 +34,9 @@ class CM_OT_cache_export(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        addon_prefs = prefs.addon_prefs_get(context)
         return [context.scene.collection] and context.scene.cm.is_cachedir_valid
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        addon_prefs = prefs.addon_prefs_get(context)
         cacheconfig_path = context.scene.cm.cacheconfig_path
         succeeded = []
         failed = []
@@ -262,11 +260,9 @@ class CM_OT_import_collections(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        addon_prefs = prefs.addon_prefs_get(context)
         return context.scene.cm.is_cacheconfig_valid
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        addon_prefs = prefs.addon_prefs_get(context)
         cacheconfig_path = context.scene.cm.cacheconfig_path
 
         log_new_lines(1)
