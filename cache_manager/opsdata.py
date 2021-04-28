@@ -40,7 +40,7 @@ def init_version_dir_model(
 
     if not _version_dir_model_init:
         addon_prefs = prefs.addon_prefs_get(context)
-        cachedir_path = addon_prefs.cachedir_path
+        cachedir_path = context.scene.cm.cachedir_path
         cachedir_path = Path().home()
 
         VERSION_DIR_MODEL.reset()
@@ -103,13 +103,13 @@ def get_cachefiles_enum(
 
     _cachefiles_enum_list.clear()
 
-    if not addon_prefs.is_cachedir_valid:
+    if not context.scene.cm.is_cachedir_valid:
         return _cachefiles_enum_list
 
     _cachefiles_enum_list.extend(
         [
             (path.as_posix(), path.name, "")
-            for path in _get_cachefiles(addon_prefs.cachedir_path)
+            for path in _get_cachefiles(context.scene.cm.cachedir_path)
         ]
     )
 

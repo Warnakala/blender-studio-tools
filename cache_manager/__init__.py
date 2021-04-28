@@ -4,8 +4,8 @@ from . import logger
 from . import cache
 from . import models
 from . import blend
-from . import prefsdata
 from . import prefs
+from . import propsdata
 from . import props
 from . import opsdata
 from . import ops
@@ -37,8 +37,8 @@ if _need_reload:
     cache = importlib.reload(cache)
     models = importlib.reload(models)
     blend = importlib.reload(blend)
-    prefsdata = importlib.reload(prefsdata)
     prefs = importlib.reload(prefs)
+    propsdata = importlib.reload(propsdata)
     props = importlib.reload(props)
     opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)

@@ -1,5 +1,11 @@
-from typing import List, Any, Generator
+import os
+
+from typing import List, Any, Generator, Optional
+from pathlib import Path
+
 import bpy
+
+from . import propsdata
 
 
 class CM_collection_property(bpy.types.PropertyGroup):
@@ -32,6 +38,47 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     colls_export: bpy.props.CollectionProperty(type=CM_collection_property)
 
     colls_import: bpy.props.CollectionProperty(type=CM_collection_property)
+
+    cacheconfig: bpy.props.StringProperty(
+        name="Cachefile", get=propsdata.get_cacheconfig
+    )
+
+    cachedir: bpy.props.StringProperty(name="Cachedir", get=propsdata.get_cachedir)
+
+    @property
+    def cachedir_path(self) -> Optional[Path]:
+        if not self.is_cachedir_valid:
+            return None
+
+        return Path(os.path.abspath(bpy.path.abspath(self.cachedir)))
+
+    @property
+    def is_cachedir_valid(self) -> bool:
+        # check if file is saved
+        if not self.cachedir:
+            return False
+
+        if not bpy.data.filepath and self.cachedir.startswith("//"):
+            return False
+
+        return True
+
+    @property
+    def is_cacheconfig_valid(self) -> bool:
+        # check if file is saved
+        if not self.cacheconfig:
+            return False
+
+        if not bpy.data.filepath and self.cacheconfig.startswith("//"):
+            return False
+
+        return True
+
+    @property
+    def cacheconfig_path(self) -> Optional[Path]:
+        if not self.is_cacheconfig_valid:
+            return None
+        return Path(os.path.abspath(bpy.path.abspath(self.cacheconfig)))
 
 
 def get_cache_collections_import(

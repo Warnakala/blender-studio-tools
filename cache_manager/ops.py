@@ -35,11 +35,11 @@ class CM_OT_cache_export(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return [context.scene.collection] and addon_prefs.is_cachedir_valid
+        return [context.scene.collection] and context.scene.cm.is_cachedir_valid
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
-        cacheconfig_path = addon_prefs.cacheconfig_path
+        cacheconfig_path = context.scene.cm.cacheconfig_path
         succeeded = []
         failed = []
         log_new_lines(1)
@@ -263,11 +263,11 @@ class CM_OT_import_collections(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return addon_prefs.is_cacheconfig_valid
+        return context.scene.cm.is_cacheconfig_valid
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
-        cacheconfig_path = addon_prefs.cacheconfig_path
+        cacheconfig_path = context.scene.cm.cacheconfig_path
 
         log_new_lines(1)
         logger.info("-START- Importing Collections")
@@ -329,13 +329,13 @@ class CM_OT_import_cache(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return addon_prefs.is_cacheconfig_valid
+        return context.scene.cm.is_cacheconfig_valid
 
     def execute(self, context):
         log_new_lines(1)
         logger.info("-START- Importing Cache")
         addon_prefs = prefs.addon_prefs_get(context)
-        cacheconfig_path = addon_prefs.cacheconfig_path
+        cacheconfig_path = context.scene.cm.cacheconfig_path
         cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
 
         succeeded = []

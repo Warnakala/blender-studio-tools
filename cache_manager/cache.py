@@ -23,7 +23,7 @@ def gen_cachepath_collection(
     collection: bpy.types.Collection, context: bpy.types.Context
 ) -> Path:
     addon_prefs = prefs.addon_prefs_get(context)
-    cachedir_path = Path(addon_prefs.cachedir_path)
+    cachedir_path = Path(context.scene.cm.cachedir_path)
 
     if not cachedir_path:
         raise ValueError(

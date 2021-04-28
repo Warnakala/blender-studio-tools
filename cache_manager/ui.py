@@ -19,9 +19,9 @@ from . import cache, prefs, props
 
 def get_cachedir_path_display(context: bpy.types.Context) -> str:
     addon_prefs = prefs.addon_prefs_get(context)
-    if not addon_prefs.cachedir_path:
+    if not context.scene.cm.cachedir_path:
         return "Invalid"
-    return addon_prefs.cachedir_path.as_posix()
+    return context.scene.cm.cachedir_path.as_posix()
 
 
 class CM_PT_vi3d_cache(bpy.types.Panel):
