@@ -10,7 +10,7 @@ from . import prefsdata
 class CM_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    cachedir: bpy.props.StringProperty(  # type: ignore
+    cachedir_root: bpy.props.StringProperty(  # type: ignore
         name="cache dir",
         default="//cache",
         options={"HIDDEN", "SKIP_SAVE"},
@@ -24,22 +24,22 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         box = layout.box()
-        box.row().prop(self, "cachedir")
+        box.row().prop(self, "cachedir_root")
 
     @property
     def cachedir_path(self) -> Optional[Path]:
         if not self.is_cachedir_valid:
             return None
-        return Path(os.path.abspath(bpy.path.abspath(self.cachedir)))
+        return Path(os.path.abspath(bpy.path.abspath(self.cachedir_root)))
 
     @property
     def is_cachedir_valid(self) -> bool:
 
         # check if file is saved
-        if not self.cachedir:
+        if not self.cachedir_root:
             return False
 
-        if not bpy.data.filepath and self.cachedir.startswith("//"):
+        if not bpy.data.filepath and self.cachedir_root.startswith("//"):
             return False
 
         return True

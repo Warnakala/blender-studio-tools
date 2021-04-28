@@ -42,7 +42,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
 
         # category to choose between export / import
         row = layout.row(align=True)
-        row.prop(context.scene, "cm_category", expand=True)
+        row.prop(context.scene.cm, "category", expand=True)
 
         # cachedir
         row = layout.row()
@@ -59,7 +59,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
             text=version_text,
         )
 
-        if context.scene.cm_category == "EXPORT":
+        if context.scene.cm.category == "EXPORT":
 
             row.operator(
                 CM_OT_add_cache_version.bl_idname,
@@ -77,8 +77,8 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 "collection_cache_list_export",
                 context.scene,
                 "cm_collections_export",
-                context.scene,
-                "cm_collections_export_index",
+                context.scene.cm,
+                "colls_export_index",
                 rows=5,
                 type="DEFAULT",
             )
@@ -113,8 +113,8 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 "collection_cache_list_import",
                 context.scene,
                 "cm_collections_import",
-                context.scene,
-                "cm_collections_import_index",
+                context.scene.cm,
+                "colls_import_index",
                 rows=5,
                 type="DEFAULT",
             )
@@ -147,8 +147,8 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
     def _get_version_text(self, context: bpy.types.Context) -> str:
         version_text = "Select Version"
 
-        if context.scene.cm_cache_version:
-            version_text = context.scene.cm_cache_version
+        if context.scene.cm.cache_version:
+            version_text = context.scene.cm.cache_version
 
         return version_text
 

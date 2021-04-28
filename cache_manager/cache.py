@@ -433,7 +433,7 @@ class CacheConfigProcessor:
             item = scn.cm_collections_import.add()
             item.coll_ptr = coll
             item.name = item.coll_ptr.name
-            scn.cm_collections_import_index = len(scn.cm_collections_import) - 1
+            scn.cm.colls_import_index = len(scn.cm_collections_import) - 1
 
             logger.info("%s added to cache collections list", item.name)
 

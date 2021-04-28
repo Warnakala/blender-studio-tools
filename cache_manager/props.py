@@ -13,6 +13,23 @@ class CM_property_group_collection(bpy.types.PropertyGroup):
     is_cache_hidden: bpy.props.BoolProperty(name="Cache Hidden", default=False)
 
 
+class CM_property_group_scene(bpy.types.PropertyGroup):
+
+    category: bpy.props.EnumProperty(  # type: ignore
+        items=(
+            ("EXPORT", "Export", "Import Cache Collections", "EXPORT", 0),
+            ("IMPORT", "Import", "Export Cache Collections", "IMPORT", 1),
+        ),
+        default="EXPORT",
+    )
+
+    colls_export_index: bpy.props.IntProperty(name="Index", default=0)
+
+    colls_import_index: bpy.props.IntProperty(name="Index", default=0)
+
+    cache_version: bpy.props.StringProperty(name="Version", default="")
+
+
 def get_cache_collections_import(
     context: bpy.types.Context,
 ) -> Generator[bpy.types.Collection, None, None]:
@@ -29,7 +46,11 @@ def get_cache_collections_export(
 
 # ---------REGISTER ----------
 
-classes: List[Any] = [CM_collection_property, CM_property_group_collection]
+classes: List[Any] = [
+    CM_collection_property,
+    CM_property_group_collection,
+    CM_property_group_scene,
+]
 
 
 def register():
@@ -46,25 +67,7 @@ def register():
         type=CM_collection_property
     )
 
-    bpy.types.Scene.cm_category = bpy.props.EnumProperty(  # type: ignore
-        items=(
-            ("EXPORT", "Export", "Import Cache Collections", "EXPORT", 0),
-            ("IMPORT", "Import", "Export Cache Collections", "IMPORT", 1),
-        ),
-        default="EXPORT",
-    )
-
-    bpy.types.Scene.cm_collections_export_index = bpy.props.IntProperty(
-        name="Index", default=0
-    )
-
-    bpy.types.Scene.cm_collections_import_index = bpy.props.IntProperty(
-        name="Index", default=0
-    )
-
-    bpy.types.Scene.cm_cache_version = bpy.props.StringProperty(
-        name="Version", default=""
-    )
+    bpy.types.Scene.cm = bpy.props.PointerProperty(type=CM_property_group_scene)
 
     # Collection Properties
     bpy.types.Collection.cm = bpy.props.PointerProperty(

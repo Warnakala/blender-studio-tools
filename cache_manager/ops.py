@@ -218,11 +218,11 @@ class CM_OT_cache_list_actions(bpy.types.Operator):
         scn = context.scene
 
         scn_category = scn.cm_collections_export
-        idx = scn.cm_collections_export_index
+        idx = scn.cm.colls_export_index
 
-        if context.scene.cm_category == "IMPORT":
+        if context.scene.cm.category == "IMPORT":
             scn_category = scn.cm_collections_import
-            idx = scn.cm_collections_import_index
+            idx = scn.cm.colls_import_index
 
         try:
             item = scn_category[idx]
@@ -749,7 +749,7 @@ class CM_OT_set_cache_version(bpy.types.Operator):
             return {"CANCELLED"}
 
         # update global scene cache version prop
-        context.scene.cm_cache_version = version
+        context.scene.cm.cache_version = version
         logger.info("Set cache version to %s", version)
 
         # redraw ui
