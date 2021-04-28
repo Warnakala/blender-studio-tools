@@ -739,6 +739,7 @@ class CM_OT_set_cache_version(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
+        # TODO
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -755,6 +756,35 @@ class CM_OT_set_cache_version(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CM_OT_add_cache_version(bpy.types.Operator):
+    """"""
+
+    bl_idname = "cm.add_cache_version"
+    bl_label = "Add Version"
+    # bl_options = {"REGISTER", "UNDO"}
+    bl_property = "version"
+
+    version: bpy.props.StringProperty(name="Versions", default="")
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        # TODO
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        version = self.version
+
+        if not version:
+            return {"CANCELLED"}
+
+        opsdata.add_version_custom(version)
+
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        return context.window_manager.invoke_props_dialog(self, width=200)
+
+
 # ---------REGISTER ----------
 
 classes: List[Any] = [
@@ -766,7 +796,8 @@ classes: List[Any] = [
     CM_OT_cache_hide,
     CM_OT_cache_remove,
     CM_OT_import_collections,
-    CM_OT_set_cache_version_export,
+    CM_OT_set_cache_version,
+    CM_OT_add_cache_version,
 ]
 
 

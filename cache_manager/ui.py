@@ -11,7 +11,8 @@ from .ops import (
     CM_OT_cache_show,
     CM_OT_cache_hide,
     CM_OT_cache_remove,
-    CM_OT_set_cache_version_export,
+    CM_OT_set_cache_version,
+    CM_OT_add_cache_version,
 )
 from . import cache, prefs, props
 
@@ -49,11 +50,17 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
 
         if context.scene.cm_category == "EXPORT":
 
+            row = layout.row(align=True)
             # show version dropdown
             row.operator(
-                CM_OT_set_cache_version_export.bl_idname,
+                CM_OT_set_cache_version.bl_idname,
                 icon="DOWNARROW_HLT",
                 text="Version",
+            )
+            row.operator(
+                CM_OT_add_cache_version.bl_idname,
+                icon="ADD",
+                text="",
             )
 
             # get collections

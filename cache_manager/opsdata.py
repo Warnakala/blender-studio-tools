@@ -28,6 +28,24 @@ VERSION_DIR_MODEL = FolderListModel()
 
 _cachefiles_enum_list: List[Tuple[str, str, str]] = []
 _versions_enum_list: List[Tuple[str, str, str]] = []
+_version_dir_model_init: bool = False
+
+
+def init_version_dir_model(
+    context: bpy.types.Context,
+) -> None:
+
+    global VERSION_DIR_MODEL
+    global _version_dir_model_init
+
+    if not _version_dir_model_init:
+        addon_prefs = prefs.addon_prefs_get(context)
+        cachedir_path = addon_prefs.cachedir_path
+        cachedir_path = Path().home()
+
+        VERSION_DIR_MODEL.reset()
+        VERSION_DIR_MODEL.root_path = cachedir_path
+        _version_dir_model_init = True
 
 
 def get_versions_enum_list(
@@ -37,18 +55,34 @@ def get_versions_enum_list(
 
     global _versions_enum_list
     global VERSION_DIR_MODEL
+    global init_version_dir_model
 
-    addon_prefs = prefs.addon_prefs_get(context)
-    cachedir_path = addon_prefs.cachedir_path
-
-    cachedir_path = Path().home()
-
-    VERSION_DIR_MODEL.reset()
-    VERSION_DIR_MODEL.root_path = cachedir_path
+    init_version_dir_model(context)
 
     _versions_enum_list.clear()
     _versions_enum_list.extend(VERSION_DIR_MODEL.items_as_enum_list)
+
     return _versions_enum_list
+
+
+def add_version_custom(custom_version: str) -> None:
+    global _versions_enum_list
+    global VERSION_DIR_MODEL
+
+    VERSION_DIR_MODEL.append_item(custom_version)
+
+
+def add_version_increment() -> str:
+    items = VERSION_DIR_MODEL.items  # should be already sorted
+
+    if len(items) > 0:
+        latest_version = items[0]
+        increment = "v{:03}".format(int(latest_version.replace("v", "")) + 1)
+    else:
+        increment = "v001"
+
+    VERSION_DIR_MODEL.append_item(increment)
+    return increment
 
 
 def _get_cachefiles(cachedir_path: Path, file_ext: str = ".abc") -> List[Path]:
