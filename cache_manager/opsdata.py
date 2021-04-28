@@ -58,11 +58,11 @@ def get_versions_enum_list(
     init_version_dir_model(context)
 
     _versions_enum_list.clear()
+
+    if not VERSION_DIR_MODEL.items:
+        VERSION_DIR_MODEL.append_item("v001")
+
     _versions_enum_list.extend(VERSION_DIR_MODEL.items_as_enum_list)
-
-    if not _versions_enum_list:
-        _versions_enum_list.append(("v001", "v001", ""))
-
     return _versions_enum_list
 
 
