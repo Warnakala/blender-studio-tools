@@ -14,7 +14,7 @@ from .ops import (
     CM_OT_set_cache_version,
     CM_OT_add_cache_version,
 )
-from . import cache, prefs, props
+from . import propsdata, prefs, props
 
 
 def get_cachedir_path_display(context: bpy.types.Context) -> str:
@@ -158,7 +158,7 @@ class CM_UL_collection_cache_list_export(bpy.types.UIList):
         self, context, layout, data, item, icon, active_data, active_propname, index
     ):
         if self.layout_type in {"DEFAULT", "COMPACT"}:
-            split = layout.split(factor=0.6, align=True)
+            split = layout.split(factor=0.5, align=True)
             split.prop(
                 item.coll_ptr,
                 "name",
@@ -167,7 +167,7 @@ class CM_UL_collection_cache_list_export(bpy.types.UIList):
                 icon="OUTLINER_COLLECTION",
             )
             split = split.split(factor=0.75, align=True)
-            split.label(text=f"/{cache.gen_filename_collection(item.coll_ptr)}")
+            split.label(text=f"/{propsdata.gen_cache_coll_filename(item.coll_ptr)}")
             split.operator(
                 CM_OT_cache_export.bl_idname,
                 text="",

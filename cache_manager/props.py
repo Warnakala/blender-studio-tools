@@ -40,10 +40,12 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     colls_import: bpy.props.CollectionProperty(type=CM_collection_property)
 
     cacheconfig: bpy.props.StringProperty(
-        name="Cacheconfig File", get=propsdata.get_cacheconfig
+        name="Cacheconfig File", get=propsdata.gen_cacheconfig_path_str
     )
 
-    cachedir: bpy.props.StringProperty(name="Cachedir", get=propsdata.get_cachedir)
+    cachedir: bpy.props.StringProperty(
+        name="Cachedir", get=propsdata.gen_cachedir_path_str
+    )
 
     @property
     def cachedir_path(self) -> Optional[Path]:

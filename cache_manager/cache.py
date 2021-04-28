@@ -9,27 +9,10 @@ from copy import deepcopy
 
 import bpy
 
-from . import prefs, props, cmglobals, opsdata
+from . import prefs, propsdata, cmglobals, opsdata
 from .logger import LoggerFactory, gen_processing_string, log_new_lines
 
 logger = LoggerFactory.getLogger(__name__)
-
-
-def gen_filename_collection(collection: bpy.types.Collection) -> str:
-    return f"{collection.name}.abc"
-
-
-def gen_cachepath_collection(
-    collection: bpy.types.Collection, context: bpy.types.Context
-) -> Path:
-    addon_prefs = prefs.addon_prefs_get(context)
-    cachedir_path = Path(context.scene.cm.cachedir_path)
-
-    if not cachedir_path:
-        raise ValueError(
-            f"Failed to generate cachepath for collection: {collection.name}. Invalid cachepath: {str(cachedir_path)}"
-        )
-    return cachedir_path.joinpath(gen_filename_collection(collection)).absolute()
 
 
 def is_valid_cache_object(obj: bpy.types.Object) -> bool:
@@ -522,7 +505,9 @@ class CacheConfigFactory:
 
             # create collection dict based on this variant collection
             _coll_dict = {
-                "cachefile": gen_cachepath_collection(coll, context).as_posix(),
+                "cachefile": propsdata.gen_cachepath_collection(
+                    coll, context
+                ).as_posix(),
             }
 
             # set blueprint coll variant

@@ -5,7 +5,7 @@ from typing import List, Any, Set, cast
 from pathlib import Path
 
 from .logger import LoggerFactory, gen_processing_string, log_new_lines
-from . import cache, prefs, props, opsdata, cmglobals
+from . import cache, prefs, props, propsdata, opsdata, cmglobals
 from .cache import CacheConfigFactory, CacheConfigProcessor
 
 logger = LoggerFactory.getLogger(__name__)
@@ -105,7 +105,7 @@ class CM_OT_cache_export(bpy.types.Operator):
                 obj.select_set(True)
 
             # filepath
-            filepath = cache.gen_cachepath_collection(coll, context)
+            filepath = propsdata.gen_cachepath_collection(coll, context)
             if filepath.exists():
                 logger.warning(
                     "Filepath %s already exists. Will overwrite.", filepath.as_posix()
