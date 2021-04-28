@@ -29,8 +29,8 @@ class FolderListModel:
     @root_path.setter
     def root_path(self, path: Path) -> None:
 
-        if not path.absolute().exists():
-            logger.debug("Invalid path: %s", path.as_posix())
+        if not path or path.absolute().exists():
+            logger.debug("Invalid path: %s", str(path))
             self.reset()
         else:
             self.__root_path = path
@@ -42,6 +42,11 @@ class FolderListModel:
         self.__folders.clear()
         self.__appended.clear()
         self.__update_combined()
+
+    def reload(self) -> None:
+        self.__folders.clear()
+        self.__appended.clear()
+        self.root_path = self.__root_path
 
     def __load_dir(self, path: Path) -> None:
         self.__folders = self.__detect_folders(path)

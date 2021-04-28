@@ -3,7 +3,23 @@ import os
 from pathlib import Path
 from typing import Any
 
+from . import opsdata
+
 import bpy
+
+
+def category_upate_version_model(self: Any, context: bpy.types.Context):
+    opsdata.VERSION_DIR_MODEL.reload()
+
+    opsdata.init_version_dir_model(context)
+
+    items = opsdata.VERSION_DIR_MODEL.items
+    if not items:
+        context.scene.cm.cache_version = ""
+    else:
+        context.scene.cm.cache_version = items[0]
+    # if self.category == "IMPORT":
+    # if self.category == "EXPORT":
 
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:

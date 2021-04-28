@@ -38,39 +38,18 @@ def init_version_dir_model(
     global VERSION_DIR_MODEL
     global _version_dir_model_init
 
-    if not _version_dir_model_init:
-        cachedir_path = context.scene.cm.cachedir_path
+    cachedir_path = context.scene.cm.cachedir_path
 
-        VERSION_DIR_MODEL.reset()
-        VERSION_DIR_MODEL.root_path = cachedir_path
-        _version_dir_model_init = True
+    VERSION_DIR_MODEL.reset()
+    VERSION_DIR_MODEL.root_path = cachedir_path
 
+    if context.scene.cm.category == "EXPORT":
+        if not VERSION_DIR_MODEL.items:
+            VERSION_DIR_MODEL.append_item("v001")
+        else:
+            add_version_increment()
 
-def get_versions_enum_list(
-    self: Any,
-    context: bpy.types.Context,
-) -> List[Tuple[str, str, str]]:
-
-    global _versions_enum_list
-    global VERSION_DIR_MODEL
-    global init_version_dir_model
-
-    init_version_dir_model(context)
-
-    _versions_enum_list.clear()
-
-    if not VERSION_DIR_MODEL.items:
-        VERSION_DIR_MODEL.append_item("v001")
-
-    _versions_enum_list.extend(VERSION_DIR_MODEL.items_as_enum_list)
-    return _versions_enum_list
-
-
-def add_version_custom(custom_version: str) -> None:
-    global _versions_enum_list
-    global VERSION_DIR_MODEL
-
-    VERSION_DIR_MODEL.append_item(custom_version)
+    _version_dir_model_init = True
 
 
 def add_version_increment() -> str:
@@ -84,6 +63,33 @@ def add_version_increment() -> str:
 
     VERSION_DIR_MODEL.append_item(increment)
     return increment
+
+
+def get_versions_enum_list(
+    self: Any,
+    context: bpy.types.Context,
+) -> List[Tuple[str, str, str]]:
+
+    global _versions_enum_list
+    global VERSION_DIR_MODEL
+    global init_version_dir_model
+
+    # init model if it did not happen
+    if not _version_dir_model_init:
+        init_version_dir_model(context)
+
+    # clear all versions in enum list
+    _versions_enum_list.clear()
+    _versions_enum_list.extend(VERSION_DIR_MODEL.items_as_enum_list)
+
+    return _versions_enum_list
+
+
+def add_version_custom(custom_version: str) -> None:
+    global _versions_enum_list
+    global VERSION_DIR_MODEL
+
+    VERSION_DIR_MODEL.append_item(custom_version)
 
 
 def _get_cachefiles(cachedir_path: Path, file_ext: str = ".abc") -> List[Path]:

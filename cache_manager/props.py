@@ -27,6 +27,7 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
             ("IMPORT", "Import", "Export Cache Collections", "IMPORT", 1),
         ),
         default="EXPORT",
+        update=propsdata.category_upate_version_model,
     )
 
     colls_export_index: bpy.props.IntProperty(name="Index", default=0)
