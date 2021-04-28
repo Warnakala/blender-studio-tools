@@ -48,15 +48,19 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
         row = layout.row()
         row.label(text=f"Cache Directory: {get_cachedir_path_display(context)}")
 
+        # cache version
+        version_text = self._get_version_text(context)
+
+        row = layout.row(align=True)
+        # show version dropdown
+        row.operator(
+            CM_OT_set_cache_version.bl_idname,
+            icon="DOWNARROW_HLT",
+            text=version_text,
+        )
+
         if context.scene.cm_category == "EXPORT":
 
-            row = layout.row(align=True)
-            # show version dropdown
-            row.operator(
-                CM_OT_set_cache_version.bl_idname,
-                icon="DOWNARROW_HLT",
-                text="Version",
-            )
             row.operator(
                 CM_OT_add_cache_version.bl_idname,
                 icon="ADD",
@@ -139,6 +143,14 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
             row.operator(
                 CM_OT_cache_remove.bl_idname, text="", icon="REMOVE"
             ).do_all = True
+
+    def _get_version_text(self, context: bpy.types.Context) -> str:
+        version_text = "Select Version"
+
+        if context.scene.cm_cache_version:
+            version_text = context.scene.cm_cache_version
+
+        return version_text
 
 
 class CM_UL_collection_cache_list_export(bpy.types.UIList):

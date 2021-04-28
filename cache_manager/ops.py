@@ -748,7 +748,13 @@ class CM_OT_set_cache_version(bpy.types.Operator):
         if not version:
             return {"CANCELLED"}
 
-        # update cache path
+        # update global scene cache version prop
+        context.scene.cm_cache_version = version
+        logger.info("Set cache version to %s", version)
+
+        # redraw ui
+        ui_redraw()
+
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:

@@ -62,6 +62,10 @@ def register():
         name="Index", default=0
     )
 
+    bpy.types.Scene.cm_cache_version = bpy.props.StringProperty(
+        name="Version", default=""
+    )
+
     # Collection Properties
     bpy.types.Collection.cm = bpy.props.PointerProperty(
         name="Cache Manager",
