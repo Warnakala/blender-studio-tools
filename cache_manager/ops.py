@@ -326,13 +326,22 @@ class CM_OT_import_collections(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return (
+        if context.scene.cm.use_cacheconfig_custom:
+            return bool(
+                context.scene.cm.is_cacheconfig_custom_valid
+                and context.scene.cm.cacheconfig_custom_path.exists()
+            )
+
+        return bool(
             context.scene.cm.is_cacheconfig_valid
             and context.scene.cm.cacheconfig_path.exists()
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         cacheconfig_path = context.scene.cm.cacheconfig_path
+
+        if context.scene.cm.use_cacheconfig_custom:
+            cacheconfig_path = context.scene.cm.cacheconfig_custom_path
 
         log_new_lines(1)
         logger.info("-START- Importing Collections")
@@ -393,14 +402,27 @@ class CM_OT_import_cache(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        addon_prefs = prefs.addon_prefs_get(context)
-        return context.scene.cm.is_cacheconfig_valid
+        if context.scene.cm.use_cacheconfig_custom:
+            return bool(
+                context.scene.cm.is_cacheconfig_custom_valid
+                and context.scene.cm.cacheconfig_custom_path.exists()
+            )
+
+        return bool(
+            context.scene.cm.is_cacheconfig_valid
+            and context.scene.cm.cacheconfig_path.exists()
+        )
 
     def execute(self, context):
         log_new_lines(1)
         logger.info("-START- Importing Cache")
         addon_prefs = prefs.addon_prefs_get(context)
+
         cacheconfig_path = context.scene.cm.cacheconfig_path
+
+        if context.scene.cm.use_cacheconfig_custom:
+            cacheconfig_path = context.scene.cm.cacheconfig_custom_path
+
         cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
 
         succeeded = []

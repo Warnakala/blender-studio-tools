@@ -60,6 +60,15 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
         name="Cache version dir", get=propsdata.get_cache_version_dir_path_str
     )
 
+    use_cacheconfig_custom: bpy.props.BoolProperty(
+        name="Custom Cacheconfig", default=False
+    )
+    cacheconfig_custom: bpy.props.StringProperty(
+        name="Cacheconfig File",
+        default="",
+        subtype="FILE_PATH",
+    )
+
     @property
     def cachedir_path(self) -> Optional[Path]:
         if not self.is_cachedir_valid:
@@ -108,10 +117,27 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
         return True
 
     @property
+    def is_cacheconfig_custom_valid(self) -> bool:
+        # check if file is saved
+        if not self.cacheconfig_custom:
+            return False
+
+        if not bpy.data.filepath and self.cacheconfig_custom.startswith("//"):
+            return False
+
+        return True
+
+    @property
     def cacheconfig_path(self) -> Optional[Path]:
         if not self.is_cacheconfig_valid:
             return None
         return Path(os.path.abspath(bpy.path.abspath(self.cacheconfig)))
+
+    @property
+    def cacheconfig_custom_path(self) -> Optional[Path]:
+        if not self.is_cacheconfig_custom_valid:
+            return None
+        return Path(os.path.abspath(bpy.path.abspath(self.cacheconfig_custom)))
 
 
 def get_cache_collections_import(

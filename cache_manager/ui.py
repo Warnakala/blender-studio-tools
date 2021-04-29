@@ -115,15 +115,25 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
             else:
                 split.prop(context.scene.cm, "cacheconfig", text="")
         else:
-            if not context.scene.cm.cacheconfig_path.exists():
-                split.label(text=f"Not found")
-
-            else:
+            if context.scene.cm.use_cacheconfig_custom:
                 sub_split = split.split(factor=0.95, align=True)
-                sub_split.prop(context.scene.cm, "cacheconfig", text="")
+                sub_split.prop(context.scene.cm, "cacheconfig_custom", text="")
                 sub_split.operator(
                     CM_OT_import_collections.bl_idname, icon="PLAY", text=""
                 )
+
+            else:
+                if not context.scene.cm.cacheconfig_path.exists():
+                    split.label(text=f"Not found")
+
+                else:
+                    sub_split = split.split(factor=0.95, align=True)
+                    sub_split.prop(context.scene.cm, "cacheconfig", text="")
+                    sub_split.operator(
+                        CM_OT_import_collections.bl_idname, icon="PLAY", text=""
+                    )
+            row = box.row(align=True)
+            row.prop(context.scene.cm, "use_cacheconfig_custom")
 
         # add some space
         row = layout.row(align=True)
