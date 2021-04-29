@@ -11,21 +11,6 @@ from .models import FolderListModel
 
 logger = LoggerFactory.getLogger(__name__)
 
-MODIFIERS_KEEP: List[str] = [
-    "SUBSURF",
-    "PARTICLE_SYSTEM",
-    "MESH_SEQUENCE_CACHE",
-    "DATA_TRANSFER",
-    "NORMAL_EDIT",
-]
-
-DRIVERS_MUTE: List[str] = [
-    "hide_viewport",
-    "hide_render",
-    "show_viewport",
-    "show_render",
-]
-
 VERSION_DIR_MODEL = FolderListModel()
 
 _cachefiles_enum_list: List[Tuple[str, str, str]] = []
@@ -156,7 +141,6 @@ def traverse_collection_tree(
 def disable_vis_drivers(
     objects: List[bpy.types.Object], modifiers: bool = True
 ) -> List[bpy.types.Driver]:
-    global DRIVERS_MUTE
 
     # store driver that were muted to entmute them after
     muted_drivers: List[bpy.types.Driver] = []
@@ -174,7 +158,7 @@ def disable_vis_drivers(
                         if data_path_split[0].startswith("modifiers"):
                             continue
 
-                if data_path_suffix not in DRIVERS_MUTE:
+                if data_path_suffix not in cmglobals.DRIVER_VIS_DATA_PATHS:
                     continue
 
                 if driver.mute == True:
@@ -229,7 +213,7 @@ def sync_modifier_vis_with_render_setting(
         for idx, m in enumerate(list(obj.modifiers)):
 
             # do not affect those for export
-            if m.type in MODIFIERS_KEEP:
+            if m.type in cmglobals.MODIFIERS_KEEP:
                 continue
 
             show_viewport_cache = m.show_viewport
@@ -285,7 +269,7 @@ def config_modifiers_keep_state(
 
         for m in list(obj.modifiers):
 
-            if m.type not in MODIFIERS_KEEP:
+            if m.type not in cmglobals.MODIFIERS_KEEP:
                 continue
 
             if enable:

@@ -441,7 +441,7 @@ class CM_OT_import_cache(bpy.types.Operator):
         a_index: int = -1
         rm_mods = []
         for idx, m in enumerate(modifiers):
-            if m.type not in opsdata.MODIFIERS_KEEP:
+            if m.type not in cmglobals.MODIFIERS_KEEP:
 
                 obj.modifiers.remove(m)
                 rm_mods.append(m.name)
@@ -458,7 +458,7 @@ class CM_OT_import_cache(bpy.types.Operator):
         a_index: int = -1
         disabled_mods = []
         for idx, m in enumerate(modifiers):
-            if m.type not in opsdata.MODIFIERS_KEEP:
+            if m.type not in cmglobals.MODIFIERS_KEEP:
                 m.show_viewport = False
                 m.show_render = False
                 m.show_in_editmode = False
