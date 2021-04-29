@@ -29,7 +29,7 @@ class FolderListModel:
     @root_path.setter
     def root_path(self, path: Path) -> None:
 
-        if not path or path.absolute().exists():
+        if not path or not path.absolute().exists():
             logger.debug("Invalid path: %s", str(path))
             self.reset()
         else:

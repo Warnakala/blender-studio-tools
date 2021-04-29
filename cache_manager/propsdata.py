@@ -86,10 +86,21 @@ def gen_cache_coll_filename(collection: bpy.types.Collection) -> str:
 def gen_cachepath_collection(
     collection: bpy.types.Collection, context: bpy.types.Context
 ) -> Path:
-    cachedir_path = Path(context.scene.cm.cachedir_path)
+    cachedir_path = Path(gen_cachedir_path_str(None))
 
     if not cachedir_path:
         raise ValueError(
             f"Failed to generate cachepath for collection: {collection.name}. Invalid cachepath: {str(cachedir_path)}"
         )
     return cachedir_path.joinpath(gen_cache_coll_filename(collection)).absolute()
+
+
+def get_cache_version_dir_path_str(self: Any) -> str:
+    addon_prefs = addon_prefs_get(bpy.context)
+
+    if not addon_prefs.is_cachedir_root_valid:
+        return ""
+
+    p = Path(addon_prefs.cachedir_root_path) / _get_scene_name() / _get_shot_name()
+
+    return p.absolute().as_posix()

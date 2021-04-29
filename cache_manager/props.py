@@ -47,6 +47,9 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     cachedir: bpy.props.StringProperty(
         name="Cachedir", get=propsdata.gen_cachedir_path_str
     )
+    cache_version_dir: bpy.props.StringProperty(
+        name="Cache version dir", get=propsdata.get_cache_version_dir_path_str
+    )
 
     @property
     def cachedir_path(self) -> Optional[Path]:
@@ -62,6 +65,24 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
             return False
 
         if not bpy.data.filepath and self.cachedir.startswith("//"):
+            return False
+
+        return True
+
+    @property
+    def cache_version_dir_path(self) -> Optional[Path]:
+        if not self.is_cache_version_dir_valid:
+            return None
+
+        return Path(os.path.abspath(bpy.path.abspath(self.cache_version_dir)))
+
+    @property
+    def is_cache_version_dir_valid(self) -> bool:
+        # check if file is saved
+        if not self.cache_version_dir:
+            return False
+
+        if not bpy.data.filepath and self.cache_version_dir.startswith("//"):
             return False
 
         return True

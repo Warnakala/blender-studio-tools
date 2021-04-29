@@ -38,10 +38,10 @@ def init_version_dir_model(
     global VERSION_DIR_MODEL
     global _version_dir_model_init
 
-    cachedir_path = context.scene.cm.cachedir_path
+    cache_version_dir = Path(context.scene.cm.cache_version_dir_path)
 
     VERSION_DIR_MODEL.reset()
-    VERSION_DIR_MODEL.root_path = cachedir_path
+    VERSION_DIR_MODEL.root_path = cache_version_dir
 
     if context.scene.cm.category == "EXPORT":
         if not VERSION_DIR_MODEL.items:
