@@ -14,9 +14,18 @@ class CM_collection_property(bpy.types.PropertyGroup):
 
 
 class CM_property_group_collection(bpy.types.PropertyGroup):
-    cachefile: bpy.props.StringProperty(name="Cachefile", default="")
-    is_cache_loaded: bpy.props.BoolProperty(name="Cache Loaded", default=False)
-    is_cache_hidden: bpy.props.BoolProperty(name="Cache Hidden", default=False)
+    cachefile: bpy.props.StringProperty(
+        name="Cachefile",
+        default="",
+        subtype="FILE_PATH",
+        options={"LIBRARY_EDITABLE"},
+    )
+    is_cache_loaded: bpy.props.BoolProperty(
+        name="Cache Loaded", default=False, options={"LIBRARY_EDITABLE"}
+    )
+    is_cache_hidden: bpy.props.BoolProperty(
+        name="Cache Hidden", default=False, options={"LIBRARY_EDITABLE"}
+    )
 
 
 class CM_property_group_scene(bpy.types.PropertyGroup):
