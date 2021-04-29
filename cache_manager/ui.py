@@ -128,7 +128,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
         row = layout.row(align=True)
         row.separator()
 
-        # box for collection operations
+        # COLLECTION OPERATIONS
         box = layout.box()
         box.label(text="Cache Collections", icon="OUTLINER_COLLECTION")
         if context.scene.cm.category == "EXPORT":
@@ -156,7 +156,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 CM_OT_cache_list_actions.bl_idname, icon="REMOVE", text=""
             ).action = "REMOVE"
 
-            row = layout.row(align=True)
+            row = box.row(align=True)
             row.operator(
                 CM_OT_cache_export.bl_idname,
                 text=f"Cache {len(collections)} Collections",
