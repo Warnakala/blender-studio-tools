@@ -1,9 +1,11 @@
+import re
 from pathlib import Path
 from typing import List, Tuple, Generator, Dict, Union, Any
 
 import bpy
 
 from . import prefs
+from . import cmglobals
 from .logger import LoggerFactory
 from .models import FolderListModel
 
@@ -38,6 +40,13 @@ def init_version_dir_model(
     global VERSION_DIR_MODEL
     global _version_dir_model_init
 
+    # is None if invalid
+    if not context.scene.cm.cache_version_dir_path:
+        logger.error(
+            "Failed to initialize version directory model. Invalid path. Check addon preferences."
+        )
+        return
+
     cache_version_dir = Path(context.scene.cm.cache_version_dir_path)
 
     VERSION_DIR_MODEL.reset()
@@ -52,10 +61,23 @@ def init_version_dir_model(
     _version_dir_model_init = True
 
 
+def get_version(str_value: str, format: type = str) -> Union[str, int, None]:
+    match = re.search(cmglobals._VERSION_PATTERN, str_value)
+    if match:
+        version = match.group()
+        if format == str:
+            return version
+        if format == int:
+            return int(version.replace("v", ""))
+    return None
+
+
 def add_version_increment() -> str:
     items = VERSION_DIR_MODEL.items  # should be already sorted
 
-    if len(items) > 0:
+    versions = [get_version(item) for item in items if get_version(item)]
+
+    if len(versions) > 0:
         latest_version = items[0]
         increment = "v{:03}".format(int(latest_version.replace("v", "")) + 1)
     else:

@@ -1,3 +1,4 @@
 MODIFIER_NAME = "cm_cache"
 CONSTRAINT_NAME = "cm_cache"
 VALID_OBJECT_TYPES = {"MESH"}
+_VERSION_PATTERN = "v\d\d\d"
