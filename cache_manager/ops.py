@@ -270,7 +270,10 @@ class CM_OT_import_collections(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return context.scene.cm.is_cacheconfig_valid
+        return (
+            context.scene.cm.is_cacheconfig_valid
+            and context.scene.cm.cacheconfig_path.exists()
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         cacheconfig_path = context.scene.cm.cacheconfig_path

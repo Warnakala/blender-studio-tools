@@ -30,43 +30,114 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
-
+        split_factor = 0.225
+        split_factor_small = 0.95
         # category to choose between export / import
         row = layout.row(align=True)
         row.prop(context.scene.cm, "category", expand=True)
 
-        # cache version
+        # add some space
+        row = layout.row(align=True)
+        row.separator()
+
+        # box for cache version and cacheconfig
+        box = layout.box()
+
+        # VERSION
         version_text = self._get_version_text(context)
 
-        # show version dropdown
-        row = layout.row(align=True)
-        row.operator(
-            CM_OT_set_cache_version.bl_idname,
-            icon="DOWNARROW_HLT",
-            text=version_text,
-        )
-        if context.scene.cm.category == "EXPORT":
+        split = box.split(factor=split_factor, align=True)
 
-            row.operator(
+        # version label
+        split.label(text="Version:")
+
+        if context.scene.cm.category == "EXPORT":
+            sub_split = split.split(factor=split_factor_small, align=True)
+            sub_split.operator(
+                CM_OT_set_cache_version.bl_idname,
+                icon="DOWNARROW_HLT",
+                text=version_text,
+            )
+            sub_split.operator(
                 CM_OT_add_cache_version.bl_idname,
                 icon="ADD",
                 text="",
             )
 
-        # cachedir
-        row = layout.row()
-        if not context.scene.cm.is_cachedir_valid:
-            row.label(text=f"Cache Directory: Invalid")
         else:
-            row.prop(context.scene.cm, "cachedir", text="CachCache Directory")
+            split.operator(
+                CM_OT_set_cache_version.bl_idname,
+                icon="DOWNARROW_HLT",
+                text=version_text,
+            )
 
+        # CACHEDIR
+        split = box.split(factor=split_factor, align=True)
+
+        # cachedir label
+        split.label(text="Cache Directory:")
+
+        if not context.scene.cm.is_cachedir_valid:
+            split.label(text=f"Invalid")
+
+        if context.scene.cm.category == "EXPORT":
+
+            if context.scene.cm.cachedir_path.exists():
+                sub_split = split.split(factor=1 - split_factor_small)
+                sub_split.label(icon="ERROR")
+                sub_split.prop(context.scene.cm, "cachedir", text="")
+
+            else:
+                split.prop(context.scene.cm, "cachedir", text="")
+
+        else:
+            if not context.scene.cm.cachedir_path.exists():
+                split.label(text=f"Not found")
+            else:
+                split.prop(context.scene.cm, "cachedir", text="")
+
+        # CACHECONFIG
+        split = box.split(factor=split_factor, align=True)
+        # cachedir label
+        split.label(text="Cacheconfig:")
+
+        if not context.scene.cm.is_cacheconfig_valid:
+            split.label(text=f"Invalid")
+
+        if context.scene.cm.category == "EXPORT":
+
+            if context.scene.cm.cacheconfig_path.exists():
+                sub_split = split.split(factor=1 - split_factor_small)
+                sub_split.label(icon="ERROR")
+                sub_split.prop(context.scene.cm, "cacheconfig", text="")
+
+            else:
+                split.prop(context.scene.cm, "cacheconfig", text="")
+        else:
+            if not context.scene.cm.cacheconfig_path.exists():
+                split.label(text=f"Not found")
+
+            else:
+                sub_split = split.split(factor=0.95, align=True)
+                sub_split.prop(context.scene.cm, "cacheconfig", text="")
+                sub_split.operator(
+                    CM_OT_import_collections.bl_idname, icon="PLAY", text=""
+                )
+
+        # add some space
+        row = layout.row(align=True)
+        row.separator()
+
+        # box for collection operations
+        box = layout.box()
+        box.label(text="Cache Collections", icon="OUTLINER_COLLECTION")
         if context.scene.cm.category == "EXPORT":
 
             # get collections
             collections = list(props.get_cache_collections_export(context))
 
             # uilist
-            row = layout.row()
+            row = box.row()
             row.template_list(
                 "CM_UL_collection_cache_list_export",
                 "collection_cache_list_export",
@@ -96,17 +167,8 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
             # get collections
             collections = list(props.get_cache_collections_import(context))
 
-            # cacheconfig
-            row = layout.row()
-            if not context.scene.cm.is_cacheconfig_valid:
-                row.label(text=f"Cacheconfig: Invalid")
-            else:
-                # split = layout.split(factor=0.9, align=True)
-                row.prop(context.scene.cm, "cacheconfig", text="Cacheconfig")
-                row.operator(CM_OT_import_collections.bl_idname, icon="PLAY", text="")
-
             # uilist
-            row = layout.row()
+            row = box.row()
             row.template_list(
                 "CM_UL_collection_cache_list_import",
                 "collection_cache_list_import",
@@ -125,22 +187,22 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 CM_OT_cache_list_actions.bl_idname, icon="REMOVE", text=""
             ).action = "REMOVE"
 
-            row = layout.row(align=True)
+            row = box.row(align=True)
             row.operator(
                 CM_OT_import_cache.bl_idname,
-                text=f"Import Cache for {len(collections)} Collections",
+                text="Load",
                 icon="IMPORT",
             ).do_all = True
             row.operator(
-                CM_OT_cache_show.bl_idname, text="", icon="HIDE_OFF"
+                CM_OT_cache_show.bl_idname, text="Show", icon="HIDE_OFF"
             ).do_all = True
 
             row.operator(
-                CM_OT_cache_hide.bl_idname, text="", icon="HIDE_ON"
+                CM_OT_cache_hide.bl_idname, text="Hide", icon="HIDE_ON"
             ).do_all = True
 
             row.operator(
-                CM_OT_cache_remove.bl_idname, text="", icon="REMOVE"
+                CM_OT_cache_remove.bl_idname, text="Remove", icon="REMOVE"
             ).do_all = True
 
     def _get_version_text(self, context: bpy.types.Context) -> str:
