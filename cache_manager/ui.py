@@ -4,6 +4,7 @@ from typing import List, Tuple
 import bpy
 from .ops import (
     CM_OT_cache_export,
+    CM_OT_cacheconfig_export,
     CM_OT_import_cache,
     CM_OT_import_collections,
     CM_OT_cache_list_actions,
@@ -161,6 +162,12 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 CM_OT_cache_export.bl_idname,
                 text=f"Cache {len(collections)} Collections",
                 icon="EXPORT",
+            ).do_all = True
+
+            row.operator(
+                CM_OT_cacheconfig_export.bl_idname,
+                text="",
+                icon="ALIGN_LEFT",
             ).do_all = True
 
         else:

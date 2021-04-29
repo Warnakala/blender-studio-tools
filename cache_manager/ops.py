@@ -34,7 +34,10 @@ class CM_OT_cache_export(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return [context.scene.collection] and context.scene.cm.is_cachedir_valid
+        return bool(
+            context.scene.cm.is_cachedir_valid
+            and list(props.get_cache_collections_export(context))
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         cacheconfig_path = context.scene.cm.cacheconfig_path
@@ -209,6 +212,59 @@ class CM_OT_cache_export(bpy.types.Operator):
 
         log_new_lines(1)
         logger.info("-END- Exporting Cache")
+        return {"FINISHED"}
+
+
+class CM_OT_cacheconfig_export(bpy.types.Operator):
+    """"""
+
+    bl_idname = "cm.cacheconfig_export"
+    bl_label = "Export Cacheconfig"
+    bl_description = "Exports only the cacheconfig for selected collections"
+
+    do_all: bpy.props.BoolProperty(
+        name="Process All", description="Process all cache collections", default=False
+    )
+    index: bpy.props.IntProperty(name="Index")
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(
+            context.scene.cm.is_cachedir_valid
+            and list(props.get_cache_collections_export(context))
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        cacheconfig_path = context.scene.cm.cacheconfig_path
+        log_new_lines(1)
+        logger.info("-START- Exporting Cacheconfig")
+
+        # get collections to be processed
+        if self.do_all:
+            collections = list(props.get_cache_collections_export(context))
+        else:
+            collections = [context.scene.cm.colls_export[self.index].coll_ptr]
+
+        # create ouput dir if not existent
+        filedir = Path(context.scene.cm.cachedir_path)
+        if not filedir.exists():
+            filedir.mkdir(parents=True, exist_ok=True)
+            logger.info("Created directory %s", filedir.as_posix())
+
+        # generate cacheconfig
+        CacheConfigFactory.gen_config_from_colls(context, collections, cacheconfig_path)
+
+        # update cache version property
+        propsdata.update_cache_version_property(context)
+
+        # log
+        self.report(
+            {"INFO"},
+            f"Exported Cacheconfig {cacheconfig_path.as_posix()}",
+        )
+
+        log_new_lines(1)
+        logger.info("-END- Exporting Cacheconfig")
         return {"FINISHED"}
 
 
@@ -809,6 +865,7 @@ class CM_OT_add_cache_version(bpy.types.Operator):
 
 classes: List[Any] = [
     CM_OT_cache_export,
+    CM_OT_cacheconfig_export,
     CM_OT_import_cache,
     CM_OT_cache_list_actions,
     CM_OT_assign_cachefile,
