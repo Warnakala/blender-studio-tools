@@ -134,11 +134,14 @@ class CacheConfigBlueprint(CacheConfig):
     _CACHECONFIG_TEMPL: Dict[str, Any] = {
         "meta": {},
         "libs": {},
-        "animation_data": {},  # {filepath_to_lib: _LIBDICT_TEMPL}
+        "animation_data": {},
+        "cameras": {},
     }
     _LIBDICT_TEMPL: Dict[str, Any] = {
         "data_from": {"collections": {}},  # {'colname': {'cachefile': cachepath}}
     }
+    _CAMDICT_TEMPL = {"type": "", "data_paths": {}}
+    _DATA_PATH_DICT = {"value": []}
     _OBJECTDICT_TEMPL = {"type": "", "drivers": []}
     _DRIVERDICT_TEMPL = {"data_path": "", "value": []}
 
@@ -174,6 +177,14 @@ class CacheConfigBlueprint(CacheConfig):
             obj_name, deepcopy(self._OBJECTDICT_TEMPL)
         )
 
+    def _ensure_cam(self, cam_name: str) -> None:
+        self._json_obj["cameras"].setdefault(cam_name, deepcopy(self._CAMDICT_TEMPL))
+
+    def _ensure_cam_data_path_dict(self, cam_name: str) -> None:
+        self._json_obj["cameras"][cam_name].setdefault(
+            "data_paths", deepcopy(self._DATA_PATH_DICT)
+        )
+
     def _ensure_driver_dict(self, obj_name: str) -> None:
         self._json_obj["animation_data"][obj_name].setdefault(
             "drivers", deepcopy(self._DRIVERDICT_TEMPL)
@@ -195,6 +206,18 @@ class CacheConfigBlueprint(CacheConfig):
         self._ensure_anim_obj(obj_name)
         self._json_obj["animation_data"][obj_name][key] = value
 
+    def set_cam_key(self, cam_name: str, key: str, value: Any) -> None:
+
+        self._ensure_cam(cam_name)
+        self._json_obj["cameras"][cam_name][key] = value
+
+    def add_cam_data_path(self, cam_name: str, data_path) -> None:
+        self._ensure_cam(cam_name)
+        self._ensure_cam_data_path_dict(cam_name)
+        self._json_obj["cameras"][cam_name]["data_paths"][data_path] = deepcopy(
+            self._DATA_PATH_DICT
+        )
+
     def set_coll_variant(
         self,
         libfile: str,
@@ -212,6 +235,9 @@ class CacheConfigBlueprint(CacheConfig):
         ] = coll_dict
 
     def get_drivers_dict_templ(self):
+        return deepcopy(self._DRIVERDICT_TEMPL)
+
+    def get_data_path_dict_templ(self):
         return deepcopy(self._DRIVERDICT_TEMPL)
 
 
@@ -455,8 +481,11 @@ class CacheConfigFactory:
         # poulate cacheconfig with libs based on collections
         cls._populate_libs(context, colls, blueprint)
 
-        # populate collections with animation data
+        # populate cacheconfig with animation data
         objects_with_anim = cls._populate_with_animation_data(colls, blueprint)
+
+        # populate cacheconfig with cameras
+        cams_to_cache = cls._populate_with_cameras(colls, blueprint)
 
         # get drive values for each frame
         cls._read_and_store_animation_data(context, objects_with_anim, blueprint)
@@ -590,6 +619,40 @@ class CacheConfigFactory:
         logger.info("Populated CacheConfig with animated properties.")
 
         return objects_with_anim
+
+    @classmethod
+    def _populate_with_cameras(
+        cls,
+        colls: List[bpy.types.Collection],
+        blueprint: CacheConfigBlueprint,
+    ) -> List[bpy.types.Camera]:
+
+        cams_to_cache: List[bpy.types.Camera] = []
+
+        for cam in bpy.data.cameras:
+
+            if not hasattr(cam.override_library, "reference"):
+                # local blend file camera
+                continue
+
+            lib = cam.override_library.reference.library
+            libfile = Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
+
+            # make sure to only export cams that are in current cache collections
+            if libfile not in blueprint.get_all_libfiles():
+                continue
+
+            # set type
+            blueprint.set_cam_key(cam.name, "type", str(cam.type))
+
+            cams_to_cache.append(cam)
+
+            for data_path in cmglobals.CAM_DATA_PATHS:
+                blueprint.add_cam_data_path(cam.name, data_path)
+
+        logger.info("Populated CacheConfig with cameras.")
+
+        return cams_to_cache
 
     @classmethod
     def _read_and_store_animation_data(
