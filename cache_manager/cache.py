@@ -58,7 +58,7 @@ def temporary_current_frame(context):
 
 class CacheConfig:
     def __init__(self, filepath: Path):
-        self.filepath = filepath
+        self.filepath: Path = filepath
         self._load(filepath)
 
     def _load(self, filepath: Path) -> None:
@@ -70,8 +70,7 @@ class CacheConfig:
     def json_obj(self) -> Any:
         return self._json_obj
 
-    @property
-    def meta(self) -> Dict[str, Any]:
+    def get_meta(self) -> Dict[str, Any]:
         return deepcopy(self._json_obj["meta"])
 
     def get_meta_key(self, key: str) -> Any:
@@ -105,35 +104,36 @@ class CacheConfig:
                     remapping[variant_name] = libfile
         return remapping
 
-    def get_obj_to_lib_mapping(self) -> Dict[str, str]:
-        remapping = {}
-        for libfile in self._json_obj["libs"]:
-            for obj_name in self._json_obj["libs"][libfile]["animation_data"]:
-                remapping[obj_name] = libfile
-        return remapping
+    def get_animation_data(self) -> Dict[str, Any]:
+        return deepcopy(self._json_obj["animation_data"])
 
-    def get_animation_data(self, libfile: str) -> Dict[str, Any]:
-        return deepcopy(self._json_obj["libs"][libfile]["animation_data"])
+    def get_all_anim_obj_names(self) -> List[str]:
+        return sorted(self._json_obj["animation_data"].keys())
 
-    def get_all_anim_obj_names(self, libfile: str) -> List[str]:
-        return sorted(self._json_obj["libs"][libfile]["animation_data"].keys())
+    def get_anim_obj(self, obj_name: str) -> Optional[Dict[str, Any]]:
+        try:
+            anim_obj_dict = self._json_obj["animation_data"][obj_name]
+        except KeyError:
+            logger.error(
+                "%s not found in animation data (cacheconfig: %s)",
+                obj_name,
+                self.filepath.as_posix(),
+            )
+            return None
+        return deepcopy(anim_obj_dict)
 
-    def get_all_driver_dicts_for_obj(
-        self, libfile: str, obj_name: str
-    ) -> List[Dict[str, Any]]:
-        return deepcopy(
-            self._json_obj["libs"][libfile]["animation_data"][obj_name]["drivers"]
-        )
+    def get_all_driver_dicts_for_obj(self, obj_name: str) -> List[Dict[str, Any]]:
+        return deepcopy(self._json_obj["animation_data"][obj_name]["drivers"])
 
 
 class CacheConfigBlueprint(CacheConfig):
     _CACHECONFIG_TEMPL: Dict[str, Any] = {
         "meta": {},
-        "libs": {},  # {filepath_to_lib: _LIBDICT_TEMPL}
+        "libs": {},
+        "animation_data": {},  # {filepath_to_lib: _LIBDICT_TEMPL}
     }
     _LIBDICT_TEMPL: Dict[str, Any] = {
         "data_from": {"collections": {}},  # {'colname': {'cachefile': cachepath}}
-        "animation_data": {},
     }
     _OBJECTDICT_TEMPL = {"type": "", "drivers": []}
     _DRIVERDICT_TEMPL = {"data_path": "", "value": []}
@@ -165,39 +165,31 @@ class CacheConfigBlueprint(CacheConfig):
             coll_ref_name
         ].setdefault(coll_var_name, {})
 
-    def _ensure_anim_obj(self, libfile: str, obj_name: str) -> None:
-        self._json_obj["libs"][libfile]["animation_data"].setdefault(
+    def _ensure_anim_obj(self, obj_name: str) -> None:
+        self._json_obj["animation_data"].setdefault(
             obj_name, deepcopy(self._OBJECTDICT_TEMPL)
         )
 
-    def _ensure_driver_dict(self, libfile: str, obj_name: str) -> None:
-        self._json_obj["libs"][libfile]["animation_data"][obj_name].setdefault(
+    def _ensure_driver_dict(self, obj_name: str) -> None:
+        self._json_obj["animation_data"][obj_name].setdefault(
             "drivers", deepcopy(self._DRIVERDICT_TEMPL)
         )
 
-    def append_driver_dict(
-        self, libfile: str, obj_name: str, driver_dict: Dict[str, Any]
-    ) -> None:
-        self._json_obj["libs"][libfile]["animation_data"][obj_name]["drivers"].append(
-            driver_dict
-        )
+    def append_driver_dict(self, obj_name: str, driver_dict: Dict[str, Any]) -> None:
+        self._json_obj["animation_data"][obj_name]["drivers"].append(driver_dict)
 
     def set_driver_dict_at_index(
-        self, libfile: str, obj_name: str, driver_dict: Dict[str, Any], index: int
+        self, obj_name: str, driver_dict: Dict[str, Any], index: int
     ) -> None:
-        self._json_obj["libs"][libfile]["animation_data"][obj_name]["drivers"][
-            index
-        ] = driver_dict
+        self._json_obj["animation_data"][obj_name]["drivers"][index] = driver_dict
 
-    def clear_all_driver_dicts(self, libfile: str, obj_name: str) -> None:
-        self._json_obj["libs"][libfile]["animation_data"][obj_name]["drivers"].clear()
+    def clear_all_driver_dicts(self, obj_name: str) -> None:
+        self._json_obj["animation_data"][obj_name]["drivers"].clear()
 
-    def set_anim_obj_key(
-        self, libfile: str, obj_name: str, key: str, value: Any
-    ) -> None:
+    def set_anim_obj_key(self, obj_name: str, key: str, value: Any) -> None:
 
-        self._ensure_anim_obj(libfile, obj_name)
-        self._json_obj["libs"][libfile]["animation_data"][obj_name][key] = value
+        self._ensure_anim_obj(obj_name)
+        self._json_obj["animation_data"][obj_name][key] = value
 
     def set_coll_variant(
         self,
@@ -351,29 +343,30 @@ class CacheConfigProcessor:
             libfile = coll_to_lib_mapping[coll.name]
 
             # if there is no animation_data for this libfile skip
-            if not cacheconfig.get_animation_data(libfile):
+            if not cacheconfig.get_animation_data():
                 logger.info("No animation data available for collection %s", coll.name)
                 continue
 
             # for each object in this lib file that has animation data set keyframes on each frame
-            for obj_name in cacheconfig.get_all_anim_obj_names(libfile):
+            for obj in coll.all_objects:
 
-                # get object from string
-                obj = bpy.data.objects[obj_name]
+                obj_name = obj.name
+                anim_obj_dict = cacheconfig.get_anim_obj(obj_name)
+
+                if not anim_obj_dict:
+                    logger.info(
+                        "Failed to import animation data for %s. Not found in cacheconfig.",
+                        obj_name,
+                    )
+                    continue
 
                 # disable drivers
                 opsdata.disable_vis_drivers([obj])
 
-                # only if obj in the filter collections
-                if not coll in obj.users_collection:
-                    continue
-
                 driven_props_list = []  # for log
 
                 # get property that was driven and set keyframes
-                for driver_dict in cacheconfig.get_all_driver_dicts_for_obj(
-                    libfile, obj_name
-                ):
+                for driver_dict in cacheconfig.get_all_driver_dicts_for_obj(obj_name):
 
                     data_path_str = driver_dict["data_path"]
                     # for log
@@ -389,10 +382,12 @@ class CacheConfigProcessor:
                         # set property to value
                         if data_path_str.startswith("["):
                             deliminater = ""
-                        exec(
-                            f'bpy.data.objects["{obj_name}"]{deliminater}{data_path_str}={prop_value}'
-                        )
-                        obj.keyframe_insert(data_path=data_path_str, frame=frame)
+
+                        command = f'bpy.data.objects["{obj_name}"]{deliminater}{data_path_str}={prop_value}'
+                        json_
+                        print(command)
+                        exec(command)
+                        # obj.keyframe_insert(data_path=data_path_str, frame=frame)
 
                 logger.info(
                     "%s imported animation (%s, %s) for props: %s",
@@ -401,6 +396,7 @@ class CacheConfigProcessor:
                     frame_out,
                     " ,".join(driven_props_list),
                 )
+
         log_new_lines(1)
         logger.info("-END- Importing Animation Data")
 
@@ -478,15 +474,26 @@ class CacheConfigFactory:
     ) -> CacheConfigBlueprint:
 
         blueprint.set_meta_key(
-            "name",
-            Path(bpy.data.filepath).name
+            "blendfile",
+            Path(bpy.data.filepath).absolute().as_posix()
             if bpy.data.filepath
-            else "not_saved_blendfile",
+            else "unsaved_blendfile",
         )
+
         blueprint.set_meta_key(
-            "creation_date", get_current_time_string(cls._DATE_FORMAT)
+            "name",
+            Path(bpy.data.filepath).name if bpy.data.filepath else "unsaved_blendfile",
         )
+
+        if not "creation_date" in blueprint.get_meta():
+            blueprint.set_meta_key(
+                "creation_date", get_current_time_string(cls._DATE_FORMAT)
+            )
+
+        blueprint.set_meta_key("updated_at", get_current_time_string(cls._DATE_FORMAT))
+
         blueprint.set_meta_key("frame_start", context.scene.frame_start)
+
         blueprint.set_meta_key("frame_end", context.scene.frame_end)
 
         logger.info("Created metadata")
@@ -565,12 +572,12 @@ class CacheConfigFactory:
                                 continue
 
                     # set type
-                    blueprint.set_anim_obj_key(libfile, obj.name, "type", str(obj.type))
+                    blueprint.set_anim_obj_key(obj.name, "type", str(obj.type))
 
                     # gen driver dict and append to blueprint
                     driver_dict = blueprint.get_drivers_dict_templ()
                     driver_dict["data_path"] = driver.data_path
-                    blueprint.append_driver_dict(libfile, obj.name, driver_dict)
+                    blueprint.append_driver_dict(obj.name, driver_dict)
 
                     if not is_anim:
                         is_anim = True
@@ -595,20 +602,15 @@ class CacheConfigFactory:
         fout = context.scene.frame_end
         frame_range = range(fin, fout + 1)
 
-        remapping = blueprint.get_obj_to_lib_mapping()
-
         with temporary_current_frame(context) as original_curframe:
             for frame in frame_range:
                 context.scene.frame_set(frame)
                 logger.info("Storing animation data for frame %i", frame)
 
                 for obj in objects:
-                    libfile = remapping[obj.name]
 
                     # get deepcopy of all driver dicts
-                    driver_data = blueprint.get_all_driver_dicts_for_obj(
-                        libfile, obj.name
-                    )
+                    driver_data = blueprint.get_all_driver_dicts_for_obj(obj.name)
 
                     for idx, driver_dict in enumerate(driver_data):
                         data_path_str = driver_dict["data_path"]
@@ -616,9 +618,7 @@ class CacheConfigFactory:
                         driver_dict["value"].append(driven_value)
 
                         # update blueprint driver dict at index
-                        blueprint.set_driver_dict_at_index(
-                            libfile, obj.name, driver_dict, idx
-                        )
+                        blueprint.set_driver_dict_at_index(obj.name, driver_dict, idx)
         # log
         logger.info(
             "Stored data for animated properties (%i, %i).",
