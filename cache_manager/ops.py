@@ -417,6 +417,8 @@ class CM_OT_import_cache(bpy.types.Operator):
         log_new_lines(1)
         logger.info("-START- Importing Cache")
         addon_prefs = prefs.addon_prefs_get(context)
+        succeeded = []
+        failed = []
 
         cacheconfig_path = context.scene.cm.cacheconfig_path
 
@@ -424,11 +426,6 @@ class CM_OT_import_cache(bpy.types.Operator):
             cacheconfig_path = context.scene.cm.cacheconfig_custom_path
 
         cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
-
-        succeeded = []
-        failed = []
-        modifier_name = cmglobals.MODIFIER_NAME
-        constraint_name = cmglobals.CONSTRAINT_NAME
 
         # get collections to be processed
         if self.do_all:
