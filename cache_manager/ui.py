@@ -17,13 +17,6 @@ from .ops import (
 from . import propsdata, prefs, props
 
 
-def get_cachedir_path_display(context: bpy.types.Context) -> str:
-    addon_prefs = prefs.addon_prefs_get(context)
-    if not context.scene.cm.cachedir_path:
-        return "Invalid"
-    return context.scene.cm.cachedir_path.as_posix()
-
-
 class CM_PT_vi3d_cache(bpy.types.Panel):
     """
     Panel in sequence editor that displays email, password and login operator.
@@ -36,29 +29,22 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
-
-        addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
 
         # category to choose between export / import
         row = layout.row(align=True)
         row.prop(context.scene.cm, "category", expand=True)
 
-        # cachedir
-        row = layout.row()
-        row.label(text=f"Cache Directory: {get_cachedir_path_display(context)}")
-
         # cache version
         version_text = self._get_version_text(context)
 
-        row = layout.row(align=True)
         # show version dropdown
+        row = layout.row(align=True)
         row.operator(
             CM_OT_set_cache_version.bl_idname,
             icon="DOWNARROW_HLT",
             text=version_text,
         )
-
         if context.scene.cm.category == "EXPORT":
 
             row.operator(
@@ -66,6 +52,15 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 icon="ADD",
                 text="",
             )
+
+        # cachedir
+        row = layout.row()
+        if not context.scene.cm.is_cachedir_valid:
+            row.label(text=f"Cache Directory: Invalid")
+        else:
+            row.prop(context.scene.cm, "cachedir", text="CachCache Directory")
+
+        if context.scene.cm.category == "EXPORT":
 
             # get collections
             collections = list(props.get_cache_collections_export(context))
@@ -103,8 +98,12 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
 
             # cacheconfig
             row = layout.row()
-            row.prop(context.scene.cm, "cacheconfig", text="Cacheconfig")
-            row.operator(CM_OT_import_collections.bl_idname, icon="PLAY", text="")
+            if not context.scene.cm.is_cacheconfig_valid:
+                row.label(text=f"Cacheconfig: Invalid")
+            else:
+                # split = layout.split(factor=0.9, align=True)
+                row.prop(context.scene.cm, "cacheconfig", text="Cacheconfig")
+                row.operator(CM_OT_import_collections.bl_idname, icon="PLAY", text="")
 
             # uilist
             row = layout.row()
