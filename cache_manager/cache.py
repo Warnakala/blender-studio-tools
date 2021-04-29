@@ -16,9 +16,13 @@ logger = LoggerFactory.getLogger(__name__)
 
 
 def is_valid_cache_object(obj: bpy.types.Object) -> bool:
-    if obj.type in cmglobals.VALID_OBJECT_TYPES and obj.name.startswith("GEO"):
+    if obj.type not in cmglobals.VALID_OBJECT_TYPES:
+        return False
+
+    if obj.type == "CAMERA":
         return True
-    return False
+
+    return obj.name.startswith("GEO")
 
 
 def get_valid_cache_objects(collection: bpy.types.Collection) -> List[bpy.types.Object]:
@@ -566,7 +570,7 @@ class CacheConfigFactory:
                     data_path = driver.data_path.split(".")
                     if len(data_path) > 1:
                         if data_path[0].startswith("modifiers"):
-                            if data_path[-1] in opsdata.DRIVERS_MUTE:
+                            if data_path[-1] in cmglobals.DRIVER_VIS_DATA_PATHS:
                                 continue
 
                     # set type
