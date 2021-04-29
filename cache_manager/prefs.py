@@ -4,6 +4,8 @@ from typing import Optional
 
 import bpy
 
+from . import propsdata
+
 
 class CM_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
@@ -13,6 +15,7 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
         default="//cache",
         options={"HIDDEN", "SKIP_SAVE"},
         subtype="DIR_PATH",
+        update=propsdata.category_upate_version_model,
     )
 
     def draw(self, context: bpy.types.Context) -> None:
