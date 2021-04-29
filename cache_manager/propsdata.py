@@ -6,6 +6,7 @@ from typing import Any
 from . import opsdata
 
 import bpy
+from bpy.app.handlers import persistent
 
 
 def update_cache_version_property(context: bpy.types.Context) -> None:
@@ -104,3 +105,21 @@ def get_cache_version_dir_path_str(self: Any) -> str:
     p = Path(addon_prefs.cachedir_root_path) / _get_scene_name() / _get_shot_name()
 
     return p.absolute().as_posix()
+
+
+@persistent
+def load_post_handler_init_model_cache_version(dummy: Any) -> None:
+    category_upate_version_model(None, bpy.context)
+
+
+# ---------REGISTER ----------
+
+
+def register():
+    # handlers
+    bpy.app.handlers.load_post.append(load_post_handler_init_model_cache_version)
+
+
+def unregister():
+    # clear handlers
+    bpy.app.handlers.load_post.remove(load_post_handler_init_model_cache_version)
