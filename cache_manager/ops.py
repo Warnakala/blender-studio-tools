@@ -166,7 +166,7 @@ class CM_OT_cache_export(bpy.types.Operator):
 
             # hide colls again
             for coll in colls_to_be_hidden:
-                obj.hide_viewport = True
+                coll.hide_viewport = True
 
             logger.info(
                 "Hide collections in viewport after export:\n%s",
