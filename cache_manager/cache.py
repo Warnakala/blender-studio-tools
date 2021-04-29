@@ -384,10 +384,8 @@ class CacheConfigProcessor:
                             deliminater = ""
 
                         command = f'bpy.data.objects["{obj_name}"]{deliminater}{data_path_str}={prop_value}'
-                        json_
-                        print(command)
                         exec(command)
-                        # obj.keyframe_insert(data_path=data_path_str, frame=frame)
+                        obj.keyframe_insert(data_path=data_path_str, frame=frame)
 
                 logger.info(
                     "%s imported animation (%s, %s) for props: %s",
