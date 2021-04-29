@@ -3,7 +3,6 @@ from . import cmglobals
 from . import logger
 from . import cache
 from . import models
-from . import blend
 from . import prefs
 from . import propsdata
 from . import props
@@ -36,7 +35,6 @@ if _need_reload:
     logger = importlib.reload(logger)
     cache = importlib.reload(cache)
     models = importlib.reload(models)
-    blend = importlib.reload(blend)
     prefs = importlib.reload(prefs)
     propsdata = importlib.reload(propsdata)
     props = importlib.reload(props)

@@ -4,8 +4,8 @@ from typing import List, Tuple, Generator, Dict, Union, Any
 
 import bpy
 
-from . import prefs
 from . import cmglobals
+from . import prefs
 from .logger import LoggerFactory
 from .models import FolderListModel
 
