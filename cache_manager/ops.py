@@ -415,7 +415,6 @@ class CM_OT_import_cache(bpy.types.Operator):
 
     def execute(self, context):
         log_new_lines(1)
-        logger.info("-START- Importing Cache")
         addon_prefs = prefs.addon_prefs_get(context)
         succeeded = []
         failed = []
@@ -424,8 +423,6 @@ class CM_OT_import_cache(bpy.types.Operator):
 
         if context.scene.cm.use_cacheconfig_custom:
             cacheconfig_path = context.scene.cm.cacheconfig_custom_path
-
-        cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
 
         # get collections to be processed
         if self.do_all:
@@ -444,10 +441,15 @@ class CM_OT_import_cache(bpy.types.Operator):
 
         collections = valid_colls
 
+        # log collections
+        logger.info(
+            "-START- Importing Cache for %s", ", ".join([c.name for c in collections])
+        )
+
         # load animation data from config #disables drivers #TODO: driver disabling should happen here
+        cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
         CacheConfigProcessor.import_animation_data(cacheconfig, collections)
 
-        log_new_lines(1)
         logger.info("-START- Importing Alembic Cache")
 
         # begin progress udpate
@@ -501,7 +503,9 @@ class CM_OT_import_cache(bpy.types.Operator):
         log_new_lines(1)
         logger.info("-END- Importing Alembic Cache")
         log_new_lines(1)
-        logger.info("-END- Importing Cache")
+        logger.info(
+            "-END- Importing Cache for %s", ", ".join([c.name for c in collections])
+        )
         return {"FINISHED"}
 
     def _kill_increment(self, str_value: str) -> str:
