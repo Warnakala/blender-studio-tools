@@ -496,7 +496,9 @@ class CM_OT_import_cache(bpy.types.Operator):
             )
 
             # ensure modifiers vis have render vis settings does not include MODIFIERS_KEEP
-            opsdata.sync_modifier_vis_with_render_setting(object_list)
+            opsdata.sync_modifier_vis_with_render_setting(
+                object_list
+            )  # TODO: maybe for all objects that got muted drivers too?
 
             # ensure MODIFIERS_KEEP are enabled after import
             opsdata.config_modifiers_keep_state(object_list, enable=True)
