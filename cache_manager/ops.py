@@ -467,6 +467,7 @@ class CM_OT_import_cache(bpy.types.Operator):
             # get list with valid objects to apply cache to
             object_list = cache.get_valid_cache_objects(coll)
 
+            # add cache modifier and constraints
             for obj in object_list:
 
                 # ensure and config constraint
@@ -485,6 +486,17 @@ class CM_OT_import_cache(bpy.types.Operator):
                     # ensure and config cache modifier
                     mod = self._ensure_cache_modifier(obj)
                     self._config_cache_modifier(context, mod, modifier_index, cachefile)
+
+            # mute drivers
+            muted_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
+
+            logger.info(
+                "Disabled drivers:\n%s",
+                ",\n".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
+            )
+
+            # ensure modifiers vis have render vis settings does not include MODIFIERS_KEEP
+            opsdata.sync_modifier_vis_with_render_setting(object_list)
 
             # ensure MODIFIERS_KEEP are enabled after import
             opsdata.config_modifiers_keep_state(object_list, enable=True)
@@ -563,11 +575,12 @@ class CM_OT_import_cache(bpy.types.Operator):
                 c.mute = True
                 disabled_const.append(c)
 
-        logger.info(
-            "%s Disabled constaints: %s",
-            obj.name,
-            ", ".join([c.name for c in disabled_const]),
-        )
+        if disabled_const:
+            logger.info(
+                "%s Disabled constaints: %s",
+                obj.name,
+                ", ".join([c.name for c in disabled_const]),
+            )
         return disabled_const
 
     def _ensure_cachefile(self, cachefile_path: str) -> bpy.types.CacheFile:
