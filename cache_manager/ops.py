@@ -467,19 +467,22 @@ class CM_OT_import_cache(bpy.types.Operator):
             # get list with valid objects to apply cache to
             object_list = cache.get_valid_cache_objects(coll)
 
-            # Loop Through All Objects except Active Object and add Modifier and Constraint
             for obj in object_list:
-
-                # disable all armature modifiers, get index of first one, use that index for cache modifier
-                a_index = self._config_modifiers(obj)
-                modifier_index = a_index if a_index != -1 else 0
 
                 # ensure and config constraint
                 con = self._ensure_cache_constraint(obj)
                 self._config_cache_constraint(context, con, cachefile)
 
-                # ensure and config cache modifier
+                # disable constraints
+                self._disable_constraints(obj)
+
                 if obj.type != "CAMERA":
+
+                    # disable all armature modifiers, get index of first one, use that index for cache modifier
+                    a_index = self._config_modifiers(obj)
+                    modifier_index = a_index if a_index != -1 else 0
+
+                    # ensure and config cache modifier
                     mod = self._ensure_cache_modifier(obj)
                     self._config_cache_modifier(context, mod, modifier_index, cachefile)
 
@@ -550,6 +553,22 @@ class CM_OT_import_cache(bpy.types.Operator):
 
         logger.info("%s Disabled modifiers: %s", obj.name, ", ".join(disabled_mods))
         return a_index
+
+    def _disable_constraints(self, obj: bpy.types.Object) -> List[bpy.types.Constraint]:
+        constraints = list(obj.constraints)
+        disabled_const: List[bpy.types.Constraint] = []
+
+        for c in constraints:
+            if c.type not in cmglobals.CONSTRAINTS_KEEP:
+                c.mute = True
+                disabled_const.append(c)
+
+        logger.info(
+            "%s Disabled constaints: %s",
+            obj.name,
+            ", ".join([c.name for c in disabled_const]),
+        )
+        return disabled_const
 
     def _ensure_cachefile(self, cachefile_path: str) -> bpy.types.CacheFile:
         # get cachefile path for this collection

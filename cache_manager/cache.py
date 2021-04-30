@@ -375,9 +375,6 @@ class CacheConfigProcessor:
         # extend objs list with cams
         objs_load_anim.extend(cams_laod_anim)
 
-        print(f"ANIM OBJECTS: {str(objs_load_anim)}")
-        print(f"ANIM CAMS: {str(cams_laod_anim)}")
-
         # import animation data for objecst
         cls._import_animation_data_objects(cacheconfig, objs_load_anim)
 
@@ -409,13 +406,16 @@ class CacheConfigProcessor:
             if not obj_dict:
                 continue
 
-            # disable drivers
-            opsdata.disable_vis_drivers([obj])
-
             anim_props_list = []  # for log
+            muted_drivers = []  # for log
 
             # get property that was driven and set keyframes
             for data_path in cacheconfig.get_all_data_paths(obj_category, obj_name):
+
+                # disable drivers
+                muted_drivers.extend(
+                    opsdata.disable_drivers_by_data_path([obj], data_path)
+                )
 
                 # for log
                 anim_props_list.append(data_path)
@@ -442,6 +442,12 @@ class CacheConfigProcessor:
 
                     exec(command)
                     obj.keyframe_insert(data_path=data_path, frame=frame)
+
+            logger.info(
+                "%s disabled drivers: \n%s",
+                obj_name,
+                ",\n".join([m.data_path for m in muted_drivers]),
+            )
 
             logger.info(
                 "%s imported animation (%s, %s) for props: %s",

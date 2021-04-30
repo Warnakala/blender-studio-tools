@@ -16,6 +16,9 @@ MODIFIERS_KEEP: List[str] = [
     "DATA_TRANSFER",
     "NORMAL_EDIT",
 ]
+CONSTRAINTS_KEEP: List[str] = [
+    "TRANSFORM_CACHE",
+]
 
 DRIVER_VIS_DATA_PATHS: List[str] = [
     "hide_viewport",

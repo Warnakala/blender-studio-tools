@@ -170,6 +170,30 @@ def disable_vis_drivers(
     return muted_drivers
 
 
+def disable_drivers_by_data_path(
+    objects: List[bpy.types.Object], data_path: str
+) -> List[bpy.types.Driver]:
+
+    # store driver that were muted to entmute them after
+    muted_drivers: List[bpy.types.Driver] = []
+
+    for obj in objects:
+        if obj.animation_data:
+            for driver in obj.animation_data.drivers:
+
+                # get suffix of data path, if modifiers modifier name is at the beginning
+                if driver.data_path != data_path:
+                    continue
+
+                if driver.mute == True:
+                    continue
+
+                driver.mute = True
+                muted_drivers.append(driver)
+
+    return muted_drivers
+
+
 def ensure_obj_vis(
     objects: List[bpy.types.Object],
 ) -> List[bpy.types.Object]:
