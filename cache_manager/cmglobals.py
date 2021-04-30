@@ -35,6 +35,7 @@ CAM_DATA_PATHS: List[str] = [
     "dof.aperture_fstop",
     "dof.aperture_ratio",
     "dof.aperture_rotation",
+    "dof.focus_distance",
     "lens",
     "ortho_scale",
     "sensor_fit",
