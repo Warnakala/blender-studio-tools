@@ -262,10 +262,11 @@ def config_modifiers_keep_state(
 
     modifiers: List[bpy.types.Modifier] = []
 
-    noun = "enabled" if enable else "disabled"
-    for obj in objs:
+    noun = "Enabled" if enable else "Disabled"
 
-        log_list: List[str] = []
+    log_list = {}
+
+    for obj in objs:
 
         for m in list(obj.modifiers):
 
@@ -280,15 +281,18 @@ def config_modifiers_keep_state(
                 m.show_viewport = False
                 m.show_render = False
 
-            log_list.append(f"{m.name}")
+            log_list.setdefault(obj.name, [])
+            log_list[obj.name].append(m.name)
+
             modifiers.append(m)
 
-        if log_list:
-            logger.info(
-                "%s %s modifier show_viewport show_render: \n%s",
-                obj.name,
-                noun,
-                ",\n".join(log_list),
-            )
+    if log_list:
+        header = f"{noun} modifiers:"
+        text = [f"{obj_name}: {', '.join(log_list[obj_name])}" for obj_name in log_list]
+        logger.info(
+            "%s \n%s",
+            header,
+            ",\n".join(text),
+        )
 
     return modifiers
