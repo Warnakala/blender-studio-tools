@@ -6,6 +6,12 @@ Cache Manager is a Blender Addon to streamline the alembic cache workflow of ass
 Download or clone this repository.
 In the root project folder you will find the 'cache_manager' folder. Place this folder in your Blender addons directory or create a sym link to it.
 
+## Features
+
+- enable disable modifiers for cache with suffix in modifier name
+    - modifier_name.cacheoff -> modifier off for export on  for import
+    - modifier_name.cacheon  -> modifier on  for export off for import
+
 ## Development
 ---
 In the project root you will find a `pyproject.toml` and `peotry.lock` file.
