@@ -19,12 +19,19 @@ class CM_property_group_collection(bpy.types.PropertyGroup):
         default="",
         subtype="FILE_PATH",
         options={"LIBRARY_EDITABLE"},
+        override={"LIBRARY_OVERRIDABLE"},
     )
     is_cache_loaded: bpy.props.BoolProperty(
-        name="Cache Loaded", default=False, options={"LIBRARY_EDITABLE"}
+        name="Cache Loaded",
+        default=False,
+        options={"LIBRARY_EDITABLE"},
+        override={"LIBRARY_OVERRIDABLE"},
     )
     is_cache_hidden: bpy.props.BoolProperty(
-        name="Cache Hidden", default=False, options={"LIBRARY_EDITABLE"}
+        name="Cache Hidden",
+        default=False,
+        options={"LIBRARY_EDITABLE"},
+        override={"LIBRARY_OVERRIDABLE"},
     )
 
 
@@ -176,6 +183,7 @@ def register():
         name="Cache Manager",
         type=CM_property_group_collection,
         description="Metadata that is required for the cache manager",
+        override={"LIBRARY_OVERRIDABLE"},
     )
 
 
