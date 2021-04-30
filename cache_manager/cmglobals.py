@@ -4,7 +4,8 @@ MODIFIER_NAME = "cm_cache"
 
 CONSTRAINT_NAME = "cm_cache"
 
-VALID_OBJECT_TYPES = {"MESH", "CAMERA"}
+VALID_OBJECT_TYPES = {"MESH", "CAMERA", "EMPTY"}
+CAMERA_TYPES = {"PERSP", "ORTHO", "PANO"}
 
 _VERSION_PATTERN = "v\d\d\d"
 
@@ -24,9 +25,6 @@ DRIVER_VIS_DATA_PATHS: List[str] = [
 ]
 
 CAM_DATA_PATHS: List[str] = [
-    "angle",
-    "angle_x",
-    "angle_y",
     "clip_end",
     "clip_start",
     "display_size",
@@ -35,7 +33,6 @@ CAM_DATA_PATHS: List[str] = [
     "dof.aperture_ratio",
     "dof.aperture_rotation",
     "lens",
-    "lens_unit",
     "ortho_scale",
     "sensor_fit",
     "sensor_height",
@@ -43,3 +40,8 @@ CAM_DATA_PATHS: List[str] = [
     "shift_x",
     "shift_y",
 ]
+
+# "lens_unit",
+# "angle",
+# "angle_x",
+# "angle_y",

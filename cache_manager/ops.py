@@ -474,13 +474,14 @@ class CM_OT_import_cache(bpy.types.Operator):
                 a_index = self._config_modifiers(obj)
                 modifier_index = a_index if a_index != -1 else 0
 
-                # ensure cache modifier and constraint
-                mod = self._ensure_cache_modifier(obj)
+                # ensure and config constraint
                 con = self._ensure_cache_constraint(obj)
-
-                # config cache modifier and constraint
-                self._config_cache_modifier(context, mod, modifier_index, cachefile)
                 self._config_cache_constraint(context, con, cachefile)
+
+                # ensure and config cache modifier
+                if obj.type != "CAMERA":
+                    mod = self._ensure_cache_modifier(obj)
+                    self._config_cache_modifier(context, mod, modifier_index, cachefile)
 
             # ensure MODIFIERS_KEEP are enabled after import
             opsdata.config_modifiers_keep_state(object_list, enable=True)
