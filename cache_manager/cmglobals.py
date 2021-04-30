@@ -15,6 +15,7 @@ MODIFIERS_KEEP: List[str] = [
     "MESH_SEQUENCE_CACHE",
     "DATA_TRANSFER",
     "NORMAL_EDIT",
+    "NODES",
 ]
 CONSTRAINTS_KEEP: List[str] = [
     "TRANSFORM_CACHE",
