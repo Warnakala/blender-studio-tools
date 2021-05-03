@@ -7,6 +7,7 @@ from .ops import (
     CM_OT_cacheconfig_export,
     CM_OT_import_cache,
     CM_OT_import_colls_from_config,
+    CM_OT_update_cache_colls_list,
     CM_OT_cache_list_actions,
     CM_OT_assign_cachefile,
     CM_OT_cache_show,
@@ -144,7 +145,11 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
 
         # COLLECTION OPERATIONS
         box = layout.box()
-        box.label(text="Cache Collections", icon="OUTLINER_COLLECTION")
+        row = box.row(align=True)
+        row.label(text="Cache Collections", icon="OUTLINER_COLLECTION")
+        row.operator(
+            CM_OT_update_cache_colls_list.bl_idname, icon="FILE_REFRESH", text=""
+        )
         if context.scene.cm.category == "EXPORT":
 
             # get collections

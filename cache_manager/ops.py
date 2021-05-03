@@ -320,7 +320,7 @@ class CM_OT_import_colls_from_config(bpy.types.Operator):
     """Move items up and down, add and remove"""
 
     bl_idname = "cm.import_colls_from_config"
-    bl_label = "Import Colletions"
+    bl_label = "Import Collections"
     bl_description = "Import Colletions from Cacheconfig"
     bl_options = {"REGISTER"}
 
@@ -351,6 +351,50 @@ class CM_OT_import_colls_from_config(bpy.types.Operator):
 
         log_new_lines(1)
         logger.info("-END- Importing Collections from Cacheconfig")
+
+        return {"FINISHED"}
+
+
+class CM_OT_update_cache_colls_list(bpy.types.Operator):
+    """Move items up and down, add and remove"""
+
+    bl_idname = "cm.udpate_cache_colls_list"
+    bl_label = "Update Cache Collections List"
+    bl_description = "Update cache collections list by scanning current scene for unadded cache collections"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        succeeded = []
+        collections = list(opsdata.traverse_collection_tree(context.scene.collection))
+
+        scn_category = context.scene.cm.colls_export
+        idx = context.scene.cm.colls_export_index
+
+        """
+        if context.scene.cm.category == "IMPORT":
+            scn_category = scn.cm.colls_import
+            idx = scn.cm.colls_import_index
+        """
+        log_new_lines(1)
+        logger.info("-START- Updating Cache Collections List")
+
+        for coll in collections:
+            if coll.cm.is_cache_coll:
+                if coll.name in [c[1].name for c in scn_category.items()]:
+                    info = '"%s" already in the list' % (coll.name)
+                else:
+                    item = scn_category.add()
+                    item.coll_ptr = coll
+                    item.name = item.coll_ptr.name
+                    idx = len(scn_category) - 1
+                    succeeded.append(coll)
+                info = "%s added to list" % (item.name)
+                logger.info(info)
+
+        log_new_lines(1)
+        logger.info("-END- Updating Cache Collections List")
+
+        self.report({"INFO"}, f"Added {len(succeeded)} Collections to Cache List")
 
         return {"FINISHED"}
 
@@ -767,6 +811,7 @@ classes: List[Any] = [
     CM_OT_cache_hide,
     CM_OT_cache_remove,
     CM_OT_import_colls_from_config,
+    CM_OT_update_cache_colls_list,
     CM_OT_set_cache_version,
     CM_OT_add_cache_version,
 ]
