@@ -158,11 +158,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
 
         # COLLECTION OPERATIONS
         box = layout.box()
-        row = box.row(align=True)
-        row.label(text="Cache Collections", icon="OUTLINER_COLLECTION")
-        row.operator(
-            CM_OT_update_cache_colls_list.bl_idname, icon="FILE_REFRESH", text=""
-        )
+        box.label(text="Cache Collections", icon="OUTLINER_COLLECTION")
         if context.scene.cm.category == "EXPORT":
 
             # get collections
@@ -181,6 +177,9 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 type="DEFAULT",
             )
             col = row.column(align=True)
+            col.operator(
+                CM_OT_update_cache_colls_list.bl_idname, icon="FILE_REFRESH", text=""
+            )
             col.operator(
                 CM_OT_cache_list_actions.bl_idname, icon="ADD", text=""
             ).action = "ADD"
@@ -218,6 +217,9 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 type="DEFAULT",
             )
             col = row.column(align=True)
+            col.operator(
+                CM_OT_update_cache_colls_list.bl_idname, icon="FILE_REFRESH", text=""
+            )
             col.operator(
                 CM_OT_cache_list_actions.bl_idname, icon="ADD", text=""
             ).action = "ADD"
