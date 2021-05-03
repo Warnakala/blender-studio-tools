@@ -104,7 +104,20 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
         split.label(text="Cacheconfig:")
 
         if not context.scene.cm.is_cacheconfig_valid:
-            split.label(text=f"Invalid. Check Addon Preferences.")
+            if (
+                context.scene.cm.use_cacheconfig_custom
+                and context.scene.cm.category == "IMPORT"
+            ):
+                sub_split = split.split(factor=0.95, align=True)
+                sub_split.prop(context.scene.cm, "cacheconfig_custom", text="")
+                sub_split.operator(
+                    CM_OT_import_colls_from_config.bl_idname, icon="PLAY", text=""
+                )
+            else:
+                split.label(text=f"Invalid. Check Addon Preferences.")
+
+            row = box.row(align=True)
+            row.prop(context.scene.cm, "use_cacheconfig_custom")
 
         else:
             if context.scene.cm.category == "EXPORT":
