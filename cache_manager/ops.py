@@ -745,6 +745,11 @@ class CM_OT_set_cache_version(bpy.types.Operator):
         items=opsdata.get_versions_enum_list, name="Versions"
     )
 
+    index: bpy.props.IntProperty(name="Index")
+    do_all: bpy.props.BoolProperty(
+        name="Process All", description="Process all cache collections", default=True
+    )
+
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # TODO
@@ -756,9 +761,97 @@ class CM_OT_set_cache_version(bpy.types.Operator):
         if not version:
             return {"CANCELLED"}
 
+        if context.scene.cm.cache_version == version:
+            return {"CANCELLED"}
+
+        log_new_lines(1)
         # update global scene cache version prop
         context.scene.cm.cache_version = version
         logger.info("Set cache version to %s", version)
+
+        if context.scene.cm.category == "IMPORT":
+            # get collections to be processed
+            if self.do_all:
+                collections = list(props.get_cache_collections_import(context))
+            else:
+                collections = [context.scene.cm.colls_import[self.index].coll_ptr]
+
+            # load cacheconfig
+            cacheconfig_path = Path(context.scene.cm.cacheconfig_path)
+            if not cacheconfig_path.exists():
+                logger.error(
+                    "Failed to load animation data. Cacheconfig does not exist: %s",
+                    cacheconfig_path.as_posix(),
+                )
+            else:
+                cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
+
+            # process collections
+            for coll in collections:
+                if not coll.cm.cachefile:
+                    logger.info("Ignored %s. No cachefile assigned yet.", coll.name)
+                    continue
+
+                # get olf cachefile path and version
+                cachefile_path_old = Path(coll.cm.cachefile)
+                vers_old = opsdata.get_version(cachefile_path_old.name)
+
+                if not vers_old:
+                    logger.info(
+                        "Failed to replace version: %s. No version pattern found.",
+                        cachefile_path_old.name,
+                    )
+                    continue
+
+                # gen new cachefile path with version that was selected
+                cachefile_path_new = Path(
+                    cachefile_path_old.as_posix().replace(vers_old, version)
+                )
+
+                if not cachefile_path_new.exists():
+                    logger.info(
+                        "%s (%s) failed to change version: %s > %s. Path with new version does not exist.",
+                        coll.name,
+                        cachefile_path_old.name,
+                        vers_old,
+                        version,
+                    )
+                    continue
+
+                # try to get actual cachefile data block, catch key error if cachefile datablock not existent yet
+                try:
+                    cachefile = bpy.data.cache_files[cachefile_path_old.name]
+                # do nothing
+                except KeyError:
+                    logger.error(
+                        "%s assigned cachefile: %s is not imported. Skip changing cachefile path.",
+                        coll.name,
+                        cachefile_path_old.name,
+                    )
+                # if cachefile data block exists, update it to new version and import animation data
+                # of cacheconfig with that version
+                else:
+                    cachefile.filepath = cachefile_path_new.as_posix()
+                    cachefile.name = cachefile_path_new.name
+                    logger.info(
+                        "Changed cachefile path:\n %s > %s",
+                        cachefile_path_old.as_posix(),
+                        cachefile_path_new.as_posix(),
+                    )
+                    CacheConfigProcessor.import_animation_data(cacheconfig, [coll])
+                    logger.info(
+                        "%s loaded animation data from cacheconfig: %s",
+                        coll.name,
+                        cacheconfig_path,
+                    )
+                # either way update the cachefile prop of the collection (we know it exists here)
+                finally:
+                    coll.cm.cachefile = cachefile_path_new.as_posix()
+                    logger.info(
+                        "%s assign cachefile: %s",
+                        coll.name,
+                        cachefile_path_new.as_posix(),
+                    )
 
         # redraw ui
         ui_redraw()
