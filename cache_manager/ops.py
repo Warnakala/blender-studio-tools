@@ -279,39 +279,25 @@ class CM_OT_cache_list_actions(bpy.types.Operator):
     action: bpy.props.EnumProperty(items=(("ADD", "Add", ""), ("REMOVE", "Remove", "")))
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        scn = context.scene
-
-        scn_category = scn.cm.colls_export
-        idx = scn.cm.colls_export_index
-
-        if context.scene.cm.category == "IMPORT":
-            scn_category = scn.cm.colls_import
-            idx = scn.cm.colls_import_index
-
-        try:
-            item = scn_category[idx]
-        except IndexError:
-            pass
-        else:
-            if self.action == "REMOVE":
-                item = scn_category[idx]
-                item_name = item.name
-                scn_category.remove(idx)
-                idx -= 1
-                info = "Item %s removed from cache list" % (item_name)
+        if self.action == "REMOVE":
+            result = opsdata.rm_coll_from_cache_collections(
+                context, context.scene.cm.category
+            )
+            if result:
+                info = f"Removed {result.name} from {context.scene.cm.category.lower()} list"
                 self.report({"INFO"}, info)
 
         if self.action == "ADD":
             act_coll = context.view_layer.active_layer_collection.collection
-            if act_coll.name in [c[1].name for c in scn_category.items()]:
-                info = '"%s" already in the list' % (act_coll.name)
-            else:
-                item = scn_category.add()
-                item.coll_ptr = act_coll
-                item.name = item.coll_ptr.name
-                idx = len(scn_category) - 1
-            info = "%s added to list" % (item.name)
-            self.report({"INFO"}, info)
+            result = opsdata.add_coll_to_cache_collections(
+                context, act_coll, context.scene.cm.category
+            )
+            if result:
+                info = "%s added to %s list" % (
+                    act_coll.name,
+                    context.scene.cm.category.lower(),
+                )
+                self.report({"INFO"}, info)
 
         return {"FINISHED"}
 
@@ -367,29 +353,18 @@ class CM_OT_update_cache_colls_list(bpy.types.Operator):
         succeeded = []
         collections = list(opsdata.traverse_collection_tree(context.scene.collection))
 
-        scn_category = context.scene.cm.colls_export
-        idx = context.scene.cm.colls_export_index
-
-        """
-        if context.scene.cm.category == "IMPORT":
-            scn_category = scn.cm.colls_import
-            idx = scn.cm.colls_import_index
-        """
         log_new_lines(1)
         logger.info("-START- Updating Cache Collections List")
 
         for coll in collections:
-            if coll.cm.is_cache_coll:
-                if coll.name in [c[1].name for c in scn_category.items()]:
-                    info = '"%s" already in the list' % (coll.name)
-                else:
-                    item = scn_category.add()
-                    item.coll_ptr = coll
-                    item.name = item.coll_ptr.name
-                    idx = len(scn_category) - 1
-                    succeeded.append(coll)
-                info = "%s added to list" % (item.name)
-                logger.info(info)
+            if not coll.cm.is_cache_coll:
+                continue
+
+            result = opsdata.add_coll_to_cache_collections(
+                context, coll, context.scene.cm.category
+            )
+            if result:
+                succeeded.append(coll)
 
         log_new_lines(1)
         logger.info("-END- Updating Cache Collections List")

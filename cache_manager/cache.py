@@ -338,7 +338,7 @@ class CacheConfigProcessor:
 
                     # set cm.cachefile property
                     coll.cm.cachefile = cachefile
-                    cls._add_coll_to_cm_collections(context, coll)
+                    opsdata.add_coll_to_cache_collections(context, coll, "IMPORT")
                     colls.append(coll)
 
                     logger.info(
@@ -456,24 +456,6 @@ class CacheConfigProcessor:
                 frame_out,
                 " ,".join(anim_props_list),
             )
-
-    @classmethod
-    def _add_coll_to_cm_collections(
-        cls, context: bpy.types.Context, coll: bpy.types.Collection
-    ) -> bpy.types.Collection:
-        scn = context.scene
-        if coll.name in [c[1].name for c in scn.cm.colls_import.items()]:
-            logger.info("%s already in the cache collections list", coll.name)
-
-        else:
-            item = scn.cm.colls_import.add()
-            item.coll_ptr = coll
-            item.name = item.coll_ptr.name
-            scn.cm.colls_import_index = len(scn.cm.colls_import) - 1
-
-            logger.info("%s added to cache collections list", item.name)
-
-        return coll
 
 
 class CacheConfigFactory:

@@ -42,6 +42,12 @@ class CM_property_group_collection(bpy.types.PropertyGroup):
         override={"LIBRARY_OVERRIDABLE"},
     )
 
+    def reset_properties(self):
+        self.is_cache_coll = False
+        self.cachefile = ""
+        self.is_cache_loaded = False
+        self.is_cache_hidden = False
+
 
 class CM_property_group_scene(bpy.types.PropertyGroup):
 

@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import List, Tuple, Generator, Dict, Union, Any
+from typing import List, Tuple, Generator, Dict, Union, Any, Optional
 
 import bpy
 
@@ -492,3 +492,74 @@ def config_cache_constraint(
     con.object_path = gen_abc_object_path(obj)
 
     return con
+
+
+def add_coll_to_cache_collections(
+    context: bpy.types.Context, coll: bpy.types.Collection, category: str
+) -> Optional[bpy.types.Collection]:
+
+    scn = context.scene
+
+    scn_category = scn.cm.colls_export
+    idx = scn.cm.colls_export_index
+
+    if category == "IMPORT":
+        scn_category = scn.cm.colls_import
+        idx = scn.cm.colls_import_index
+
+    if coll in [c[1].coll_ptr for c in scn_category.items()]:
+        logger.info(
+            "%s already in the %s cache collections list", coll.name, category.lower()
+        )
+        # set is_cache_coll
+        coll.cm.is_cache_coll = True
+
+        return None
+    else:
+        item = scn_category.add()
+        item.coll_ptr = coll
+        item.name = item.coll_ptr.name
+        idx = len(scn_category) - 1
+
+        # set is_cache_coll
+        coll.cm.is_cache_coll = True
+
+        logger.info(
+            "%s added to %s cache collections list", item.name, category.lower()
+        )
+
+    return coll
+
+
+def rm_coll_from_cache_collections(
+    context: bpy.types.Context, category: str
+) -> Optional[bpy.types.Collection]:
+
+    scn = context.scene
+
+    scn_category = scn.cm.colls_export
+    idx = scn.cm.colls_export_index
+
+    if category == "IMPORT":
+        scn_category = scn.cm.colls_import
+        idx = scn.cm.colls_import_index
+
+    try:
+        item = scn_category[idx]
+    except IndexError:
+        return None
+    else:
+        coll = item.coll_ptr
+
+        item = scn_category[idx]
+        item_name = item.name
+        scn_category.remove(idx)
+        idx -= 1
+
+        # set is_cache_coll
+        coll.cm.reset_properties()
+
+        logger.info(
+            "Removed %s from %s cache collections list", item_name, category.lower()
+        )
+        return coll
