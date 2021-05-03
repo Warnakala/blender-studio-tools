@@ -6,7 +6,7 @@ from .ops import (
     CM_OT_cache_export,
     CM_OT_cacheconfig_export,
     CM_OT_import_cache,
-    CM_OT_import_collections,
+    CM_OT_import_colls_from_config,
     CM_OT_cache_list_actions,
     CM_OT_assign_cachefile,
     CM_OT_cache_show,
@@ -119,7 +119,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 sub_split = split.split(factor=0.95, align=True)
                 sub_split.prop(context.scene.cm, "cacheconfig_custom", text="")
                 sub_split.operator(
-                    CM_OT_import_collections.bl_idname, icon="PLAY", text=""
+                    CM_OT_import_colls_from_config.bl_idname, icon="PLAY", text=""
                 )
 
             else:
@@ -130,7 +130,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                     sub_split = split.split(factor=0.95, align=True)
                     sub_split.prop(context.scene.cm, "cacheconfig", text="")
                     sub_split.operator(
-                        CM_OT_import_collections.bl_idname, icon="PLAY", text=""
+                        CM_OT_import_colls_from_config.bl_idname, icon="PLAY", text=""
                     )
             row = box.row(align=True)
             row.prop(context.scene.cm, "use_cacheconfig_custom")

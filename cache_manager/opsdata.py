@@ -113,7 +113,6 @@ def _get_cachefiles(cachedir_path: Path, file_ext: str = ".abc") -> List[Path]:
 def get_cachefiles_enum(
     self: bpy.types.Operator, context: bpy.types.Context
 ) -> List[Tuple[str, str, str]]:
-    addon_prefs = prefs.addon_prefs_get(context)
 
     _cachefiles_enum_list.clear()
 
@@ -218,7 +217,9 @@ def ensure_coll_vis(parent_coll: bpy.types.Collection) -> List[bpy.types.Collect
     return colls_to_show
 
 
-def enable_drivers(muted_drivers: List[bpy.types.Driver]) -> List[bpy.types.Driver]:
+def enable_muted_drivers(
+    muted_drivers: List[bpy.types.Driver],
+) -> List[bpy.types.Driver]:
     for driver in muted_drivers:
         driver.mute = False
     return muted_drivers
@@ -288,7 +289,7 @@ def config_modifiers_keep_state(
 
     noun = "Enabled" if enable else "Disabled"
 
-    log_list = {}
+    log_list: Dict[str, List[str]] = {}
 
     for obj in objs:
 
@@ -320,3 +321,174 @@ def config_modifiers_keep_state(
         )
 
     return modifiers
+
+
+def gen_abc_object_path(obj: bpy.types.Object) -> str:
+    # if object is duplicated (multiple copys of the same object that get different cachses)
+    # we have to kill the .001 postfix that gets created auto on duplication
+    # otherwise object path is not valid
+
+    object_name = obj.name
+    object_data_name = obj.data.name
+    object_path = "/" + object_name + "/" + object_data_name
+
+    # dot and whitespace not valid in abc tree will be replaced with underscore
+    replace = [" ", "."]
+    for char in replace:
+        object_path = object_path.replace(char, "_")
+
+    return object_path
+
+
+def disable_non_keep_modifiers(obj: bpy.types.Object) -> int:
+    modifiers = list(obj.modifiers)
+    a_index: int = -1
+    disabled_mods = []
+    for idx, m in enumerate(modifiers):
+        if m.type not in cmglobals.MODIFIERS_KEEP:
+            m.show_viewport = False
+            m.show_render = False
+            m.show_in_editmode = False
+            disabled_mods.append(m.name)
+
+            # save index of first armature modifier to
+            if a_index == -1 and m.type == "ARMATURE":
+                a_index = idx
+
+    logger.info("%s Disabled modifiers: %s", obj.name, ", ".join(disabled_mods))
+    return a_index
+
+
+def rm_non_keep_modifiers(obj: bpy.types.Object) -> int:
+    modifiers = list(obj.modifiers)
+    a_index: int = -1
+    rm_mods = []
+    for idx, m in enumerate(modifiers):
+        if m.type not in cmglobals.MODIFIERS_KEEP:
+
+            obj.modifiers.remove(m)
+            rm_mods.append(m.name)
+
+            # save index of first armature modifier to
+            if a_index == -1 and m.type == "ARMATURE":
+                a_index = idx
+
+    logger.info("%s Removed modifiers: %s", obj.name, ", ".join(rm_mods))
+    return a_index
+
+
+def disable_non_keep_constraints(obj: bpy.types.Object) -> List[bpy.types.Constraint]:
+    constraints = list(obj.constraints)
+    disabled_const: List[bpy.types.Constraint] = []
+
+    for c in constraints:
+        if c.type not in cmglobals.CONSTRAINTS_KEEP:
+            c.mute = True
+            disabled_const.append(c)
+
+    if disabled_const:
+        logger.info(
+            "%s Disabled constaints: %s",
+            obj.name,
+            ", ".join([c.name for c in disabled_const]),
+        )
+    return disabled_const
+
+
+def ensure_cachefile(cachefile_path: str) -> bpy.types.CacheFile:
+    # get cachefile path for this collection
+    cachefile_name = Path(cachefile_path).name
+
+    # import Alembic Cache. if its already imported reload it
+    try:
+        bpy.data.cache_files[cachefile_name]
+    except KeyError:
+        bpy.ops.cachefile.open(filepath=cachefile_path)
+    else:
+        bpy.ops.cachefile.reload()
+
+    cachefile = bpy.data.cache_files[cachefile_name]
+    cachefile.scale = 1
+    return cachefile
+
+
+def ensure_cache_modifier(obj: bpy.types.Object) -> bpy.types.MeshSequenceCacheModifier:
+    modifier_name = cmglobals.MODIFIER_NAME
+    # if modifier does not exist yet create it
+    if obj.modifiers.find(modifier_name) == -1:  # not found
+        mod = obj.modifiers.new(modifier_name, "MESH_SEQUENCE_CACHE")
+    else:
+        logger.info(
+            "Object: %s already has %s modifier. Will use that.",
+            obj.name,
+            modifier_name,
+        )
+    mod = obj.modifiers.get(modifier_name)
+    return mod
+
+
+def ensure_cache_constraint(
+    obj: bpy.types.Object,
+) -> bpy.types.TransformCacheConstraint:
+    constraint_name = cmglobals.CONSTRAINT_NAME
+    # if constraint does not exist yet create it
+    if obj.constraints.find(constraint_name) == -1:  # not found
+        con = obj.constraints.new("TRANSFORM_CACHE")
+        con.name = constraint_name
+    else:
+        logger.info(
+            "Object: %s already has %s constraint. Will use that.",
+            obj.name,
+            constraint_name,
+        )
+    con = obj.constraints.get(constraint_name)
+    return con
+
+
+def kill_increment(str_value: str) -> str:
+    match = re.search("\.\d\d\d", str_value)
+    if match:
+        return str_value.replace(match.group(0), "")
+    return str_value
+
+
+def config_cache_modifier(
+    context: bpy.types.Context,
+    mod: bpy.types.MeshSequenceCacheModifier,
+    modifier_index: int,
+    cachefile: bpy.types.CacheFile,
+) -> bpy.types.MeshSequenceCacheModifier:
+    obj = mod.id_data
+    # move to index
+    # as we need to use bpy.ops for that object needs to be active
+    bpy.context.view_layer.objects.active = obj
+    override = context.copy()
+    override["modifier"] = mod
+    bpy.ops.object.modifier_move_to_index(
+        override, modifier=mod.name, index=modifier_index
+    )
+    # adjust settings
+    mod.cache_file = cachefile
+    mod.object_path = gen_abc_object_path(obj)
+
+    return mod
+
+
+def config_cache_constraint(
+    context: bpy.types.Context,
+    con: bpy.types.TransformCacheConstraint,
+    cachefile: bpy.types.CacheFile,
+) -> bpy.types.TransformCacheConstraint:
+    obj = con.id_data
+    # move to index
+    # as we need to use bpy.ops for that object needs to be active
+    bpy.context.view_layer.objects.active = obj
+    override = context.copy()
+    override["constraint"] = con
+    bpy.ops.constraint.move_to_index(override, constraint=con.name, index=0)
+
+    # adjust settings
+    con.cache_file = cachefile
+    con.object_path = gen_abc_object_path(obj)
+
+    return con
