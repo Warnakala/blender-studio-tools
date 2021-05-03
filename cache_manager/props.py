@@ -14,6 +14,14 @@ class CM_collection_property(bpy.types.PropertyGroup):
 
 
 class CM_property_group_collection(bpy.types.PropertyGroup):
+
+    is_cache_coll = is_cache_loaded: bpy.props.BoolProperty(
+        name="Cache Collection",
+        default=False,
+        options={"LIBRARY_EDITABLE"},
+        override={"LIBRARY_OVERRIDABLE"},
+    )
+
     cachefile: bpy.props.StringProperty(
         name="Cachefile",
         default="",
