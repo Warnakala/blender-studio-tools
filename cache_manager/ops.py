@@ -1,7 +1,7 @@
 import bpy
 import re
 import contextlib
-from typing import List, Any, Set, cast
+from typing import List, Any, Set, cast, Tuple, Dict
 from pathlib import Path
 
 from .logger import LoggerFactory, gen_processing_string, log_new_lines
@@ -75,20 +75,36 @@ class CM_OT_cache_export(bpy.types.Operator):
             object_list = cache.get_valid_cache_objects(coll)
 
             # mute drivers
-            muted_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
+            muted_vis_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
 
             logger.info(
                 "Disabled drivers for export:\n%s",
-                ",\n".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
+                ",\n".join(
+                    [f"{d.id_data.name}: {d.data_path}" for d in muted_vis_drivers]
+                ),
             )
 
             # ensure modifiers vis have render vis settings does not include MODIFIERS_KEEP
-            mods_to_restore_vis = opsdata.sync_modifier_vis_with_render_setting(
+            mods_restore_vis_from_sync = opsdata.sync_modifier_vis_with_render_setting(
                 object_list
             )
 
             # ensure MODIFIERS_KEEP are disabled for export (they will be enabled on import)
-            opsdata.config_modifiers_keep_state(object_list, enable=False)
+            mods_restore_vis_from_keep = opsdata.config_modifiers_keep_state(
+                object_list, enable=False
+            )
+
+            # apply modifier suffix visibily override (.nocache) > will set show_viewport, show_render to False
+            mods_restore_vis_from_suffix = opsdata.apply_modifier_suffix_vis_override(
+                object_list, "EXPORT"
+            )
+
+            # gen one list of tuples that contains each modifier with its original vis settings once
+            mods_to_restore_vis = self._construct_mod_to_restore_vis_list(
+                mods_restore_vis_from_sync,
+                mods_restore_vis_from_keep,
+                mods_restore_vis_from_suffix,
+            )
 
             # ensure that all objects are visible for export
             objs_to_be_hidden = opsdata.ensure_obj_vis(object_list)
@@ -176,18 +192,17 @@ class CM_OT_cache_export(bpy.types.Operator):
                 ",\n".join([coll.name for coll in colls_to_be_hidden]),
             )
 
-            # ensure MODIFIERS_KEEP are enabled after export
-            opsdata.config_modifiers_keep_state(object_list, enable=True)
-
-            # restore original modifier vis setting
+            # restore modifier viewport vis / render vis
             opsdata.restore_modifier_vis(mods_to_restore_vis)
 
             # entmute driver
-            opsdata.enable_muted_drivers(muted_drivers)
+            opsdata.enable_muted_drivers(muted_vis_drivers)
 
             logger.info(
                 "Enabled drivers after export:\n%s",
-                ",\n".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
+                ",\n".join(
+                    [f"{d.id_data.name}: {d.data_path}" for d in muted_vis_drivers]
+                ),
             )
 
             # success log for this collections
@@ -213,6 +228,19 @@ class CM_OT_cache_export(bpy.types.Operator):
         log_new_lines(1)
         logger.info("-END- Exporting Cache")
         return {"FINISHED"}
+
+    def _construct_mod_to_restore_vis_list(
+        self, *args: List[Tuple[bpy.types.Modifier, bool, bool]]
+    ) -> List[Tuple[bpy.types.Modifier, bool, bool]]:
+
+        mods_to_restore_vis: List[Tuple[bpy.types.Modifier, bool, bool]] = []
+
+        for arg in args:
+            for mod, show_viewport, show_render in arg:
+                if mod not in [m for m, v, r in mods_to_restore_vis]:
+                    mods_to_restore_vis.append((mod, show_viewport, show_render))
+
+        return mods_to_restore_vis
 
 
 class CM_OT_cacheconfig_export(bpy.types.Operator):
@@ -509,11 +537,13 @@ class CM_OT_import_cache(bpy.types.Operator):
                     )
 
             # mute drivers
-            muted_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
+            muted_vis_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
 
             logger.info(
                 "Disabled drivers:\n%s",
-                ",\n".join([f"{d.id_data.name}: {d.data_path}" for d in muted_drivers]),
+                ",\n".join(
+                    [f"{d.id_data.name}: {d.data_path}" for d in muted_vis_drivers]
+                ),
             )
 
             # ensure modifiers vis have render vis settings does not include MODIFIERS_KEEP

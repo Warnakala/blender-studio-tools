@@ -2,6 +2,9 @@ from typing import List
 
 MODIFIER_NAME = "cm_cache"
 
+CACHE_OFF_SUFFIX = ".cacheoff"
+CACHE_ON_SUFFIX = ".cacheon"
+
 CONSTRAINT_NAME = "cm_cache"
 
 VALID_OBJECT_TYPES = {"MESH", "CAMERA", "EMPTY"}

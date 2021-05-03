@@ -6,7 +6,7 @@ import bpy
 
 from . import cmglobals
 from . import prefs
-from .logger import LoggerFactory
+from .logger import LoggerFactory, log_new_lines
 from .models import FolderListModel
 
 logger = LoggerFactory.getLogger(__name__)
@@ -227,65 +227,142 @@ def enable_muted_drivers(
 
 def sync_modifier_vis_with_render_setting(
     objs: List[bpy.types.Object],
-) -> List[Tuple[bpy.types.Modifier, bool]]:
+) -> List[Tuple[bpy.types.Modifier, bool, bool]]:
 
-    synced_mods: List[Tuple[bpy.types.Modifier, bool]] = []
+    mods_vis_override: List[Tuple[bpy.types.Modifier, bool, bool]] = []
+    log_list: Dict[str, List[str]] = {}
 
     for obj in objs:
 
-        log_list: List[str] = []
-
-        for idx, m in enumerate(list(obj.modifiers)):
+        for idx, mod in enumerate(list(obj.modifiers)):
 
             # do not affect those for export
-            if m.type in cmglobals.MODIFIERS_KEEP:
+            if mod.type in cmglobals.MODIFIERS_KEEP:
                 continue
 
-            show_viewport_cache = m.show_viewport
+            if mod.show_viewport == mod.show_render:
+                continue
 
-            if show_viewport_cache != m.show_render:
-                m.show_viewport = m.show_render
-                synced_mods.append((m, show_viewport_cache))
+            show_viewport_cache = mod.show_viewport
+            show_render_cache = mod.show_render
 
-                log_list.append(f"{m.name}: {show_viewport_cache} -> {m.show_viewport}")
+            mod.show_viewport = mod.show_render
+            mods_vis_override.append((mod, show_viewport_cache, show_render_cache))
 
-        if log_list:
-            logger.info(
-                "%s synced modifiers display with render vis: \n%s",
-                obj.name,
-                ",\n".join(log_list),
+            log_list.setdefault(obj.name, [])
+            log_list[obj.name].append(
+                f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport},\n"
             )
 
-    return synced_mods
+    if log_list:
+        log_new_lines(1)
+        header = "Sync modifier viewport vis with render vis:"
+        text = [f"{obj_name}:\n {''.join(log_list[obj_name])}" for obj_name in log_list]
+        logger.info("%s \n%s", header, "\n".join(text))
+
+    return mods_vis_override
 
 
-def restore_modifier_vis(modifiers: List[Tuple[bpy.types.Modifier, bool]]) -> None:
+def apply_modifier_suffix_vis_override(
+    objs: List[bpy.types.Object], category: str
+) -> List[Tuple[bpy.types.Modifier, bool, bool]]:
+
+    mods_vis_override: List[Tuple[bpy.types.Modifier, bool, bool]] = []
 
     log_list: Dict[str, List[str]] = {}
 
-    for mod, show_viewport in modifiers:
+    for obj in objs:
+
+        for mod in list(obj.modifiers):
+
+            show_viewport_cache = mod.show_viewport
+            show_render_cache = mod.show_render
+
+            if category == "EXPORT":
+
+                if mod.name.endswith(cmglobals.CACHE_OFF_SUFFIX):
+                    if mod.show_viewport == False and mod.show_render == False:
+                        continue
+                    mod.show_viewport = False
+                    mod.show_render = False
+
+                elif mod.name.endswith(cmglobals.CACHE_ON_SUFFIX):
+                    if mod.show_viewport == True and mod.show_render == True:
+                        continue
+                    mod.show_viewport = True
+                    mod.show_render = True
+
+                else:
+                    continue
+
+            if category == "IMPORT":
+
+                if mod.name.endswith(cmglobals.CACHE_OFF_SUFFIX):
+                    if mod.show_viewport == True and mod.show_render == True:
+                        continue
+                    mod.show_viewport = True
+                    mod.show_render = True
+
+                elif mod.name.endswith(cmglobals.CACHE_ON_SUFFIX):
+                    if mod.show_viewport == False and mod.show_render == False:
+                        continue
+                    mod.show_viewport = False
+                    mod.show_render = False
+
+                else:
+                    continue
+
+            mods_vis_override.append((mod, show_viewport_cache, show_render_cache))
+
+            log_list.setdefault(obj.name, [])
+            log_list[obj.name].append(
+                f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport} R: {show_render_cache} -> {mod.show_render},\n"
+            )
+
+    if log_list:
+        log_new_lines(1)
+        header = "Apply modifier suffix vis override:"
+        text = [f"{obj_name}:\n {''.join(log_list[obj_name])}" for obj_name in log_list]
+        logger.info("%s \n%s", header, "\n".join(text))
+
+    return mods_vis_override
+
+
+def restore_modifier_vis(
+    modifiers: List[Tuple[bpy.types.Modifier, bool, bool]]
+) -> None:
+
+    log_list: Dict[str, List[str]] = {}
+
+    for mod, show_viewport, show_render in modifiers:
+
+        if mod.show_viewport == show_viewport and mod.show_render == show_render:
+            continue
+
         show_viewport_cache = mod.show_viewport
+        show_render_cache = mod.show_render
+
         mod.show_viewport = show_viewport
+        mod.show_render = show_render
 
         log_list.setdefault(mod.id_data.name, [])
         log_list[mod.id_data.name].append(
-            f"{mod.name}: {show_viewport_cache} -> {mod.show_viewport}"
+            f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport} R: {show_render_cache} -> {mod.show_render}, \n"
         )
 
-    for obj_name in log_list:
-        logger.info(
-            "%s restored modifiers display: \n%s",
-            obj_name,
-            ",\n".join(log_list[obj_name]),
-        )
+    if log_list:
+        log_new_lines(1)
+        header = "Restore modifier visiblity:"
+        text = [f"{obj_name}:\n {''.join(log_list[obj_name])}" for obj_name in log_list]
+        logger.info("%s \n%s", header, "\n".join(text))
 
 
 def config_modifiers_keep_state(
     objs: List[bpy.types.Object],
     enable: bool = True,
-) -> List[bpy.types.Modifier]:
+) -> List[Tuple[bpy.types.Modifier, bool, bool]]:
 
-    modifiers: List[bpy.types.Modifier] = []
+    mods_vis_override: List[Tuple[bpy.types.Modifier, bool, bool]] = []
 
     noun = "Enabled" if enable else "Disabled"
 
@@ -293,34 +370,38 @@ def config_modifiers_keep_state(
 
     for obj in objs:
 
-        for m in list(obj.modifiers):
+        for mod in list(obj.modifiers):
 
-            if m.type not in cmglobals.MODIFIERS_KEEP:
+            if mod.type not in cmglobals.MODIFIERS_KEEP:
                 continue
 
+            show_viewport_cache = mod.show_viewport
+            show_render_cache = mod.show_render
+
             if enable:
-                m.show_viewport = True
-                m.show_render = True
+                if mod.show_viewport == True and mod.show_render == True:
+                    continue
+                mod.show_viewport = True
+                mod.show_render = True
 
             else:
-                m.show_viewport = False
-                m.show_render = False
+                if mod.show_viewport == False and mod.show_render == False:
+                    continue
+                mod.show_viewport = False
+                mod.show_render = False
 
             log_list.setdefault(obj.name, [])
-            log_list[obj.name].append(m.name)
+            log_list[obj.name].append(mod.name)
 
-            modifiers.append(m)
+            mods_vis_override.append((mod, show_viewport_cache, show_render_cache))
 
     if log_list:
+        log_new_lines(1)
         header = f"{noun} modifiers:"
-        text = [f"{obj_name}: {', '.join(log_list[obj_name])}" for obj_name in log_list]
-        logger.info(
-            "%s \n%s",
-            header,
-            ",\n".join(text),
-        )
+        text = [f"{obj_name}:\n {''.join(log_list[obj_name])}" for obj_name in log_list]
+        logger.info("%s \n%s", header, "\n".join(text))
 
-    return modifiers
+    return mods_vis_override
 
 
 def gen_abc_object_path(obj: bpy.types.Object) -> str:
@@ -344,15 +425,15 @@ def disable_non_keep_modifiers(obj: bpy.types.Object) -> int:
     modifiers = list(obj.modifiers)
     a_index: int = -1
     disabled_mods = []
-    for idx, m in enumerate(modifiers):
-        if m.type not in cmglobals.MODIFIERS_KEEP:
-            m.show_viewport = False
-            m.show_render = False
-            m.show_in_editmode = False
-            disabled_mods.append(m.name)
+    for idx, mod in enumerate(modifiers):
+        if mod.type not in cmglobals.MODIFIERS_KEEP:
+            mod.show_viewport = False
+            mod.show_render = False
+            mod.show_in_editmode = False
+            disabled_mods.append(mod.name)
 
             # save index of first armature modifier to
-            if a_index == -1 and m.type == "ARMATURE":
+            if a_index == -1 and mod.type == "ARMATURE":
                 a_index = idx
 
     logger.info("%s Disabled modifiers: %s", obj.name, ", ".join(disabled_mods))
@@ -363,14 +444,14 @@ def rm_non_keep_modifiers(obj: bpy.types.Object) -> int:
     modifiers = list(obj.modifiers)
     a_index: int = -1
     rm_mods = []
-    for idx, m in enumerate(modifiers):
-        if m.type not in cmglobals.MODIFIERS_KEEP:
+    for idx, mod in enumerate(modifiers):
+        if mod.type not in cmglobals.MODIFIERS_KEEP:
 
-            obj.modifiers.remove(m)
-            rm_mods.append(m.name)
+            obj.modifiers.remove(mod)
+            rm_mods.append(mod.name)
 
             # save index of first armature modifier to
-            if a_index == -1 and m.type == "ARMATURE":
+            if a_index == -1 and mod.type == "ARMATURE":
                 a_index = idx
 
     logger.info("%s Removed modifiers: %s", obj.name, ", ".join(rm_mods))
