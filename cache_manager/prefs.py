@@ -21,7 +21,18 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         box = layout.box()
-        box.row().prop(self, "cachedir_root")
+        box.row().prop(self, "cachedir_root", text="Root Cache Directory")
+
+        if not self.cachedir_root:
+            row = box.row()
+            row.label(text="Please specify the root cache directory.", icon="ERROR")
+
+        if not bpy.data.filepath and self.cachedir_root.startswith("//"):
+            row = box.row()
+            row.label(
+                text="In order to use a relative path as root cache directory the current file needs to be saved.",
+                icon="ERROR",
+            )
 
     @property
     def cachedir_root_path(self) -> Optional[Path]:
