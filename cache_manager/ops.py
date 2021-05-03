@@ -516,10 +516,12 @@ class CM_OT_import_cache(bpy.types.Operator):
 
             # add cache modifier and constraints
             for obj in object_list:
+                # get abc obj path
+                abc_obj_path = cacheconfig.get_abc_obj_path(obj.name)
 
                 # ensure and config constraint
                 con = opsdata.ensure_cache_constraint(obj)
-                opsdata.config_cache_constraint(context, con, cachefile)
+                opsdata.config_cache_constraint(context, con, cachefile, abc_obj_path)
 
                 # disable constraints
                 opsdata.disable_non_keep_constraints(obj)
@@ -533,7 +535,11 @@ class CM_OT_import_cache(bpy.types.Operator):
                     # ensure and config cache modifier
                     mod = opsdata.ensure_cache_modifier(obj)
                     opsdata.config_cache_modifier(
-                        context, mod, modifier_index, cachefile
+                        context,
+                        mod,
+                        modifier_index,
+                        cachefile,
+                        abc_obj_path,
                     )
 
             # mute drivers

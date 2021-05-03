@@ -4,8 +4,7 @@ from typing import List, Tuple, Generator, Dict, Union, Any, Optional
 
 import bpy
 
-from . import cmglobals
-from . import prefs
+from . import cmglobals, prefs
 from .logger import LoggerFactory, log_new_lines
 from .models import FolderListModel
 
@@ -538,6 +537,7 @@ def config_cache_modifier(
     mod: bpy.types.MeshSequenceCacheModifier,
     modifier_index: int,
     cachefile: bpy.types.CacheFile,
+    abc_obj_path: str,
 ) -> bpy.types.MeshSequenceCacheModifier:
     obj = mod.id_data
     # move to index
@@ -550,7 +550,7 @@ def config_cache_modifier(
     )
     # adjust settings
     mod.cache_file = cachefile
-    mod.object_path = gen_abc_object_path(obj)
+    mod.object_path = abc_obj_path
 
     return mod
 
@@ -559,6 +559,7 @@ def config_cache_constraint(
     context: bpy.types.Context,
     con: bpy.types.TransformCacheConstraint,
     cachefile: bpy.types.CacheFile,
+    abc_obj_path: str,
 ) -> bpy.types.TransformCacheConstraint:
     obj = con.id_data
     # move to index
@@ -570,7 +571,7 @@ def config_cache_constraint(
 
     # adjust settings
     con.cache_file = cachefile
-    con.object_path = gen_abc_object_path(obj)
+    con.object_path = abc_obj_path
 
     return con
 

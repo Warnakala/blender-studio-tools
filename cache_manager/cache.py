@@ -147,6 +147,9 @@ class CacheConfig:
             frame
         ]
 
+    def get_abc_obj_path(self, obj_name: str):
+        return self._json_obj["objects"][obj_name]["abc_obj_path"]
+
 
 class CacheConfigBlueprint(CacheConfig):
     _CACHECONFIG_TEMPL: Dict[str, Any] = {
@@ -158,8 +161,8 @@ class CacheConfigBlueprint(CacheConfig):
     _LIBDICT_TEMPL: Dict[str, Any] = {
         "data_from": {"collections": {}},  # {'colname': {'cachefile': cachepath}}
     }
-    _OBJ_DICT_TEMPL = {"type": "", "data_paths": {}}
-    _DATA_PATH_DICT = {"value": []}
+    _OBJ_DICT_TEMPL: Dict[str, Any] = {"type": "", "abc_obj_path": "", "data_paths": {}}
+    _DATA_PATH_DICT: Dict[str, List[Any]] = {"value": []}
     # TODO: get rif of that and use cam approach with data paths
 
     def __init__(self):
@@ -603,6 +606,17 @@ class CacheConfigFactory:
                 if not is_valid_cache_object(obj):
                     continue
 
+                # set abc_obj_path
+                blueprint.set_obj_key(
+                    obj_category,
+                    obj.name,
+                    "abc_obj_path",
+                    str(opsdata.gen_abc_object_path(obj)),
+                )
+
+                # set type
+                blueprint.set_obj_key(obj_category, obj.name, "type", str(obj.type))
+
                 if not obj.animation_data:
                     continue
 
@@ -619,9 +633,6 @@ class CacheConfigFactory:
                         if data_path[0].startswith("modifiers"):
                             if data_path[-1] in cmglobals.DRIVER_VIS_DATA_PATHS:
                                 continue
-
-                    # set type
-                    blueprint.set_obj_key(obj_category, obj.name, "type", str(obj.type))
 
                     # add data path of driver to obj data pats dict
                     blueprint.add_obj_data_path(
