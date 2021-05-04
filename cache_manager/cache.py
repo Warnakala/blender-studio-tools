@@ -442,6 +442,7 @@ class CacheConfigProcessor:
                     # get right data category
                     command = f'bpy.data.{obj_category}["{obj_name}"]{deliminater}{data_path}={prop_value}'
 
+                    # set property and insert keyframe
                     exec(command)
                     obj.keyframe_insert(data_path=data_path, frame=frame)
 

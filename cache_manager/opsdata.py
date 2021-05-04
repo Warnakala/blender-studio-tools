@@ -150,18 +150,22 @@ def disable_vis_drivers(
                 data_path_split = driver.data_path.split(".")
                 data_path_suffix = data_path_split[-1]
 
+                # if modifiers == False do not adjust drivers of which the data paths are starting
+                # with modifiers
                 if not modifiers:
-                    # only disable drivers on object not on modifiers
                     if len(data_path_split) > 1:
                         if data_path_split[0].startswith("modifiers"):
                             continue
 
+                # only disable drivers that drive visibility data paths
                 if data_path_suffix not in cmglobals.DRIVER_VIS_DATA_PATHS:
                     continue
 
+                # if muted already continue
                 if driver.mute == True:
                     continue
 
+                # mute
                 driver.mute = True
                 muted_drivers.append(driver)
 
@@ -179,7 +183,6 @@ def disable_drivers_by_data_path(
         if obj.animation_data:
             for driver in obj.animation_data.drivers:
 
-                # get suffix of data path, if modifiers modifier name is at the beginning
                 if driver.data_path != data_path:
                     continue
 
@@ -233,26 +236,31 @@ def sync_modifier_vis_with_render_setting(
 
     for obj in objs:
 
-        for idx, mod in enumerate(list(obj.modifiers)):
+        for mod in obj.modifiers:
 
             # do not affect those for export
             if mod.type in cmglobals.MODIFIERS_KEEP:
                 continue
 
+            # if already synced continue
             if mod.show_viewport == mod.show_render:
                 continue
 
+            # save cache for reconstrucion later
             show_viewport_cache = mod.show_viewport
             show_render_cache = mod.show_render
 
+            # sync show_viewport with show_render setting
             mod.show_viewport = mod.show_render
             mods_vis_override.append((mod, show_viewport_cache, show_render_cache))
 
+            # populate log list
             log_list.setdefault(obj.name, [])
             log_list[obj.name].append(
                 f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport},\n"
             )
 
+    # log
     if log_list:
         log_new_lines(1)
         header = "Sync modifier viewport vis with render vis:"

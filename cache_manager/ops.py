@@ -65,11 +65,10 @@ class CM_OT_cache_export(bpy.types.Operator):
         context.window_manager.progress_begin(0, len(collections))
 
         for idx, coll in enumerate(collections):
+            # log
             log_new_lines(2)
             logger.info("%s", gen_processing_string(coll.name))
-
             context.window_manager.progress_update(idx)
-            # identifier if coll is valid?
 
             # deselect all
             bpy.ops.object.select_all(action="DESELECT")
@@ -219,7 +218,7 @@ class CM_OT_cache_export(bpy.types.Operator):
         context.window_manager.progress_update(len(collections))
         context.window_manager.progress_end()
 
-        # update cache version property
+        # update cache version property to jump to latest version
         propsdata.update_cache_version_property(context)
 
         # log
@@ -285,7 +284,7 @@ class CM_OT_cacheconfig_export(bpy.types.Operator):
         # generate cacheconfig
         CacheConfigFactory.gen_config_from_colls(context, collections, cacheconfig_path)
 
-        # update cache version property
+        # update cache version property to jump to latest version
         propsdata.update_cache_version_property(context)
 
         # log
@@ -469,8 +468,8 @@ class CM_OT_import_cache(bpy.types.Operator):
         succeeded = []
         failed = []
 
+        # cacheconfig path
         cacheconfig_path = context.scene.cm.cacheconfig_path
-
         if context.scene.cm.use_cacheconfig_custom:
             cacheconfig_path = context.scene.cm.cacheconfig_custom_path
 
@@ -507,6 +506,8 @@ class CM_OT_import_cache(bpy.types.Operator):
 
         # load alembic as mesh sequence cache
         for idx, coll in enumerate(collections):
+
+            # log
             context.window_manager.progress_update(idx)
             log_new_lines(2)
             logger.info("%s", gen_processing_string(coll.name))
@@ -519,16 +520,18 @@ class CM_OT_import_cache(bpy.types.Operator):
 
             # add cache modifier and constraints
             for obj in object_list:
+
                 # get abc obj path
                 abc_obj_path = cacheconfig.get_abc_obj_path(obj.name)
 
-                # ensure and config constraint
+                # ensure and config constraint (can happen for mesh and camera)
                 con = opsdata.ensure_cache_constraint(obj)
                 opsdata.config_cache_constraint(context, con, cachefile, abc_obj_path)
 
                 # disable constraints
                 opsdata.disable_non_keep_constraints(obj)
 
+                # mesh sequence cache modifier configuration only for non camera objs
                 if obj.type != "CAMERA":
 
                     # disable all armature modifiers, get index of first one, use that index for cache modifier
@@ -573,6 +576,7 @@ class CM_OT_import_cache(bpy.types.Operator):
         context.window_manager.progress_update(len(collections))
         context.window_manager.progress_end()
 
+        # log
         self.report(
             {"INFO"},
             f"Importing Cache for {len(succeeded)} Collections | Failed: {len(failed)}.",
