@@ -163,7 +163,6 @@ class CacheConfigBlueprint(CacheConfig):
     }
     _OBJ_DICT_TEMPL: Dict[str, Any] = {"type": "", "abc_obj_path": "", "data_paths": {}}
     _DATA_PATH_DICT: Dict[str, List[Any]] = {"value": []}
-    # TODO: get rif of that and use cam approach with data paths
 
     def __init__(self):
         self._json_obj: Dict[str, Any] = deepcopy(self._CACHECONFIG_TEMPL)

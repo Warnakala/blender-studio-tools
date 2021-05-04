@@ -758,8 +758,14 @@ class CM_OT_set_cache_version(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        # TODO
-        return True
+
+        if not context.scene.cm.is_cache_version_dir_valid:
+            return False
+
+        if context.scene.cm.category == "EXPORT":
+            return True
+        else:
+            return not context.scene.cm.use_cacheconfig_custom
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         version = self.versions
@@ -881,7 +887,6 @@ class CM_OT_add_cache_version(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        # TODO
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
