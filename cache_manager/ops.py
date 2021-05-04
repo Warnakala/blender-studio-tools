@@ -1,8 +1,11 @@
-import bpy
 import re
 import contextlib
+
 from typing import List, Any, Set, cast, Tuple, Dict
 from pathlib import Path
+
+import bpy
+from bpy.app.handlers import persistent
 
 from .logger import LoggerFactory, gen_processing_string, log_new_lines
 from . import cache, prefs, props, propsdata, opsdata, cmglobals
@@ -926,11 +929,22 @@ classes: List[Any] = [
 ]
 
 
+@persistent
+def post_load_handler_update_cache_colls_list(dummy: Any) -> None:
+    bpy.ops.cm.udpate_cache_colls_list()
+
+
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+
+    # handlers
+    bpy.app.handlers.load_post.append(post_load_handler_update_cache_colls_list)
 
 
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+
+    # clear handlers
+    bpy.app.handlers.load_post.remove(post_load_handler_update_cache_colls_list)
