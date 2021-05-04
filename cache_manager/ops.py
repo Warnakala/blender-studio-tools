@@ -509,6 +509,11 @@ class CM_OT_import_cache(bpy.types.Operator):
                 # get abc obj path
                 abc_obj_path = cacheconfig.get_abc_obj_path(obj.name)
 
+                # skip object if not found in cacheconfig
+                if not abc_obj_path:
+                    # abc_obj_paht = ""
+                    continue
+
                 # ensure and config constraint (can happen for mesh and camera)
                 con = opsdata.ensure_cache_constraint(obj)
                 opsdata.config_cache_constraint(context, con, cachefile, abc_obj_path)

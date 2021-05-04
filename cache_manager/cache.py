@@ -148,7 +148,16 @@ class CacheConfig:
         ]
 
     def get_abc_obj_path(self, obj_name: str):
-        return self._json_obj["objects"][obj_name]["abc_obj_path"]
+        try:
+            abc_path = self._json_obj["objects"][obj_name]["abc_obj_path"]
+        except KeyError:
+            logger.error(
+                "%s not found in cacheconfig. Failed to get abc obj cache path.",
+                obj_name,
+            )
+            return None
+
+        return abc_path
 
 
 class CacheConfigBlueprint(CacheConfig):
