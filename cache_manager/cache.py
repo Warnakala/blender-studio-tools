@@ -130,19 +130,19 @@ class CacheConfig:
             return None
         return deepcopy(anim_obj_dict)
 
-    def get_all_data_paths(self, obj_category: str, obj_name: str):
+    def get_all_data_paths(self, obj_category: str, obj_name: str) -> List[str]:
         return self._json_obj[obj_category][obj_name]["data_paths"].keys()
 
     def get_all_data_path_values(
         self, obj_category: str, obj_name: str, data_path: str
-    ):
+    ) -> List[Any]:
         return deepcopy(
             self._json_obj[obj_category][obj_name]["data_paths"][data_path]["value"]
         )
 
     def get_data_path_value(
         self, obj_category: str, obj_name: str, data_path: str, frame: int
-    ):
+    ) -> Any:
         return self._json_obj[obj_category][obj_name]["data_paths"][data_path]["value"][
             frame
         ]

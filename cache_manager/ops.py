@@ -79,13 +79,6 @@ class CM_OT_cache_export(bpy.types.Operator):
             # mute drivers
             muted_vis_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
 
-            logger.info(
-                "Disabled drivers for export:\n%s",
-                ",\n".join(
-                    [f"{d.id_data.name}: {d.data_path}" for d in muted_vis_drivers]
-                ),
-            )
-
             # ensure modifiers vis have render vis settings does not include MODIFIERS_KEEP
             mods_restore_vis_from_sync = opsdata.sync_modifier_vis_with_render_setting(
                 object_list
@@ -109,20 +102,12 @@ class CM_OT_cache_export(bpy.types.Operator):
             )
 
             # ensure that all objects are visible for export
-            objs_to_be_hidden = opsdata.ensure_obj_vis(object_list)
-
-            logger.info(
-                "Show objects in viewport for export:\n%s",
-                ",\n".join([obj.name for obj in objs_to_be_hidden]),
-            )
+            objs_to_be_hidden = opsdata.ensure_obj_vis(object_list, hide_viewport=False)
 
             # ensure the all collections are visible for export
             # otherwise object in it will not be exported
-            colls_to_be_hidden = opsdata.ensure_coll_vis(coll)
-
-            logger.info(
-                "Show collections in viewport for export:\n%s",
-                ",\n".join([coll.name for coll in colls_to_be_hidden]),
+            colls_to_be_hidden = opsdata.ensure_coll_vis(
+                list(opsdata.traverse_collection_tree(coll)), hide_viewport=False
             )
 
             # select objects for bpy.ops.wm.alembic_export
@@ -177,35 +162,16 @@ class CM_OT_cache_export(bpy.types.Operator):
                 continue
 
             # hide objs again
-            for obj in objs_to_be_hidden:
-                obj.hide_viewport = True
-
-            logger.info(
-                "Hide objects in viewport after export:\n%s",
-                ",\n".join([obj.name for obj in objs_to_be_hidden]),
-            )
+            opsdata.ensure_obj_vis(objs_to_be_hidden, hide_viewport=True)
 
             # hide colls again
-            for coll in colls_to_be_hidden:
-                coll.hide_viewport = True
-
-            logger.info(
-                "Hide collections in viewport after export:\n%s",
-                ",\n".join([coll.name for coll in colls_to_be_hidden]),
-            )
+            opsdata.ensure_coll_vis(colls_to_be_hidden, hide_viewport=True)
 
             # restore modifier viewport vis / render vis
             opsdata.restore_modifier_vis(mods_to_restore_vis)
 
             # entmute driver
             opsdata.enable_muted_drivers(muted_vis_drivers)
-
-            logger.info(
-                "Enabled drivers after export:\n%s",
-                ",\n".join(
-                    [f"{d.id_data.name}: {d.data_path}" for d in muted_vis_drivers]
-                ),
-            )
 
             # success log for this collections
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
@@ -464,7 +430,6 @@ class CM_OT_import_cache(bpy.types.Operator):
 
     def execute(self, context):
         log_new_lines(1)
-        addon_prefs = prefs.addon_prefs_get(context)
         succeeded = []
         failed = []
 
@@ -550,13 +515,6 @@ class CM_OT_import_cache(bpy.types.Operator):
 
             # mute drivers
             muted_vis_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
-
-            logger.info(
-                "Disabled drivers:\n%s",
-                ",\n".join(
-                    [f"{d.id_data.name}: {d.data_path}" for d in muted_vis_drivers]
-                ),
-            )
 
             # ensure modifiers vis have render vis settings does not include MODIFIERS_KEEP
             opsdata.sync_modifier_vis_with_render_setting(

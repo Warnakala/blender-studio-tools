@@ -136,12 +136,31 @@ def traverse_collection_tree(
         yield from traverse_collection_tree(child)
 
 
+def _print_log_list(log_list: Dict[str, List[str]], header_str: str) -> None:
+    if log_list:
+        log_new_lines(1)
+        text = [f"{obj_name}:\n{''.join(log_list[obj_name])}" for obj_name in log_list]
+        logger.info("%s\n%s", header_str, "".join(text))
+
+
+def _append_str_to_log_list(
+    log_list: Dict[str, List[str]], obj_name: str, str_value: str
+) -> Dict[str, List[str]]:
+    log_list.setdefault(obj_name, [])
+    log_list[obj_name].append(f"{str_value},\n")
+    return log_list
+
+
 def disable_vis_drivers(
     objects: List[bpy.types.Object], modifiers: bool = True
 ) -> List[bpy.types.Driver]:
 
     # store driver that were muted to entmute them after
     muted_drivers: List[bpy.types.Driver] = []
+
+    # log list
+    log_list: Dict[str, List[str]] = {}
+
     for obj in objects:
         if obj.animation_data:
             for driver in obj.animation_data.drivers:
@@ -169,6 +188,10 @@ def disable_vis_drivers(
                 driver.mute = True
                 muted_drivers.append(driver)
 
+                # populate log list
+                _append_str_to_log_list(log_list, obj.name, driver.data_path)
+    # log
+    _print_log_list(log_list, "Disable visibility drivers:")
     return muted_drivers
 
 
@@ -179,6 +202,9 @@ def disable_drivers_by_data_path(
     # store driver that were muted to entmute them after
     muted_drivers: List[bpy.types.Driver] = []
 
+    # log list
+    log_list: Dict[str, List[str]] = {}
+
     for obj in objects:
         if obj.animation_data:
             for driver in obj.animation_data.drivers:
@@ -186,44 +212,20 @@ def disable_drivers_by_data_path(
                 if driver.data_path != data_path:
                     continue
 
+                # skip if driver already muted
                 if driver.mute == True:
                     continue
 
+                # mute
                 driver.mute = True
                 muted_drivers.append(driver)
 
-    return muted_drivers
+                # populate log list
+                _append_str_to_log_list(log_list, obj.name, driver.data_path)
 
+    # log
+    # _print_log_list(log_list, "Disable drivers by data path:")
 
-def ensure_obj_vis(
-    objects: List[bpy.types.Object],
-) -> List[bpy.types.Object]:
-
-    objs_to_show: List[bpy.types.Object] = [obj for obj in objects if obj.hide_viewport]
-
-    # show viewport to ensure export
-    for obj in objs_to_show:
-        obj.hide_viewport = False
-
-    return objs_to_show
-
-
-def ensure_coll_vis(parent_coll: bpy.types.Collection) -> List[bpy.types.Collection]:
-    colls_to_show: List[bpy.types.Collection] = [
-        coll for coll in traverse_collection_tree(parent_coll) if coll.hide_viewport
-    ]
-
-    for coll in colls_to_show:
-        coll.hide_viewport = False
-
-    return colls_to_show
-
-
-def enable_muted_drivers(
-    muted_drivers: List[bpy.types.Driver],
-) -> List[bpy.types.Driver]:
-    for driver in muted_drivers:
-        driver.mute = False
     return muted_drivers
 
 
@@ -255,17 +257,13 @@ def sync_modifier_vis_with_render_setting(
             mods_vis_override.append((mod, show_viewport_cache, show_render_cache))
 
             # populate log list
-            log_list.setdefault(obj.name, [])
-            log_list[obj.name].append(
-                f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport},\n"
+            _append_str_to_log_list(
+                log_list,
+                obj.name,
+                f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport}",
             )
-
     # log
-    if log_list:
-        log_new_lines(1)
-        header = "Sync modifier viewport vis with render vis:"
-        text = [f"{obj_name}:\n {''.join(log_list[obj_name])}" for obj_name in log_list]
-        logger.info("%s \n%s", header, "\n".join(text))
+    _print_log_list(log_list, "Sync modifier viewport vis with render vis:")
 
     return mods_vis_override
 
@@ -321,16 +319,14 @@ def apply_modifier_suffix_vis_override(
 
             mods_vis_override.append((mod, show_viewport_cache, show_render_cache))
 
-            log_list.setdefault(obj.name, [])
-            log_list[obj.name].append(
-                f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport} R: {show_render_cache} -> {mod.show_render},\n"
+            # populate log list
+            _append_str_to_log_list(
+                log_list,
+                obj.name,
+                f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport} R: {show_render_cache} -> {mod.show_render}",
             )
-
-    if log_list:
-        log_new_lines(1)
-        header = "Apply modifier suffix vis override:"
-        text = [f"{obj_name}:\n {''.join(log_list[obj_name])}" for obj_name in log_list]
-        logger.info("%s \n%s", header, "\n".join(text))
+    # log
+    _print_log_list(log_list, "Apply modifier suffix vis override:")
 
     return mods_vis_override
 
@@ -352,16 +348,15 @@ def restore_modifier_vis(
         mod.show_viewport = show_viewport
         mod.show_render = show_render
 
-        log_list.setdefault(mod.id_data.name, [])
-        log_list[mod.id_data.name].append(
-            f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport} R: {show_render_cache} -> {mod.show_render}, \n"
+        # populate log list
+        _append_str_to_log_list(
+            log_list,
+            mod.id_data.name,
+            f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport} R: {show_render_cache} -> {mod.show_render}",
         )
 
-    if log_list:
-        log_new_lines(1)
-        header = "Restore modifier visiblity:"
-        text = [f"{obj_name}:\n {''.join(log_list[obj_name])}" for obj_name in log_list]
-        logger.info("%s \n%s", header, "\n".join(text))
+    # log
+    _print_log_list(log_list, "Restore modifier visiblity:")
 
 
 def config_modifiers_keep_state(
@@ -397,18 +392,98 @@ def config_modifiers_keep_state(
                 mod.show_viewport = False
                 mod.show_render = False
 
-            log_list.setdefault(obj.name, [])
-            log_list[obj.name].append(mod.name)
-
             mods_vis_override.append((mod, show_viewport_cache, show_render_cache))
 
-    if log_list:
-        log_new_lines(1)
-        header = f"{noun} modifiers:"
-        text = [f"{obj_name}:\n {''.join(log_list[obj_name])}" for obj_name in log_list]
-        logger.info("%s \n%s", header, "\n".join(text))
+            # populate log list
+            _append_str_to_log_list(
+                log_list,
+                obj.name,
+                mod.name,
+            )
+    # log
+    _print_log_list(log_list, f"{noun} modifiers:")
 
     return mods_vis_override
+
+
+def ensure_obj_vis(
+    objects: List[bpy.types.Object],
+    hide_viewport: bool = False,
+) -> List[bpy.types.Object]:
+
+    objs: List[bpy.types.Object] = []
+
+    # gen objs list and noun
+    if hide_viewport:
+        objs.extend([obj for obj in objects if not obj.hide_viewport])
+        noun = "Hide"
+
+    else:
+        objs.extend([obj for obj in objects if obj.hide_viewport])
+        noun = "Show"
+
+    # set hide_viewport property
+    for obj in objs:
+        obj.hide_viewport = hide_viewport
+
+    # log
+    logger.info(
+        "%s objects in viewport:\n%s",
+        noun,
+        ",\n".join([obj.name for obj in objs]),
+    )
+    return objs
+
+
+def ensure_coll_vis(
+    collections: List[bpy.types.Collection], hide_viewport: bool = False
+) -> List[bpy.types.Collection]:
+
+    colls: List[bpy.types.Collection] = []
+
+    # gen coll list and noun
+    if hide_viewport:
+        colls.extend([coll for coll in collections if not coll.hide_viewport])
+        noun = "Hide"
+
+    else:
+        colls.extend([coll for coll in collections if coll.hide_viewport])
+        noun = "Show"
+
+    for coll in colls:
+        coll.hide_viewport = hide_viewport
+
+    # log
+    logger.info(
+        "%s collections in viewport:\n %s",
+        noun,
+        ",\n".join([coll.name for coll in colls]),
+    )
+
+    return colls
+
+
+def enable_muted_drivers(
+    muted_drivers: List[bpy.types.Driver],
+) -> List[bpy.types.Driver]:
+
+    # log list
+    log_list: Dict[str, List[str]] = {}
+
+    for driver in muted_drivers:
+
+        if driver.mute == False:
+            continue
+
+        driver.mute = False
+
+        # populate log list
+        _append_str_to_log_list(log_list, driver.id_data.name, driver.data_path)
+
+    # log
+    _print_log_list(log_list, "Enable drivers:")
+
+    return muted_drivers
 
 
 def gen_abc_object_path(obj: bpy.types.Object) -> str:
@@ -425,7 +500,7 @@ def gen_abc_object_path(obj: bpy.types.Object) -> str:
     for char in replace:
         object_path = object_path.replace(char, "_")
 
-    return object_path
+    return str(object_path)
 
 
 def disable_non_keep_modifiers(obj: bpy.types.Object) -> int:
@@ -534,7 +609,7 @@ def ensure_cache_constraint(
 
 
 def kill_increment(str_value: str) -> str:
-    match = re.search("\.\d\d\d", str_value)
+    match = re.search(r"\.\d\d\d", str_value)
     if match:
         return str_value.replace(match.group(0), "")
     return str_value
