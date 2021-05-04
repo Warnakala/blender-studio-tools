@@ -20,10 +20,6 @@ from . import propsdata, prefs, props
 
 
 class CM_PT_vi3d_cache(bpy.types.Panel):
-    """
-    Panel in sequence editor that displays email, password and login operator.
-    """
-
     bl_category = "CacheManager"
     bl_label = "Cache"
     bl_space_type = "VIEW_3D"
@@ -254,6 +250,32 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
         return version_text
 
 
+class CM_PT_vi3d_advanced(bpy.types.Panel):
+    bl_parent_id = "CM_PT_vi3d_cache"
+    bl_category = "CacheManager"
+    bl_label = "Advanced"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_order = 10
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout = self.layout
+
+        # alembic export settings
+        box = layout.box()
+        box.label(text="Alembic Export Settings", icon="MODIFIER")
+        # shutter
+        col = box.column(align=True)
+        col.prop(context.scene.cm, "sh_open")
+        col.prop(context.scene.cm, "sh_close")
+
+        # samples
+        col = box.column(align=True)
+        col.prop(context.scene.cm, "xsamples")
+        col.prop(context.scene.cm, "gsamples")
+
+
 class CM_UL_collection_cache_list_export(bpy.types.UIList):
     def draw_item(
         self, context, layout, data, item, icon, active_data, active_propname, index
@@ -337,6 +359,7 @@ classes = [
     CM_UL_collection_cache_list_export,
     CM_UL_collection_cache_list_import,
     CM_PT_vi3d_cache,
+    CM_PT_vi3d_advanced,
 ]
 
 

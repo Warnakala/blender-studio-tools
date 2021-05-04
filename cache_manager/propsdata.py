@@ -4,9 +4,21 @@ from pathlib import Path
 from typing import Any
 
 from . import opsdata
+from .logger import LoggerFactory
 
 import bpy
 from bpy.app.handlers import persistent
+
+logger = LoggerFactory.getLogger(__name__)
+
+
+def ui_redraw() -> None:
+    """
+    Forces blender to redraw the UI.
+    """
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            area.tag_redraw()
 
 
 def update_cache_version_property(context: bpy.types.Context) -> None:
@@ -105,6 +117,38 @@ def get_cache_version_dir_path_str(self: Any) -> str:
     p = Path(addon_prefs.cachedir_root_path) / _get_scene_name() / _get_shot_name()
 
     return p.absolute().as_posix()
+
+
+def rm_deleted_colls_from_list(context: bpy.types.Context) -> None:
+    return None
+
+    for category in [context.scene.cm.colls_export, context.scene.cm.colls_import]:
+
+        category_name = context.scene.cm.category
+        colls = [item.coll_ptr for item in category]
+
+        for idx, coll in enumerate(colls):
+            if not coll:
+                # remove item for that category at that index
+                category.remove(idx)
+                logger.info(
+                    "Removed index %i from %s list. Does not exists anymore.",
+                    idx,
+                    category_name.lower(),
+                )
+                # update selection index
+                index = context.scene.cm.colls_export_index
+                if category_name == "IMPORT":
+                    index = context.scene.cm.colls_import_index
+
+                if index == idx and index > 0:
+
+                    if category_name == "IMPORT":
+                        context.scene.cm.colls_import_index = index - 1
+                    else:
+                        context.scene.cm.colls_export_index = index - 1
+
+    ui_redraw()
 
 
 @persistent

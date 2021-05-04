@@ -145,10 +145,10 @@ class CM_OT_cache_export(bpy.types.Operator):
                     filepath=filepath.as_posix(),
                     start=context.scene.frame_start,
                     end=context.scene.frame_end,
-                    xsamples=1,
-                    gsamples=1,
-                    sh_open=0,
-                    sh_close=1,
+                    xsamples=context.scene.cm.xsamples,
+                    gsamples=context.scene.cm.gsamples,
+                    sh_open=context.scene.cm.sh_open,
+                    sh_close=context.scene.cm.sh_close,
                     selected=True,
                     renderable_only=False,
                     visible_objects_only=False,
@@ -372,6 +372,10 @@ class CM_OT_update_cache_colls_list(bpy.types.Operator):
         log_new_lines(1)
         logger.info("-START- Updating Cache Collections List")
 
+        # clear any collections that got deleted
+        propsdata.rm_deleted_colls_from_list(context)
+
+        # search for cache collections that were not added
         for coll in collections:
             if not coll.cm.is_cache_coll:
                 continue
