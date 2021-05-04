@@ -280,17 +280,24 @@ class CM_UL_collection_cache_list_export(bpy.types.UIList):
     def draw_item(
         self, context, layout, data, item, icon, active_data, active_propname, index
     ):
+        coll = item.coll_ptr
+
         if self.layout_type in {"DEFAULT", "COMPACT"}:
+            # item got deleted
+            if not coll:
+                layout.label(text=f"{item.name} was deleted")
+                return
+
             split = layout.split(factor=0.5, align=True)
             split.prop(
-                item.coll_ptr,
+                coll,
                 "name",
                 text="",
                 emboss=False,
                 icon="OUTLINER_COLLECTION",
             )
             split = split.split(factor=0.75, align=True)
-            split.label(text=f"/{propsdata.gen_cache_coll_filename(item.coll_ptr)}")
+            split.label(text=f"/{propsdata.gen_cache_coll_filename(coll)}")
             split.operator(
                 CM_OT_cache_export.bl_idname,
                 text="",
@@ -299,7 +306,7 @@ class CM_UL_collection_cache_list_export(bpy.types.UIList):
 
         elif self.layout_type in {"GRID"}:
             layout.alignment = "CENTER"
-            layout.label(text="", icon_value=layout.icon(item.coll_ptr))
+            layout.label(text="", icon_value=layout.icon(coll))
 
 
 class CM_UL_collection_cache_list_import(bpy.types.UIList):
@@ -309,6 +316,11 @@ class CM_UL_collection_cache_list_import(bpy.types.UIList):
         coll = item.coll_ptr
 
         if self.layout_type in {"DEFAULT", "COMPACT"}:
+            # item got deleted
+            if not coll:
+                layout.label(text=f"{item.name} was deleted")
+                return
+
             split = layout.split(factor=0.4, align=True)
             split.prop(
                 coll,
