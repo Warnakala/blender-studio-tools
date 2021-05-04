@@ -455,12 +455,54 @@ def ensure_coll_vis(
 
     # log
     logger.info(
-        "%s collections in viewport:\n %s",
+        "%s collections in viewport:\n%s",
         noun,
         ",\n".join([coll.name for coll in colls]),
     )
 
     return colls
+
+
+def get_layer_colls_from_colls(
+    context: bpy.types.Context, collections: List[bpy.types.Collection]
+) -> List[bpy.types.LayerCollection]:
+
+    layer_colls: List[bpy.types.LayerCollection] = []
+    coll_name: List[str] = [coll.name for coll in collections]
+
+    for lcoll in list(traverse_collection_tree(context.view_layer.layer_collection)):
+        if lcoll.name in coll_name:
+            layer_colls.append(lcoll)
+
+    return layer_colls
+
+
+def set_layer_coll_exlcude(
+    layer_collections: List[bpy.types.LayerCollection], exclude: bool
+) -> List[bpy.types.LayerCollection]:
+
+    layer_colls: List[bpy.types.LayerCollection] = []
+
+    # gen layer coll list and noun
+    if exclude:
+        layer_colls.extend([lcol for lcol in layer_collections if not lcol.exclude])
+        noun = "Exclude"
+
+    else:
+        layer_colls.extend([lcol for lcol in layer_collections if lcol.exclude])
+        noun = "Include"
+
+    for lcol in layer_colls:
+        lcol.exclude = exclude
+
+    # log
+    logger.info(
+        "%s layer collections in current view layer:\n%s",
+        noun,
+        ",\n".join([lcol.name for lcol in layer_colls]),
+    )
+
+    return layer_colls
 
 
 def enable_muted_drivers(

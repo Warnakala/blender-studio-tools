@@ -3,6 +3,7 @@ import contextlib
 
 from typing import List, Any, Set, cast, Tuple, Dict
 from pathlib import Path
+from copy import deepcopy
 
 import bpy
 from bpy.app.handlers import persistent
@@ -72,6 +73,22 @@ class CM_OT_cache_export(bpy.types.Operator):
 
             # deselect all
             bpy.ops.object.select_all(action="DESELECT")
+
+            # exclude other cache collections for faster export
+            cache_colls_active_exluded = list(
+                props.get_cache_collections_export(context)
+            )
+
+            # rm current coll from that list
+            cache_colls_active_exluded.remove(coll)
+
+            layer_colls_to_exclude = opsdata.get_layer_colls_from_colls(
+                context, cache_colls_active_exluded
+            )
+
+            layer_colls_to_include = opsdata.set_layer_coll_exlcude(
+                layer_colls_to_exclude, True
+            )
 
             # create object list to be exported
             object_list = cache.get_valid_cache_objects(coll)
@@ -172,6 +189,9 @@ class CM_OT_cache_export(bpy.types.Operator):
 
             # entmute driver
             opsdata.enable_muted_drivers(muted_vis_drivers)
+
+            # include other cache collections again
+            opsdata.set_layer_coll_exlcude(layer_colls_to_include, False)
 
             # success log for this collections
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
