@@ -93,7 +93,7 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     xsamples: bpy.props.IntProperty(
         name="Transform Samples",
         description="Sets the xsamples argument of bpy.ops.wm.alembic_export to the specified value",
-        default=1,
+        default=3,
         min=1,
         max=128,
         step=1,
@@ -101,7 +101,7 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     gsamples: bpy.props.IntProperty(
         name="Geometry Samples",
         description="Sets the gsamples argument of bpy.ops.wm.alembic_export to the specified value",
-        default=1,
+        default=3,
         min=1,
         max=128,
         step=1,
@@ -109,7 +109,7 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     sh_open: bpy.props.FloatProperty(
         name="Shutter Open",
         description="Sets the sh_open argument of bpy.ops.wm.alembic_export to the specified value",
-        default=-0.25,
+        default=0,
         min=-1.0,
         max=1.0,
         step=0.1,
@@ -117,7 +117,7 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     sh_close: bpy.props.FloatProperty(
         name="Shutter Close",
         description="Sets the sh_close argument of bpy.ops.wm.alembic_export to the specified value",
-        default=0.25,
+        default=1,
         min=-1.0,
         max=1.0,
         step=0.1,
