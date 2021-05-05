@@ -267,8 +267,21 @@ class CacheConfigProcessor:
         cls, cacheconfig: CacheConfig, context: bpy.types.Context, link: bool = True
     ) -> List[bpy.types.Collection]:
 
-        # list of collections to track which ones got imported
-        colls: List[bpy.types.Collection] = []
+        # link collections in bpy.data of this blend file
+        cls._import_data_from_libfiles(cacheconfig, link=link)
+
+        # create
+        colls = cls._instance_colls_to_scene_and_override(cacheconfig, context)
+        return colls
+
+    @classmethod
+    def _import_data_from_libfiles(
+        cls, cacheconfig: CacheConfig, link: bool = True
+    ) -> None:
+
+        noun = "Appended"
+        if link:
+            noun = "Linked"
 
         for libfile in cacheconfig.get_all_libfiles():
 
@@ -297,81 +310,57 @@ class CacheConfigProcessor:
 
                     data_to.collections.append(coll_name)
                     logger.info(
-                        "Appended collection: %s from library: %s",
+                        "%s collection: %s from library: %s",
+                        noun,
                         coll_name,
                         libpath.as_posix(),
                     )
 
+    @classmethod
+    def _instance_colls_to_scene_and_override(
+        cls, cacheconfig: CacheConfig, context: bpy.types.Context
+    ) -> List[bpy.types.Collection]:
+        # list of collections to track which ones got imported
+        colls: List[bpy.types.Collection] = []
+
+        for libfile in cacheconfig.get_all_libfiles():
+
             # link collections in current scene and add cm.cachfile property
             for coll_name in cacheconfig.get_all_coll_ref_names(libfile):
-
-                instance_objs = []
 
                 # for each variant add instance object
                 for variant_name in sorted(
                     cacheconfig.get_all_collvariants(libfile, coll_name)
                 ):
-                    # check if variant already in this blend file
-                    try:
-                        bpy.data.collections[variant_name]
-                    except KeyError:
-                        logger.info(
-                            "Collection %s does not exist yet. Will create.",
-                            variant_name,
-                        )
-                        pass
-                    else:
-                        # collection alrady exists, not continuing would add another
-                        # collection instance which then gets overwritten which results
-                        # in an increase of object inrementation > caches wont work
+                    if cls._is_coll_variant_in_blend(variant_name):
                         logger.info("Collection %s already exists. Skip.", variant_name)
                         continue
 
-                    # get source collection, otherwise we can't override the collection instance
-                    source_collection = get_ref_coll(coll_name)
-
-                    cachefile = cacheconfig.get_cachefile(
-                        libfile, coll_name, variant_name
-                    )
-
-                    instance_obj = bpy.data.objects.new(
-                        name=variant_name, object_data=None
-                    )
-                    instance_obj.instance_collection = source_collection
-                    instance_obj.instance_type = "COLLECTION"
-
-                    parent_collection = bpy.context.view_layer.active_layer_collection
-                    parent_collection.collection.objects.link(instance_obj)
-
-                    instance_objs.append(
-                        (
-                            instance_obj,
-                            variant_name,
-                            cachefile,
-                        )
-                    )
                     logger.info(
-                        "Instanced collection: %s as: %s (variant: %s)",
-                        source_collection.name,
-                        instance_obj.name,
+                        "Collection variant %s does not exist yet. Will create.",
                         variant_name,
                     )
 
-                # override the instance objects
-                for obj, variant_name, cachefile in instance_objs:
+                    # get source collection and create collection instance of it
+                    source_collection = get_ref_coll(coll_name)
+                    instance_obj = cls._create_collection_instance(
+                        source_collection, variant_name
+                    )
 
-                    # deselect all
-                    bpy.ops.object.select_all(action="DESELECT")
+                    # add library override to collection inst
+                    cls._make_library_override(instance_obj, context)
 
-                    # needs active object (coll instance)
-                    context.view_layer.objects.active = obj
-                    obj.select_set(True)
+                    # add collection properties
 
-                    # add lib override
-                    bpy.ops.object.make_override_library()
-
-                    # get collection by name
                     coll = bpy.data.collections[variant_name]
+                    # TODO: super risky but I found no other way around this
+                    # we have no influence on the naming of objects that will be created
+                    # by bpy.ops.object.make_override_library() -> we can just hope here
+                    # that there is not other object that would mess up the incrementation
+                    # -> cache would not work anymore with wrong incrementation
+                    cachefile = cacheconfig.get_cachefile(
+                        libfile, coll_name, variant_name
+                    )
 
                     # set cm.cachefile property
                     coll.cm.cachefile = cachefile
@@ -379,13 +368,72 @@ class CacheConfigProcessor:
                     colls.append(coll)
 
                     logger.info(
-                        "%s added override and assigned cachefile: %s (variant: %s)",
+                        "%s assigned cachefile: %s (variant: %s)",
                         coll.name,
                         cachefile,
                         variant_name,
                     )
 
         return sorted(colls, key=lambda x: x.name)
+
+    @classmethod
+    def _is_coll_variant_in_blend(cls, variant_name: str) -> bool:
+        # check if variant already in this blend file
+        try:
+            coll = bpy.data.collections[variant_name]
+        except KeyError:
+            return False
+        else:
+            # collection alrady exists, not continuing would add another
+            # collection instance which then gets overwritten which results
+            # in an increase of object inrementation > caches wont work
+            if coll.library:
+                return False
+            return True
+
+    @classmethod
+    def _create_collection_instance(
+        cls, source_collection: bpy.types.Collection, variant_name: str
+    ) -> bpy.types.Object:
+        # variant name has no effect how the overwritten library collection in the end
+        # will be named is supplied here just for loggin purposes
+
+        # use empty to instance source collection
+        instance_obj = bpy.data.objects.new(name=variant_name, object_data=None)
+        instance_obj.instance_collection = source_collection
+        instance_obj.instance_type = "COLLECTION"
+
+        parent_collection = bpy.context.view_layer.active_layer_collection
+        parent_collection.collection.objects.link(instance_obj)
+
+        logger.info(
+            "Instanced collection: %s as: %s (variant: %s)",
+            source_collection.name,
+            instance_obj.name,
+            variant_name,
+        )
+
+        return instance_obj
+
+    @classmethod
+    def _make_library_override(
+        cls, instance_obj: bpy.types.Object, context: bpy.types.Context
+    ) -> None:
+        log_name = instance_obj.name
+        # deselect all
+        bpy.ops.object.select_all(action="DESELECT")
+
+        # needs active object (coll instance)
+        context.view_layer.objects.active = instance_obj
+        instance_obj.select_set(True)
+
+        # add lib override
+        bpy.ops.object.make_override_library()
+
+        logger.info(
+            "%s make library override.",
+            log_name,
+        )
 
     @classmethod
     def import_animation_data(
