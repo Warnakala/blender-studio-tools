@@ -761,3 +761,12 @@ def rm_coll_from_cache_collections(
             "Removed %s from %s cache collections list", item_name, category.lower()
         )
         return coll
+
+
+def get_cache_frame_range(context: bpy.types.Context) -> Tuple[int, int]:
+    frame_in = context.scene.frame_start - context.scene.cm.frame_handles_left
+    if frame_in < 0:
+        frame_in = 0
+    frame_end = context.scene.frame_end + context.scene.cm.frame_handles_right
+
+    return (frame_in, frame_end)

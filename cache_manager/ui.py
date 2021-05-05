@@ -265,6 +265,12 @@ class CM_PT_vi3d_advanced(bpy.types.Panel):
         # alembic export settings
         box = layout.box()
         box.label(text="Alembic Export Settings", icon="MODIFIER")
+
+        # frame range
+        col = box.column(align=True)
+        col.prop(context.scene.cm, "frame_handles_left")
+        col.prop(context.scene.cm, "frame_handles_right")
+
         # shutter
         col = box.column(align=True)
         col.prop(context.scene.cm, "sh_open")

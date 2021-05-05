@@ -123,6 +123,21 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
         step=0.1,
     )
 
+    frame_handles_left: bpy.props.IntProperty(
+        name="Frame Handles Left",
+        description="Caching starts at the frame in of the scene minus the specified amount of frame handles.",
+        default=10,
+        min=0,
+        step=1,
+    )
+    frame_handles_right: bpy.props.IntProperty(
+        name="Frame Handles Right",
+        description="Caching stops at the frame out of the scene plus the specified amount of frame handles.",
+        default=10,
+        min=0,
+        step=1,
+    )
+
     @property
     def cachedir_path(self) -> Optional[Path]:
         if not self.is_cachedir_valid:

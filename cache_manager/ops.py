@@ -148,14 +148,16 @@ class CM_OT_cache_export(bpy.types.Operator):
                 logger.warning(
                     "Filepath %s already exists. Will overwrite.", filepath.as_posix()
                 )
+            # frame range
+            frame_range = opsdata.get_cache_frame_range(context)
 
             # export
             try:
                 # for each collection create seperate alembic
                 bpy.ops.wm.alembic_export(
                     filepath=filepath.as_posix(),
-                    start=context.scene.frame_start,
-                    end=context.scene.frame_end,
+                    start=frame_range[0],
+                    end=frame_range[1],
                     xsamples=context.scene.cm.xsamples,
                     gsamples=context.scene.cm.gsamples,
                     sh_open=context.scene.cm.sh_open,
