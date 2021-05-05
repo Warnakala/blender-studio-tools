@@ -551,34 +551,21 @@ def disable_non_keep_modifiers(obj: bpy.types.Object) -> int:
     disabled_mods = []
     for idx, mod in enumerate(modifiers):
         if mod.type not in cmglobals.MODIFIERS_KEEP:
+            # save index of first armature modifier to
+            if a_index == -1 and mod.type == "ARMATURE":
+                a_index = idx
+
+            if not mod.show_viewport and not mod.show_render:
+                continue
+
             mod.show_viewport = False
             mod.show_render = False
             mod.show_in_editmode = False
             disabled_mods.append(mod.name)
 
-            # save index of first armature modifier to
-            if a_index == -1 and mod.type == "ARMATURE":
-                a_index = idx
+    if disabled_mods:
+        logger.info("%s Disabled modifiers: %s", obj.name, ", ".join(disabled_mods))
 
-    logger.info("%s Disabled modifiers: %s", obj.name, ", ".join(disabled_mods))
-    return a_index
-
-
-def rm_non_keep_modifiers(obj: bpy.types.Object) -> int:
-    modifiers = list(obj.modifiers)
-    a_index: int = -1
-    rm_mods = []
-    for idx, mod in enumerate(modifiers):
-        if mod.type not in cmglobals.MODIFIERS_KEEP:
-
-            obj.modifiers.remove(mod)
-            rm_mods.append(mod.name)
-
-            # save index of first armature modifier to
-            if a_index == -1 and mod.type == "ARMATURE":
-                a_index = idx
-
-    logger.info("%s Removed modifiers: %s", obj.name, ", ".join(rm_mods))
     return a_index
 
 
@@ -587,9 +574,14 @@ def disable_non_keep_constraints(obj: bpy.types.Object) -> List[bpy.types.Constr
     disabled_const: List[bpy.types.Constraint] = []
 
     for c in constraints:
-        if c.type not in cmglobals.CONSTRAINTS_KEEP:
-            c.mute = True
-            disabled_const.append(c)
+        if c.type in cmglobals.CONSTRAINTS_KEEP:
+            continue
+
+        if c.mute:
+            continue
+
+        c.mute = True
+        disabled_const.append(c)
 
     if disabled_const:
         logger.info(
@@ -609,6 +601,7 @@ def ensure_cachefile(cachefile_path: str) -> bpy.types.CacheFile:
         bpy.data.cache_files[cachefile_name]
     except KeyError:
         bpy.ops.cachefile.open(filepath=cachefile_path)
+        logger.info("Imported cachefile: %s", cachefile_path)
     else:
         bpy.ops.cachefile.reload()
 
@@ -619,12 +612,12 @@ def ensure_cachefile(cachefile_path: str) -> bpy.types.CacheFile:
 
 def ensure_cache_modifier(obj: bpy.types.Object) -> bpy.types.MeshSequenceCacheModifier:
     modifier_name = cmglobals.MODIFIER_NAME
+
     # if modifier does not exist yet create it
     if obj.modifiers.find(modifier_name) == -1:  # not found
         mod = obj.modifiers.new(modifier_name, "MESH_SEQUENCE_CACHE")
-    else:
         logger.info(
-            "Object: %s already has %s modifier. Will use that.",
+            "%s added %s modifier.",
             obj.name,
             modifier_name,
         )
@@ -640,9 +633,8 @@ def ensure_cache_constraint(
     if obj.constraints.find(constraint_name) == -1:  # not found
         con = obj.constraints.new("TRANSFORM_CACHE")
         con.name = constraint_name
-    else:
         logger.info(
-            "Object: %s already has %s constraint. Will use that.",
+            "%s added %s constraint.",
             obj.name,
             constraint_name,
         )
@@ -764,7 +756,7 @@ def rm_coll_from_cache_collections(
 
         # reset coll.cm properties
         coll = item.coll_ptr
-        if coll: #check if not None (coll might be deleted)
+        if coll:  # check if not None (coll might be deleted)
             coll.cm.reset_properties()
 
         logger.info(

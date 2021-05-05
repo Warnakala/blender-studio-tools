@@ -441,9 +441,11 @@ class CacheConfigProcessor:
     ) -> None:
 
         colls = sorted(colls, key=lambda x: x.name)
+        frame_in = cacheconfig.get_meta_key("frame_start")
+        frame_out = cacheconfig.get_meta_key("frame_end")
 
         log_new_lines(1)
-        logger.info("-START- Importing Animation Data")
+        logger.info("-START- Importing Animation Data %i - %i", frame_in, frame_out)
 
         objs_load_anim: List[bpy.types.Object] = []
         cams_laod_anim: List[bpy.types.Camera] = []
@@ -451,11 +453,14 @@ class CacheConfigProcessor:
         # gather all objects to load anim on
         for coll in colls:
             for obj in coll.all_objects:
-                if obj.type in cmglobals.VALID_OBJECT_TYPES:
-                    objs_load_anim.append(obj)
+                if not is_valid_cache_object(obj):
+                    continue
 
                 if obj.type == "CAMERA":
                     cams_laod_anim.append(obj.data)
+                    continue
+
+                objs_load_anim.append(obj)
 
         # extend objs list with cams
         objs_load_anim.extend(cams_laod_anim)
@@ -529,19 +534,18 @@ class CacheConfigProcessor:
                     exec(command)
                     obj.keyframe_insert(data_path=data_path, frame=frame)
 
-            logger.info(
-                "%s disabled drivers: \n%s",
-                obj_name,
-                ",\n".join([m.data_path for m in muted_drivers]),
-            )
-
-            logger.info(
-                "%s imported animation (%s, %s) for props: %s",
-                obj_name,
-                frame_in,
-                frame_out,
-                " ,".join(anim_props_list),
-            )
+            if muted_drivers:
+                logger.info(
+                    "%s disabled drivers: %s",
+                    obj_name,
+                    " ,".join([m.data_path for m in muted_drivers]),
+                )
+            if anim_props_list:
+                logger.info(
+                    "%s imported animation for data paths: %s",
+                    obj_name,
+                    " ,".join(anim_props_list),
+                )
 
 
 class CacheConfigFactory:
