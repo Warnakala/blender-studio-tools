@@ -234,7 +234,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             self.confirm = False
             return context.window_manager.invoke_props_dialog(self, width=300)
 
-        return {"FINISHED"}
+        return self.execute(context)
 
     def draw(self, context):
         # UI
