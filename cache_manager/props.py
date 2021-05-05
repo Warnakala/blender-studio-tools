@@ -198,14 +198,16 @@ def get_cache_collections_import(
     context: bpy.types.Context,
 ) -> Generator[bpy.types.Collection, None, None]:
     for item in context.scene.cm.colls_import:
-        yield item.coll_ptr
+        if item.coll_ptr:
+            yield item.coll_ptr
 
 
 def get_cache_collections_export(
     context: bpy.types.Context,
 ) -> Generator[bpy.types.Collection, None, None]:
     for item in context.scene.cm.colls_export:
-        yield item.coll_ptr
+        if item.coll_ptr:
+            yield item.coll_ptr
 
 
 # ---------REGISTER ----------
