@@ -316,14 +316,15 @@ class CacheConfigProcessor:
                         bpy.data.collections[variant_name]
                     except KeyError:
                         logger.info(
-                            "Collection %s does not exist yet. Will create.", coll_name
+                            "Collection %s does not exist yet. Will create.",
+                            variant_name,
                         )
                         pass
                     else:
                         # collection alrady exists, not continuing would add another
                         # collection instance which then gets overwritten which results
                         # in an increase of object inrementation > caches wont work
-                        logger.info("Collection %s already exists. Skip.", coll_name)
+                        logger.info("Collection %s already exists. Skip.", variant_name)
                         continue
 
                     # get source collection, otherwise we can't override the collection instance
