@@ -14,7 +14,7 @@ from .ops import (
     CM_OT_cache_hide,
     CM_OT_cache_remove,
     CM_OT_set_cache_version,
-    CM_OT_add_cache_version,
+    CM_OT_add_cache_version_increment,
 )
 from . import propsdata, prefs, props
 
@@ -57,7 +57,7 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 text=version_text,
             )
             sub_split.operator(
-                CM_OT_add_cache_version.bl_idname,
+                CM_OT_add_cache_version_increment.bl_idname,
                 icon="ADD",
                 text="",
             )

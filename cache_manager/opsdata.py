@@ -39,8 +39,6 @@ def init_version_dir_model(
     if context.scene.cm.category == "EXPORT":
         if not VERSION_DIR_MODEL.items:
             VERSION_DIR_MODEL.append_item("v001")
-        else:
-            add_version_increment()
 
     _version_dir_model_init = True
 

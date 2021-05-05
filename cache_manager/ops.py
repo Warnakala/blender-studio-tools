@@ -915,37 +915,28 @@ class CM_OT_set_cache_version(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CM_OT_add_cache_version(bpy.types.Operator):
+class CM_OT_add_cache_version_increment(bpy.types.Operator):
     """"""
 
-    bl_idname = "cm.add_cache_version"
-    bl_label = "Add Version"
-    # bl_options = {"REGISTER", "UNDO"}
-    bl_property = "version"
-
-    version: bpy.props.StringProperty(name="Versions", default="")
+    bl_idname = "cm.add_cache_version_increment"
+    bl_label = "Add Version Increment"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        version = self.version
 
-        if not version:
-            return {"CANCELLED"}
-
-        opsdata.add_version_custom(version)
+        # incremenet version
+        version = opsdata.add_version_increment()
 
         # update cache_version prop
         context.scene.cm.cache_version = version
 
         ui_redraw()
 
+        self.report({"INFO"}, f"Add version {version}")
         return {"FINISHED"}
-
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        return context.window_manager.invoke_props_dialog(self, width=200)
 
 
 # ---------REGISTER ----------
@@ -962,7 +953,7 @@ classes: List[Any] = [
     CM_OT_import_colls_from_config,
     CM_OT_update_cache_colls_list,
     CM_OT_set_cache_version,
-    CM_OT_add_cache_version,
+    CM_OT_add_cache_version_increment,
 ]
 
 
