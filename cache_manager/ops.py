@@ -35,6 +35,9 @@ class CM_OT_cache_export(bpy.types.Operator):
         name="Process All", description="Process all cache collections", default=False
     )
     index: bpy.props.IntProperty(name="Index")
+    confirm: bpy.props.BoolProperty(
+        name="Confirm", description="Confirm to overwrite", default=True
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -44,6 +47,11 @@ class CM_OT_cache_export(bpy.types.Operator):
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        if not self.confirm:
+            self.report({"WARNING"}, "Exporting cache aborted.")
+            return {"CANCELLED"}
+
         cacheconfig_path = context.scene.cm.cacheconfig_path
         succeeded = []
         failed = []
@@ -219,6 +227,31 @@ class CM_OT_cache_export(bpy.types.Operator):
         log_new_lines(1)
         logger.info("-END- Exporting Cache")
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        filedir = Path(context.scene.cm.cachedir_path)
+        if filedir.exists():
+            self.confirm = False
+            return context.window_manager.invoke_props_dialog(self, width=300)
+
+        return {"FINISHED"}
+
+    def draw(self, context):
+        # UI
+        layout = self.layout
+
+        # label
+        filedir = Path(context.scene.cm.cachedir_path)
+        row = layout.row()
+        row.label(text=f"{filedir.as_posix()} already exists.", icon="ERROR")
+
+        # confirm dialog
+        col = layout.column()
+        col.prop(
+            self,
+            "confirm",
+            text="Overwrite?",
+        )
 
     def _construct_mod_to_restore_vis_list(
         self, *args: List[Tuple[bpy.types.Modifier, bool, bool]]
