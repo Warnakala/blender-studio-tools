@@ -36,6 +36,15 @@ def get_current_time_string(date_format: str) -> str:
     return current_time_string
 
 
+def get_ref_coll(coll_name: str) -> bpy.types.Collection:
+    coll = bpy.data.collections[coll_name]
+
+    if not coll.override_library:
+        return coll
+
+    return coll.override_library.reference
+
+
 def read_json(filepath: Path) -> Any:
     with open(filepath.as_posix(), "r") as file:
         json_dict = json.loads(file.read())
@@ -302,8 +311,24 @@ class CacheConfigProcessor:
                 for variant_name in sorted(
                     cacheconfig.get_all_collvariants(libfile, coll_name)
                 ):
+                    # check if variant already in this blend file
+                    try:
+                        bpy.data.collections[variant_name]
+                    except KeyError:
+                        logger.info(
+                            "Collection %s does not exist yet. Will create.", coll_name
+                        )
+                        pass
+                    else:
+                        # collection alrady exists, not continuing would add another
+                        # collection instance which then gets overwritten which results
+                        # in an increase of object inrementation > caches wont work
+                        logger.info("Collection %s already exists. Skip.", coll_name)
+                        continue
 
-                    source_collection = bpy.data.collections[coll_name]
+                    # get source collection, otherwise we can't override the collection instance
+                    source_collection = get_ref_coll(coll_name)
+
                     cachefile = cacheconfig.get_cachefile(
                         libfile, coll_name, variant_name
                     )
