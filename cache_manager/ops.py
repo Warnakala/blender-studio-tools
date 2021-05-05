@@ -388,8 +388,9 @@ class CM_OT_import_colls_from_config(bpy.types.Operator):
         logger.info("-START- Importing Collections from Cacheconfig")
 
         cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
-        CacheConfigProcessor.import_collections(cacheconfig, context)
+        colls = CacheConfigProcessor.import_collections(cacheconfig, context)
 
+        self.report({"INFO"}, f"Imported {len(colls)} collections")
         log_new_lines(1)
         logger.info("-END- Importing Collections from Cacheconfig")
 
@@ -425,10 +426,9 @@ class CM_OT_update_cache_colls_list(bpy.types.Operator):
             if result:
                 succeeded.append(coll)
 
+        self.report({"INFO"}, f"Added {len(succeeded)} Collections to Cache List")
         log_new_lines(1)
         logger.info("-END- Updating Cache Collections List")
-
-        self.report({"INFO"}, f"Added {len(succeeded)} Collections to Cache List")
 
         return {"FINISHED"}
 
@@ -605,14 +605,14 @@ class CM_OT_import_cache(bpy.types.Operator):
         context.window_manager.progress_update(len(collections))
         context.window_manager.progress_end()
 
+        log_new_lines(1)
+        logger.info("-END- Importing Alembic Cache")
+
         # log
         self.report(
             {"INFO"},
             f"Importing Cache for {len(succeeded)} Collections | Failed: {len(failed)}.",
         )
-
-        log_new_lines(1)
-        logger.info("-END- Importing Alembic Cache")
         log_new_lines(1)
         logger.info(
             "-END- Importing Cache for %s", ", ".join([c.name for c in collections])
