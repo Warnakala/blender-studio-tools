@@ -756,15 +756,16 @@ def rm_coll_from_cache_collections(
     except IndexError:
         return None
     else:
-        coll = item.coll_ptr
 
         item = scn_category[idx]
         item_name = item.name
         scn_category.remove(idx)
         idx -= 1
 
-        # set is_cache_coll
-        coll.cm.reset_properties()
+        # reset coll.cm properties
+        coll = item.coll_ptr
+        if coll: #check if not None (coll might be deleted)
+            coll.cm.reset_properties()
 
         logger.info(
             "Removed %s from %s cache collections list", item_name, category.lower()
