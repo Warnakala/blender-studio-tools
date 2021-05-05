@@ -840,7 +840,7 @@ class CM_OT_set_cache_version(bpy.types.Operator):
                     logger.info("Ignored %s. No cachefile assigned yet.", coll.name)
                     continue
 
-                # get olf cachefile path and version
+                # get old cachefile path and version
                 cachefile_path_old = Path(coll.cm.cachefile)
                 vers_old = opsdata.get_version(cachefile_path_old.name)
 
@@ -879,6 +879,7 @@ class CM_OT_set_cache_version(bpy.types.Operator):
                 # if cachefile data block exists, update it to new version and import animation data
                 # of cacheconfig with that version
                 else:
+                    # change cachefile filepath and name of cachefile datablock
                     cachefile.filepath = cachefile_path_new.as_posix()
                     cachefile.name = cachefile_path_new.name
                     logger.info(
@@ -886,12 +887,15 @@ class CM_OT_set_cache_version(bpy.types.Operator):
                         cachefile_path_old.as_posix(),
                         cachefile_path_new.as_posix(),
                     )
+
+                    # import animation data from other cacheconfig
                     CacheConfigProcessor.import_animation_data(cacheconfig, [coll])
                     logger.info(
                         "%s loaded animation data from cacheconfig: %s",
                         coll.name,
                         cacheconfig_path,
                     )
+
                 # either way update the cachefile prop of the collection (we know it exists here)
                 finally:
                     coll.cm.cachefile = cachefile_path_new.as_posix()
