@@ -50,6 +50,9 @@ class CM_OT_cache_export(bpy.types.Operator):
         log_new_lines(1)
         logger.info("-START- Exporting Cache")
 
+        # clear deleted collections from list
+        propsdata.rm_deleted_colls_from_list(context)
+
         # get collections to be processed
         if self.do_all:
             collections = list(props.get_cache_collections_export(context))
@@ -254,6 +257,9 @@ class CM_OT_cacheconfig_export(bpy.types.Operator):
         cacheconfig_path = context.scene.cm.cacheconfig_path
         log_new_lines(1)
         logger.info("-START- Exporting Cacheconfig")
+
+        # clear deleted collections from list
+        propsdata.rm_deleted_colls_from_list(context)
 
         # get collections to be processed
         if self.do_all:
@@ -461,6 +467,9 @@ class CM_OT_import_cache(bpy.types.Operator):
         cacheconfig_path = context.scene.cm.cacheconfig_path
         if context.scene.cm.use_cacheconfig_custom:
             cacheconfig_path = context.scene.cm.cacheconfig_custom_path
+
+        # clear deleted collections from list
+        propsdata.rm_deleted_colls_from_list(context)
 
         # get collections to be processed
         if self.do_all:
