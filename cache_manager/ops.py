@@ -594,6 +594,9 @@ class CM_OT_import_cache(bpy.types.Operator):
             # get list with valid objects to apply cache to
             object_list = cache.get_valid_cache_objects(coll)
 
+            # mute drivers
+            muted_vis_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
+
             # add cache modifier and constraints
             for obj in object_list:
 
@@ -629,15 +632,8 @@ class CM_OT_import_cache(bpy.types.Operator):
                         abc_obj_path,
                     )
 
-            # mute drivers
-            muted_vis_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
-
-            # ensure modifiers vis have render vis settings does not include MODIFIERS_KEEP
-            opsdata.sync_modifier_vis_with_render_setting(
-                object_list
-            )  # TODO: maybe for all objects that got muted drivers too?
-
             # ensure MODIFIERS_KEEP are enabled after import
+            # does not change viewport setting on enable
             opsdata.config_modifiers_keep_state(object_list, enable=True)
 
             # apply modifier suffix visibily override

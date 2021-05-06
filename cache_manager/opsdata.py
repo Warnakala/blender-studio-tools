@@ -382,7 +382,9 @@ def config_modifiers_keep_state(
             if enable:
                 if mod.show_viewport == True and mod.show_render == True:
                     continue
-                mod.show_viewport = True
+                # do not change viewport setting on enable, might create overhead
+                # for mods that are only needed for render
+                # mod.show_viewport = True
                 mod.show_render = True
 
             else:
