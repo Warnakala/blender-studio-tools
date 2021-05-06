@@ -82,6 +82,13 @@ class CM_OT_cache_export(bpy.types.Operator):
         # begin progress udpate
         context.window_manager.progress_begin(0, len(collections))
 
+        # disable simplify
+        was_simplify = bpy.context.scene.render.use_simplify
+        opsdata.set_simplify(False)
+
+        # frame range
+        frame_range = opsdata.get_cache_frame_range(context)
+
         for idx, coll in enumerate(collections):
             # log
             log_new_lines(2)
@@ -159,8 +166,6 @@ class CM_OT_cache_export(bpy.types.Operator):
                 logger.warning(
                     "Filepath %s already exists. Will overwrite.", filepath.as_posix()
                 )
-            # frame range
-            frame_range = opsdata.get_cache_frame_range(context)
 
             # export
             try:
@@ -226,6 +231,9 @@ class CM_OT_cache_export(bpy.types.Operator):
 
         # generate cacheconfig
         CacheConfigFactory.gen_config_from_colls(context, collections, cacheconfig_path)
+
+        # restore simplify state
+        opsdata.set_simplify(was_simplify)
 
         # end progress update
         context.window_manager.progress_update(len(collections))

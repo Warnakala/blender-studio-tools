@@ -889,3 +889,14 @@ def get_item_libfile(
         return Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
 
     return ""
+
+
+def set_simplify(use_simplify: bool) -> None:
+    if bpy.context.scene.render.use_simplify == use_simplify:
+        return
+
+    noun = "Enabled"
+    if not use_simplify:
+        noun = "Disabled"
+    bpy.context.scene.render.use_simplify = use_simplify
+    logger.info("%s simplify", noun)
