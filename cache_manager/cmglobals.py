@@ -49,6 +49,8 @@ CAM_DATA_PATHS: List[str] = [
     "shift_y",
 ]
 
+INSTANCE_TYPES: List[str] = ["NONE", "COLLECTION", "VERTS", "FACES"]
+
 # "lens_unit",
 # "angle",
 # "angle_x",

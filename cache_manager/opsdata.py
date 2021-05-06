@@ -532,8 +532,11 @@ def gen_abc_object_path(obj: bpy.types.Object) -> str:
     # otherwise object path is not valid
 
     object_name = obj.name
-    object_data_name = obj.data.name
-    object_path = "/" + object_name + "/" + object_data_name
+    object_path = "/" + object_name
+
+    if obj.data:
+        object_data_name = obj.data.name
+        object_path = "/" + object_name + "/" + object_data_name
 
     # dot and whitespace not valid in abc tree will be replaced with underscore
     replace = [" ", "."]
@@ -770,3 +773,58 @@ def get_cache_frame_range(context: bpy.types.Context) -> Tuple[int, int]:
     frame_end = context.scene.frame_end + context.scene.cm.frame_handles_right
 
     return (frame_in, frame_end)
+
+
+def set_instancing_type_of_empties(
+    object_list: List[bpy.types.Object], instance_type: str
+) -> List[Tuple[bpy.types.Object, str]]:
+    if instance_type not in cmglobals.INSTANCE_TYPES:
+        raise ValueError(f"Invalid instance type: {instance_type}")
+
+    empties_to_restore: List[Tuple[bpy.types.Object, str]] = []
+
+    for obj in object_list:
+        if not obj.type == "EMPTY":
+            continue
+
+        if obj.instance_type == instance_type:
+            continue
+
+        instance_type_cache = obj.instance_type
+
+        obj.instance_type = instance_type
+
+        empties_to_restore.append((obj, instance_type_cache))
+
+    if empties_to_restore:
+        logger.info(
+            "Set instance type to %s for empties: %s\n",
+            instance_type,
+            " ,".join([obj.name for obj, it in empties_to_restore]),
+        )
+
+    return empties_to_restore
+
+
+def restore_instancing_type(restore_list: List[Tuple[bpy.types.Object, str]]) -> None:
+
+    # log list
+    log_list: Dict[str, List[str]] = {}
+
+    for obj, instance_type in restore_list:
+
+        if obj.instance_type == instance_type:
+            continue
+
+        instance_type_cache = obj.instance_type
+        obj.instance_type = instance_type
+
+        # populate log list
+        _append_str_to_log_list(
+            log_list,
+            obj.name,
+            f"{instance_type_cache}: -> {obj.instance_type}",
+        )
+
+    # log
+    _print_log_list(log_list, "Restore instance types:")

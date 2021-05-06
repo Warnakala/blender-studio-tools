@@ -22,6 +22,9 @@ def is_valid_cache_object(obj: bpy.types.Object) -> bool:
     if obj.type == "CAMERA":
         return True
 
+    if obj.type == "EMPTY":
+        return True
+
     return obj.name.startswith("GEO")
 
 

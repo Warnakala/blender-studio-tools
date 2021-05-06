@@ -138,6 +138,11 @@ class CM_OT_cache_export(bpy.types.Operator):
                 list(opsdata.traverse_collection_tree(coll)), hide_viewport=False
             )
 
+            # set instancing type of emptys to none
+            empties_to_restore = opsdata.set_instancing_type_of_empties(
+                object_list, "NONE"
+            )
+
             # select objects for bpy.ops.wm.alembic_export
             for obj in object_list:
                 obj.select_set(True)
@@ -190,6 +195,9 @@ class CM_OT_cache_export(bpy.types.Operator):
                 logger.exception(str(e))
                 failed.append(coll)
                 continue
+
+            # restore instancing types of empties
+            opsdata.restore_instancing_type(empties_to_restore)
 
             # hide objs again
             opsdata.ensure_obj_vis(objs_to_be_hidden, hide_viewport=True)
@@ -562,15 +570,15 @@ class CM_OT_import_cache(bpy.types.Operator):
                     # abc_obj_paht = ""
                     continue
 
-                # ensure and config constraint (can happen for mesh and camera)
+                # ensure and config constraint (can happen for mesh empty and camera)
                 con = opsdata.ensure_cache_constraint(obj)
                 opsdata.config_cache_constraint(context, con, cachefile, abc_obj_path)
 
                 # disable constraints
                 opsdata.disable_non_keep_constraints(obj)
 
-                # mesh sequence cache modifier configuration only for non camera objs
-                if obj.type != "CAMERA":
+                # mesh sequence cache modifier configuration only for mesh objects
+                if obj.type == "MESH":
 
                     # disable all armature modifiers, get index of first one, use that index for cache modifier
                     a_index = opsdata.disable_non_keep_modifiers(obj)
