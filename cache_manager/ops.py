@@ -177,7 +177,7 @@ class CM_OT_cache_export(bpy.types.Operator):
                     vcolors=False,
                     face_sets=True,
                     subdiv_schema=False,
-                    apply_subdiv=False,
+                    apply_subdiv=True,
                     curves_as_mesh=True,
                     use_instancing=True,
                     global_scale=1,
