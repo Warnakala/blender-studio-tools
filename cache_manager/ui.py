@@ -16,7 +16,7 @@ from .ops import (
     CM_OT_set_cache_version,
     CM_OT_add_cache_version_increment,
 )
-from . import propsdata, prefs, props
+from . import propsdata, prefs, props, cache
 
 
 class CM_PT_vi3d_cache(bpy.types.Panel):
@@ -309,6 +309,9 @@ class CM_UL_collection_cache_list_export(bpy.types.UIList):
                 text="",
                 icon="EXPORT",
             ).index = index
+            # disable row if coll not valid
+            if not cache.is_valid_cache_coll(coll):
+                split.enabled = False
 
         elif self.layout_type in {"GRID"}:
             layout.alignment = "CENTER"

@@ -41,10 +41,13 @@ class CM_OT_cache_export(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(
-            context.scene.cm.is_cachedir_valid
-            and list(props.get_cache_collections_export(context))
-        )
+        # remove invalid collections
+        collections = [
+            coll
+            for coll in props.get_cache_collections_export(context)
+            if cache.is_valid_cache_coll(coll)
+        ]
+        return bool(context.scene.cm.is_cachedir_valid and collections)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -66,6 +69,9 @@ class CM_OT_cache_export(bpy.types.Operator):
             collections = list(props.get_cache_collections_export(context))
         else:
             collections = [context.scene.cm.colls_export[self.index].coll_ptr]
+
+        # remove invalid collections
+        collections = [coll for coll in collections if cache.is_valid_cache_coll(coll)]
 
         # create ouput dir if not existent
         filedir = Path(context.scene.cm.cachedir_path)
@@ -291,10 +297,13 @@ class CM_OT_cacheconfig_export(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(
-            context.scene.cm.is_cachedir_valid
-            and list(props.get_cache_collections_export(context))
-        )
+        # remove invalid collections
+        collections = [
+            coll
+            for coll in props.get_cache_collections_export(context)
+            if cache.is_valid_cache_coll(coll)
+        ]
+        return bool(context.scene.cm.is_cachedir_valid and collections)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         cacheconfig_path = context.scene.cm.cacheconfig_path
@@ -309,6 +318,9 @@ class CM_OT_cacheconfig_export(bpy.types.Operator):
             collections = list(props.get_cache_collections_export(context))
         else:
             collections = [context.scene.cm.colls_export[self.index].coll_ptr]
+
+        # remove invalid collections
+        collections = [coll for coll in collections if cache.is_valid_cache_coll(coll)]
 
         # create ouput dir if not existent
         filedir = Path(context.scene.cm.cachedir_path)
@@ -348,21 +360,35 @@ class CM_OT_cache_list_actions(bpy.types.Operator):
             result = opsdata.rm_coll_from_cache_collections(
                 context, context.scene.cm.category
             )
-            if result:
-                info = f"Removed {result.name} from {context.scene.cm.category.lower()} list"
-                self.report({"INFO"}, info)
+            if not result:
+                return {"CANCELLED"}
+
+            info = (
+                f"Removed {result.name} from {context.scene.cm.category.lower()} list"
+            )
+            self.report({"INFO"}, info)
 
         if self.action == "ADD":
             act_coll = context.view_layer.active_layer_collection.collection
+
+            if opsdata.is_item_local(act_coll):
+                self.report(
+                    {"ERROR"}, f"Blend files needs to be saved to add local collection"
+                )
+                return {"FINISHED"}
+
             result = opsdata.add_coll_to_cache_collections(
                 context, act_coll, context.scene.cm.category
             )
-            if result:
-                info = "%s added to %s list" % (
-                    act_coll.name,
-                    context.scene.cm.category.lower(),
-                )
-                self.report({"INFO"}, info)
+
+            if not result:
+                return {"CANCELLED"}
+
+            info = "%s added to %s list" % (
+                act_coll.name,
+                context.scene.cm.category.lower(),
+            )
+            self.report({"INFO"}, info)
 
         return {"FINISHED"}
 
@@ -430,6 +456,7 @@ class CM_OT_update_cache_colls_list(bpy.types.Operator):
             if not coll.cm.is_cache_coll:
                 continue
 
+            # should skip local colls if blend file not saved
             result = opsdata.add_coll_to_cache_collections(
                 context, coll, context.scene.cm.category
             )

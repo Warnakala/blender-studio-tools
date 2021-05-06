@@ -28,6 +28,12 @@ def is_valid_cache_object(obj: bpy.types.Object) -> bool:
     return obj.name.startswith("GEO")
 
 
+def is_valid_cache_coll(coll: bpy.types.Collection) -> bool:
+    if opsdata.is_item_local(coll) and not bpy.data.filepath:
+        return False
+    return True
+
+
 def get_valid_cache_objects(collection: bpy.types.Collection) -> List[bpy.types.Object]:
     object_list = [obj for obj in collection.all_objects if is_valid_cache_object(obj)]
     return object_list
@@ -39,9 +45,16 @@ def get_current_time_string(date_format: str) -> str:
     return current_time_string
 
 
-def get_ref_coll(coll_name: str) -> bpy.types.Collection:
+def get_ref_coll_by_name(coll_name: str) -> bpy.types.Collection:
     coll = bpy.data.collections[coll_name]
 
+    if not coll.override_library:
+        return coll
+
+    return coll.override_library.reference
+
+
+def get_ref_coll(coll: bpy.types.Collection) -> bpy.types.Collection:
     if not coll.override_library:
         return coll
 
@@ -345,7 +358,7 @@ class CacheConfigProcessor:
                     )
 
                     # get source collection and create collection instance of it
-                    source_collection = get_ref_coll(coll_name)
+                    source_collection = get_ref_coll_by_name(coll_name)
                     instance_obj = cls._create_collection_instance(
                         source_collection, variant_name
                     )
@@ -649,10 +662,9 @@ class CacheConfigFactory:
 
         # get librarys
         for coll in colls:
-            # TODO: handle local collections and cameras
-            coll_ref = coll.override_library.reference
-            lib = coll.override_library.reference.library
-            libfile = Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
+
+            libfile = opsdata.get_item_libfile(coll)
+            coll_ref = get_ref_coll(coll)
 
             # create collection dict based on this variant collection
             _coll_dict = {
@@ -684,8 +696,7 @@ class CacheConfigFactory:
         objects_with_anim: List[bpy.types.Object] = []
 
         for coll in colls:
-            lib = coll.override_library.reference.library
-            libfile = Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
+
             obj_category = "objects"
 
             # loop over all objects in that collection
@@ -751,13 +762,14 @@ class CacheConfigFactory:
 
         for cam in bpy.data.cameras:
 
-            if not hasattr(cam.override_library, "reference"):
-                # local blend file camera
-                # TODO: handle local collections and cameras
+            if opsdata.is_item_local(cam) and not bpy.data.filepath:
+                logger.error(
+                    "Failed to add local camera %s to cacheconfig. Blend files needs to be saved.",
+                    cam.name,
+                )
                 continue
 
-            lib = cam.override_library.reference.library
-            libfile = Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
+            libfile = opsdata.get_item_libfile(cam)
 
             # make sure to only export cams that are in current cache collections
             if libfile not in blueprint.get_all_libfiles():

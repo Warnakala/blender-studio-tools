@@ -1,4 +1,5 @@
 import re
+import os
 from pathlib import Path
 from typing import List, Tuple, Generator, Dict, Union, Any, Optional
 
@@ -716,6 +717,16 @@ def add_coll_to_cache_collections(
 
         return None
     else:
+        if category == "EXPORT" and not coll.override_library and not coll.library:
+            # local collection
+            # blend file needs to be saved for that
+            if not bpy.data.filepath:
+                logger.error(
+                    "Failed to add local collection %s to export list. Blend files needs to be saved.",
+                    coll.name,
+                )
+            return None
+
         item = scn_category.add()
         item.coll_ptr = coll
         item.name = item.coll_ptr.name
@@ -828,3 +839,53 @@ def restore_instancing_type(restore_list: List[Tuple[bpy.types.Object, str]]) ->
 
     # log
     _print_log_list(log_list, "Restore instance types:")
+
+
+def is_item_local(
+    item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
+) -> bool:
+    # local collection of blend file
+    if not item.override_library and not item.library:
+        return True
+    return False
+
+
+def is_item_lib_override(
+    item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
+) -> bool:
+    # collection from libfile and overwritten
+    if item.override_library and not item.library:
+        return True
+    return False
+
+
+def is_item_lib_source(
+    item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
+) -> bool:
+    #  source collection from libfile not overwritten
+    if not item.override_library and item.library:
+        return True
+    return False
+
+
+def get_item_libfile(
+    item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
+) -> str:
+    if is_item_lib_source(item):
+        # source collection not overwritten
+        lib = item.library
+        return Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
+
+    if is_item_local(item):
+        # local collection
+        # blend file needs to be saved for that
+        if not bpy.data.filepath:
+            return ""
+        return Path(os.path.abspath(bpy.path.abspath(bpy.data.filepath))).as_posix()
+
+    if is_item_lib_override(item):
+        # overwritten collection
+        lib = item.override_library.reference.library
+        return Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
+
+    return ""
