@@ -640,6 +640,9 @@ class CM_OT_import_cache(bpy.types.Operator):
             # ensure MODIFIERS_KEEP are enabled after import
             opsdata.config_modifiers_keep_state(object_list, enable=True)
 
+            # apply modifier suffix visibily override
+            opsdata.apply_modifier_suffix_vis_override(object_list, "IMPORT")
+
             # set is_cache_loaded property
             coll.cm.is_cache_loaded = True
 
