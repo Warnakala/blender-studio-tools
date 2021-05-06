@@ -480,30 +480,65 @@ def get_layer_colls_from_colls(
 
 def set_layer_coll_exlcude(
     layer_collections: List[bpy.types.LayerCollection], exclude: bool
-) -> List[bpy.types.LayerCollection]:
+) -> List[Tuple[bpy.types.LayerCollection, bool]]:
 
-    layer_colls: List[bpy.types.LayerCollection] = []
+    layer_colls_vis: List[Tuple[bpy.types.LayerCollection, bool]] = []
 
-    # gen layer coll list and noun
-    if exclude:
-        layer_colls.extend([lcol for lcol in layer_collections if not lcol.exclude])
-        noun = "Exclude"
+    noun = "Exclude" if exclude else "Include"
 
-    else:
-        layer_colls.extend([lcol for lcol in layer_collections if lcol.exclude])
-        noun = "Include"
+    for lcoll in layer_collections:
 
-    for lcol in layer_colls:
-        lcol.exclude = exclude
+        exclude_cache = lcoll.exclude
+
+        if exclude:
+            if lcoll.exclude and lcoll.hide_render:
+                continue
+
+            lcoll.exclude = True
+
+        else:
+            if not lcoll.exclude:
+                continue
+
+            lcoll.exclude = False
+
+        layer_colls_vis.append((lcoll, exclude_cache))
+
+    if layer_colls_vis:
+        # log
+        logger.info(
+            "%s layer collections in current view layer:\n%s",
+            noun,
+            ",\n".join([lcoll.name for lcoll, ex in layer_colls_vis]),
+        )
+
+    return layer_colls_vis
+
+
+def restore_layer_coll_exlude(
+    lcoll_vis_list: List[Tuple[bpy.types.LayerCollection, bool]]
+) -> None:
+
+    log_list: Dict[str, List[str]] = {}
+
+    for lcoll, exclude in lcoll_vis_list:
+
+        if lcoll.exclude == exclude:
+            continue
+
+        exclude_cache = lcoll.exclude
+
+        lcoll.exclude = exclude
+
+        # populate log list
+        _append_str_to_log_list(
+            log_list,
+            lcoll.name,
+            f"exclude: {exclude_cache} -> {lcoll.exclude}",
+        )
 
     # log
-    logger.info(
-        "%s layer collections in current view layer:\n%s",
-        noun,
-        ",\n".join([lcol.name for lcol in layer_colls]),
-    )
-
-    return layer_colls
+    _print_log_list(log_list, "Restore layer collection visibility:")
 
 
 def enable_muted_drivers(

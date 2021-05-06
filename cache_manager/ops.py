@@ -110,7 +110,7 @@ class CM_OT_cache_export(bpy.types.Operator):
                 context, cache_colls_active_exluded
             )
 
-            layer_colls_to_include = opsdata.set_layer_coll_exlcude(
+            layer_colls_to_restore = opsdata.set_layer_coll_exlcude(
                 layer_colls_to_exclude, True
             )
 
@@ -223,7 +223,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             opsdata.enable_muted_drivers(muted_vis_drivers)
 
             # include other cache collections again
-            opsdata.set_layer_coll_exlcude(layer_colls_to_include, False)
+            opsdata.restore_layer_coll_exlude(layer_colls_to_restore)
 
             # success log for this collections
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
