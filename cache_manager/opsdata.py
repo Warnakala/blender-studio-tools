@@ -588,7 +588,7 @@ def gen_abc_object_path(obj: bpy.types.Object) -> str:
     object_name = obj.name
     object_path = "/" + object_name
 
-    if obj.data:
+    if obj.data and obj.type != "LATTICE":
         object_data_name = obj.data.name
         object_path = "/" + object_name + "/" + object_data_name
 

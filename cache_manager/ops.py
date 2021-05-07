@@ -615,7 +615,7 @@ class CM_OT_import_cache(bpy.types.Operator):
                     # abc_obj_paht = ""
                     continue
 
-                # ensure and config constraint (can happen for mesh empty and camera)
+                # ensure and config constraint (can happen for mesh, empty, lattice, camera)
                 con = opsdata.ensure_cache_constraint(obj)
                 opsdata.config_cache_constraint(context, con, cachefile, abc_obj_path)
 
@@ -638,6 +638,9 @@ class CM_OT_import_cache(bpy.types.Operator):
                         cachefile,
                         abc_obj_path,
                     )
+                # special case lattice needs mods disabled but cant have mesh sequence cash mod
+                if obj.type == "LATTICE":
+                    opsdata.disable_non_keep_modifiers(obj)
 
             # ensure MODIFIERS_KEEP are enabled after import
             # does not change viewport setting on enable

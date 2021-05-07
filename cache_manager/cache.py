@@ -25,6 +25,9 @@ def is_valid_cache_object(obj: bpy.types.Object) -> bool:
     if obj.type == "EMPTY":
         return True
 
+    if obj.type == "LATTICE":
+        return True
+
     return obj.name.startswith("GEO")
 
 
