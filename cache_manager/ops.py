@@ -98,7 +98,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             # deselect all
             bpy.ops.object.select_all(action="DESELECT")
 
-            # exclude other cache collections for faster export
+            # exclude and hide_render other cache collections for faster export
             cache_colls_active_exluded = list(
                 props.get_cache_collections_export(context)
             )
@@ -106,6 +106,12 @@ class CM_OT_cache_export(bpy.types.Operator):
             # rm current coll from that list
             cache_colls_active_exluded.remove(coll)
 
+            # hide_render only works on collections
+            excluded_colls_to_restore_vis = opsdata.set_coll_vis(
+                cache_colls_active_exluded, False
+            )
+
+            # exclude only works with layer collections
             layer_colls_to_exclude = opsdata.get_layer_colls_from_colls(
                 context, cache_colls_active_exluded
             )
@@ -147,8 +153,8 @@ class CM_OT_cache_export(bpy.types.Operator):
 
             # ensure the all collections are visible for export
             # otherwise object in it will not be exported
-            colls_to_be_hidden = opsdata.ensure_coll_vis(
-                list(opsdata.traverse_collection_tree(coll)), hide_viewport=False
+            colls_to_restore_vis = opsdata.set_coll_vis(
+                list(opsdata.traverse_collection_tree(coll)), True
             )
 
             # set instancing type of emptys to none
@@ -214,7 +220,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             opsdata.ensure_obj_vis(objs_to_be_hidden, hide_viewport=True)
 
             # hide colls again
-            opsdata.ensure_coll_vis(colls_to_be_hidden, hide_viewport=True)
+            opsdata.restore_coll_vis(colls_to_restore_vis)
 
             # restore modifier viewport vis / render vis
             opsdata.restore_modifier_vis(mods_to_restore_vis)
@@ -224,6 +230,7 @@ class CM_OT_cache_export(bpy.types.Operator):
 
             # include other cache collections again
             opsdata.restore_layer_coll_exlude(layer_colls_to_restore)
+            opsdata.restore_coll_vis(excluded_colls_to_restore_vis)
 
             # success log for this collections
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
