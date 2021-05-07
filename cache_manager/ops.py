@@ -82,12 +82,19 @@ class CM_OT_cache_export(bpy.types.Operator):
         # begin progress udpate
         context.window_manager.progress_begin(0, len(collections))
 
+        # frame range
+        frame_range = opsdata.get_cache_frame_range(context)
+
+        # create new scene
+        scene_orig = bpy.context.scene
+        bpy.ops.scene.new(type="EMPTY")
+        scene_tmp = bpy.context.scene  # changes active scene
+        scene_tmp.name = "cm_tmp_export"
+        logger.info("Create tmp scene for export: %s", scene_tmp.name)
+
         # disable simplify
         was_simplify = bpy.context.scene.render.use_simplify
         opsdata.set_simplify(False)
-
-        # frame range
-        frame_range = opsdata.get_cache_frame_range(context)
 
         for idx, coll in enumerate(collections):
             # log
@@ -95,30 +102,21 @@ class CM_OT_cache_export(bpy.types.Operator):
             logger.info("%s", gen_processing_string(coll.name))
             context.window_manager.progress_update(idx)
 
+            # unlink all children of scene collection
+            colls_unlink = list(context.scene.collection.children)
+            colls_unlink.reverse()
+            print(f"\tCOLLS_UNLINK: {colls_unlink}")
+
+            for ucoll in colls_unlink:
+                context.scene.collection.children.unlink(ucoll)
+                logger.info("%s unlink collection: %s", context.scene.name, ucoll.name)
+
+            # link in collection
+            context.scene.collection.children.link(coll)
+            logger.info("%s linked collection: %s", context.scene.name, coll.name)
+
             # deselect all
             bpy.ops.object.select_all(action="DESELECT")
-
-            # exclude and hide_render other cache collections for faster export
-            cache_colls_active_exluded = list(
-                props.get_cache_collections_export(context)
-            )
-
-            # rm current coll from that list
-            cache_colls_active_exluded.remove(coll)
-
-            # hide_render only works on collections
-            excluded_colls_to_restore_vis = opsdata.set_item_vis(
-                cache_colls_active_exluded, False
-            )
-
-            # exclude only works with layer collections
-            layer_colls_to_exclude = opsdata.get_layer_colls_from_colls(
-                context, cache_colls_active_exluded
-            )
-
-            layer_colls_to_restore = opsdata.set_layer_coll_exlcude(
-                layer_colls_to_exclude, True
-            )
 
             # create object list to be exported
             object_list = cache.get_valid_cache_objects(coll)
@@ -228,10 +226,6 @@ class CM_OT_cache_export(bpy.types.Operator):
             # entmute driver
             opsdata.enable_muted_drivers(muted_vis_drivers)
 
-            # include other cache collections again
-            opsdata.restore_layer_coll_exlude(layer_colls_to_restore)
-            opsdata.restore_item_vis(excluded_colls_to_restore_vis)
-
             # success log for this collections
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
             succeeded.append(coll)
@@ -241,6 +235,12 @@ class CM_OT_cache_export(bpy.types.Operator):
 
         # restore simplify state
         opsdata.set_simplify(was_simplify)
+
+        # change to original scene
+        bpy.context.window.scene = scene_orig
+
+        # delete tmp scene
+        bpy.data.scenes.remove(scene_tmp)
 
         # end progress update
         context.window_manager.progress_update(len(collections))
