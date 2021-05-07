@@ -316,7 +316,7 @@ class CacheConfigProcessor:
                 for coll_name in cacheconfig.get_all_coll_ref_names(libfile):
 
                     if coll_name not in data_from.collections:
-                        logger.warning(
+                        logger.error(
                             "Failed to import collection %s from %s. Doesn't exist in file.",
                             coll_name,
                             libpath.as_posix(),
@@ -324,7 +324,7 @@ class CacheConfigProcessor:
                         continue
 
                     if coll_name in data_to.collections:
-                        logger.warning("Collection %s already in blendfile.", coll_name)
+                        logger.info("Collection %s already in blendfile.", coll_name)
                         continue
 
                     data_to.collections.append(coll_name)
@@ -371,7 +371,7 @@ class CacheConfigProcessor:
 
                     # add collection properties
 
-                    coll = bpy.data.collections[variant_name]
+                    coll = bpy.data.collections[variant_name, None]
                     # TODO: super risky but I found no other way around this
                     # we have no influence on the naming of objects that will be created
                     # by bpy.ops.object.make_override_library() -> we can just hope here
@@ -399,7 +399,7 @@ class CacheConfigProcessor:
     def _is_coll_variant_in_blend(cls, variant_name: str) -> bool:
         # check if variant already in this blend file
         try:
-            coll = bpy.data.collections[variant_name]
+            coll = bpy.data.collections[variant_name, None]
         except KeyError:
             return False
         else:
@@ -547,7 +547,7 @@ class CacheConfigProcessor:
                         deliminater = ""
 
                     # get right data category
-                    command = f'bpy.data.{obj_category}["{obj_name}"]{deliminater}{data_path}={prop_value}'
+                    command = f'bpy.data.{obj_category}["{obj_name}", None]{deliminater}{data_path}={prop_value}'
 
                     # set property and insert keyframe
                     exec(command)
@@ -768,6 +768,13 @@ class CacheConfigFactory:
             if opsdata.is_item_local(cam) and not bpy.data.filepath:
                 logger.error(
                     "Failed to add local camera %s to cacheconfig. Blend files needs to be saved.",
+                    cam.name,
+                )
+                continue
+
+            if opsdata.is_item_lib_source(cam):
+                logger.error(
+                    "Failed to add library data camera %s to cacheconfig. Skip.",
                     cam.name,
                 )
                 continue
