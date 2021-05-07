@@ -407,101 +407,77 @@ def config_modifiers_keep_state(
     return mods_vis_override
 
 
-def ensure_obj_vis(
-    objects: List[bpy.types.Object],
-    hide_viewport: bool = False,
-) -> List[bpy.types.Object]:
+def set_item_vis(
+    items: List[Union[bpy.types.Object, bpy.types.Collection]],
+    show: bool,
+) -> List[Tuple[Union[bpy.types.Object, bpy.types.Collection], bool, bool]]:
 
-    objs: List[bpy.types.Object] = []
-
-    # gen objs list and noun
-    if hide_viewport:
-        objs.extend([obj for obj in objects if not obj.hide_viewport])
-        noun = "Hide"
-
-    else:
-        objs.extend([obj for obj in objects if obj.hide_viewport])
-        noun = "Show"
-
-    # set hide_viewport property
-    for obj in objs:
-        obj.hide_viewport = hide_viewport
-
-    # log
-    logger.info(
-        "%s objects in viewport:\n%s",
-        noun,
-        ",\n".join([obj.name for obj in objs]),
-    )
-    return objs
-
-
-def set_coll_vis(
-    collections: List[bpy.types.Collection], show: bool
-) -> List[Tuple[bpy.types.Collection, bool, bool]]:
-
-    colls_vis: List[Tuple[bpy.types.Collection, bool, bool]] = []
+    items_vis: List[
+        Tuple[Union[bpy.types.Object, bpy.types.Collection], bool, bool]
+    ] = []
     hide = not show
     noun = "Hide" if hide else "Show"
 
-    for coll in collections:
+    for item in items:
 
-        hide_viewport_cache = coll.hide_viewport
-        hide_render_cache = coll.hide_render
+        hide_viewport_cache = item.hide_viewport
+        hide_render_cache = item.hide_render
 
         if hide:
-            if coll.hide_viewport and coll.hide_render:
+            if item.hide_viewport and item.hide_render:
                 continue
 
-            coll.hide_render = True
-            coll.hide_viewport = True
+            item.hide_render = True
+            item.hide_viewport = True
 
         else:
-            if not coll.hide_viewport and not coll.hide_render:
+            if not item.hide_viewport and not item.hide_render:
                 continue
 
-            coll.hide_render = False
-            coll.hide_viewport = False
+            item.hide_render = False
+            item.hide_viewport = False
 
-        colls_vis.append((coll, hide_viewport_cache, hide_render_cache))
+        items_vis.append((item, hide_viewport_cache, hide_render_cache))
 
-    if colls_vis:
+    if items_vis:
         # log
         logger.info(
-            "%s collections:\n%s",
+            "%s:\n%s",
             noun,
-            ",\n".join([coll.name for coll, hv, hr in colls_vis]),
+            ",\n".join([item.name for item, hv, hr in items_vis]),
         )
 
-    return colls_vis
+    return items_vis
 
 
-def restore_coll_vis(
-    coll_vis_list: List[Tuple[bpy.types.Collection, bool, bool]]
+def restore_item_vis(
+    item_vis_list: List[
+        Tuple[Union[bpy.types.Object, bpy.types.Collection], bool, bool]
+    ]
 ) -> None:
 
     log_list: Dict[str, List[str]] = {}
 
-    for coll, hide_viewport, hide_render in coll_vis_list:
+    for item, hide_viewport, hide_render in item_vis_list:
 
-        if coll.hide_viewport == hide_viewport and coll.hide_render == hide_render:
+        if item.hide_viewport == hide_viewport and item.hide_render == hide_render:
             continue
 
-        hide_viewport_cache = coll.hide_viewport
-        hide_render_cache = coll.hide_render
+        hide_viewport_cache = item.hide_viewport
+        hide_render_cache = item.hide_render
 
-        coll.hide_viewport = hide_viewport
-        coll.hide_render = hide_render
+        item.hide_viewport = hide_viewport
+        item.hide_render = hide_render
 
         # populate log list
         _append_str_to_log_list(
             log_list,
-            coll.name,
-            f"V: {not hide_viewport_cache} -> {not coll.hide_viewport} R: {not hide_render_cache} -> {not coll.hide_render}",
+            item.name,
+            f"V: {not hide_viewport_cache} -> {not item.hide_viewport} R: {not hide_render_cache} -> {not item.hide_render}",
         )
 
     # log
-    _print_log_list(log_list, "Restore collection visibility:")
+    _print_log_list(log_list, "Restore visibility:")
 
 
 def get_layer_colls_from_colls(

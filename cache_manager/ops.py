@@ -107,7 +107,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             cache_colls_active_exluded.remove(coll)
 
             # hide_render only works on collections
-            excluded_colls_to_restore_vis = opsdata.set_coll_vis(
+            excluded_colls_to_restore_vis = opsdata.set_item_vis(
                 cache_colls_active_exluded, False
             )
 
@@ -148,14 +148,14 @@ class CM_OT_cache_export(bpy.types.Operator):
                 mods_restore_vis_from_suffix,
             )
 
-            # ensure that all objects are visible for export
-            objs_to_be_hidden = opsdata.ensure_obj_vis(object_list, hide_viewport=False)
-
             # ensure the all collections are visible for export
             # otherwise object in it will not be exported
-            colls_to_restore_vis = opsdata.set_coll_vis(
+            colls_to_restore_vis = opsdata.set_item_vis(
                 list(opsdata.traverse_collection_tree(coll)), True
             )
+
+            # ensure that all objects are visible for export
+            objs_to_restore_vis = opsdata.set_item_vis(object_list, True)
 
             # set instancing type of emptys to none
             empties_to_restore = opsdata.set_instancing_type_of_empties(
@@ -217,10 +217,10 @@ class CM_OT_cache_export(bpy.types.Operator):
             opsdata.restore_instancing_type(empties_to_restore)
 
             # hide objs again
-            opsdata.ensure_obj_vis(objs_to_be_hidden, hide_viewport=True)
+            opsdata.restore_item_vis(objs_to_restore_vis)
 
             # hide colls again
-            opsdata.restore_coll_vis(colls_to_restore_vis)
+            opsdata.restore_item_vis(colls_to_restore_vis)
 
             # restore modifier viewport vis / render vis
             opsdata.restore_modifier_vis(mods_to_restore_vis)
@@ -230,7 +230,7 @@ class CM_OT_cache_export(bpy.types.Operator):
 
             # include other cache collections again
             opsdata.restore_layer_coll_exlude(layer_colls_to_restore)
-            opsdata.restore_coll_vis(excluded_colls_to_restore_vis)
+            opsdata.restore_item_vis(excluded_colls_to_restore_vis)
 
             # success log for this collections
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
