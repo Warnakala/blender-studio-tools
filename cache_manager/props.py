@@ -93,7 +93,7 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     xsamples: bpy.props.IntProperty(
         name="Transform Samples",
         description="Sets the xsamples argument of bpy.ops.wm.alembic_export to the specified value",
-        default=3,
+        default=1,
         min=1,
         max=128,
         step=1,
@@ -101,7 +101,7 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     gsamples: bpy.props.IntProperty(
         name="Geometry Samples",
         description="Sets the gsamples argument of bpy.ops.wm.alembic_export to the specified value",
-        default=3,
+        default=1,
         min=1,
         max=128,
         step=1,
