@@ -97,6 +97,9 @@ class CM_OT_cache_export(bpy.types.Operator):
         opsdata.set_simplify(False)
 
         for idx, coll in enumerate(collections):
+
+            # HAPPENS IN TMP SCENE
+
             # log
             log_new_lines(2)
             logger.info("%s", gen_processing_string(coll.name))
@@ -105,7 +108,6 @@ class CM_OT_cache_export(bpy.types.Operator):
             # unlink all children of scene collection
             colls_unlink = list(context.scene.collection.children)
             colls_unlink.reverse()
-            print(f"\tCOLLS_UNLINK: {colls_unlink}")
 
             for ucoll in colls_unlink:
                 context.scene.collection.children.unlink(ucoll)
@@ -114,6 +116,13 @@ class CM_OT_cache_export(bpy.types.Operator):
             # link in collection
             context.scene.collection.children.link(coll)
             logger.info("%s linked collection: %s", context.scene.name, coll.name)
+
+            # hide_render other cache collections for faster export
+            cache_colls_active_exluded = collections.copy()
+            cache_colls_active_exluded.remove(coll)
+            excluded_colls_to_restore_vis = opsdata.set_item_vis(
+                cache_colls_active_exluded, False
+            )
 
             # deselect all
             bpy.ops.object.select_all(action="DESELECT")
@@ -226,21 +235,26 @@ class CM_OT_cache_export(bpy.types.Operator):
             # entmute driver
             opsdata.enable_muted_drivers(muted_vis_drivers)
 
+            # include other cache collections again
+            opsdata.restore_item_vis(excluded_colls_to_restore_vis)
+
             # success log for this collections
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
             succeeded.append(coll)
-
-        # generate cacheconfig
-        CacheConfigFactory.gen_config_from_colls(context, collections, cacheconfig_path)
 
         # restore simplify state
         opsdata.set_simplify(was_simplify)
 
         # change to original scene
         bpy.context.window.scene = scene_orig
+        logger.info("Set active scene: %s", context.scene.name)
 
         # delete tmp scene
+        logger.info("Remove tmp scene: %s", scene_tmp.name)
         bpy.data.scenes.remove(scene_tmp)
+
+        # generate cacheconfig
+        CacheConfigFactory.gen_config_from_colls(context, collections, cacheconfig_path)
 
         # end progress update
         context.window_manager.progress_update(len(collections))
