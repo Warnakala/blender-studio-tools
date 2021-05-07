@@ -55,14 +55,11 @@ class CM_OT_cache_export(bpy.types.Operator):
             self.report({"WARNING"}, "Exporting cache aborted.")
             return {"CANCELLED"}
 
-        cacheconfig_path = context.scene.cm.cacheconfig_path
-        succeeded = []
-        failed = []
-        log_new_lines(1)
-        logger.info("-START- Exporting Cache")
+        cacheconfig_path: Path = context.scene.cm.cacheconfig_path
+        succeeded: List[bpy.types.Collection] = []
+        failed: List[bpy.types.Collection] = []
 
-        # clear deleted collections from list
-        propsdata.rm_deleted_colls_from_list(context)
+        log_new_lines(1)
 
         # get collections to be processed
         if self.do_all:
@@ -73,22 +70,26 @@ class CM_OT_cache_export(bpy.types.Operator):
         # remove invalid collections
         collections = [coll for coll in collections if cache.is_valid_cache_coll(coll)]
 
+        logger.info(
+            "-START- Exporting Cache of: %s", ", ".join([c.name for c in collections])
+        )
+
         # create ouput dir if not existent
         filedir = Path(context.scene.cm.cachedir_path)
         if not filedir.exists():
             filedir.mkdir(parents=True, exist_ok=True)
             logger.info("Created directory %s", filedir.as_posix())
 
-        # begin progress udpate
-        context.window_manager.progress_begin(0, len(collections))
-
         # frame range
         frame_range = opsdata.get_cache_frame_range(context)
 
+        # begin progress udpate
+        context.window_manager.progress_begin(0, len(collections))
+
         # create new scene
         scene_orig = bpy.context.scene
-        bpy.ops.scene.new(type="EMPTY")
-        scene_tmp = bpy.context.scene  # changes active scene
+        bpy.ops.scene.new(type="EMPTY")  # changes active scene
+        scene_tmp = bpy.context.scene
         scene_tmp.name = "cm_tmp_export"
         logger.info("Create tmp scene for export: %s", scene_tmp.name)
 
@@ -182,6 +183,7 @@ class CM_OT_cache_export(bpy.types.Operator):
 
             # export
             try:
+                logger.info("Start alembic export of %s", coll.name)
                 # for each collection create seperate alembic
                 bpy.ops.wm.alembic_export(
                     filepath=filepath.as_posix(),
@@ -214,6 +216,8 @@ class CM_OT_cache_export(bpy.types.Operator):
                     as_background_job=False,
                     init_scene_frame_range=False,
                 )
+                logger.info("Alembic export of %s finished", coll.name)
+
             except Exception as e:
                 logger.info("Failed to export %s", coll.name)
                 logger.exception(str(e))
@@ -270,7 +274,13 @@ class CM_OT_cache_export(bpy.types.Operator):
         )
 
         log_new_lines(1)
-        logger.info("-END- Exporting Cache")
+        logger.info(
+            "-END- Exporting Cache of %s", ", ".join([c.name for c in succeeded])
+        )
+
+        # clear deleted collections from list
+        propsdata.rm_deleted_colls_from_list(context)
+
         return {"FINISHED"}
 
     def invoke(self, context, event):
