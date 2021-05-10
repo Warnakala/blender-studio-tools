@@ -1,7 +1,7 @@
 import bpy
 
 from .ops import (
-    AS_OT_do_it,
+    AS_OT_create_action,
 )
 
 
@@ -20,7 +20,7 @@ class AS_PT_vi3d_main(bpy.types.Panel):
         layout = self.layout
 
         row = layout.row(align=True)
-        row.operator(AS_OT_do_it.bl_idname)
+        row.operator(AS_OT_create_action.bl_idname)
 
 
 # ---------REGISTER ----------
