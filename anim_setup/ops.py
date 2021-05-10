@@ -1,10 +1,11 @@
+import re
 from pathlib import Path
 from typing import Dict, List, Set, Optional
 
 import bpy
 
 from .log import LoggerFactory
-
+from . import prefs
 
 logger = LoggerFactory.getLogger()
 
@@ -125,14 +126,97 @@ class AS_OT_setup_workspaces(bpy.types.Operator):
             if ws.name != "Animation":
                 bpy.ops.workspace.delete({"workspace": ws})
 
-        self.report({"INFO"}, "Deleted non Animation workspaces")
+            self.report({"INFO"}, "Deleted non Animation workspaces")
 
         return {"FINISHED"}
 
 
+class AS_OT_load_latest_edit(bpy.types.Operator):
+    """
+    Loads latest edit from dropbox folder
+    """
+
+    bl_idname = "as.load_latest_edit"
+    bl_label = "Load edit"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        editorial_path = Path(addon_prefs.editorial_path)
+
+
+        # needs to be run in sequence editor area
+        area_override = None
+        for area in bpy.context.screen.areas:
+            if area.type == "SEQUENCE_EDITOR":
+                area_override = area
+
+        return bool(area_override and editorial_path)
+
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        addon_prefs = prefs.addon_prefs_get(context)
+        editorial_path = Path(addon_prefs.editorial_path)
+
+        latest_file = self._get_latest_edit(context)
+        if not latest_file:
+            self.report(
+                {"ERROR"}, f"Found no edit file in: {editorial_path.as_posix()}"
+            )
+
+        # needs to be run in sequence editor area
+        area_override = None
+        for area in bpy.context.screen.areas:
+            if area.type == "SEQUENCE_EDITOR":
+                area_override = area
+
+        if not area_override:
+            self.report({"ERROR"}, "No sequence editor are found")
+            return {"CANCELLED"}
+
+        override = bpy.context.copy()
+        override["area"] = area_override
+
+        bpy.ops.sequencer.movie_strip_add(
+            override,
+            filepath=latest_file.as_posix(),
+            relative_path=False,
+            frame_start=101,
+            channel=1,
+            fit_method="FIT",
+        )
+
+        self.report({"INFO"}, f"Loaded latest edit: {latest_file.name}")
+
+        return {"FINISHED"}
+
+    def _get_latest_edit(self, context: bpy.types.Context):
+        addon_prefs = prefs.addon_prefs_get(context)
+
+        editorial_path = Path(addon_prefs.editorial_path)
+
+        files_list = [
+            f
+            for f in editorial_path.iterdir()
+            if f.is_file() and self._is_valid_edit_name(f.name)
+        ]
+        files_list = sorted(files_list, reverse=True)
+
+        return files_list[0]
+
+    def _is_valid_edit_name(self, filename: str) -> bool:
+        pattern = r"sf-edit-v\d\d\d.mp4"
+
+        match = re.search(pattern, filename)
+        if match:
+            return True
+        return False
+
+
 # ---------REGISTER ----------
 
-classes = [AS_OT_create_action, AS_OT_setup_workspaces]
+classes = [AS_OT_create_action, AS_OT_setup_workspaces, AS_OT_load_latest_edit]
 
 
 def register():
