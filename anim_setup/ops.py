@@ -25,7 +25,6 @@ class AS_OT_create_action(bpy.types.Operator):
 
     bl_idname = "as.create_action"
     bl_label = "Create action"
-    bl_options = {"INTERNAL"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -60,6 +59,7 @@ class AS_OT_create_action(bpy.types.Operator):
         # add fake user
         action.use_fake_user = True
 
+        self.report({"INFO"}, "%s assigned action %s" % (rig.name, action.name))
         return {"FINISHED"}
 
     def _find_rig(self, coll: bpy.types.Collection) -> Optional[bpy.types.Armature]:
@@ -110,9 +110,29 @@ class AS_OT_create_action(bpy.types.Operator):
         return False
 
 
+class AS_OT_setup_workspaces(bpy.types.Operator):
+    """
+    Sets up the workspaces for the animation task
+    """
+
+    bl_idname = "as.setup_workspaces"
+    bl_label = "Setup Workspace"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # remove non anim workspaces
+        for ws in bpy.data.workspaces:
+            if ws.name != "Animation":
+                bpy.ops.workspace.delete({"workspace": ws})
+
+        self.report({"INFO"}, "Deleted non Animation workspaces")
+
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
-classes = [AS_OT_create_action]
+classes = [AS_OT_create_action, AS_OT_setup_workspaces]
 
 
 def register():

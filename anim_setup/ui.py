@@ -1,8 +1,6 @@
 import bpy
 
-from .ops import (
-    AS_OT_create_action,
-)
+from .ops import AS_OT_create_action, AS_OT_setup_workspaces
 
 
 class AS_PT_vi3d_main(bpy.types.Panel):
@@ -18,6 +16,9 @@ class AS_PT_vi3d_main(bpy.types.Panel):
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
+
+        row = layout.row(align=True)
+        row.operator(AS_OT_setup_workspaces.bl_idname)
 
         row = layout.row(align=True)
         row.operator(AS_OT_create_action.bl_idname)
