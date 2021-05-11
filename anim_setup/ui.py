@@ -32,7 +32,8 @@ class AS_PT_vi3d_main(bpy.types.Panel):
 
         # filepath dependent ops
         box = layout.box()
-        box.label(text="Filepath dependent:")
+        box.label(text="Filepath dependent")
+        box.label(text=f"Previs file: {opsdata.get_previs_file(context)}")
 
         # import camera
         row = box.row(align=True)

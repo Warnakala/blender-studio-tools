@@ -53,6 +53,8 @@ def get_previs_file(context: bpy.types.Context) -> Optional[Path]:
 
     for f in previs_path.iterdir():
         if f.is_file() and f.suffix == ".blend" and f.name.startswith(seqname):
+            if len(f.name.split(".")) > 2:
+                continue
             return f
     return None
 
