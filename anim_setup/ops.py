@@ -186,7 +186,7 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
 
 class AS_OT_import_camera(bpy.types.Operator):
     """
-    Imports camera rig and latest action of previs file
+    Imports camera rig and makes library override
     """
 
     bl_idname = "as.import_camera"
@@ -195,12 +195,11 @@ class AS_OT_import_camera(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return bool(addon_prefs.is_project_root_valid)
+        return bool(addon_prefs.is_project_root_valid and bpy.data.filepath)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         addon_prefs = prefs.addon_prefs_get(context)
-        project_root_path = Path(addon_prefs.project_root_path)
 
         # import camera rig and make override
         camera_rig_path = addon_prefs.camera_rig_path
@@ -216,12 +215,37 @@ class AS_OT_import_camera(bpy.types.Operator):
         opsdata.instance_coll_to_scene_and_override(context, cam_lib_coll)
         cam_coll = bpy.data.collections[cam_lib_coll.name, None]
 
+        self.report({"INFO"}, f"Imported camera: {cam_coll.name}")
+        return {"FINISHED"}
+
+
+class AS_OT_import_camera_action(bpy.types.Operator):
+    """
+    Imports cam action of previs file that matches current shot and assignes it
+    """
+
+    bl_idname = "as.import_camera_action"
+    bl_label = "Import Camera Action"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        return bool(addon_prefs.is_project_root_valid and bpy.data.filepath)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        try:
+            cam_coll = bpy.data.collections["CA-camera_rig", None]
+        except KeyError:
+            self.report({"ERROR"}, f"Camera collection CA-camera_rig is not imported")
+            return {"CANCELELD"}
+
         # import camera action from previz file
 
         # get shotname and previs filepath
         shotname = opsdata.get_shot_name_from_file()
         if not shotname:
-            self.report("Failed to retrieve shotname from current file.")
+            self.report({"ERROR"}, "Failed to retrieve shotname from current file.")
             return {"CANCELLED"}
 
         previs_path = opsdata.get_previs_file(context)
@@ -256,10 +280,12 @@ class AS_OT_import_camera(bpy.types.Operator):
         # add fake user
         cam_action.use_fake_user = True
 
-        #ensure version suffix to action data bloc
+        # ensure version suffix to action data bloc
         opsdata.ensure_name_version_suffix(cam_action)
 
+        self.report({"INFO"}, f"{rig.name} imported camera action: {cam_action.name}")
         return {"FINISHED"}
+
 
 # ---------REGISTER ----------
 
@@ -268,6 +294,7 @@ classes = [
     AS_OT_setup_workspaces,
     AS_OT_load_latest_edit,
     AS_OT_import_camera,
+    AS_OT_import_camera_action,
 ]
 
 
