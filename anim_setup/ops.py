@@ -299,6 +299,20 @@ class AS_OT_import_camera_action(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AS_OT_shift_cam_anim(bpy.types.Operator):
+    """
+    Shifts the animation as well as anim modifier values of the camera by number of frames
+    """
+
+    bl_idname = "as.shift_cam_anim"
+    bl_label = "Shift Camera Anim"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        nr_of_frames = context.scene.animt_setup.shift_frames
+
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -307,6 +321,7 @@ classes = [
     AS_OT_load_latest_edit,
     AS_OT_import_camera,
     AS_OT_import_camera_action,
+    AS_OT_shift_cam_anim,
 ]
 
 

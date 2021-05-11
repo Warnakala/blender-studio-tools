@@ -1,6 +1,7 @@
 import bpy
 
 from . import prefs
+from . import props
 from . import opsdata
 from . import ops
 from . import ui
@@ -28,6 +29,7 @@ if _need_reload:
 
     logger.info("-START- Reloading anim-setup")
     prefs = importlib.reload(prefs)
+    props = importlib.reload(props)
     opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
@@ -37,6 +39,7 @@ if _need_reload:
 def register():
     logger.info("-START- Registering anim-setup")
     prefs.register()
+    props.register()
     ops.register()
     ui.register()
     logger.info("-END- Registering anim-setup")
@@ -46,6 +49,7 @@ def unregister():
     logger.info("-START- Unregistering anim-setup")
     ui.unregister()
     ops.unregister()
+    props.unregister()
     prefs.unregister()
     logger.info("-END- Unregistering anim-setup")
 

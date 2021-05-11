@@ -8,6 +8,7 @@ from .ops import (
     AS_OT_load_latest_edit,
     AS_OT_import_camera,
     AS_OT_import_camera_action,
+    AS_OT_shift_cam_anim,
 )
 
 
@@ -32,16 +33,7 @@ class AS_PT_vi3d_main(bpy.types.Panel):
 
         # filepath dependent ops
         box = layout.box()
-        box.label(text="Filepath dependent")
-        box.label(text=f"Previs file: {opsdata.get_previs_file(context)}")
-
-        # import camera
-        row = box.row(align=True)
-        row.operator(AS_OT_import_camera.bl_idname)
-
-        # import camera action
-        row = box.row(align=True)
-        row.operator(AS_OT_import_camera_action.bl_idname)
+        box.label(text="", icon="MODIFIER")
 
         # create actions
         row = box.row(align=True)
@@ -52,6 +44,21 @@ class AS_PT_vi3d_main(bpy.types.Panel):
         # load edit
         row = box.row(align=True)
         row.operator(AS_OT_load_latest_edit.bl_idname)
+
+        # import camera
+        box_cam = layout.box()
+        box_cam.label(text="", icon="OUTLINER_OB_CAMERA")
+        box_cam.label(text=f"Previs file: {opsdata.get_previs_file(context)}")
+        column = box_cam.column(align=True)
+        column.operator(AS_OT_import_camera.bl_idname)
+
+        # import camera action
+        column.operator(AS_OT_import_camera_action.bl_idname)
+
+        # shift camera animation
+        split = column.split(factor=0.3, align=True)
+        split.prop(context.scene.anim_setup, "shift_frames", text="")
+        split.operator(AS_OT_shift_cam_anim.bl_idname, text="Shift Anim")
 
 
 # ---------REGISTER ----------
