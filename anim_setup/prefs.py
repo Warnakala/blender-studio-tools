@@ -101,6 +101,30 @@ class AS_AddonPreferences(bpy.types.AddonPreferences):
             return None
         return Path(self.dropbox_root_path.joinpath("shared/sprites/editorial/export"))
 
+    @property
+    def previs_root_path(self) -> Optional[Path]:
+        if not self.is_project_root_valid:
+            return None
+
+        previs_path = self.project_root_path / "previz"
+
+        if not previs_path.exists():
+            return None
+
+        return previs_path
+
+    @property
+    def camera_rig_path(self) -> Optional[Path]:
+        if not self.is_project_root_valid:
+            return None
+
+        camera_rig_path = self.project_root_path / "pro/lib/cam/camera_rig.blend"
+
+        if not camera_rig_path.exists():
+            return None
+
+        return camera_rig_path
+
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """

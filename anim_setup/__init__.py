@@ -1,6 +1,7 @@
 import bpy
 
 from . import prefs
+from . import opsdata
 from . import ops
 from . import ui
 from .log import LoggerFactory
@@ -27,6 +28,7 @@ if _need_reload:
 
     logger.info("-START- Reloading anim-setup")
     prefs = importlib.reload(prefs)
+    opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
     logger.info("-END- Reloading anim-setup")

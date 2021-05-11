@@ -1,6 +1,11 @@
 import bpy
 
-from .ops import AS_OT_create_action, AS_OT_setup_workspaces, AS_OT_load_latest_edit
+from .ops import (
+    AS_OT_create_action,
+    AS_OT_setup_workspaces,
+    AS_OT_load_latest_edit,
+    AS_OT_import_camera,
+)
 
 
 class AS_PT_vi3d_main(bpy.types.Panel):
@@ -19,6 +24,9 @@ class AS_PT_vi3d_main(bpy.types.Panel):
 
         row = layout.row(align=True)
         row.operator(AS_OT_setup_workspaces.bl_idname)
+
+        row = layout.row(align=True)
+        row.operator(AS_OT_import_camera.bl_idname)
 
         row = layout.row(align=True)
         row.operator(AS_OT_create_action.bl_idname)

@@ -5,7 +5,7 @@ from typing import Dict, List, Set, Optional
 import bpy
 
 from .log import LoggerFactory
-from . import prefs
+from . import opsdata, prefs
 
 logger = LoggerFactory.getLogger()
 
@@ -39,7 +39,7 @@ class AS_OT_create_action(bpy.types.Operator):
             self.report({"WARNING"}, "Active collection needed")
             return {"CANCELLED"}
 
-        rig = self._find_rig(act_coll)
+        rig = opsdata.find_rig(act_coll)
 
         if not rig:
             self.report({"WARNING"}, f"{act_coll.name} contains no rig.")
@@ -63,29 +63,11 @@ class AS_OT_create_action(bpy.types.Operator):
         self.report({"INFO"}, "%s assigned action %s" % (rig.name, action.name))
         return {"FINISHED"}
 
-    def _find_rig(self, coll: bpy.types.Collection) -> Optional[bpy.types.Armature]:
-
-        coll_suffix = self._find_asset_name(coll.name)
-
-        for obj in coll.all_objects:
-            # default rig name: 'RIG-rex' / 'RIG-Rex'
-            if obj.type != "ARMATURE":
-                continue
-
-            if not obj.name.startswith("RIG"):
-                continue
-
-            if obj.name.lower() == f"rig-{coll_suffix.lower()}":
-                logger.info("Found rig: %s", obj.name)
-                return obj
-
-        return None
-
     def _gen_action_name(self, armature: bpy.types.Armature):
         action_prefix = "ANI"
-        asset_name = self._find_asset_name(armature.name).lower()
+        asset_name = opsdata.find_asset_name(armature.name).lower()
         version = "v001"
-        shot_name = self._get_shot_name_from_file()
+        shot_name = opsdata.get_shot_name_from_file()
 
         action_name = f"{action_prefix}-{asset_name}.{shot_name}.{version}"
 
@@ -93,16 +75,6 @@ class AS_OT_create_action(bpy.types.Operator):
             action_name = f"{action_prefix}-{asset_name}_A.{shot_name}.{version}"
 
         return action_name
-
-    def _find_asset_name(self, name: str) -> str:
-        return name.split("-")[-1]  # CH-rex -> 'rex'
-
-    def _get_shot_name_from_file(self) -> Optional[str]:
-        if not bpy.data.filepath:
-            return None
-
-        # default 110_0030_A.anim.blend
-        return Path(bpy.data.filepath).name.split(".")[0]
 
     def _is_multi_asset(self, asset_name: str) -> bool:
         multi_assets = ["sprite", "snail"]
@@ -144,7 +116,6 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
         editorial_path = Path(addon_prefs.editorial_path)
 
-
         # needs to be run in sequence editor area
         area_override = None
         for area in bpy.context.screen.areas:
@@ -152,7 +123,6 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
                 area_override = area
 
         return bool(area_override and editorial_path)
-
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -214,9 +184,91 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
         return False
 
 
+class AS_OT_import_camera(bpy.types.Operator):
+    """
+    Imports camera rig and latest action of previs file
+    """
+
+    bl_idname = "as.import_camera"
+    bl_label = "Import Camera"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        return bool(addon_prefs.is_project_root_valid)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        addon_prefs = prefs.addon_prefs_get(context)
+        project_root_path = Path(addon_prefs.project_root_path)
+
+        # import camera rig and make override
+        camera_rig_path = addon_prefs.camera_rig_path
+        if not camera_rig_path:
+            self.report({"ERROR"}, "Failed to import camera rig")
+            return {"CANCELLED"}
+
+        cam_lib_coll = opsdata.import_data_from_lib(
+            "collections",
+            "CA-camera_rig",
+            camera_rig_path,
+        )
+        opsdata.instance_coll_to_scene_and_override(context, cam_lib_coll)
+        cam_coll = bpy.data.collections[cam_lib_coll.name, None]
+
+        # import camera action from previz file
+
+        # get shotname and previs filepath
+        shotname = opsdata.get_shot_name_from_file()
+        if not shotname:
+            self.report("Failed to retrieve shotname from current file.")
+            return {"CANCELLED"}
+
+        previs_path = opsdata.get_previs_file(context)
+        if not previs_path:
+            self.report({"ERROR"}, "Failed to find previz file")
+            return {"CANCELLED"}
+
+        # check if cam action name exists in previs library
+        cam_action_name = opsdata.get_cam_action_name_from_lib(shotname, previs_path)
+        if not cam_action_name:
+            self.report(
+                {"ERROR"},
+                f"Camera action: {cam_action_name} not found in lib: {previs_path.name}",
+            )
+            return {"CANCELLED"}
+
+        # import cam action data block
+        cam_action = opsdata.import_data_from_lib(
+            "actions", cam_action_name, previs_path, link=False
+        )
+
+        # find rig to assing action to
+        rig = opsdata.find_rig(cam_coll)
+        if not rig:
+            self.report({"WARNING"}, f"{cam_coll.name} contains no rig.")
+            return {"CANCELLED"}
+
+        # assign action
+        rig.animation_data.action = cam_action
+        logger.info("%s assigned action %s", rig.name, cam_action.name)
+
+        # add fake user
+        cam_action.use_fake_user = True
+
+        #ensure version suffix to action data bloc
+        opsdata.ensure_name_version_suffix(cam_action)
+
+        return {"FINISHED"}
+
 # ---------REGISTER ----------
 
-classes = [AS_OT_create_action, AS_OT_setup_workspaces, AS_OT_load_latest_edit]
+classes = [
+    AS_OT_create_action,
+    AS_OT_setup_workspaces,
+    AS_OT_load_latest_edit,
+    AS_OT_import_camera,
+]
 
 
 def register():
