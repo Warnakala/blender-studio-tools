@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Optional, Dict, Union, Any
+from typing import Optional, Dict, Union, Any, List
 import bpy
 
 from . import prefs
@@ -186,3 +186,15 @@ def ensure_name_version_suffix(datablock: Any) -> Any:
         datablock.name = datablock.name + ".v001"
 
     return datablock
+
+
+def get_valid_collections(context: bpy.types.Context) -> List[bpy.types.Collection]:
+    valid_prefixes = ["CH-", "PR-"]
+    valid_colls: List[bpy.types.Collection] = []
+
+    for coll in context.scene.collection.children:
+        if coll.name[:3] not in valid_prefixes:
+            continue
+        valid_colls.append(coll)
+
+    return valid_colls

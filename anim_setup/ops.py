@@ -19,7 +19,7 @@ def ui_redraw() -> None:
             area.tag_redraw()
 
 
-class AS_OT_create_action(bpy.types.Operator):
+class AS_OT_create_actions(bpy.types.Operator):
     """
     Creates default action for active collection
     """
@@ -33,34 +33,46 @@ class AS_OT_create_action(bpy.types.Operator):
         return bool(bpy.data.filepath and act_coll)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        act_coll = context.view_layer.active_layer_collection.collection
+        assigned: List[bpy.types.Action] = []
+        created: List[bpy.types.Action] = []
+        failed: List[bpy.types.Collection] = []
+        collections = opsdata.get_valid_collections(context)
 
-        if not act_coll:
-            self.report({"WARNING"}, "Active collection needed")
+        if not collections:
+            self.report({"WARNING"}, "No valid collections available")
             return {"CANCELLED"}
 
-        rig = opsdata.find_rig(act_coll)
+        for coll in collections:
+            rig = opsdata.find_rig(coll)
 
-        if not rig:
-            self.report({"WARNING"}, f"{act_coll.name} contains no rig.")
-            return {"CANCELLED"}
+            if not rig:
+                logger.warning(f"{coll.name} contains no rig.")
+                failed.append(coll)
+                continue
 
-        # create new action
-        action_name = self._gen_action_name(rig)
-        if action_name not in list(bpy.data.actions):
-            action = bpy.data.actions.new(action_name)
-            logger.info("Created action: %s", action.name)
-        else:
-            action = bpy.data.actions[action_name]
+            # create new action
+            action_name = self._gen_action_name(rig)
+            if action_name not in list(bpy.data.actions):
+                action = bpy.data.actions.new(action_name)
+                logger.info("Created action: %s", action.name)
+                created.append(action)
+            else:
+                action = bpy.data.actions[action_name]
+                logger.info("Action %s already exists. Will take that.", action.name)
 
-        # assign action
-        rig.animation_data.action = action
-        logger.info("%s assigned action %s", rig.name, action.name)
+            # assign action
+            rig.animation_data.action = action
+            logger.info("%s assigned action %s", rig.name, action.name)
 
-        # add fake user
-        action.use_fake_user = True
+            # add fake user
+            action.use_fake_user = True
+            assigned.append(action)
 
-        self.report({"INFO"}, "%s assigned action %s" % (rig.name, action.name))
+        self.report(
+            {"INFO"},
+            "Actions: Created %s | Assigned %s | Failed %s"
+            % (len(created), len(assigned), len(failed)),
+        )
         return {"FINISHED"}
 
     def _gen_action_name(self, armature: bpy.types.Armature):
@@ -290,7 +302,7 @@ class AS_OT_import_camera_action(bpy.types.Operator):
 # ---------REGISTER ----------
 
 classes = [
-    AS_OT_create_action,
+    AS_OT_create_actions,
     AS_OT_setup_workspaces,
     AS_OT_load_latest_edit,
     AS_OT_import_camera,
