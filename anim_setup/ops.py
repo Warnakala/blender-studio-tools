@@ -308,8 +308,53 @@ class AS_OT_shift_cam_anim(bpy.types.Operator):
     bl_label = "Shift Camera Anim"
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        nr_of_frames = context.scene.animt_setup.shift_frames
+        nr_of_frames = context.scene.anim_setup.shift_frames
 
+        # get cam coll
+        try:
+            rig = bpy.data.objects["RIG-camera", None]
+        except KeyError:
+            self.report({"ERROR"}, f"Failed to find camera object 'RIG-camera'")
+            return {"CANCELELD"}
+
+        for fcurve in rig.animation_data.action.fcurves:
+
+            # shift all keyframes
+            for point in fcurve.keyframe_points:
+                # print(f"{fcurve.data_path}|{fcurve.array_index}: {point.co.x}|{point.co.y}")
+                point.co.x += nr_of_frames
+                # don't forget the keyframe's handles:
+                point.handle_left.x += nr_of_frames
+                point.handle_right.x += nr_of_frames
+
+            logger.info(
+                "%s: %s shifted all keyframes by %i frames",
+                fcurve.id_data.name,
+                fcurve.data_path,
+                nr_of_frames,
+            )
+
+            # shift all noise modififers values
+            for m in fcurve.modifiers:
+                if not m.type == "NOISE":
+                    continue
+
+                m.offset += nr_of_frames
+
+                if m.use_restricted_range:
+                    frame_start = m.frame_start
+                    frame_end = m.frame_end
+                    m.frame_start = frame_start + (nr_of_frames)
+                    m.frame_end = frame_end + (nr_of_frames)
+
+                logger.info(
+                    "%s shifted %s modifier values by %i frames",
+                    m.id_data.name,
+                    m.type.lower(),
+                    nr_of_frames,
+                )
+
+        self.report({"INFO"}, f"{rig.name} shifted animation by {nr_of_frames}")
         return {"FINISHED"}
 
 
