@@ -1279,9 +1279,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
 
         # preview.set_main_preview()
         preview.set_main_preview()
-        logger.info(
-            f"Uploaded thumbnail for shot: {shot.name} under: {task_type.name}"
-        )
+        logger.info(f"Uploaded thumbnail for shot: {shot.name} under: {task_type.name}")
 
     @contextlib.contextmanager
     def override_render_settings(self, context, thumbnail_width=256):
@@ -1290,9 +1288,9 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         rd = context.scene.render
 
         # Remember current render settings in order to restore them later.
-        orig_percentage = rd.resolution_percentage
-        orig_file_format = rd.image_settings.file_format
-        orig_quality = rd.image_settings.quality
+        percentage = rd.resolution_percentage
+        file_format = rd.image_settings.file_format
+        quality = rd.image_settings.quality
 
         try:
             # Set the render settings to thumbnail size.
@@ -1304,9 +1302,9 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
 
         finally:
             # Return the render settings to normal.
-            rd.resolution_percentage = orig_percentage
-            rd.image_settings.file_format = orig_file_format
-            rd.image_settings.quality = orig_quality
+            rd.resolution_percentage = percentage
+            rd.image_settings.file_format = file_format
+            rd.image_settings.quality = quality
 
     @contextlib.contextmanager
     def temporary_current_frame(self, context):
@@ -1330,6 +1328,238 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         middle = round((strip.frame_final_start + strip.frame_final_end) / 2)
         context.scene.frame_set(middle)
         return middle
+
+
+class KITSU_OT_create_playblast(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.create_playblast"
+    bl_label = "Create Playblast"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(prefs.zsession_auth(context) and cache.shot_active_get())
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
+        upload_queue: List[Path] = []  # will be used as successed list
+        shot_active = cache.shot_active_get()
+        noun = "Created"
+        if addon_prefs.playblast_upload:
+            noun = "Created and uploaded"
+
+        logger.info("-START- Creating Playblast")
+
+        context.window_manager.progress_begin(0, 2)
+
+        # ----RENDER AND SAVE PLAYBLAST ------
+        with self.override_render_settings(context):
+
+            output_path = self._gen_playlast_path(context)
+            bpy.ops.render.render(animation=True)
+            upload_queue.append(output_path)
+
+        context.window_manager.progress_update(1)
+
+        # ----ULPOAD PLAYBLAST ------
+        if addon_prefs.playblast_upload:
+            # process thumbnail queue
+            for idx, filepath in enumerate(upload_queue):
+                self._upload_playblast(filepath)
+
+        context.window_manager.progress_update(2)
+        context.window_manager.progress_end()
+
+        self.report({"INFO"}, f"{noun} playblast for {shot_active.name}")
+        logger.info("-END- Creating Playblast")
+        return {"FINISHED"}
+
+    def _upload_playblast(self, filepath: Path) -> None:
+        # get shot by id which is in filename of thumbnail
+        shot_id = filepath.name.split("_")[0]
+        shot = Shot.by_id(shot_id)
+
+        # get task status 'wip' and task type 'Animation'
+        task_status = TaskStatus.by_short_name("wip")
+        task_type = TaskType.by_name("Animation")
+
+        if not task_status:
+            raise RuntimeError(
+                "Failed to upload playblast. Task status: 'wip' is missing."
+            )
+        if not task_type:
+            raise RuntimeError(
+                "Failed to upload playblast. Task type: 'Animation' is missing."
+            )
+
+        # find / get latest task
+        task = Task.by_name(shot, task_type)
+        if not task:
+            # turns out a entitiy on server can have 0 tasks even tough task types exist
+            # you have to create a task first before being able to upload a thumbnail
+            tasks = shot.get_all_tasks()  # list of tasks
+            if not tasks:
+                task = Task.new_task(shot, task_type, task_status=task_status)
+            else:
+                task = tasks[-1]
+
+        # create a comment, e.G 'set main thumbnail'
+        comment = task.add_comment(task_status, comment="playblast")
+
+        # add_preview_to_comment
+        preview = task.add_preview_to_comment(comment, filepath.as_posix())
+        # preview.set_main_preview()
+        logger.info(f"Uploaded playblast for shot: {shot.name} under: {task_type.name}")
+
+    def _gen_playlast_path(self, context: bpy.types.Context) -> Path:
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
+        folder_name = addon_prefs.folder_playblasts
+
+        # filename
+        filename = self._gen_playblast_filename(context)
+
+        # ensure folder exists
+        folder_path = Path(folder_name).absolute()
+        folder_path.mkdir(parents=True, exist_ok=True)
+
+        path = folder_path.joinpath(filename)
+        return path
+
+    def _gen_playblast_filename(self, context: bpy.types.Context) -> str:
+        version = "v001"
+        shot_ative = cache.shot_active_get()
+        file_name = f"{shot_ative.id}_{shot_ative.name}.{version}.mp4"
+        return file_name
+
+    @contextlib.contextmanager
+    def override_render_settings(self, context):
+        """Overrides the render settings for playblast creation"""
+
+        rd = context.scene.render
+
+        # Remember current render settings in order to restore them later.
+
+        # filepath
+        filepath = rd.filepath
+
+        # engine
+        engine = rd.engine
+
+        # simplify
+        use_simplify = rd.use_simplify
+
+        # format render settings
+        percentage = rd.resolution_percentage
+        file_format = rd.image_settings.file_format
+        ffmpeg_constant_rate = rd.ffmpeg.constant_rate_factor
+        ffmpeg_codec = rd.ffmpeg.codec
+        ffmpeg_format = rd.ffmpeg.format
+        ffmpeg_audio_codec = rd.ffmpeg.audio_codec
+
+        # stamp metadata settings
+        metadata_input = rd.metadata_input = "SCENE"
+        use_stamp_date = rd.use_stamp_date = False
+        use_stamp_time = rd.use_stamp_time = False
+        use_stamp_render_time = rd.use_stamp_render_time = False
+        use_stamp_frame = rd.use_stamp_frame = True
+        use_stamp_frame_range = rd.use_stamp_frame_range = False
+        use_stamp_memory = rd.use_stamp_memory = False
+        use_stamp_hostname = rd.use_stamp_hostname = False
+        use_stamp_camera = rd.use_stamp_camera = False
+        use_stamp_lens = rd.use_stamp_lens = True
+        use_stamp_scene = rd.use_stamp_scene = False
+        use_stamp_marker = rd.use_stamp_marker = False
+        use_stamp_marker = rd.use_stamp_marker = False
+        use_stamp_note = rd.use_stamp_note = True
+        # rd.stamp_note_text = "Animator: <Name>"
+        use_stamp = rd.use_stamp = True
+        stamp_font_size = rd.stamp_font_size = 12
+        stamp_foreground = rd.stamp_foreground = (0.8, 0.8, 0.8, 1)
+        stamp_background = rd.stamp_background = (0, 0, 0, 0.25)
+        use_stamp_labels = rd.use_stamp_labels = True
+
+        try:
+            # filepath
+            rd.filepath = self._gen_playlast_path(context).as_posix()
+
+            # engine
+            rd.engine = "BLENDER_EEVEE"
+
+            # simplify
+            rd.use_simplify = False
+
+            # format render settings
+            rd.resolution_percentage = 100
+            rd.image_settings.file_format = "FFMPEG"
+            rd.ffmpeg.constant_rate_factor = "HIGH"
+            rd.ffmpeg.codec = "H264"
+            rd.ffmpeg.format = "MPEG4"
+            rd.ffmpeg.audio_codec = "AAC"
+
+            # stamp metadata settings
+            rd.metadata_input = "SCENE"
+            rd.use_stamp_date = False
+            rd.use_stamp_time = False
+            rd.use_stamp_render_time = False
+            rd.use_stamp_frame = True
+            rd.use_stamp_frame_range = False
+            rd.use_stamp_memory = False
+            rd.use_stamp_hostname = False
+            rd.use_stamp_camera = False
+            rd.use_stamp_lens = True
+            rd.use_stamp_scene = False
+            rd.use_stamp_marker = False
+            rd.use_stamp_marker = False
+            rd.use_stamp_note = True
+            # rd.stamp_note_text = "Animator: <Name>"
+            rd.use_stamp = True
+            rd.stamp_font_size = 12
+            rd.stamp_foreground = (0.8, 0.8, 0.8, 1)
+            rd.stamp_background = (0, 0, 0, 0.25)
+            rd.use_stamp_labels = True
+
+            yield
+
+        finally:
+            # filepath
+            rd.filepath = filepath
+
+            # engine
+            rd.engine = engine
+
+            # simplify
+            rd.use_simplify = use_simplify
+
+            # Return the render settings to normal.
+            rd.resolution_percentage = percentage
+            rd.image_settings.file_format = file_format
+            rd.ffmpeg.codec = ffmpeg_codec
+            rd.ffmpeg.constant_rate_factor = ffmpeg_constant_rate
+            rd.ffmpeg.format = ffmpeg_format
+            rd.ffmpeg.audio_codec = ffmpeg_audio_codec
+
+            # stamp metadata settings
+            rd.metadata_input = metadata_input
+            rd.use_stamp_date = use_stamp_date
+            rd.use_stamp_time = use_stamp_time
+            rd.use_stamp_render_time = use_stamp_render_time
+            rd.use_stamp_frame = use_stamp_frame
+            rd.use_stamp_frame_range = use_stamp_frame_range
+            rd.use_stamp_memory = use_stamp_memory
+            rd.use_stamp_hostname = use_stamp_hostname
+            rd.use_stamp_camera = use_stamp_camera
+            rd.use_stamp_lens = use_stamp_lens
+            rd.use_stamp_scene = use_stamp_scene
+            rd.use_stamp_marker = use_stamp_marker
+            rd.use_stamp_marker = use_stamp_marker
+            rd.use_stamp_note = use_stamp_note
+            # rd.stamp_note_text = "Animator: <Name>"
+            rd.use_stamp = use_stamp
+            rd.stamp_font_size = stamp_font_size
+            rd.stamp_foreground = stamp_foreground
+            rd.stamp_background = stamp_background
+            rd.use_stamp_labels = use_stamp_labels
 
 
 class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
@@ -1461,6 +1691,7 @@ classes = [
     KITSU_OT_sqe_link_shot,
     KITSU_OT_sqe_link_sequence,
     KITSU_OT_sqe_push_thumbnail,
+    KITSU_OT_create_playblast,
     KITSU_OT_sqe_push_del_shot,
     KITSU_OT_sqe_pull_shot_meta,
     KITSU_OT_sqe_multi_edit_strip,

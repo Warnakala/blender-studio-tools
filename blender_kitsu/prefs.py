@@ -43,13 +43,21 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         """Generate a path based on get_datadir and the current file name.
 
         The path is constructed by combining the OS application data dir,
-        "blender-edit-breakdown" and a hashed version of the filepath.
-
-        Note: If a file is moved, the thumbnails will need to be recomputed.
+        "blender_kitsu" and a hashed version of the filepath.
         """
-        hashed_filename = hashlib.md5(bpy.data.filepath.encode()).hexdigest()
-        storage_dir = self.get_datadir() / "blender_kitsu" / hashed_filename
-        # storage_dir.mkdir(parents=True, exist_ok=True)
+        hashed_filepath = hashlib.md5(bpy.data.filepath.encode()).hexdigest()
+        storage_dir = self.get_datadir() / "blender_kitsu" / hashed_filepath
+        return storage_dir.as_posix()
+
+    def get_playblasts_dir(self) -> str:
+        if not bpy.data.filepath:
+            file_identifier = hashlib.md5(bpy.data.filepath.encode()).hexdigest()
+        else:
+            file_identifier = Path(bpy.data.filepath).stem.replace(".", "_")
+
+        storage_dir = (
+            self.get_datadir() / "blender_kitsu" / "playblasts" / file_identifier
+        )
         return storage_dir.as_posix()
 
     bl_idname = __package__
@@ -78,6 +86,14 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         default="",
         subtype="DIR_PATH",
         get=get_thumbnails_dir,
+    )
+
+    folder_playblasts: bpy.props.StringProperty(  # type: ignore
+        name="Playblasts Folder",
+        description="Folder in which playblasts will be saved",
+        default="",
+        subtype="DIR_PATH",
+        get=get_playblasts_dir,
     )
 
     project_active_id: bpy.props.StringProperty(  # type: ignore
@@ -114,6 +130,12 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         default=10,
         step=5,
         min=0,
+    )
+
+    playblast_upload: bpy.props.BoolProperty(  # type: ignore
+        name="Upload",
+        description="Controls if the playblast will aso be uploaded to kitsu",
+        default=True,
     )
 
     session: ZSession = ZSession()
@@ -160,6 +182,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         box = layout.box()
         box.label(text="Misc", icon="MODIFIER")
         box.row().prop(self, "folder_thumbnail")
+        box.row().prop(self, "folder_playblasts")
         box.row().prop(self, "enable_debug")
         box.row().prop(self, "show_advanced")
 

@@ -24,6 +24,7 @@ from .ops import (
     KITSU_OT_sqe_push_new_shot,
     KITSU_OT_sqe_push_shot_meta,
     KITSU_OT_sqe_push_thumbnail,
+    KITSU_OT_create_playblast,
     KITSU_OT_sqe_uninit_strip,
     KITSU_OT_sqe_unlink_shot,
 )
@@ -147,6 +148,32 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
             item_text = item_data["zobject"].name
 
         row.operator(item_data["operator"], text=item_text, icon="DOWNARROW_HLT")
+
+
+class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
+    """
+    Panel in 3dview that exposes a set of tools that are useful for animation
+    tasks, e.G playblast
+    """
+
+    bl_category = "Kitsu"
+    bl_label = "Animation Tools"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_order = 30
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(prefs.zsession_auth(context))
+
+    def draw(self, context: bpy.types.Context) -> None:
+        addon_prefs = prefs.addon_prefs_get(context)
+        layout = self.layout
+
+        row = layout.row(align=True)
+        row.operator(KITSU_OT_create_playblast.bl_idname, icon="RENDER_ANIMATION")
+        row.prop(addon_prefs, "playblast_upload", text="", icon="EXPORT")
 
 
 class KITSU_PT_sqe_auth(bpy.types.Panel):
@@ -665,6 +692,7 @@ classes = [
     KITSU_PT_vi3d_auth,
     KITSU_PT_sqe_auth,
     KITSU_PT_vi3d_context,
+    KITSU_PT_vi3d_anim_tools,
     KITSU_MT_sqe_advanced_delete,
     KITSU_PT_sqe_shot_tools,
 ]
