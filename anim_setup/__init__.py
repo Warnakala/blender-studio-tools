@@ -1,6 +1,7 @@
 import bpy
 
 from . import prefs
+from . import kitsu
 from . import props
 from . import opsdata
 from . import ops
@@ -29,6 +30,7 @@ if _need_reload:
 
     logger.info("-START- Reloading anim-setup")
     prefs = importlib.reload(prefs)
+    kitsu = importlib.reload(kitsu)
     props = importlib.reload(props)
     opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)

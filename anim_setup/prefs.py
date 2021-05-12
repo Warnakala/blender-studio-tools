@@ -4,6 +4,49 @@ from typing import Union, Optional, Any, Dict, Set
 
 import bpy
 
+from .kitsu import KitsuException
+from . import asglobals
+
+
+class KitsuPreferences(bpy.types.PropertyGroup):
+    backend: bpy.props.StringProperty(  # type: ignore
+        name="Server URL",
+        description="Kitsu server address",
+        default="https://kitsu.blender.cloud/api",
+    )
+
+    email: bpy.props.StringProperty(  # type: ignore
+        name="Email",
+        description="Email to connect to Kitsu",
+    )
+
+    password: bpy.props.StringProperty(  # type: ignore
+        name="Password",
+        description="Password to connect to Kitsu",
+        subtype="PASSWORD",
+    )
+
+    project_id: bpy.props.StringProperty(  # type: ignore
+        name="Project ID",
+        description="Server Id that refers to the last active project",
+        default=asglobals.PROJECT_ID,
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+
+    def draw(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        box = layout.box()
+        box.label(text="Kitsu")
+        box.prop(self, "backend")
+        box.prop(self, "email")
+        box.prop(self, "password")
+        box.prop(self, "project_id")
+
+    def _validate(self):
+        if not (self.backend and self.email and self.password and self.project_id):
+            raise KitsuException(
+                "Kitsu connector has not been configured in the add-on preferences"
+            )
+
 
 class AS_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
@@ -19,6 +62,10 @@ class AS_AddonPreferences(bpy.types.AddonPreferences):
         default="",
         options={"HIDDEN", "SKIP_SAVE"},
         subtype="DIR_PATH",
+    )
+
+    kitsu: bpy.props.PointerProperty(  # type: ignore
+        name="Kitsu Preferences", type=KitsuPreferences
     )
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -49,6 +96,8 @@ class AS_AddonPreferences(bpy.types.AddonPreferences):
                 text="In order to use a relative path as dropbox root directory the current file needs to be saved.",
                 icon="ERROR",
             )
+
+        self.kitsu.draw(layout, context)
 
     @property
     def project_root_path(self) -> Optional[Path]:
@@ -135,7 +184,7 @@ def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
 
 # ---------REGISTER ----------
 
-classes = [AS_AddonPreferences]
+classes = [KitsuPreferences, AS_AddonPreferences]
 
 
 def register():

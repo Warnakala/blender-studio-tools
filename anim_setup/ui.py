@@ -9,6 +9,7 @@ from .ops import (
     AS_OT_import_camera,
     AS_OT_import_camera_action,
     AS_OT_shift_cam_anim,
+    AS_OT_get_frame_shift,
 )
 
 
@@ -59,6 +60,9 @@ class AS_PT_vi3d_main(bpy.types.Panel):
         split = column.split(factor=0.3, align=True)
         split.prop(context.scene.anim_setup, "shift_frames", text="")
         split.operator(AS_OT_shift_cam_anim.bl_idname, text="Shift Anim")
+
+        # udpate shift amount
+        column.operator(AS_OT_get_frame_shift.bl_idname)
 
 
 # ---------REGISTER ----------

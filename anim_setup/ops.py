@@ -5,7 +5,8 @@ from typing import Dict, List, Set, Optional
 import bpy
 
 from .log import LoggerFactory
-from . import opsdata, prefs
+from .kitsu import KitsuConnector, Shot, Project, Sequence
+from . import opsdata, prefs, asglobals
 
 logger = LoggerFactory.getLogger()
 
@@ -358,6 +359,52 @@ class AS_OT_shift_cam_anim(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AS_OT_get_frame_shift(bpy.types.Operator):
+    """
+    Gets the amount of frames that camera has to be shifted, by requesting the frame range
+    of the current shot in kitsu
+    """
+
+    bl_idname = "as.get_frame_shift"
+    bl_label = "Get Frame Shift"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        addon_prefs = prefs.addon_prefs_get(context)
+        nr_of_frames = context.scene.anim_setup.shift_frames
+
+        # get sequence name
+        seqname = opsdata.get_sequence_from_file()
+        if not seqname:
+            self.report({"ERROR"}, "Failed to retrieve seqname from current file.")
+            return {"CANCELLED"}
+
+        # get shotname
+        shotname = opsdata.get_shot_name_from_file()
+        if not shotname:
+            self.report({"ERROR"}, "Failed to retrieve shotname from current file.")
+            return {"CANCELLED"}
+
+        # setup connector and get data from kitsu
+        connector = KitsuConnector(addon_prefs)
+        project = Project.by_id(connector, addon_prefs.kitsu.project_id)
+        sequence = project.get_sequence_by_name(connector, seqname)
+
+        if not sequence:
+            self.report({"ERROR"}, f"Failed to find {seqname} on kitsu.")
+            return {"CANCELLED"}
+
+        shot = project.get_shot_by_name(connector, sequence, shotname)
+
+        if not shot:
+            self.report({"ERROR"}, f"Failed to find shot {shotname} on kitsu.")
+            return {"CANCELLED"}
+
+        # update shift frame range prop
+
+        self.report({"INFO"}, f"Shot length: {shot.nb_frames}")
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -367,6 +414,7 @@ classes = [
     AS_OT_import_camera,
     AS_OT_import_camera_action,
     AS_OT_shift_cam_anim,
+    AS_OT_get_frame_shift,
 ]
 
 

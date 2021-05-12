@@ -19,7 +19,15 @@ def get_shot_name_from_file() -> Optional[str]:
     return Path(bpy.data.filepath).name.split(".")[0]
 
 
-def get_seqeunce_from_shot_name(shotname: str) -> str:
+def get_sequence_from_file() -> Optional[str]:
+    if not bpy.data.filepath:
+        return None
+
+    # ./spritefright/pro/shots/110_rextoria/110_0010_A/110_0010_A.anim.blend
+    return Path(bpy.data.filepath).parents[1].name
+
+
+def get_seqeunce_short_from_shot_name(shotname: str) -> str:
     return shotname.split("_")[0]
 
 
@@ -48,7 +56,7 @@ def get_previs_file(context: bpy.types.Context) -> Optional[Path]:
     if not shotname:
         return None
 
-    seqname = get_seqeunce_from_shot_name(shotname)
+    seqname = get_seqeunce_short_from_shot_name(shotname)
     previs_path = Path(addon_prefs.previs_root_path)
 
     for f in previs_path.iterdir():
