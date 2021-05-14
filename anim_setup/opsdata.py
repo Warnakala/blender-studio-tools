@@ -38,14 +38,21 @@ def get_cam_action_name_from_shot(shotname: str) -> str:
 
 def get_cam_action_name_from_lib(shotname: str, libpath: Path) -> Optional[str]:
 
+    valid_actions = []
+
     with bpy.data.libraries.load(libpath.as_posix(), relative=True) as (
         data_from,
         data_to,
     ):
+
         for action in data_from.actions:
             if action.startswith(get_cam_action_name_from_shot(shotname)):
-                return action
-    return None
+                valid_actions.append(action)
+
+    if not valid_actions:
+        return None
+
+    return sorted(valid_actions, reverse=True)[0]
 
 
 def get_previs_file(context: bpy.types.Context) -> Optional[Path]:
