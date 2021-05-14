@@ -73,11 +73,9 @@ class KitsuConnector:
 
             if matches == len(filter):
                 return item
-            else:
-                logger.error(
-                    "Filter had no match %s on json response.", api, str(filter)
-                )
-                return None
+
+        logger.error("Filter had no match %s on json response.", str(filter))
+        return None
 
     @classmethod
     def fetch_all(
@@ -242,6 +240,20 @@ class Sequence(KitsuConnector):
         seq_dict = connector.api_get(seq_id)
         return cls(**seq_dict)
 
+    @classmethod
+    def by_name(
+        cls, connector: KitsuConnector, project: Project, seq_name: str
+    ) -> Optional[Sequence]:
+        api_url = f"data/projects/{project.id}/sequences"
+        seq_dicts = connector.api_get(api_url)
+        seq_dict = connector.fetch_first(seq_dicts, {"name": seq_name})
+
+        # can be None if name not found
+        if not seq_dict:
+            return None
+
+        return cls(**seq_dict)
+
     def __bool__(self):
         return bool(self.id)
 
@@ -283,6 +295,22 @@ class Shot(KitsuConnector):
     def by_id(cls, connector: KitsuConnector, shot_id: str) -> Shot:
         api_url = f"data/shots/{shot_id}"
         shot_dict = connector.api_get(shot_id)
+        return cls(**shot_dict)
+
+    @classmethod
+    def by_name(
+        cls, connector: KitsuConnector, sequence: Sequence, shot_name: str
+    ) -> Optional[Shot]:
+        api_url = f"data/projects/{sequence.project_id}/shots"
+        shot_dicts = connector.api_get(api_url)
+        shot_dict = connector.fetch_first(
+            shot_dicts, {"parent_id": sequence.id, "name": shot_name}
+        )
+
+        # can be None if name not found
+        if not shot_dict:
+            return None
+
         return cls(**shot_dict)
 
     def __bool__(self):
