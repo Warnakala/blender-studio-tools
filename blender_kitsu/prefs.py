@@ -138,6 +138,20 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         default=True,
     )
 
+    playblast_engine: bpy.props.EnumProperty(  # type: ignore
+        items=(
+            (
+                "BLENDER_WORKBENCH",
+                "Workench",
+                "Asset related tasks",
+                "MODIFIER_DATA",
+                0,
+            ),
+            ("BLENDER_EEVEE", "Eevee", "Shot related tasks", "SHADING_RENDERED", 1),
+        ),
+        default="BLENDER_EEVEE",
+    )
+
     session: ZSession = ZSession()
 
     def draw(self, context: bpy.types.Context) -> None:

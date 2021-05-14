@@ -1442,7 +1442,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
     @contextlib.contextmanager
     def override_render_settings(self, context):
         """Overrides the render settings for playblast creation"""
-
+        addon_prefs = prefs.addon_prefs_get(context)
         rd = context.scene.render
 
         # Remember current render settings in order to restore them later.
@@ -1491,7 +1491,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             rd.filepath = self._gen_playlast_path(context).as_posix()
 
             # engine
-            rd.engine = "BLENDER_EEVEE"
+            rd.engine = addon_prefs.playblast_engine
 
             # simplify
             rd.use_simplify = False
