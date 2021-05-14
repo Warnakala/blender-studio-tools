@@ -415,7 +415,7 @@ class AS_OT_get_frame_shift(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
         nr_of_frames = context.scene.anim_setup.shift_frames
 
-        self.report({"INFO"}, f"Shot length: {shot.nb_frames}")
+        self.report({"WARNING"}, "Not implemente yet")
         return {"FINISHED"}
 
 
