@@ -115,7 +115,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
     shot_pattern: bpy.props.StringProperty(  # type: ignore
         name="Shot Pattern",
         description="Pattern to define how Bulk Init will name the shots. Supported wildcards: <Project>, <Sequence>, <Counter>",
-        default="<Sequence>_<Counter>",
+        default="<Sequence>_<Counter>_A",
     )
 
     shot_counter_digits: bpy.props.IntProperty(  # type: ignore
