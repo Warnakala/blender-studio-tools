@@ -141,12 +141,14 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
 
         addon_prefs = prefs.addon_prefs_get(context)
         editorial_path = Path(addon_prefs.editorial_path)
-
+        strip_channel = 1
         latest_file = self._get_latest_edit(context)
         if not latest_file:
             self.report(
                 {"ERROR"}, f"Found no edit file in: {editorial_path.as_posix()}"
             )
+        strip_filepath = latest_file.as_posix()
+        strip_frame_start = 101
 
         # needs to be run in sequence editor area
         area_override = None
@@ -163,12 +165,53 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
 
         bpy.ops.sequencer.movie_strip_add(
             override,
-            filepath=latest_file.as_posix(),
+            filepath=strip_filepath,
             relative_path=False,
-            frame_start=101,
-            channel=1,
+            frame_start=strip_frame_start,
+            channel=strip_channel,
             fit_method="FIT",
         )
+
+        # get sequence name
+        seqname = opsdata.get_sequence_from_file()
+        if not seqname:
+            self.report({"ERROR"}, "Failed to retrieve seqname from current file.")
+            return {"CANCELLED"}
+
+        # get shotname
+        shotname = opsdata.get_shot_name_from_file()
+        if not shotname:
+            self.report({"ERROR"}, "Failed to retrieve shotname from current file.")
+            return {"CANCELLED"}
+
+        # setup connector and get data from kitsu
+        connector = KitsuConnector(addon_prefs)
+        project = Project.by_id(connector, addon_prefs.kitsu.project_id)
+        sequence = project.get_sequence_by_name(connector, seqname)
+
+        if not sequence:
+            self.report({"ERROR"}, f"Failed to find {seqname} on kitsu.")
+            return {"CANCELLED"}
+
+        shot = project.get_shot_by_name(connector, sequence, shotname)
+
+        if not shot:
+            self.report({"ERROR"}, f"Failed to find shot {shotname} on kitsu.")
+            return {"CANCELLED"}
+
+        # update shift frame range prop
+        frame_in = shot.data["frame_in"]
+        frame_out = shot.data["frame_out"]
+
+        if not frame_in:
+            self.report(
+                {"ERROR"}, f"On kitsu 'frame_in' is not defined for shot {shotname}."
+            )
+            return {"CANCELLED"}
+
+        # set sequence strip start kitsu data
+        for strip in context.scene.sequence_editor.sequences_all:
+            strip.frame_start = -frame_in + strip_frame_start
 
         self.report({"INFO"}, f"Loaded latest edit: {latest_file.name}")
 
@@ -371,35 +414,6 @@ class AS_OT_get_frame_shift(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
         nr_of_frames = context.scene.anim_setup.shift_frames
-
-        # get sequence name
-        seqname = opsdata.get_sequence_from_file()
-        if not seqname:
-            self.report({"ERROR"}, "Failed to retrieve seqname from current file.")
-            return {"CANCELLED"}
-
-        # get shotname
-        shotname = opsdata.get_shot_name_from_file()
-        if not shotname:
-            self.report({"ERROR"}, "Failed to retrieve shotname from current file.")
-            return {"CANCELLED"}
-
-        # setup connector and get data from kitsu
-        connector = KitsuConnector(addon_prefs)
-        project = Project.by_id(connector, addon_prefs.kitsu.project_id)
-        sequence = project.get_sequence_by_name(connector, seqname)
-
-        if not sequence:
-            self.report({"ERROR"}, f"Failed to find {seqname} on kitsu.")
-            return {"CANCELLED"}
-
-        shot = project.get_shot_by_name(connector, sequence, shotname)
-
-        if not shot:
-            self.report({"ERROR"}, f"Failed to find shot {shotname} on kitsu.")
-            return {"CANCELLED"}
-
-        # update shift frame range prop
 
         self.report({"INFO"}, f"Shot length: {shot.nb_frames}")
         return {"FINISHED"}
