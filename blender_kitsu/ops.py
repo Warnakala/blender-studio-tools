@@ -408,6 +408,9 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
             pull.shot_meta(strip, shot)
             succeeded.append(strip)
 
+            # rename strip
+            strip.name = shot.name
+
         # end progress update
         context.window_manager.progress_update(len(selected_sequences))
         context.window_manager.progress_end()
@@ -706,6 +709,10 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
         # pull shot meta
         pull.shot_meta(strip, shot)
 
+        # rename strip
+        strip.name = shot.name
+
+        # log
         t = "Linked strip: %s to shot: %s with ID: %s" % (
             strip.name,
             shot.name,
