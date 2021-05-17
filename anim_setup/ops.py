@@ -52,7 +52,7 @@ class AS_OT_create_actions(bpy.types.Operator):
                 continue
 
             # create new action
-            action_name = self._gen_action_name(rig)
+            action_name = self._gen_action_name(coll)
             try:
                 action = bpy.data.actions[action_name]
             except KeyError:
@@ -78,9 +78,10 @@ class AS_OT_create_actions(bpy.types.Operator):
         )
         return {"FINISHED"}
 
-    def _gen_action_name(self, armature: bpy.types.Armature):
+    def _gen_action_name(self, coll: bpy.types.Collection):
         action_prefix = "ANI"
-        asset_name = opsdata.find_asset_name(armature.name).lower()
+        asset_name = opsdata.find_asset_name(coll.name).lower()
+        asset_name = asset_name.replace(".", "_")
         version = "v001"
         shot_name = opsdata.get_shot_name_from_file()
 
@@ -92,6 +93,8 @@ class AS_OT_create_actions(bpy.types.Operator):
         return action_name
 
     def _is_multi_asset(self, asset_name: str) -> bool:
+        if asset_name.startswith('thorn'):
+            return True
         multi_assets = ["sprite", "snail"]
         if asset_name.lower() in multi_assets:
             return True
