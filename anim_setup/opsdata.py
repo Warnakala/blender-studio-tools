@@ -180,6 +180,8 @@ def find_rig(coll: bpy.types.Collection) -> Optional[bpy.types.Armature]:
 
     coll_suffix = find_asset_name(coll.name)
 
+    valid_rigs = []
+
     for obj in coll.all_objects:
         # default rig name: 'RIG-rex' / 'RIG-Rex'
         if obj.type != "ARMATURE":
@@ -188,11 +190,17 @@ def find_rig(coll: bpy.types.Collection) -> Optional[bpy.types.Armature]:
         if not obj.name.startswith("RIG"):
             continue
 
-        if obj.name.lower() == f"rig-{coll_suffix.lower()}":
-            logger.info("Found rig: %s", obj.name)
-            return obj
+        valid_rigs.append(obj)
 
-    return None
+    if not valid_rigs:
+        return None
+
+    elif len(valid_rigs) == 1:
+        logger.info("Found rig: %s", valid_rigs[0].name)
+        return valid_rigs[0]
+    else:
+        logger.error("%s found multiple rigs %s", coll.name, str(valid_rigs))
+        return None
 
 
 def ensure_name_version_suffix(datablock: Any) -> Any:
