@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import bpy
+from bpy import context
 
 from .auth import ZSession
 from .logger import ZLoggerFactory
@@ -49,14 +50,32 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         storage_dir = self.get_datadir() / "blender_kitsu" / hashed_filepath
         return storage_dir.as_posix()
 
-    def get_playblasts_dir(self) -> str:
-        if not bpy.data.filepath:
-            file_identifier = hashlib.md5(bpy.data.filepath.encode()).hexdigest()
-        else:
-            file_identifier = Path(bpy.data.filepath).stem.replace(".", "_")
+    def get_playblast_dir(self) -> str:
+        seq = cache.sequence_active_get()
+        shot = cache.shot_active_get()
+
+        if not seq or not shot:
+            return ""
 
         storage_dir = (
-            self.get_datadir() / "blender_kitsu" / "playblasts" / file_identifier
+            self.get_datadir()
+            / "blender_kitsu"
+            / "playblasts"
+            / seq.name
+            / shot.name
+            / context.scene.kitsu.playblast_version
+        )
+        return storage_dir.as_posix()
+
+    def get_playblast_version_dir(self) -> str:
+        seq = cache.sequence_active_get()
+        shot = cache.shot_active_get()
+
+        if not seq or not shot:
+            return ""
+
+        storage_dir = (
+            self.get_datadir() / "blender_kitsu" / "playblasts" / seq.name / shot.name
         )
         return storage_dir.as_posix()
 
@@ -80,7 +99,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         ),
         default="SHOTS",
     )
-    folder_thumbnail: bpy.props.StringProperty(  # type: ignore
+    thumbnail_dir: bpy.props.StringProperty(  # type: ignore
         name="Thumbnail Folder",
         description="Folder in which thumbnails will be saved",
         default="",
@@ -88,12 +107,20 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         get=get_thumbnails_dir,
     )
 
-    folder_playblasts: bpy.props.StringProperty(  # type: ignore
+    playblast_dir: bpy.props.StringProperty(  # type: ignore
         name="Playblasts Folder",
         description="Folder in which playblasts will be saved",
         default="",
         subtype="DIR_PATH",
-        get=get_playblasts_dir,
+        get=get_playblast_dir,
+    )
+
+    playblast_version_dir: bpy.props.StringProperty(  # type: ignore
+        name="Playblasts Version Folder",
+        description="Folder in which all playblasts version dirs are found",
+        default="",
+        subtype="DIR_PATH",
+        get=get_playblast_version_dir,
     )
 
     project_active_id: bpy.props.StringProperty(  # type: ignore
@@ -195,8 +222,8 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         # misc settings
         box = layout.box()
         box.label(text="Misc", icon="MODIFIER")
-        box.row().prop(self, "folder_thumbnail")
-        box.row().prop(self, "folder_playblasts")
+        box.row().prop(self, "thumbnail_dir")
+        box.row().prop(self, "playblast_dir")
         box.row().prop(self, "enable_debug")
         box.row().prop(self, "show_advanced")
 

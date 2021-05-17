@@ -1,9 +1,12 @@
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
+from pathlib import Path
 
 import bpy
+from bpy.app.handlers import persistent
 
-from . import cache, prefs
+from . import cache, prefs, bkglobals
+from .models import FolderListModel
 from .logger import ZLoggerFactory
 from .types import Sequence, ProjectList
 
@@ -18,6 +21,11 @@ _shot_enum_list: List[Tuple[str, str, str]] = []
 _asset_types_enum_list: List[Tuple[str, str, str]] = []
 _asset_enum_list: List[Tuple[str, str, str]] = []
 _projects_list: List[Tuple[str, str, str]] = []
+
+
+VERSION_DIR_MODEL = FolderListModel()
+_versions_enum_list: List[Tuple[str, str, str]] = []
+_version_dir_model_init: bool = False
 
 
 def _sqe_get_not_linked(self, context):
@@ -241,3 +249,113 @@ def _get_assets_from_active_asset_type(
         ]
     )
     return _asset_enum_list
+
+
+def init_version_dir_model(
+    context: bpy.types.Context,
+) -> None:
+
+    global VERSION_DIR_MODEL
+    global _version_dir_model_init
+    addon_prefs = prefs.addon_prefs_get(context)
+
+    # is None if invalid
+    if not addon_prefs.playblast_version_dir:
+        logger.error(
+            "Failed to initialize version directory model. Invalid path. Check addon preferences."
+        )
+        return
+
+    version_dir = Path(addon_prefs.playblast_version_dir)
+
+    VERSION_DIR_MODEL.reset()
+    VERSION_DIR_MODEL.root_path = version_dir
+
+    if not VERSION_DIR_MODEL.items:
+        VERSION_DIR_MODEL.append_item("v001")
+        # update playblast_version prop
+        context.scene.kitsu.playblast_version = "v001"
+
+    else:
+        # update playblast_version prop
+        context.scene.kitsu.playblast_version = VERSION_DIR_MODEL.items[0]
+
+    _version_dir_model_init = True
+
+
+def get_version(str_value: str, format: type = str) -> Union[str, int, None]:
+    match = re.search(bkglobals.VERSION_PATTERN, str_value)
+    if match:
+        version = match.group()
+        if format == str:
+            return version
+        if format == int:
+            return int(version.replace("v", ""))
+    return None
+
+
+def add_version_increment(context: bpy.types.Context) -> str:
+
+    # init model if it did not happen
+    if not _version_dir_model_init:
+        init_version_dir_model(context)
+
+    items = VERSION_DIR_MODEL.items  # should be already sorted
+    versions = [get_version(item) for item in items if get_version(item)]
+
+    if len(versions) > 0:
+        latest_version = items[0]
+        increment = "v{:03}".format(int(latest_version.replace("v", "")) + 1)
+    else:
+        increment = "v001"
+
+    VERSION_DIR_MODEL.append_item(increment)
+    return increment
+
+
+def get_versions_enum_list(
+    self: Any,
+    context: bpy.types.Context,
+) -> List[Tuple[str, str, str]]:
+
+    global _versions_enum_list
+    global VERSION_DIR_MODEL
+    global init_version_dir_model
+
+    # init model if it did not happen
+    if not _version_dir_model_init:
+        init_version_dir_model(context)
+
+    # clear all versions in enum list
+    _versions_enum_list.clear()
+    _versions_enum_list.extend(VERSION_DIR_MODEL.items_as_enum_list)
+
+    return _versions_enum_list
+
+
+def add_version_custom(custom_version: str) -> None:
+    global _versions_enum_list
+    global VERSION_DIR_MODEL
+
+    VERSION_DIR_MODEL.append_item(custom_version)
+
+
+@persistent
+def load_post_handler_init_version_model(dummy: Any) -> None:
+    init_version_dir_model(bpy.context)
+
+
+# ---------REGISTER ----------
+
+
+def register():
+    # init model
+    init_version_dir_model(bpy.context)
+
+    # handlers
+    bpy.app.handlers.load_post.append(load_post_handler_init_version_model)
+
+
+def unregister():
+    # clear handlers
+    bpy.app.handlers.load_post.remove(load_post_handler_init_version_model)

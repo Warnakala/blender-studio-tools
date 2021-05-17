@@ -1,5 +1,7 @@
 import bpy
 
+from pathlib import Path
+
 from . import cache
 from . import checkstrip
 from . import prefs
@@ -25,8 +27,11 @@ from .ops import (
     KITSU_OT_sqe_push_shot_meta,
     KITSU_OT_sqe_push_thumbnail,
     KITSU_OT_create_playblast,
+    KITSU_OT_set_playblast_version,
+    KITSU_OT_increment_playblast_version,
     KITSU_OT_sqe_uninit_strip,
     KITSU_OT_sqe_unlink_shot,
+    KITSU_OT_open_path,
 )
 
 
@@ -170,11 +175,39 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
+        split_factor_small = 0.95
 
         box = layout.box()
         box.label(text="Playblast")
 
-        # engine setting
+        # if playblast directory is not valid dont show other
+        if not addon_prefs.playblast_dir:
+            split = box.split(factor=1 - split_factor_small, align=True)
+            split.label(icon="ERROR")
+            split.label(text="Select Sequence and Shot in Context Tab.")
+            return
+
+        if not context.scene.camera:
+            split = box.split(factor=1 - split_factor_small, align=True)
+            split.label(icon="ERROR")
+            split.label(text="Scene has no active camera.")
+            return
+
+        # playlast version op
+        row = box.row(align=True)
+        row.operator(
+            KITSU_OT_set_playblast_version.bl_idname,
+            text=context.scene.kitsu.playblast_version,
+            icon="DOWNARROW_HLT",
+        )
+        # playblast increment version op
+        row.operator(
+            KITSU_OT_increment_playblast_version.bl_idname,
+            text="",
+            icon="ADD",
+        )
+
+        # render engine
         row = box.row(align=True)
         row.prop(addon_prefs, "playblast_engine", expand=True)
 
@@ -182,6 +215,22 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         row = box.row(align=True)
         row.operator(KITSU_OT_create_playblast.bl_idname, icon="RENDER_ANIMATION")
         row.prop(addon_prefs, "playblast_upload", text="", icon="EXPORT")
+
+        # playblast path label
+        if Path(addon_prefs.playblast_dir).exists():
+            split = box.split(factor=1 - split_factor_small, align=True)
+            split.label(icon="ERROR")
+            sub_split = split.split(factor=split_factor_small)
+            sub_split.label(text=addon_prefs.playblast_dir)
+            sub_split.operator(
+                KITSU_OT_open_path.bl_idname, icon="FILE_FOLDER", text=""
+            ).filepath = addon_prefs.playblast_dir
+        else:
+            row = box.row(align=True)
+            row.label(text=addon_prefs.playblast_dir)
+            row.operator(
+                KITSU_OT_open_path.bl_idname, icon="FILE_FOLDER", text=""
+            ).filepath = addon_prefs.playblast_dir
 
 
 class KITSU_PT_sqe_auth(bpy.types.Panel):

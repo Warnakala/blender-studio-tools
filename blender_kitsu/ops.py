@@ -1,4 +1,7 @@
 import contextlib
+import os
+import sys
+import subprocess
 from pathlib import Path
 from typing import Dict, List, Set
 
@@ -50,6 +53,9 @@ class KITSU_OT_session_start(bpy.types.Operator):
 
         # init cache variables, will skip if cache already initiated
         cache.init_cache_variables()
+
+        # init playblast version dir model
+        opsdata.init_version_dir_model(context)
 
         return {"FINISHED"}
 
@@ -1239,7 +1245,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         """Save the current render image to disk"""
 
         addon_prefs = prefs.addon_prefs_get(bpy.context)
-        folder_name = addon_prefs.folder_thumbnail
+        folder_name = addon_prefs.thumbnail_dir
 
         # Ensure folder exists
         folder_path = Path(folder_name).absolute()
@@ -1345,7 +1351,11 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context) and cache.shot_active_get())
+        return bool(
+            prefs.zsession_auth(context)
+            and cache.shot_active_get()
+            and context.scene.camera
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -1359,6 +1369,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         logger.info("-START- Creating Playblast")
 
         context.window_manager.progress_begin(0, 2)
+        context.window_manager.progress_update(0)
 
         # ----RENDER AND SAVE PLAYBLAST ------
         with self.override_render_settings(context):
@@ -1373,16 +1384,20 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         if addon_prefs.playblast_upload:
             # process thumbnail queue
             for idx, filepath in enumerate(upload_queue):
-                self._upload_playblast(filepath)
+                self._upload_playblast(context, filepath)
 
         context.window_manager.progress_update(2)
         context.window_manager.progress_end()
 
         self.report({"INFO"}, f"{noun} playblast for {shot_active.name}")
         logger.info("-END- Creating Playblast")
+
+        # redraw ui
+        ui_redraw()
+
         return {"FINISHED"}
 
-    def _upload_playblast(self, filepath: Path) -> None:
+    def _upload_playblast(self, context: bpy.types.Context, filepath: Path) -> None:
         # get shot by id which is in filename of thumbnail
         shot_id = filepath.name.split("_")[0]
         shot = Shot.by_id(shot_id)
@@ -1412,7 +1427,10 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
                 task = tasks[-1]
 
         # create a comment, e.G 'set main thumbnail'
-        comment = task.add_comment(task_status, comment="playblast")
+        comment = task.add_comment(
+            task_status,
+            comment=f"Playblast {shot.name}: {context.scene.kitsu.playblast_version}",
+        )
 
         # add_preview_to_comment
         preview = task.add_preview_to_comment(comment, filepath.as_posix())
@@ -1421,7 +1439,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
 
     def _gen_playlast_path(self, context: bpy.types.Context) -> Path:
         addon_prefs = prefs.addon_prefs_get(bpy.context)
-        folder_name = addon_prefs.folder_playblasts
+        folder_name = addon_prefs.playblast_dir
 
         # filename
         filename = self._gen_playblast_filename(context)
@@ -1434,7 +1452,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         return path
 
     def _gen_playblast_filename(self, context: bpy.types.Context) -> str:
-        version = "v001"
+        version = context.scene.kitsu.playblast_version
         shot_ative = cache.shot_active_get()
         file_name = f"{shot_ative.id}_{shot_ative.name}.{version}.mp4"
         return file_name
@@ -1569,6 +1587,115 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             rd.use_stamp_labels = use_stamp_labels
 
 
+class KITSU_OT_set_playblast_version(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.set_playblast_version"
+    bl_label = "Version"
+    # bl_options = {"REGISTER", "UNDO"}
+    bl_property = "versions"
+
+    versions: bpy.props.EnumProperty(
+        items=opsdata.get_versions_enum_list, name="Versions"
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        return bool(addon_prefs.playblast_dir)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        version = self.versions
+
+        if not version:
+            return {"CANCELLED"}
+
+        if context.scene.kitsu.playblast_version == version:
+            return {"CANCELLED"}
+
+        # update global scene cache version prop
+        context.scene.kitsu.playblast_version = version
+        logger.info("Set playblast version to %s", version)
+
+        # redraw ui
+        ui_redraw()
+
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        context.window_manager.invoke_search_popup(self)  # type: ignore
+        return {"FINISHED"}
+
+
+class KITSU_OT_open_path(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.open_path"
+    bl_label = "Open"
+    # bl_options = {"REGISTER", "UNDO"}
+
+    filepath: bpy.props.StringProperty(  # type: ignore
+        name="Filepath",
+        description="Filepath that will be opened in explorer",
+        default="",
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        if not self.filepath:
+            self.report({"ERROR"}, "Can't open empty path in explorer.")
+            return {"CANCELLED"}
+
+        filepath = Path(self.filepath)
+        if filepath.is_file():
+            filepath = filepath.parent
+
+        if not filepath.exists():
+            self.report({"ERROR"}, "Can't open non existent path in explorer.")
+            return {"CANCELLED"}
+
+        if sys.platform == "darwin":
+            subprocess.check_call(["open", filepath.as_posix()])
+
+        elif sys.platform == "linux2" or sys.platform == "linux":
+            subprocess.check_call(["xdg-open", filepath.as_posix()])
+
+        elif sys.platform == "win32":
+            subprocess.check_call(["explorer", filepath.as_posix()])
+
+        else:
+            self.report(
+                {"ERROR"}, f"Can't open explorer. Unsupported platform {sys.platform}"
+            )
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+
+class KITSU_OT_increment_playblast_version(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.increment_playblast_version"
+    bl_label = "Add Version Increment"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # incremenet version
+        version = opsdata.add_version_increment(context)
+
+        # update cache_version prop
+        context.scene.kitsu.playblast_version = version
+
+        ui_redraw()
+
+        self.report({"INFO"}, f"Add playblast version {version}")
+        return {"FINISHED"}
+
+
 class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
     """"""
 
@@ -1699,12 +1826,15 @@ classes = [
     KITSU_OT_sqe_link_sequence,
     KITSU_OT_sqe_push_thumbnail,
     KITSU_OT_create_playblast,
+    KITSU_OT_set_playblast_version,
+    KITSU_OT_increment_playblast_version,
     KITSU_OT_sqe_push_del_shot,
     KITSU_OT_sqe_pull_shot_meta,
     KITSU_OT_sqe_multi_edit_strip,
     KITSU_OT_sqe_debug_duplicates,
     KITSU_OT_sqe_debug_not_linked,
     KITSU_OT_sqe_debug_multi_project,
+    KITSU_OT_open_path,
 ]
 
 

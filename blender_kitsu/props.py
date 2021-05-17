@@ -103,6 +103,8 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
+    playblast_version: bpy.props.StringProperty(name="Version", default="v001")
+
     def clear(self):
         self.sequence_active_id = ""
         self.shot_active_id = ""
