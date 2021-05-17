@@ -53,13 +53,15 @@ class AS_OT_create_actions(bpy.types.Operator):
 
             # create new action
             action_name = self._gen_action_name(rig)
-            if action_name not in list(bpy.data.actions):
+            try:
+                action = bpy.data.actions[action_name]
+            except KeyError:
                 action = bpy.data.actions.new(action_name)
                 logger.info("Created action: %s", action.name)
                 created.append(action)
             else:
-                action = bpy.data.actions[action_name]
                 logger.info("Action %s already exists. Will take that.", action.name)
+
 
             # assign action
             rig.animation_data.action = action
