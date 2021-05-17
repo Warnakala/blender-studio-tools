@@ -95,7 +95,7 @@ class AS_OT_create_actions(bpy.types.Operator):
     def _is_multi_asset(self, asset_name: str) -> bool:
         if asset_name.startswith('thorn'):
             return True
-        multi_assets = ["sprite", "snail"]
+        multi_assets = ["sprite", "snail", "spider"]
         if asset_name.lower() in multi_assets:
             return True
         return False
