@@ -211,7 +211,7 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
 
         # set sequence strip start kitsu data
         for strip in context.scene.sequence_editor.sequences_all:
-            strip.frame_start = -frame_in + strip_frame_start
+            strip.frame_start = -frame_in + (strip_frame_start * 2)
 
         self.report({"INFO"}, f"Loaded latest edit: {latest_file.name}")
 
