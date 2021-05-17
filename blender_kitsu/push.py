@@ -16,7 +16,7 @@ def shot_meta(strip: bpy.types.Sequence, shot: Shot) -> None:
     shot.description = strip.kitsu.shot_description
     shot.data["frame_in"] = strip.frame_final_start
     shot.data["frame_out"] = strip.frame_final_end
-    shot.nb_frames = (strip.frame_final_end - strip.frame_final_start) + 1
+    shot.nb_frames = strip.frame_final_duration
     shot.data["fps"] = bkglobals.FPS
 
     # if user changed the seqeunce the shot belongs to
