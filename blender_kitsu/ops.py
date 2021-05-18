@@ -1695,11 +1695,8 @@ class KITSU_OT_open_path(bpy.types.Operator):
         if filepath.is_file():
             filepath = filepath.parent
 
-        # TODO find latest existing dir
-
         if not filepath.exists():
-            self.report({"ERROR"}, "Can't open non existent path in explorer.")
-            return {"CANCELLED"}
+            filepath = self._find_latest_existing_folder(filepath)
 
         if sys.platform == "darwin":
             subprocess.check_call(["open", filepath.as_posix()])
@@ -1717,6 +1714,19 @@ class KITSU_OT_open_path(bpy.types.Operator):
             return {"CANCELLED"}
 
         return {"FINISHED"}
+
+    def _find_latest_existing_folder(self, path: Path) -> Path:
+        if path.exists():
+            return path
+
+        exists = False
+        ppath = Path()
+
+        while not exists:
+            ppath = path.parent
+            exists = ppath.exists()
+
+        return ppath
 
 
 class KITSU_OT_increment_playblast_version(bpy.types.Operator):
