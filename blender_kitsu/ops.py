@@ -206,7 +206,7 @@ class KITSU_OT_asset_types_load(bpy.types.Operator):
     """
 
     bl_idname = "kitsu.asset_types_load"
-    bl_label = "Assettyes Load"
+    bl_label = "Asset Types Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
@@ -264,6 +264,52 @@ class KITSU_OT_assets_load(bpy.types.Operator):
 
         # update kitsu metadata
         cache.asset_active_set_by_id(context, self.enum_prop)
+        ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"FINISHED"}
+
+
+class KITSU_OT_task_types_load(bpy.types.Operator):
+    """
+    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    """
+
+    bl_idname = "kitsu.task_types_load"
+    bl_label = "Task Types Load"
+    bl_options = {"INTERNAL"}
+    bl_property = "enum_prop"
+
+    # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
+
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_task_types_for_current_context)  # type: ignore
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        precon = bool(prefs.zsession_auth(context) and cache.project_active_get())
+
+        if addon_prefs.category == "SHOTS":
+            return bool(
+                precon and cache.sequence_active_get() and cache.shot_active_get()
+            )
+
+        if addon_prefs.category == "ASSETS":
+            return bool(
+                precon and cache.asset_type_active_get() and cache.asset_active_get()
+            )
+
+        return False
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        # store vars to check if project / seq / shot changed
+        asset_task_type_id = cache.task_type_active_get().id
+
+        # update kitsu metadata
+        cache.task_type_active_set_by_id(context, self.enum_prop)
+
         ui_redraw()
         return {"FINISHED"}
 
@@ -1873,6 +1919,7 @@ classes = [
     KITSU_OT_shots_load,
     KITSU_OT_asset_types_load,
     KITSU_OT_assets_load,
+    KITSU_OT_task_types_load,
     KITSU_OT_sqe_push_new_sequence,
     KITSU_OT_sqe_push_new_shot,
     KITSU_OT_sqe_push_shot_meta,

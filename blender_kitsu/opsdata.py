@@ -21,7 +21,7 @@ _shot_enum_list: List[Tuple[str, str, str]] = []
 _asset_types_enum_list: List[Tuple[str, str, str]] = []
 _asset_enum_list: List[Tuple[str, str, str]] = []
 _projects_list: List[Tuple[str, str, str]] = []
-
+_task_types_enum__list: List[Tuple[str, str, str]] = []
 
 PLAYBLAST_FILE_MODEL = FileListModel()
 _playblast_enum_list: List[Tuple[str, str, str]] = []
@@ -249,6 +249,37 @@ def _get_assets_from_active_asset_type(
         ]
     )
     return _asset_enum_list
+
+
+def _get_task_types_for_current_context(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    global _asset_enum_list
+
+    addon_prefs = prefs.addon_prefs_get(context)
+
+    project_active = cache.project_active_get()
+
+    if not project_active:
+        return []
+
+    items = []
+    if addon_prefs.category == "SHOTS":
+        shot_active = cache.shot_active_get()
+        if not shot_active:
+            return []
+        items = [(t.id, t.name, "") for t in shot_active.get_all_task_types()]
+
+    if addon_prefs.category == "ASSETS":
+        asset_active = cache.asset_active_get()
+        if not asset_active:
+            return []
+        items = [(t.id, t.name, "") for t in asset_active.get_all_task_types()]
+
+    _task_types_enum__list.clear()
+    _task_types_enum__list.extend(items)
+
+    return _task_types_enum__list
 
 
 def init_playblast_file_model(

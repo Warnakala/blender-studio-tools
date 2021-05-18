@@ -13,6 +13,7 @@ from .ops import (
     KITSU_OT_session_end,
     KITSU_OT_session_start,
     KITSU_OT_shots_load,
+    KITSU_OT_task_types_load,
     KITSU_OT_sqe_debug_duplicates,
     KITSU_OT_sqe_debug_multi_project,
     KITSU_OT_sqe_debug_not_linked,
@@ -154,6 +155,16 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
 
         row.operator(item_data["operator"], text=item_text, icon="DOWNARROW_HLT")
 
+        # Task Type
+        t_text = "Select Task Type"
+        task_type_active = cache.task_type_active_get()
+        if task_type_active:
+            t_text = task_type_active.name
+        row = box.row(align=True)
+        row.operator(
+            KITSU_OT_task_types_load.bl_idname, text=t_text, icon="DOWNARROW_HLT"
+        )
+
 
 class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
     """
@@ -184,7 +195,9 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         if not addon_prefs.playblast_root_dir:
             split = box.split(factor=1 - split_factor_small, align=True)
             split.label(icon="ERROR")
-            split.label(text="Invalid Playblast Root Directory. Check Addon Preferences.")
+            split.label(
+                text="Invalid Playblast Root Directory. Check Addon Preferences."
+            )
             return
 
         # if playblast directory is not valid dont show other

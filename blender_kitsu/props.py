@@ -103,6 +103,13 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
+    task_type_active_id: bpy.props.StringProperty(  # type: ignore
+        name="Active Task Type ID",
+        description="ID that refers to the active task type on server",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+
     playblast_version: bpy.props.StringProperty(name="Version", default="v001")
 
     playblast_dir: bpy.props.StringProperty(  # type: ignore
