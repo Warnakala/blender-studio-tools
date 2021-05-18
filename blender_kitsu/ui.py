@@ -210,7 +210,6 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         # playblast op
         row = box.row(align=True)
         row.operator(KITSU_OT_create_playblast.bl_idname, icon="RENDER_ANIMATION")
-        row.prop(addon_prefs, "playblast_upload", text="", icon="EXPORT")
 
         # playblast path label
         if Path(addon_prefs.playblast_dir).exists():

@@ -159,12 +159,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         min=0,
     )
 
-    playblast_upload: bpy.props.BoolProperty(  # type: ignore
-        name="Upload",
-        description="Controls if the playblast will aso be uploaded to kitsu",
-        default=True,
-    )
-
     session: ZSession = ZSession()
 
     def draw(self, context: bpy.types.Context) -> None:

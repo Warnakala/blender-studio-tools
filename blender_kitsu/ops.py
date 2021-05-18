@@ -1361,9 +1361,6 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
 
         addon_prefs = prefs.addon_prefs_get(bpy.context)
         shot_active = cache.shot_active_get()
-        noun = "Created"
-        if addon_prefs.playblast_upload:
-            noun = "Created and uploaded"
 
         logger.info("-START- Creating Playblast")
 
@@ -1379,14 +1376,12 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         context.window_manager.progress_update(1)
 
         # ----ULPOAD PLAYBLAST ------
-        if addon_prefs.playblast_upload:
-            # process thumbnail queue
-            self._upload_playblast(context, output_path)
+        self._upload_playblast(context, output_path)
 
         context.window_manager.progress_update(2)
         context.window_manager.progress_end()
 
-        self.report({"INFO"}, f"{noun} playblast for {shot_active.name}")
+        self.report({"INFO"}, f"Created and uploaded playblast for {shot_active.name}")
         logger.info("-END- Creating Playblast")
 
         # redraw ui
