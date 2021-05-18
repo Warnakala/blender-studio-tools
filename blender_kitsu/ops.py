@@ -1360,7 +1360,6 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         addon_prefs = prefs.addon_prefs_get(bpy.context)
-        upload_queue: List[Path] = []  # will be used as successed list
         shot_active = cache.shot_active_get()
         noun = "Created"
         if addon_prefs.playblast_upload:
@@ -1375,16 +1374,14 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         with self.override_render_settings(context):
 
             output_path = self._gen_playlast_path(context)
-            bpy.ops.render.render(animation=True)
-            upload_queue.append(output_path)
+            bpy.ops.render.opengl(animation=True)
 
         context.window_manager.progress_update(1)
 
         # ----ULPOAD PLAYBLAST ------
         if addon_prefs.playblast_upload:
             # process thumbnail queue
-            for idx, filepath in enumerate(upload_queue):
-                self._upload_playblast(context, filepath)
+            self._upload_playblast(context, output_path)
 
         context.window_manager.progress_update(2)
         context.window_manager.progress_end()
@@ -1398,9 +1395,8 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         return {"FINISHED"}
 
     def _upload_playblast(self, context: bpy.types.Context, filepath: Path) -> None:
-        # get shot by id which is in filename of thumbnail
-        shot_id = filepath.name.split("_")[0]
-        shot = Shot.by_id(shot_id)
+        # get shot
+        shot = cache.shot_active_get()
 
         # get task status 'wip' and task type 'Animation'
         task_status = TaskStatus.by_short_name("wip")
@@ -1462,17 +1458,16 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         """Overrides the render settings for playblast creation"""
         addon_prefs = prefs.addon_prefs_get(context)
         rd = context.scene.render
+        sps = context.space_data.shading
+        sp  = context.space_data
 
         # Remember current render settings in order to restore them later.
 
         # filepath
         filepath = rd.filepath
 
-        # engine
-        engine = rd.engine
-
         # simplify
-        use_simplify = rd.use_simplify
+        #use_simplify = rd.use_simplify
 
         # format render settings
         percentage = rd.resolution_percentage
@@ -1483,36 +1478,51 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         ffmpeg_audio_codec = rd.ffmpeg.audio_codec
 
         # stamp metadata settings
-        metadata_input = rd.metadata_input = "SCENE"
-        use_stamp_date = rd.use_stamp_date = False
-        use_stamp_time = rd.use_stamp_time = False
-        use_stamp_render_time = rd.use_stamp_render_time = False
-        use_stamp_frame = rd.use_stamp_frame = True
-        use_stamp_frame_range = rd.use_stamp_frame_range = False
-        use_stamp_memory = rd.use_stamp_memory = False
-        use_stamp_hostname = rd.use_stamp_hostname = False
-        use_stamp_camera = rd.use_stamp_camera = False
-        use_stamp_lens = rd.use_stamp_lens = True
-        use_stamp_scene = rd.use_stamp_scene = False
-        use_stamp_marker = rd.use_stamp_marker = False
-        use_stamp_marker = rd.use_stamp_marker = False
-        use_stamp_note = rd.use_stamp_note = True
+        metadata_input = rd.metadata_input
+        use_stamp_date = rd.use_stamp_date
+        use_stamp_time = rd.use_stamp_time
+        use_stamp_render_time = rd.use_stamp_render_time
+        use_stamp_frame = rd.use_stamp_frame
+        use_stamp_frame_range = rd.use_stamp_frame_range
+        use_stamp_memory = rd.use_stamp_memory
+        use_stamp_hostname = rd.use_stamp_hostname
+        use_stamp_camera = rd.use_stamp_camera
+        use_stamp_lens = rd.use_stamp_lens
+        use_stamp_scene = rd.use_stamp_scene
+        use_stamp_marker = rd.use_stamp_marker
+        use_stamp_marker = rd.use_stamp_marker
+        use_stamp_note = rd.use_stamp_note
         # rd.stamp_note_text = "Animator: <Name>"
-        use_stamp = rd.use_stamp = True
-        stamp_font_size = rd.stamp_font_size = 12
-        stamp_foreground = rd.stamp_foreground = (0.8, 0.8, 0.8, 1)
-        stamp_background = rd.stamp_background = (0, 0, 0, 0.25)
-        use_stamp_labels = rd.use_stamp_labels = True
+        use_stamp = rd.use_stamp
+        stamp_font_size = rd.stamp_font_size
+        stamp_foreground = rd.stamp_foreground
+        stamp_background = rd.stamp_background
+        use_stamp_labels = rd.use_stamp_labels
+
+        #space data settings
+        shading_type = sps.type
+        shading_light = sps.light
+        studio_light = sps.studio_light
+        color_type = sps.color_type
+        background_type = sps.background_type
+
+        show_backface_culling = sps.show_backface_culling
+        show_xray = sps.show_xray
+        show_shadows = sps.show_shadows
+        show_cavity = sps.show_cavity
+        use_dof = sps.use_dof
+        show_object_outline = sps.show_object_outline
+        show_specular_highlight = sps.show_specular_highlight
+
+        show_gizmo = sp.show_gizmo
+
 
         try:
             # filepath
             rd.filepath = self._gen_playlast_path(context).as_posix()
 
-            # engine
-            rd.engine = addon_prefs.playblast_engine
-
             # simplify
-            rd.use_simplify = False
+            #rd.use_simplify = False
 
             # format render settings
             rd.resolution_percentage = 100
@@ -1544,17 +1554,31 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             rd.stamp_background = (0, 0, 0, 0.25)
             rd.use_stamp_labels = True
 
+            #space data settings
+            sps.type = 'SOLID'
+            sps.light = 'STUDIO'
+            sps.studio_light = 'Default'
+            sps.color_type = 'MATERIAL'
+            sps.background_type = 'THEME'
+
+            sps.show_backface_culling = False
+            sps.show_xray = False
+            sps.show_shadows = False
+            sps.show_cavity = False
+            sps.use_dof = False
+            sps.show_object_outline = False
+            sps.show_specular_highlight = True
+
+            sp.show_gizmo = False
+
             yield
 
         finally:
             # filepath
             rd.filepath = filepath
 
-            # engine
-            rd.engine = engine
-
             # simplify
-            rd.use_simplify = use_simplify
+            #rd.use_simplify = use_simplify
 
             # Return the render settings to normal.
             rd.resolution_percentage = percentage
@@ -1586,6 +1610,22 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             rd.stamp_background = stamp_background
             rd.use_stamp_labels = use_stamp_labels
 
+            #space data settings
+            sps.type = shading_type
+            sps.light = shading_light
+            sps.studio_light = studio_light
+            sps.color_type = color_type
+            sps.background_type = background_type
+
+            sps.show_backface_culling = show_backface_culling
+            sps.show_xray = show_xray
+            sps.show_shadows = show_shadows
+            sps.show_cavity = show_cavity
+            sps.use_dof = use_dof
+            sps.show_object_outline = show_object_outline
+            sps.show_specular_highlight = show_specular_highlight
+
+            sp.show_gizmo = show_gizmo
 
 class KITSU_OT_set_playblast_version(bpy.types.Operator):
     """"""

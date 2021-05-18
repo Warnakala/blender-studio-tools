@@ -207,10 +207,6 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
             icon="ADD",
         )
 
-        # render engine
-        row = box.row(align=True)
-        row.prop(addon_prefs, "playblast_engine", expand=True)
-
         # playblast op
         row = box.row(align=True)
         row.operator(KITSU_OT_create_playblast.bl_idname, icon="RENDER_ANIMATION")
