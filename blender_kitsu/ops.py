@@ -1349,6 +1349,16 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
     bl_idname = "kitsu.create_playblast"
     bl_label = "Create Playblast"
 
+    comment: bpy.props.StringProperty(
+        name="Comment",
+        description="Comment that will be appended to this playblast on kitsu.",
+        default="",
+    )
+    confirm: bpy.props.BoolProperty(
+        name="Confirm",
+        default=False
+    )
+
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(
@@ -1389,6 +1399,16 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
 
         return {"FINISHED"}
 
+    def invoke(self, context, event):
+        shot = cache.shot_active_get()
+        self.comment = ""
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout = self.layout
+        row = layout.row(align=True)
+        row.prop(self, "comment")
+
     def _upload_playblast(self, context: bpy.types.Context, filepath: Path) -> None:
         # get shot
         shot = cache.shot_active_get()
@@ -1418,9 +1438,10 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
                 task = tasks[-1]
 
         # create a comment, e.G 'set main thumbnail'
+        comment_text = self._gen_commen_text(context, shot)
         comment = task.add_comment(
             task_status,
-            comment=f"Playblast {shot.name}: {context.scene.kitsu.playblast_version}",
+            comment=comment_text,
         )
 
         # add_preview_to_comment
@@ -1447,6 +1468,10 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         shot_ative = cache.shot_active_get()
         file_name = f"{shot_ative.id}_{shot_ative.name}.{version}.mp4"
         return file_name
+
+    def _gen_commen_text(self, context: bpy.types.Context, shot: Shot) -> str:
+        header = f"Playblast {shot.name}: {context.scene.kitsu.playblast_version}"
+        return header + f"\n\n{self.comment}"
 
     @contextlib.contextmanager
     def override_render_settings(self, context):
