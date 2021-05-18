@@ -1,8 +1,11 @@
 import re
+
 from typing import Any, Dict, List, Tuple
+from pathlib import Path
+
 import bpy
 
-from . import cache
+from . import cache, prefs
 from .logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
@@ -67,3 +70,37 @@ def _gen_shot_preview(self: Any) -> str:
         examples.append(_resolve_pattern(shot_pattern, var_lookup_table))
 
     return " | ".join(examples) + "..."
+
+
+def get_playblast_dir(self: Any) -> str:
+    #.../110_rextoria/110_0030_A/110_0030_A.anim
+
+    addon_prefs = prefs.addon_prefs_get(bpy.context)
+    if not addon_prefs.is_playblast_root_valid:
+        return ""
+
+    seq = cache.sequence_active_get()
+    shot = cache.shot_active_get()
+
+    if not seq or not shot:
+        return ""
+
+    playblast_dir = (
+        addon_prefs.playblast_root_path
+        / seq.name
+        / shot.name
+        / f"{shot.name}.anim"
+    )
+    return playblast_dir.as_posix()
+
+def get_playblast_file(self: Any) -> str:
+    if not self.playblast_dir:
+        return ""
+
+    version = self.playblast_version
+    shot_ative = cache.shot_active_get()
+    #070_0010_A.anim.v001.mp4
+    file_name = f"{shot_ative.name}.anim.{version}.mp4"
+
+    return Path(self.playblast_dir).joinpath(file_name).as_posix()
+

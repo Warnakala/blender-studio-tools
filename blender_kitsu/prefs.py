@@ -1,5 +1,8 @@
 import hashlib
 import sys
+import os
+
+from typing import Optional
 from pathlib import Path
 
 import bpy
@@ -50,35 +53,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         storage_dir = self.get_datadir() / "blender_kitsu" / hashed_filepath
         return storage_dir.as_posix()
 
-    def get_playblast_dir(self) -> str:
-        seq = cache.sequence_active_get()
-        shot = cache.shot_active_get()
-
-        if not seq or not shot:
-            return ""
-
-        storage_dir = (
-            self.get_datadir()
-            / "blender_kitsu"
-            / "playblasts"
-            / seq.name
-            / shot.name
-            / context.scene.kitsu.playblast_version
-        )
-        return storage_dir.as_posix()
-
-    def get_playblast_version_dir(self) -> str:
-        seq = cache.sequence_active_get()
-        shot = cache.shot_active_get()
-
-        if not seq or not shot:
-            return ""
-
-        storage_dir = (
-            self.get_datadir() / "blender_kitsu" / "playblasts" / seq.name / shot.name
-        )
-        return storage_dir.as_posix()
-
     bl_idname = __package__
 
     host: bpy.props.StringProperty(  # type: ignore
@@ -107,20 +81,12 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         get=get_thumbnails_dir,
     )
 
-    playblast_dir: bpy.props.StringProperty(  # type: ignore
-        name="Playblasts Folder",
-        description="Folder in which playblasts will be saved",
+    playblast_root_dir: bpy.props.StringProperty(  # type: ignore
+        name="Playblasts Root Directory",
+        description="Directory path to playblast root folder.",
         default="",
         subtype="DIR_PATH",
-        get=get_playblast_dir,
-    )
-
-    playblast_version_dir: bpy.props.StringProperty(  # type: ignore
-        name="Playblasts Version Folder",
-        description="Folder in which all playblasts version dirs are found",
-        default="",
-        subtype="DIR_PATH",
-        get=get_playblast_version_dir,
+        # TODO: update=update_
     )
 
     project_active_id: bpy.props.StringProperty(  # type: ignore
@@ -203,7 +169,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         box = layout.box()
         box.label(text="Misc", icon="MODIFIER")
         box.row().prop(self, "thumbnail_dir")
-        box.row().prop(self, "playblast_dir")
+        box.row().prop(self, "playblast_root_dir")
         box.row().prop(self, "enable_debug")
         box.row().prop(self, "show_advanced")
 
@@ -211,6 +177,24 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             box.row().prop(self, "shot_pattern")
             box.row().prop(self, "shot_counter_digits")
             box.row().prop(self, "shot_counter_increment")
+
+    @property
+    def playblast_root_path(self) -> Optional[Path]:
+        if not self.is_playblast_root_valid:
+            return None
+        return Path(os.path.abspath(bpy.path.abspath(self.playblast_root_dir)))
+
+    @property
+    def is_playblast_root_valid(self) -> bool:
+
+        # check if file is saved
+        if not self.playblast_root_dir:
+            return False
+
+        if not bpy.data.filepath and self.playblast_root_dir.startswith("//"):
+            return False
+
+        return True
 
 
 def zsession_get(context: bpy.types.Context) -> ZSession:

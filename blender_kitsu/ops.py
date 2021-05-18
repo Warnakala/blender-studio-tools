@@ -55,7 +55,7 @@ class KITSU_OT_session_start(bpy.types.Operator):
         cache.init_cache_variables()
 
         # init playblast version dir model
-        opsdata.init_version_dir_model(context)
+        opsdata.init_playblast_file_model(context)
 
         return {"FINISHED"}
 
@@ -1354,10 +1354,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         description="Comment that will be appended to this playblast on kitsu.",
         default="",
     )
-    confirm: bpy.props.BoolProperty(
-        name="Confirm",
-        default=False
-    )
+    confirm: bpy.props.BoolProperty(name="Confirm", default=False)
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1365,6 +1362,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             prefs.zsession_auth(context)
             and cache.shot_active_get()
             and context.scene.camera
+            and context.scene.kitsu.playblast_file
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -1380,7 +1378,13 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         # ----RENDER AND SAVE PLAYBLAST ------
         with self.override_render_settings(context):
 
-            output_path = self._gen_playlast_path(context)
+            # get output path
+            output_path = Path(context.scene.kitsu.playblast_file)
+
+            # ensure folder exists
+            Path(context.scene.kitsu.playblast_dir).mkdir(parents=True, exist_ok=True)
+
+            # make opengl render
             bpy.ops.render.opengl(animation=True)
 
         context.window_manager.progress_update(1)
@@ -1438,7 +1442,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
                 task = tasks[-1]
 
         # create a comment, e.G 'set main thumbnail'
-        comment_text = self._gen_commen_text(context, shot)
+        comment_text = self._gen_comment_text(context, shot)
         comment = task.add_comment(
             task_status,
             comment=comment_text,
@@ -1446,30 +1450,11 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
 
         # add_preview_to_comment
         preview = task.add_preview_to_comment(comment, filepath.as_posix())
+
         # preview.set_main_preview()
         logger.info(f"Uploaded playblast for shot: {shot.name} under: {task_type.name}")
 
-    def _gen_playlast_path(self, context: bpy.types.Context) -> Path:
-        addon_prefs = prefs.addon_prefs_get(bpy.context)
-        folder_name = addon_prefs.playblast_dir
-
-        # filename
-        filename = self._gen_playblast_filename(context)
-
-        # ensure folder exists
-        folder_path = Path(folder_name).absolute()
-        folder_path.mkdir(parents=True, exist_ok=True)
-
-        path = folder_path.joinpath(filename)
-        return path
-
-    def _gen_playblast_filename(self, context: bpy.types.Context) -> str:
-        version = context.scene.kitsu.playblast_version
-        shot_ative = cache.shot_active_get()
-        file_name = f"{shot_ative.id}_{shot_ative.name}.{version}.mp4"
-        return file_name
-
-    def _gen_commen_text(self, context: bpy.types.Context, shot: Shot) -> str:
+    def _gen_comment_text(self, context: bpy.types.Context, shot: Shot) -> str:
         header = f"Playblast {shot.name}: {context.scene.kitsu.playblast_version}"
         return header + f"\n\n{self.comment}"
 
@@ -1479,7 +1464,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
         rd = context.scene.render
         sps = context.space_data.shading
-        sp  = context.space_data
+        sp = context.space_data
 
         # Remember current render settings in order to restore them later.
 
@@ -1487,7 +1472,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         filepath = rd.filepath
 
         # simplify
-        #use_simplify = rd.use_simplify
+        # use_simplify = rd.use_simplify
 
         # format render settings
         percentage = rd.resolution_percentage
@@ -1519,7 +1504,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         stamp_background = rd.stamp_background
         use_stamp_labels = rd.use_stamp_labels
 
-        #space data settings
+        # space data settings
         shading_type = sps.type
         shading_light = sps.light
         studio_light = sps.studio_light
@@ -1536,13 +1521,12 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
 
         show_gizmo = sp.show_gizmo
 
-
         try:
             # filepath
-            rd.filepath = self._gen_playlast_path(context).as_posix()
+            rd.filepath = context.scene.kitsu.playblast_file
 
             # simplify
-            #rd.use_simplify = False
+            # rd.use_simplify = False
 
             # format render settings
             rd.resolution_percentage = 100
@@ -1574,12 +1558,12 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             rd.stamp_background = (0, 0, 0, 0.25)
             rd.use_stamp_labels = True
 
-            #space data settings
-            sps.type = 'SOLID'
-            sps.light = 'STUDIO'
-            sps.studio_light = 'Default'
-            sps.color_type = 'MATERIAL'
-            sps.background_type = 'THEME'
+            # space data settings
+            sps.type = "SOLID"
+            sps.light = "STUDIO"
+            sps.studio_light = "Default"
+            sps.color_type = "MATERIAL"
+            sps.background_type = "THEME"
 
             sps.show_backface_culling = False
             sps.show_xray = False
@@ -1598,7 +1582,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             rd.filepath = filepath
 
             # simplify
-            #rd.use_simplify = use_simplify
+            # rd.use_simplify = use_simplify
 
             # Return the render settings to normal.
             rd.resolution_percentage = percentage
@@ -1630,7 +1614,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             rd.stamp_background = stamp_background
             rd.use_stamp_labels = use_stamp_labels
 
-            #space data settings
+            # space data settings
             sps.type = shading_type
             sps.light = shading_light
             sps.studio_light = studio_light
@@ -1647,6 +1631,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
 
             sp.show_gizmo = show_gizmo
 
+
 class KITSU_OT_set_playblast_version(bpy.types.Operator):
     """"""
 
@@ -1656,13 +1641,13 @@ class KITSU_OT_set_playblast_version(bpy.types.Operator):
     bl_property = "versions"
 
     versions: bpy.props.EnumProperty(
-        items=opsdata.get_versions_enum_list, name="Versions"
+        items=opsdata.get_playblast_enum_list, name="Versions"
     )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return bool(addon_prefs.playblast_dir)
+        return bool(context.scene.kitsu.playblast_dir)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         version = self.versions
@@ -1710,6 +1695,8 @@ class KITSU_OT_open_path(bpy.types.Operator):
         if filepath.is_file():
             filepath = filepath.parent
 
+        # TODO find latest existing dir
+
         if not filepath.exists():
             self.report({"ERROR"}, "Can't open non existent path in explorer.")
             return {"CANCELLED"}
@@ -1745,7 +1732,7 @@ class KITSU_OT_increment_playblast_version(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # incremenet version
-        version = opsdata.add_version_increment(context)
+        version = opsdata.add_playblast_version_increment(context)
 
         # update cache_version prop
         context.scene.kitsu.playblast_version = version

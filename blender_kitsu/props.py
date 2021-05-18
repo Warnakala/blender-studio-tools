@@ -105,6 +105,22 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
 
     playblast_version: bpy.props.StringProperty(name="Version", default="v001")
 
+    playblast_dir: bpy.props.StringProperty(  # type: ignore
+        name="Playblast Directory",
+        description="Directory in which playblasts will be saved",
+        default="",
+        subtype="DIR_PATH",
+        get=propsdata.get_playblast_dir,
+    )
+
+    playblast_file: bpy.props.StringProperty(  # type: ignore
+        name="Playblast Filepath",
+        description="Output filepath of playblast.",
+        default="",
+        subtype="FILE_PATH",
+        get=propsdata.get_playblast_file,
+    )
+
     def clear(self):
         self.sequence_active_id = ""
         self.shot_active_id = ""

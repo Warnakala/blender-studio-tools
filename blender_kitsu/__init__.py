@@ -1,10 +1,12 @@
 import bpy
 
+from . import bkglobals
 from . import types
 from . import cache
 from . import checkstrip
 from . import pull
 from . import push
+from . import models
 from . import propsdata
 from . import props
 from . import prefs
@@ -34,11 +36,13 @@ if _need_reload:
     import importlib
 
     logger.info("-START- Reloading blender-kitsu")
+    bkglobals = importlib.reload(bkglobals)
     cache = importlib.reload(cache)
     types = importlib.reload(types)
     checkstrip = importlib.reload(checkstrip)
     pull = importlib.reload(pull)
     push = importlib.reload(push)
+    models = importlib.reload(models)
     propsdata = importlib.reload(propsdata)
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)

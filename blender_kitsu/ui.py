@@ -181,7 +181,14 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         box.label(text="Playblast")
 
         # if playblast directory is not valid dont show other
-        if not addon_prefs.playblast_dir:
+        if not addon_prefs.playblast_root_dir:
+            split = box.split(factor=1 - split_factor_small, align=True)
+            split.label(icon="ERROR")
+            split.label(text="Invalid Playblast Root Directory. Check Addon Preferences.")
+            return
+
+        # if playblast directory is not valid dont show other
+        if not context.scene.kitsu.playblast_dir:
             split = box.split(factor=1 - split_factor_small, align=True)
             split.label(icon="ERROR")
             split.label(text="Select Sequence and Shot in Context Tab.")
@@ -212,20 +219,20 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         row.operator(KITSU_OT_create_playblast.bl_idname, icon="RENDER_ANIMATION")
 
         # playblast path label
-        if Path(addon_prefs.playblast_dir).exists():
+        if Path(context.scene.kitsu.playblast_file).exists():
             split = box.split(factor=1 - split_factor_small, align=True)
             split.label(icon="ERROR")
             sub_split = split.split(factor=split_factor_small)
-            sub_split.label(text=addon_prefs.playblast_dir)
+            sub_split.label(text=context.scene.kitsu.playblast_file)
             sub_split.operator(
                 KITSU_OT_open_path.bl_idname, icon="FILE_FOLDER", text=""
-            ).filepath = addon_prefs.playblast_dir
+            ).filepath = context.scene.kitsu.playblast_file
         else:
             row = box.row(align=True)
-            row.label(text=addon_prefs.playblast_dir)
+            row.label(text=context.scene.kitsu.playblast_file)
             row.operator(
                 KITSU_OT_open_path.bl_idname, icon="FILE_FOLDER", text=""
-            ).filepath = addon_prefs.playblast_dir
+            ).filepath = context.scene.kitsu.playblast_file
 
 
 class KITSU_PT_sqe_auth(bpy.types.Panel):
