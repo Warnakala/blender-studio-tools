@@ -212,7 +212,7 @@ class KITSU_OT_asset_types_load(bpy.types.Operator):
 
     # TODO: reduce api request to one, we request in _get_sequences and also in execute to set sequence_active
 
-    enum_prop: bpy.props.EnumProperty(items=opsdata._get_assets_from_active_asset_type)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=opsdata._get_assetypes)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
