@@ -2,6 +2,7 @@ import contextlib
 import os
 import sys
 import subprocess
+import webbrowser
 from pathlib import Path
 from typing import Dict, List, Set
 
@@ -1445,11 +1446,12 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
+        addon_prefs = prefs.addon_prefs_get(context)
+
         if not self.task_status:
             self.report({"ERROR"}, "Failed to crate playblast. Missing task status.")
             return {"CANCELLED"}
 
-        addon_prefs = prefs.addon_prefs_get(bpy.context)
         shot_active = cache.shot_active_get()
 
         # save playblast task status id for next time
@@ -1480,11 +1482,16 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         context.window_manager.progress_update(2)
         context.window_manager.progress_end()
 
+        # log
         self.report({"INFO"}, f"Created and uploaded playblast for {shot_active.name}")
         logger.info("-END- Creating Playblast")
 
         # redraw ui
         ui_redraw()
+
+        # open webbrowser
+        if addon_prefs.pb_open_webbrowser:
+            self._open_webbrowser()
 
         return {"FINISHED"}
 
@@ -1547,6 +1554,20 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         if self.comment:
             return header + f"\n\n{self.comment}"
         return header
+
+    def _open_webbrowser(self) -> None:
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
+        # https://staging.kitsu.blender.cloud/productions/7838e728-312b-499a-937b-e22273d097aa/shots?search=010_0010_A
+
+        host_url = addon_prefs.host
+        if host_url.endswith("/api"):
+            host_url = host_url[:-4]
+
+        if host_url.endswith("/"):
+            host_url = host_url[:-1]
+
+        url = f"{host_url}/productions/{cache.project_active_get().id}/shots?search={cache.shot_active_get().name}"
+        webbrowser.open(url)
 
     @contextlib.contextmanager
     def override_render_settings(self, context):

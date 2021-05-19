@@ -118,6 +118,11 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         step=5,
         min=0,
     )
+    pb_open_webbrowser: bpy.props.BoolProperty(  # type: ignore
+        name="Open Webbrowser after Playblast",
+        description="Controls if the default webbrowser should be opened to kitsu after playblast creation.",
+        default=True,
+    )
 
     session: ZSession = ZSession()
 
@@ -161,9 +166,14 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         )
         # misc settings
         box = layout.box()
+        box.label(text="Playblast", icon="RENDER_ANIMATION")
+        box.row().prop(self, "playblast_root_dir")
+        box.row().prop(self, "pb_open_webbrowser")
+
+        # misc settings
+        box = layout.box()
         box.label(text="Misc", icon="MODIFIER")
         box.row().prop(self, "thumbnail_dir")
-        box.row().prop(self, "playblast_root_dir")
         box.row().prop(self, "enable_debug")
         box.row().prop(self, "show_advanced")
 
