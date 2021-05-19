@@ -5,7 +5,7 @@ from pathlib import Path
 
 import bpy
 
-from . import cache, prefs
+from . import cache, prefs, opsdata
 from .logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
@@ -115,3 +115,11 @@ def reset_task_type(self: Any, context: bpy.types.Context) -> None:
     cache.task_type_active_reset(context)
     _active_category_cache = self.category
     return None
+
+
+def on_shot_change(self: Any, context: bpy.types.Context) -> None:
+    # reset versions
+    opsdata.init_playblast_file_model(context)
+
+    # check frame range
+    cache.load_post_handler_check_frame_range(context)

@@ -97,9 +97,10 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
     )
     shot_active_id: bpy.props.StringProperty(  # type: ignore
         name="Active Shot ID",
-        description="IDthat refers to the active project on server",
+        description="IDthat refers to the active shot on server",
         default="",
         options={"HIDDEN", "SKIP_SAVE"},
+        update=propsdata.on_shot_change,
     )
     asset_active_id: bpy.props.StringProperty(  # type: ignore
         name="Active Asset ID",
