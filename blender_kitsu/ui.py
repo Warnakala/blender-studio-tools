@@ -181,7 +181,10 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context))
+        return bool(
+            prefs.zsession_auth(context)
+            and cache.task_type_active_get().name == "Animation"
+        )
 
     def draw(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
