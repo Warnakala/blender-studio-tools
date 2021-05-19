@@ -110,6 +110,14 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
+    category: bpy.props.EnumProperty(  # type: ignore #TODO: move to scene prop
+        items=(
+            ("ASSETS", "Assets", "Asset related tasks", "FILE_3D", 0),
+            ("SHOTS", "Shots", "Shot related tasks", "FILE_MOVIE", 1),
+        ),
+        default="SHOTS",
+    )
+
     playblast_version: bpy.props.StringProperty(name="Version", default="v001")
 
     playblast_dir: bpy.props.StringProperty(  # type: ignore

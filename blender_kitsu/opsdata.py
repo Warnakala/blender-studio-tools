@@ -265,13 +265,13 @@ def _get_task_types_for_current_context(
     # TODO task type for asset or shot only shows up if there is an existing task in that entity
     # see if there is a workaround to get all tasks types for a entity another way
     items = []
-    if addon_prefs.category == "SHOTS":
+    if context.scene.kitsu.category == "SHOTS":
         shot_active = cache.shot_active_get()
         if not shot_active:
             return []
         items = [(t.id, t.name, "") for t in TaskType.all_shot_task_types()]
 
-    if addon_prefs.category == "ASSETS":
+    if context.scene.kitsu.category == "ASSETS":
         asset_active = cache.asset_active_get()
         if not asset_active:
             return []

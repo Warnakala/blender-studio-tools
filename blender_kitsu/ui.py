@@ -97,7 +97,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
-        category = addon_prefs.category  # can be either 'SHOTS' or 'ASSETS'
+        category = context.scene.kitsu.category  # can be either 'SHOTS' or 'ASSETS'
         project_active = cache.project_active_get()
         item_group_data = {
             "name": "Sequence",
@@ -115,7 +115,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         # Category
         box = layout.box()
         row = box.row(align=True)
-        row.prop(addon_prefs, "category", expand=True)
+        row.prop(context.scene.kitsu, "category", expand=True)
 
         if not prefs.zsession_auth(context) or not project_active:
             row.enabled = False

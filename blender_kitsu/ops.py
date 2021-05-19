@@ -291,12 +291,12 @@ class KITSU_OT_task_types_load(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
         precon = bool(prefs.zsession_auth(context) and cache.project_active_get())
 
-        if addon_prefs.category == "SHOTS":
+        if context.scene.kitsu.category == "SHOTS":
             return bool(
                 precon and cache.sequence_active_get() and cache.shot_active_get()
             )
 
-        if addon_prefs.category == "ASSETS":
+        if context.scene.kitsu.category == "ASSETS":
             return bool(
                 precon and cache.asset_type_active_get() and cache.asset_active_get()
             )

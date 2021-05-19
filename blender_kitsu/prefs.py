@@ -66,13 +66,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
     passwd: bpy.props.StringProperty(  # type: ignore
         name="Password", default="", options={"HIDDEN", "SKIP_SAVE"}, subtype="PASSWORD"
     )
-    category: bpy.props.EnumProperty(  # type: ignore #TODO: move to scene prop
-        items=(
-            ("ASSETS", "Assets", "Asset related tasks", "FILE_3D", 0),
-            ("SHOTS", "Shots", "Shot related tasks", "FILE_MOVIE", 1),
-        ),
-        default="SHOTS",
-    )
+
     thumbnail_dir: bpy.props.StringProperty(  # type: ignore
         name="Thumbnail Folder",
         description="Folder in which thumbnails will be saved",
