@@ -21,11 +21,13 @@ _shot_enum_list: List[Tuple[str, str, str]] = []
 _asset_types_enum_list: List[Tuple[str, str, str]] = []
 _asset_enum_list: List[Tuple[str, str, str]] = []
 _projects_list: List[Tuple[str, str, str]] = []
-_task_types_enum__list: List[Tuple[str, str, str]] = []
+_task_types_enum_list: List[Tuple[str, str, str]] = []
 
 PLAYBLAST_FILE_MODEL = FileListModel()
 _playblast_enum_list: List[Tuple[str, str, str]] = []
 _playblast_file_model_init: bool = False
+
+_task_types_shots_enum_list: List[Tuple[str, str, str]] = []
 
 
 def _sqe_get_not_linked(self, context):
@@ -254,16 +256,8 @@ def _get_assets_from_active_asset_type(
 def _get_task_types_for_current_context(
     self: bpy.types.Operator, context: bpy.types.Context
 ) -> List[Tuple[str, str, str]]:
-    global _asset_enum_list
+    global _task_types_enum_list
 
-    addon_prefs = prefs.addon_prefs_get(context)
-
-    project_active = cache.project_active_get()
-
-    if not project_active:
-        return []
-    # TODO task type for asset or shot only shows up if there is an existing task in that entity
-    # see if there is a workaround to get all tasks types for a entity another way
     items = []
     if context.scene.kitsu.category == "SHOTS":
         shot_active = cache.shot_active_get()
@@ -277,10 +271,23 @@ def _get_task_types_for_current_context(
             return []
         items = [(t.id, t.name, "") for t in TaskType.all_asset_task_types()]
 
-    _task_types_enum__list.clear()
-    _task_types_enum__list.extend(items)
+    _task_types_enum_list.clear()
+    _task_types_enum_list.extend(items)
 
-    return _task_types_enum__list
+    return _task_types_enum_list
+
+
+def get_shot_task_types(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    global _task_types_shots_enum_list
+
+    items = [(t.id, t.name, "") for t in TaskType.all_shot_task_types()]
+
+    _task_types_shots_enum_list.clear()
+    _task_types_shots_enum_list.extend(items)
+
+    return _task_types_shots_enum_list
 
 
 def init_playblast_file_model(

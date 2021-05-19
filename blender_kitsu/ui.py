@@ -26,6 +26,7 @@ from .ops import (
     KITSU_OT_sqe_push_new_sequence,
     KITSU_OT_sqe_push_new_shot,
     KITSU_OT_sqe_push_shot_meta,
+    KITSU_OT_set_thumbnail_task_type,
     KITSU_OT_sqe_push_thumbnail,
     KITSU_OT_create_playblast,
     KITSU_OT_set_playblast_version,
@@ -657,11 +658,21 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
         # thumbnail operator
         if strips_to_tb:
+
+            # upload thumbnail op
             noun = get_selshots_noun(len(strips_to_tb), prefix=f"{len(strips_to_meta)}")
-            col.operator(
+            split = col.split(factor=0.7, align=True)
+            split.operator(
                 KITSU_OT_sqe_push_thumbnail.bl_idname,
                 text=f"Thumbnail {noun}",
                 icon="IMAGE_DATA",
+            )
+            # select task types op
+            noun = context.scene.kitsu.task_type_thumbnail_name or "Select Task Type"
+            split.operator(
+                KITSU_OT_set_thumbnail_task_type.bl_idname,
+                text=noun,
+                icon="DOWNARROW_HLT",
             )
 
         # submit operator

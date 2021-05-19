@@ -1187,6 +1187,44 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
         )
 
 
+class KITSU_OT_set_thumbnail_task_type(bpy.types.Operator):
+    """
+    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    """
+
+    bl_idname = "kitsu.set_thumbnail_task_type"
+    bl_label = "Set Thumbnail Task Type"
+    bl_options = {"INTERNAL"}
+    bl_property = "enum_prop"
+
+    enum_prop: bpy.props.EnumProperty(items=opsdata.get_shot_task_types)  # type: ignore
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(prefs.zsession_auth(context) and cache.project_active_get())
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # task type selected by user
+        task_type_id = self.enum_prop
+
+        if not task_type_id:
+            return {"CANCELLED"}
+
+        task_type = TaskType.by_id(task_type_id)
+
+        # update scene properties
+        context.scene.kitsu.task_type_thumbnail_name = task_type.name
+        context.scene.kitsu.task_type_thumbnail_id = task_type_id
+
+        ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"FINISHED"}
+
+
 class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
     """
     Operator that takes thumbnail of all selected sequencce strips and saves them
@@ -1200,7 +1238,9 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context))
+        return bool(
+            prefs.zsession_auth(context) and context.scene.kitsu.task_type_thumbnail_id
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         nr_of_strips: int = len(context.selected_sequences)
@@ -1263,7 +1303,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
                 # process thumbnail queue
                 for idx, filepath in enumerate(upload_queue):
                     context.window_manager.progress_update(idx)
-                    self._upload_thumbnail(filepath)
+                    self._upload_thumbnail(context, filepath)
 
                 # end second progress update
                 context.window_manager.progress_update(len(upload_queue))
@@ -1301,34 +1341,24 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         datablock.save_render(str(path))
         return path.absolute()
 
-    def _upload_thumbnail(self, filepath: Path) -> None:
+    def _upload_thumbnail(self, context: bpy.types.Context, filepath: Path) -> None:
         # get shot by id which is in filename of thumbnail
         shot_id = filepath.name.split("_")[0]
         shot = Shot.by_id(shot_id)
 
-        # get task status 'wip' and task type 'Animation'
-        task_status = TaskStatus.by_short_name("wip")
-        task_type = TaskType.by_name("Animation")
+        # get task stype by id from user selection enum property
+        task_type = TaskType.by_id(context.scene.kitsu.task_type_thumbnail_id)
 
-        if not task_status:
-            raise RuntimeError(
-                "Failed to upload thumbnails. Task status: 'wip' is missing."
-            )
-        if not task_type:
-            raise RuntimeError(
-                "Failed to upload thumbnails. Task type: 'Animation' is missing."
-            )
-
-        # find / get latest task
+        # find task from task type for that shot, ca be None of no task was added for that task type
         task = Task.by_name(shot, task_type)
+
         if not task:
             # turns out a entitiy on server can have 0 tasks even tough task types exist
             # you have to create a task first before being able to upload a thumbnail
-            tasks = shot.get_all_tasks()  # list of tasks
-            if not tasks:
-                task = Task.new_task(shot, task_type, task_status=task_status)
-            else:
-                task = tasks[-1]
+            task_status = TaskStatus.by_short_name("wip")
+            task = Task.new_task(shot, task_type, task_status=task_status)
+        else:
+            task_status = TaskStatus.by_id(task.task_status_id)
 
         # create a comment, e.G 'set main thumbnail'
         comment = task.add_comment(task_status, comment="set main thumbnail")
@@ -1928,6 +1958,7 @@ classes = [
     KITSU_OT_sqe_init_strip,
     KITSU_OT_sqe_link_shot,
     KITSU_OT_sqe_link_sequence,
+    KITSU_OT_set_thumbnail_task_type,
     KITSU_OT_sqe_push_thumbnail,
     KITSU_OT_create_playblast,
     KITSU_OT_set_playblast_version,

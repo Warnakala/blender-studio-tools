@@ -110,6 +110,21 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
+    # task type
+    task_type_thumbnail_id: bpy.props.StringProperty(  # type: ignore
+        name="Thubmnail Task Type ID",
+        description="ID that refers to the task type on server for which thumbnails will be uploaded",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+
+    task_type_thumbnail_name: bpy.props.StringProperty(  # type: ignore
+        name="Thubmnail Task Type Name",
+        description="Name that refers to the task type on server for which thumbnails will be uploaded",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+
     category: bpy.props.EnumProperty(  # type: ignore #TODO: move to scene prop
         items=(
             ("ASSETS", "Assets", "Asset related tasks", "FILE_3D", 0),
