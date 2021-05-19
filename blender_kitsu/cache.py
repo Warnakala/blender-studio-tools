@@ -291,8 +291,10 @@ def load_post_handler_check_frame_range(dummy: Any) -> None:
     a warning in the Animation Tools Tab UI
     """
     active_shot = shot_active_get()
+
     if not active_shot:
         return
+
     frame_in = active_shot.frame_in
     frame_out = active_shot.frame_out
 
@@ -300,6 +302,7 @@ def load_post_handler_check_frame_range(dummy: Any) -> None:
         frame_in == bpy.context.scene.frame_start
         and frame_out == bpy.context.scene.frame_end
     ):
+        bpy.context.scene.kitsu_error.frame_range = False
         return
 
     bpy.context.scene.kitsu_error.frame_range = True
