@@ -193,6 +193,18 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         layout = self.layout
         split_factor_small = 0.95
 
+        if context.scene.kitsu_error.frame_range:
+            # scene operators
+            box = layout.box()
+            box.label(text="Error", icon="ERROR")
+
+            row = box.row(align=True)
+            row.label(text="Frame Range Outdated")
+            row.operator(
+                KITSU_OT_pull_frame_range.bl_idname,
+                icon="FILE_REFRESH",
+            )
+
         box = layout.box()
         box.label(text="Playblast")
 

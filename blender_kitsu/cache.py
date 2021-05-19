@@ -1,3 +1,5 @@
+from typing import Any
+
 import bpy
 
 from bpy.app.handlers import persistent
@@ -276,9 +278,32 @@ def clear_cache_variables():
 
 
 @persistent
-def load_post_handler_update_cache(dummy):
+def load_post_handler_update_cache(dummy: Any) -> None:
     clear_cache_variables()
     init_cache_variables()
+
+
+@persistent
+def load_post_handler_check_frame_range(dummy: Any) -> None:
+    """
+    Compares current scenes frame range with the active shot one on kitsu.
+    If mismatch sets kitsu_error.frame_range -> True. This will enable
+    a warning in the Animation Tools Tab UI
+    """
+    active_shot = shot_active_get()
+    if not active_shot:
+        return
+    frame_in = active_shot.frame_in
+    frame_out = active_shot.frame_out
+
+    if (
+        frame_in == bpy.context.scene.frame_start
+        and frame_out == bpy.context.scene.frame_end
+    ):
+        return
+
+    bpy.context.scene.kitsu_error.frame_range = True
+    logger.warning("Current frame range is outdated!")
 
 
 # ---------REGISTER ----------
@@ -287,8 +312,10 @@ def load_post_handler_update_cache(dummy):
 def register():
     # handlers
     bpy.app.handlers.load_post.append(load_post_handler_update_cache)
+    bpy.app.handlers.load_post.append(load_post_handler_check_frame_range)
 
 
 def unregister():
     # clear handlers
+    bpy.app.handlers.load_post.remove(load_post_handler_check_frame_range)
     bpy.app.handlers.load_post.remove(load_post_handler_update_cache)

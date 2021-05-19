@@ -1852,6 +1852,7 @@ class KITSU_OT_pull_frame_range(bpy.types.Operator):
         frame_in = active_shot.frame_in
         frame_out = active_shot.frame_out
 
+        # check if current frame range matches the one for active shot
         if (
             frame_in == context.scene.frame_start
             and frame_out == context.scene.frame_end
@@ -1859,8 +1860,14 @@ class KITSU_OT_pull_frame_range(bpy.types.Operator):
             self.report({"INFO"}, f"Frame range already up to date")
             return {"FINISHED"}
 
+        # update scene frame range
         context.scene.frame_start = frame_in
         context.scene.frame_end = frame_out
+
+        # update error prop
+        context.scene.kitsu_error.frame_range = False
+
+        # log
         self.report({"INFO"}, f"Updated frame range {frame_in} - {frame_out}")
         return {"FINISHED"}
 
