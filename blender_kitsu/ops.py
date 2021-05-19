@@ -1830,17 +1830,10 @@ class KITSU_OT_open_path(bpy.types.Operator):
         return {"FINISHED"}
 
     def _find_latest_existing_folder(self, path: Path) -> Path:
-        if path.exists():
+        if path.exists() and path.is_dir():
             return path
-
-        exists = False
-        ppath = Path()
-
-        while not exists:
-            ppath = path.parent
-            exists = ppath.exists()
-
-        return ppath
+        else:
+            return self._find_latest_existing_folder(path.parent)
 
 
 class KITSU_OT_increment_playblast_version(bpy.types.Operator):
