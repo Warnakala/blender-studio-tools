@@ -392,9 +392,7 @@ class Asset:
         return cls(**asset_dict)
 
     def get_all_task_types(self) -> List[TaskType]:
-        return [
-            TaskType(**t) for t in gazu.task.all_task_types_for_asset(asdict(self))
-        ]
+        return [TaskType(**t) for t in gazu.task.all_task_types_for_asset(asdict(self))]
 
     def get_all_tasks(self) -> List[Task]:
         return [Task(**t) for t in gazu.task.all_tasks_for_asset(asdict(self))]
@@ -443,6 +441,14 @@ class TaskType:
     @classmethod
     def all_task_types(cls):
         return [cls(**t) for t in gazu.task.all_task_types()]
+
+    @classmethod
+    def all_shot_task_types(cls):
+        return [cls(**t) for t in gazu.task.all_task_types() if t["for_shots"]]
+
+    @classmethod
+    def all_asset_task_types(cls):
+        return [cls(**t) for t in gazu.task.all_task_types() if not t["for_shots"]]
 
     def __bool__(self):
         return bool(self.id)

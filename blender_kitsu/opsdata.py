@@ -8,7 +8,7 @@ from bpy.app.handlers import persistent
 from . import cache, prefs, bkglobals
 from .models import FileListModel
 from .logger import ZLoggerFactory
-from .types import Sequence, ProjectList
+from .types import Sequence, ProjectList, TaskType
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
@@ -269,13 +269,13 @@ def _get_task_types_for_current_context(
         shot_active = cache.shot_active_get()
         if not shot_active:
             return []
-        items = [(t.id, t.name, "") for t in shot_active.get_all_task_types()]
+        items = [(t.id, t.name, "") for t in TaskType.all_shot_task_types()]
 
     if addon_prefs.category == "ASSETS":
         asset_active = cache.asset_active_get()
         if not asset_active:
             return []
-        items = [(t.id, t.name, "") for t in asset_active.get_all_task_types()]
+        items = [(t.id, t.name, "") for t in TaskType.all_asset_task_types()]
 
     _task_types_enum__list.clear()
     _task_types_enum__list.extend(items)
