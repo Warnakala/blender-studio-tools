@@ -1555,7 +1555,10 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         rd = context.scene.render
         sps = context.space_data.shading
         sp = context.space_data
-
+        # get first last name for stamp note text
+        zsession = prefs.zsession_get(context)
+        first_name = zsession.session.user["first_name"]
+        last_name = zsession.session.user["last_name"]
         # Remember current render settings in order to restore them later.
 
         # filepath
@@ -1587,7 +1590,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         use_stamp_marker = rd.use_stamp_marker
         use_stamp_marker = rd.use_stamp_marker
         use_stamp_note = rd.use_stamp_note
-        # rd.stamp_note_text = "Animator: <Name>"
+        stamp_note_text = rd.stamp_note_text
         use_stamp = rd.use_stamp
         stamp_font_size = rd.stamp_font_size
         stamp_foreground = rd.stamp_foreground
@@ -1641,7 +1644,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             rd.use_stamp_marker = False
             rd.use_stamp_marker = False
             rd.use_stamp_note = True
-            # rd.stamp_note_text = "Animator: <Name>"
+            rd.stamp_note_text = f"Animator: {first_name} {last_name}"
             rd.use_stamp = True
             rd.stamp_font_size = 12
             rd.stamp_foreground = (0.8, 0.8, 0.8, 1)
@@ -1697,7 +1700,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             rd.use_stamp_marker = use_stamp_marker
             rd.use_stamp_marker = use_stamp_marker
             rd.use_stamp_note = use_stamp_note
-            # rd.stamp_note_text = "Animator: <Name>"
+            rd.stamp_note_text = stamp_note_text
             rd.use_stamp = use_stamp
             rd.stamp_font_size = stamp_font_size
             rd.stamp_foreground = stamp_foreground
