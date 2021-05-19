@@ -34,6 +34,7 @@ from .ops import (
     KITSU_OT_sqe_uninit_strip,
     KITSU_OT_sqe_unlink_shot,
     KITSU_OT_open_path,
+    KITSU_OT_pull_frame_range,
 )
 
 
@@ -250,6 +251,17 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
             row.operator(
                 KITSU_OT_open_path.bl_idname, icon="FILE_FOLDER", text=""
             ).filepath = context.scene.kitsu.playblast_file
+
+        # scene operators
+        box = layout.box()
+        box.label(text="Scene", icon="SCENE_DATA")
+
+        # pull frame range
+        row = box.row(align=True)
+        row.operator(
+            KITSU_OT_pull_frame_range.bl_idname,
+            icon="FILE_REFRESH",
+        )
 
 
 class KITSU_PT_sqe_auth(bpy.types.Panel):

@@ -1836,6 +1836,35 @@ class KITSU_OT_open_path(bpy.types.Operator):
             return self._find_latest_existing_folder(path.parent)
 
 
+class KITSU_OT_pull_frame_range(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.pull_frame_range"
+    bl_label = "Update Frame Range"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(prefs.zsession_auth(context) and cache.shot_active_get())
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        active_shot = cache.shot_active_get()
+        frame_in = active_shot.frame_in
+        frame_out = active_shot.frame_out
+
+        if (
+            frame_in == context.scene.frame_start
+            and frame_out == context.scene.frame_end
+        ):
+            self.report({"INFO"}, f"Frame range already up to date")
+            return {"FINISHED"}
+
+        context.scene.frame_start = frame_in
+        context.scene.frame_end = frame_out
+        self.report({"INFO"}, f"Updated frame range {frame_in} - {frame_out}")
+        return {"FINISHED"}
+
+
 class KITSU_OT_increment_playblast_version(bpy.types.Operator):
     """"""
 
@@ -2001,6 +2030,7 @@ classes = [
     KITSU_OT_sqe_debug_not_linked,
     KITSU_OT_sqe_debug_multi_project,
     KITSU_OT_open_path,
+    KITSU_OT_pull_frame_range,
 ]
 
 
