@@ -73,7 +73,7 @@ def _gen_shot_preview(self: Any) -> str:
 
 
 def get_playblast_dir(self: Any) -> str:
-    #.../110_rextoria/110_0030_A/110_0030_A.anim
+    # .../110_rextoria/110_0030_A/110_0030_A.anim
 
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     if not addon_prefs.is_playblast_root_valid:
@@ -86,12 +86,10 @@ def get_playblast_dir(self: Any) -> str:
         return ""
 
     playblast_dir = (
-        addon_prefs.playblast_root_path
-        / seq.name
-        / shot.name
-        / f"{shot.name}.anim"
+        addon_prefs.playblast_root_path / seq.name / shot.name / f"{shot.name}.anim"
     )
     return playblast_dir.as_posix()
+
 
 def get_playblast_file(self: Any) -> str:
     if not self.playblast_dir:
@@ -99,8 +97,21 @@ def get_playblast_file(self: Any) -> str:
 
     version = self.playblast_version
     shot_ative = cache.shot_active_get()
-    #070_0010_A.anim.v001.mp4
+    # 070_0010_A.anim.v001.mp4
     file_name = f"{shot_ative.name}.anim.{version}.mp4"
 
     return Path(self.playblast_dir).joinpath(file_name).as_posix()
 
+
+_active_category_cache = str
+
+
+def reset_task_type(self: Any, context: bpy.types.Context) -> None:
+    global _active_category_cache
+
+    if self.category == _active_category_cache:
+        return None
+
+    cache.task_type_active_reset(context)
+    _active_category_cache = self.category
+    return None

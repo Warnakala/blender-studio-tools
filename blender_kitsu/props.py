@@ -116,6 +116,7 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
             ("SHOTS", "Shots", "Shot related tasks", "FILE_MOVIE", 1),
         ),
         default="SHOTS",
+        update=propsdata.reset_task_type,
     )
 
     playblast_version: bpy.props.StringProperty(name="Version", default="v001")
