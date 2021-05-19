@@ -1361,8 +1361,8 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         else:
             task_status = TaskStatus.by_id(task.task_status_id)
 
-        # create a comment, e.G 'set main thumbnail'
-        comment = task.add_comment(task_status, comment="set main thumbnail")
+        # create a comment, e.G 'Update thumbnail'
+        comment = task.add_comment(task_status, comment="Update thumbnail")
 
         # add_preview_to_comment
         preview = task.add_preview_to_comment(comment, filepath.as_posix())
