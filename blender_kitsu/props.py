@@ -78,6 +78,17 @@ class KITSU_property_group_sequence(bpy.types.PropertyGroup):
 class KITSU_property_group_scene(bpy.types.PropertyGroup):
     """"""
 
+    category: bpy.props.EnumProperty(  # type: ignore #TODO: move to scene prop
+        items=(
+            ("ASSETS", "Assets", "Asset related tasks", "FILE_3D", 0),
+            ("SHOTS", "Shots", "Shot related tasks", "FILE_MOVIE", 1),
+        ),
+        default="SHOTS",
+        update=propsdata.reset_task_type,
+    )
+
+    # context props
+
     sequence_active_id: bpy.props.StringProperty(  # type: ignore
         name="Active Sequence ID",
         description="ID that refers to the active sequence on server",
@@ -110,7 +121,7 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
-    # task type
+    # thubnail props
     task_type_thumbnail_id: bpy.props.StringProperty(  # type: ignore
         name="Thubmnail Task Type ID",
         description="ID that refers to the task type on server for which thumbnails will be uploaded",
@@ -125,14 +136,7 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
-    category: bpy.props.EnumProperty(  # type: ignore #TODO: move to scene prop
-        items=(
-            ("ASSETS", "Assets", "Asset related tasks", "FILE_3D", 0),
-            ("SHOTS", "Shots", "Shot related tasks", "FILE_MOVIE", 1),
-        ),
-        default="SHOTS",
-        update=propsdata.reset_task_type,
-    )
+    # playblast props
 
     playblast_version: bpy.props.StringProperty(name="Version", default="v001")
 
@@ -150,6 +154,13 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         default="",
         subtype="FILE_PATH",
         get=propsdata.get_playblast_file,
+    )
+
+    playblast_task_status_id: bpy.props.StringProperty(  # type: ignore
+        name="Plablast Task Status ID",
+        description="ID that refers to the task status on server which the playblast will set",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
     )
 
     def clear(self):

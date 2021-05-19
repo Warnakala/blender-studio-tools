@@ -1,4 +1,5 @@
 from __future__ import annotations
+from blender_kitsu.gazu.task import all_task_statuses
 
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Union
@@ -171,7 +172,7 @@ class Project:
     # TASKS
     # ---------------
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 
@@ -234,7 +235,7 @@ class Sequence:
     def get_all_tasks(self) -> List[Task]:
         return [Task(**t) for t in gazu.task.all_tasks_for_sequence(asdict(self))]
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 
@@ -264,7 +265,7 @@ class AssetType:
         tpye_dict = gazu.asset.get_asset_type(type_id)
         return cls(**tpye_dict)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 
@@ -330,7 +331,7 @@ class Shot:
     def remove(self, force: bool = False) -> str:
         return str(gazu.shot.remove_shot(asdict(self), force=force))
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 
@@ -397,7 +398,7 @@ class Asset:
     def get_all_tasks(self) -> List[Task]:
         return [Task(**t) for t in gazu.task.all_tasks_for_asset(asdict(self))]
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 
@@ -439,18 +440,18 @@ class TaskType:
         return cls(**task_type_dict)
 
     @classmethod
-    def all_task_types(cls):
+    def all_task_types(cls) -> List[TaskType]:
         return [cls(**t) for t in gazu.task.all_task_types()]
 
     @classmethod
-    def all_shot_task_types(cls):
+    def all_shot_task_types(cls) -> List[TaskType]:
         return [cls(**t) for t in gazu.task.all_task_types() if t["for_shots"]]
 
     @classmethod
-    def all_asset_task_types(cls):
+    def all_asset_task_types(cls) -> List[TaskType]:
         return [cls(**t) for t in gazu.task.all_task_types() if not t["for_shots"]]
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 
@@ -613,7 +614,7 @@ class Task:
         )
         return Preview(**preview_dict)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 
@@ -663,7 +664,11 @@ class TaskStatus:
         task_status_dict = gazu.task.get_task_status(task_status_id)
         return cls(**task_status_dict)
 
-    def __bool__(self):
+    @classmethod
+    def all_task_statuses(cls) -> List[TaskStatus]:
+        return [cls(**ts) for ts in gazu.task.all_task_statuses()]
+
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 
@@ -695,7 +700,7 @@ class Comment:
     mentions: List[str] = field(default_factory=list)
     attachment_files: List[Dict[str, Any]] = field(default_factory=list)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 
@@ -733,7 +738,7 @@ class Preview:
     def set_main_preview(self):
         gazu.task.set_main_preview(asdict(self))
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 
@@ -766,7 +771,7 @@ class User:
     type: str = "Person"
     full_name: str = ""
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.id)
 
 

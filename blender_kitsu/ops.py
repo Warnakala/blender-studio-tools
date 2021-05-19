@@ -1432,6 +1432,8 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
     )
     confirm: bpy.props.BoolProperty(name="Confirm", default=False)
 
+    task_status: bpy.props.EnumProperty(items=opsdata.get_all_task_statuses)  # type: ignore
+
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(
@@ -1443,8 +1445,15 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
+        if not self.task_status:
+            self.report({"ERROR"}, "Failed to crate playblast. Missing task status.")
+            return {"CANCELLED"}
+
         addon_prefs = prefs.addon_prefs_get(bpy.context)
         shot_active = cache.shot_active_get()
+
+        # save playblast task status id for next time
+        context.scene.kitsu.playblast_task_status_id = self.task_status
 
         logger.info("-START- Creating Playblast")
 
@@ -1480,12 +1489,19 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        shot = cache.shot_active_get()
+        # initialize comment and playblast task status variable
         self.comment = ""
+
+        prev_task_status_id = context.scene.kitsu.playblast_task_status_id
+        if prev_task_status_id:
+            self.task_status = prev_task_status_id
+
         return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
+        row = layout.row(align=True)
+        row.prop(self, "task_status", text="Status")
         row = layout.row(align=True)
         row.prop(self, "comment")
 
@@ -1494,13 +1510,9 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
         shot = cache.shot_active_get()
 
         # get task status 'wip' and task type 'Animation'
-        task_status = TaskStatus.by_short_name("wip")
+        task_status = TaskStatus.by_id(self.task_status)
         task_type = TaskType.by_name("Animation")
 
-        if not task_status:
-            raise RuntimeError(
-                "Failed to upload playblast. Task status: 'wip' is missing."
-            )
         if not task_type:
             raise RuntimeError(
                 "Failed to upload playblast. Task type: 'Animation' is missing."
@@ -1517,7 +1529,7 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
             else:
                 task = tasks[-1]
 
-        # create a comment, e.G 'set main thumbnail'
+        # create a comment
         comment_text = self._gen_comment_text(context, shot)
         comment = task.add_comment(
             task_status,
@@ -1532,7 +1544,9 @@ class KITSU_OT_create_playblast(bpy.types.Operator):
 
     def _gen_comment_text(self, context: bpy.types.Context, shot: Shot) -> str:
         header = f"Playblast {shot.name}: {context.scene.kitsu.playblast_version}"
-        return header + f"\n\n{self.comment}"
+        if self.comment:
+            return header + f"\n\n{self.comment}"
+        return header
 
     @contextlib.contextmanager
     def override_render_settings(self, context):

@@ -8,7 +8,7 @@ from bpy.app.handlers import persistent
 from . import cache, prefs, bkglobals
 from .models import FileListModel
 from .logger import ZLoggerFactory
-from .types import Sequence, ProjectList, TaskType
+from .types import Sequence, ProjectList, TaskStatus, TaskType
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
@@ -28,7 +28,7 @@ _playblast_enum_list: List[Tuple[str, str, str]] = []
 _playblast_file_model_init: bool = False
 
 _task_types_shots_enum_list: List[Tuple[str, str, str]] = []
-
+_task_statuses_enum_list: List[Tuple[str, str, str]] = []
 
 def _sqe_get_not_linked(self, context):
     return _sqe_not_linked
@@ -288,6 +288,19 @@ def get_shot_task_types(
     _task_types_shots_enum_list.extend(items)
 
     return _task_types_shots_enum_list
+
+
+def get_all_task_statuses(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    global _task_statuses_enum_list
+
+    items = [(t.id, t.name, "") for t in TaskStatus.all_task_statuses()]
+
+    _task_statuses_enum_list.clear()
+    _task_statuses_enum_list.extend(items)
+
+    return _task_statuses_enum_list
 
 
 def init_playblast_file_model(
