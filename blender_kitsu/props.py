@@ -78,7 +78,7 @@ class KITSU_property_group_sequence(bpy.types.PropertyGroup):
 class KITSU_property_group_scene(bpy.types.PropertyGroup):
     """"""
 
-    category: bpy.props.EnumProperty(  # type: ignore #TODO: move to scene prop
+    category: bpy.props.EnumProperty(  # type: ignore
         items=(
             ("ASSETS", "Assets", "Asset related tasks", "FILE_3D", 0),
             ("SHOTS", "Shots", "Shot related tasks", "FILE_MOVIE", 1),
@@ -168,6 +168,16 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         self.shot_active_id = ""
         self.asset_active_id = ""
         self.asset_type_active_id = ""
+
+
+class KITSU_property_group_error(bpy.types.PropertyGroup):
+    """"""
+
+    frame_range: bpy.props.BoolProperty(  # type: ignore
+        name="Frame Range Error",
+        description="Indicates if the scene frame range does not match the one in kitsu",
+        default=False,
+    )
 
 
 class KITSU_property_group_window(bpy.types.PropertyGroup):
@@ -262,7 +272,11 @@ def _clear_window_manager_props():
 
 # ----------------REGISTER--------------
 
-classes = [KITSU_property_group_sequence, KITSU_property_group_scene]
+classes = [
+    KITSU_property_group_sequence,
+    KITSU_property_group_scene,
+    KITSU_property_group_error,
+]
 
 
 def register():
@@ -282,6 +296,14 @@ def register():
         type=KITSU_property_group_scene,
         description="Metadata that is required for blender_kitsu",
     )
+
+    # Error Properties
+    bpy.types.Scene.kitsu_error = bpy.props.PointerProperty(
+        name="Kitsu Error",
+        type=KITSU_property_group_error,
+        description="Error property group",
+    )
+
     # Window Manager Properties
     _add_window_manager_props()
 
