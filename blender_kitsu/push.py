@@ -40,10 +40,12 @@ def new_shot(
 
     frame_range = (strip.frame_final_start, strip.frame_final_end)
     shot = project.create_shot(
-        strip.kitsu.shot_name,
         sequence,
+        strip.kitsu.shot_name,
+        nb_frames=strip.frame_final_duration,
         frame_in=frame_range[0],
         frame_out=frame_range[1],
+        data={"fps": bkglobals.FPS}
     )
     # update description, no option to pass that on create
     if strip.kitsu.shot_description:

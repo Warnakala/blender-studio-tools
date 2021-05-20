@@ -117,8 +117,9 @@ class Project:
 
     def create_shot(
         self,
-        shot_name: str,
         sequence: Sequence,
+        shot_name: str,
+        nb_frames: Optional[int] = None,
         frame_in: Optional[int] = None,
         frame_out: Optional[int] = None,
         data: Dict[str, Any] = {},
@@ -128,6 +129,7 @@ class Project:
             asdict(self),
             asdict(sequence),
             shot_name,
+            nb_frames,
             frame_in=frame_in,
             frame_out=frame_out,
             data=data,
