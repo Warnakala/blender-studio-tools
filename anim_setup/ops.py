@@ -44,6 +44,7 @@ class AS_OT_create_actions(bpy.types.Operator):
             return {"CANCELLED"}
 
         for coll in collections:
+            print("\n")
             rig = opsdata.find_rig(coll)
 
             if not rig:
@@ -62,6 +63,10 @@ class AS_OT_create_actions(bpy.types.Operator):
             else:
                 logger.info("Action %s already exists. Will take that.", action.name)
 
+            #create animation data if not existent
+            if not rig.animation_data:
+                rig.animation_data_create()
+                logger.info("%s created animation data", rig.name)
 
             # assign action
             rig.animation_data.action = action
