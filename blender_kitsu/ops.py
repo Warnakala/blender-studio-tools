@@ -4,11 +4,11 @@ import sys
 import subprocess
 import webbrowser
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Optional, Tuple
 
 import bpy
 
-from . import gazu, cache, opsdata, prefs, push, pull, checkstrip
+from . import gazu, cache, opsdata, prefs, push, pull, checkstrip, bkglobals
 from .logger import ZLoggerFactory
 from .types import (
     Cache,
@@ -1849,8 +1849,19 @@ class KITSU_OT_pull_frame_range(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         active_shot = cache.shot_active_get()
-        frame_in = active_shot.frame_in
-        frame_out = active_shot.frame_out
+
+        if not active_shot.nb_frames:
+            self.report(
+                {"ERROR"},
+                f"Shot {active_shot.name} missing 'nb_frames' attribute on server.",
+            )
+            return {"CANCELLED"}
+
+        shot_frame_in = active_shot.frame_in
+        shot_frame_out = active_shot.frame_out
+
+        frame_in = bkglobals.FRAME_START
+        frame_out = frame_in + active_shot.nb_frames - 1
 
         # check if current frame range matches the one for active shot
         if (

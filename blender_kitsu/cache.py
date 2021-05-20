@@ -3,6 +3,8 @@ from typing import Any
 import bpy
 
 from bpy.app.handlers import persistent
+
+from . import bkglobals
 from .types import Project, Sequence, Shot, Asset, AssetType, TaskType
 from .logger import ZLoggerFactory
 from .gazu.exception import RouteNotFoundException
@@ -295,8 +297,15 @@ def load_post_handler_check_frame_range(dummy: Any) -> None:
     if not active_shot:
         return
 
-    frame_in = active_shot.frame_in
-    frame_out = active_shot.frame_out
+    if not active_shot.nb_frames:
+        logger.warning(
+            "Failed to check frame range. Shot %s missing 'nb_frames' attribute on server.",
+            active_shot.name,
+        )
+        return
+
+    frame_in = bkglobals.FRAME_START
+    frame_out = frame_in + active_shot.nb_frames - 1
 
     if (
         frame_in == bpy.context.scene.frame_start
