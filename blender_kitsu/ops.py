@@ -1,6 +1,7 @@
 import contextlib
 import os
 import sys
+import random
 import subprocess
 import webbrowser
 from pathlib import Path
@@ -2017,6 +2018,207 @@ class KITSU_OT_sqe_debug_multi_project(bpy.types.Operator):
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
+class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
+    """
+    Operator that invokes ui which shows user all available shots on server.
+    It is used to 'link' a seqeunce strip to an alredy existent shot on server.
+    Fills out all metadata after selecting shot.
+    """
+
+    bl_idname = "kitsu.sqe_pull_edit"
+    bl_label = "Pull Edit"
+    bl_description = (
+        "Pulls the entire edit from kitsu and creates color strips for each shot."
+    )
+
+    channel: bpy.props.IntProperty(
+        name="Channel",
+        description="On which channel the operator will create the color strips.",
+        default=1,
+        min=1,
+        max=32,
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(prefs.zsession_auth(context) and cache.project_active_get())
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        failed = []
+        created = []
+        succeeded = []
+        modified = []
+        channel = self.channel
+        active_project = cache.project_active_get()
+        sequences = active_project.get_sequences_all()
+        shot_strips = self._get_shot_strips(context)
+        occupied_ranges = self._get_occupied_ranges(context)
+        strip_color_min = bkglobals.STRIP_COLOR_RANGE[0]
+        strip_color_max = bkglobals.STRIP_COLOR_RANGE[1]
+
+        logger.info("-START- Pulling Edit")
+
+        # process sequence after sequence
+        for seq in sequences:
+            print("\n" * 2)
+            logger.info("Processing Sequence %s", seq.name)
+            shots = seq.get_all_shots()
+            seq_strip_color = (
+                random.uniform(strip_color_min, strip_color_max),
+                random.uniform(strip_color_min, strip_color_max),
+                random.uniform(strip_color_min, strip_color_max),
+            )
+
+            # process all shots for sequence
+            for shot in shots:
+
+                # get frame range information
+                frame_start = shot.data["frame_in"]
+                frame_end = shot.data["frame_out"]
+
+                # continue if frame range information is missing
+                if not frame_start or not frame_end:
+                    failed.append(shot)
+                    logger.error(
+                        "Failed to create shot %s. Missing frame range information.",
+                        shot.name,
+                    )
+                    continue
+
+                # frame info comes in str format from kitsu
+                frame_start = int(frame_start)
+                frame_end = int(frame_end)
+                shot_range = range(frame_start, frame_start + 1)
+
+                # try to find existing strip that is already linked to that shot
+                strip = self._find_shot_strip(shot_strips, shot.id)
+
+                # check if on the specified channel there is space to put the strip
+                if str(channel) in occupied_ranges:
+                    if self._is_range_occupied(
+                        shot_range, occupied_ranges[str(channel)]
+                    ):
+                        failed.append(shot)
+                        logger.error(
+                            "Failed to create shot %s. Channel: %i Range: %i - %i is occupied.",
+                            shot.name,
+                            channel,
+                            frame_start,
+                            frame_end,
+                        )
+                        continue
+
+                if not strip:
+                    # create new strip
+                    strip = bpy.context.scene.sequence_editor.sequences.new_effect(
+                        shot.name, "COLOR", channel, frame_start, frame_end=frame_end
+                    )
+                    created.append(shot)
+                    logger.info("Shot %s created new strip", shot.name)
+                    strip.color = seq_strip_color
+
+                else:
+                    # update properties of existing strip
+                    strip.channel = channel
+                    strip.frame_final_start = frame_start
+                    strip.frame_final_end = frame_end
+                    logger.info("Shot %s use existing strip: %s", shot.name, strip.name)
+
+                # set blend alpha
+                strip.blend_alpha = 0
+
+                # pull shot meta and link shot
+                pull.shot_meta(strip, shot)
+
+                succeeded.append(shot)
+
+        self.report(
+            {"INFO"},
+            f"Shots: Succeded:{len(succeeded)} | Created  {len(created)} | Modified: {len(modified)} | Failed: {len(failed)}",
+        )
+        logger.info("-END- Pulling Edit")
+
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        return context.window_manager.invoke_props_dialog(  # type: ignore
+            self, width=300
+        )
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row()
+        row.label(text="Set channel in which the entire edit should be created.")
+        row = layout.row()
+        row.prop(self, "channel")
+
+    def _find_shot_strip(
+        self, shot_strips: List[bpy.types.Sequence], shot_id: str
+    ) -> Optional[bpy.types.Sequence]:
+        for strip in shot_strips:
+            if strip.kitsu.shot_id == shot_id:
+                return strip
+
+        return None
+
+    def _get_shot_strips(self, context: bpy.types.Context) -> List[bpy.types.Sequence]:
+        shot_strips = []
+        shot_strips.extend(
+            [
+                strip
+                for strip in context.scene.sequence_editor.sequences_all
+                if checkstrip.is_valid_type(strip, log=False)
+                and checkstrip.is_linked(strip, log=False)
+            ]
+        )
+        return shot_strips
+
+    def _get_occupied_ranges(
+        self, context: bpy.types.Context
+    ) -> Dict[str, List[range]]:
+        # {'1': [(101, 213), (300, 320)]}
+        ranges: Dict[str, List[range]] = {}
+
+        # populate ranges
+        for strip in context.scene.sequence_editor.sequences_all:
+            ranges.setdefault(str(strip.channel), [])
+            ranges[str(strip.channel)].append(
+                range(strip.frame_final_start, strip.frame_final_end + 1)
+            )
+
+        # sort ranges tuple list
+        for channel in ranges:
+            liste = ranges[channel]
+            ranges[channel] = sorted(liste, key=lambda item: item.start)
+
+        return ranges
+
+    def _is_range_occupied(
+        self, range_to_check: range, occupied_ranges: List[range]
+    ) -> bool:
+        for r in occupied_ranges:
+            # range(101, 150)
+            if self.__is_range_in(range_to_check, r):
+                return True
+            continue
+        return False
+
+    def __is_range_in(self, range1: range, range2: range) -> bool:
+        """Whether range1 is a subset of range2."""
+        # usual strip setup strip1(101, 120)|strip2(120, 130)|strip3(130, 140)
+        # first and last frame can be the same for each strip
+        range2 = range(range2.start + 1, range2.stop - 1)
+
+        if not range1:
+            return True  # empty range is subset of anything
+        if not range2:
+            return False  # non-empty range can't be subset of empty range
+        if len(range1) > 1 and range1.step % range2.step:
+            return False  # must have a single value or integer multiple step
+        return range1.start in range2 or range1[-1] in range2
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -2049,6 +2251,7 @@ classes = [
     KITSU_OT_sqe_debug_multi_project,
     KITSU_OT_open_path,
     KITSU_OT_pull_frame_range,
+    KITSU_OT_sqe_pull_edit,
 ]
 
 

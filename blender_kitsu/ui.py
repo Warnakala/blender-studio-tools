@@ -35,6 +35,7 @@ from .ops import (
     KITSU_OT_sqe_unlink_shot,
     KITSU_OT_open_path,
     KITSU_OT_pull_frame_range,
+    KITSU_OT_sqe_pull_edit,
 )
 
 
@@ -716,20 +717,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
     @classmethod
     def poll_pull(cls, context: bpy.types.Context) -> bool:
         # if only one strip is selected and it is not init then hide panel
-        if not prefs.zsession_auth(context):
-            return False
-
-        selshots = context.selected_sequences
-        if not selshots:
-            selshots = context.scene.sequence_editor.sequences_all
-
-        strips_to_meta = []
-
-        for s in selshots:
-            if s.kitsu.linked:
-                strips_to_meta.append(s)
-
-        return bool(strips_to_meta)
+        return bool(prefs.zsession_auth(context))
 
     def draw_pull(self, context: bpy.types.Context) -> None:
         """
@@ -761,6 +749,14 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 KITSU_OT_sqe_pull_shot_meta.bl_idname,
                 text=f"Metadata {noun}",
                 icon="ALIGN_LEFT",
+            )
+
+        if not context.selected_sequences:
+            row = box.row()
+            row.operator(
+                KITSU_OT_sqe_pull_edit.bl_idname,
+                text=f"Pull entire Edit",
+                icon="FILE_MOVIE",
             )
 
     @classmethod

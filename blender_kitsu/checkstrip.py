@@ -11,9 +11,10 @@ logger = ZLoggerFactory.getLogger(name=__name__)
 VALID_STRIP_TYPES = {"MOVIE", "COLOR"}
 
 
-def is_valid_type(strip: bpy.types.Sequence) -> bool:
+def is_valid_type(strip: bpy.types.Sequence, log: bool = True) -> bool:
     if not strip.type in VALID_STRIP_TYPES:
-        logger.info("Strip: %s. Invalid type.", strip.type)
+        if log:
+            logger.info("Strip: %s. Invalid type.", strip.type)
         return False
     return True
 
@@ -28,13 +29,14 @@ def is_initialized(strip: bpy.types.Sequence) -> bool:
     return True
 
 
-def is_linked(strip: bpy.types.Sequence) -> bool:
+def is_linked(strip: bpy.types.Sequence, log: bool = True) -> bool:
     """Returns True if strip.kitsu.linked is True else False"""
     if not strip.kitsu.linked:
-        logger.info("Strip: %s. Not linked yet.", strip.name)
+        if log:
+            logger.info("Strip: %s. Not linked yet.", strip.name)
         return False
-
-    logger.info("Strip: %s. Is linked to ID: %s.", strip.name, strip.kitsu.shot_id)
+    if log:
+        logger.info("Strip: %s. Is linked to ID: %s.", strip.name, strip.kitsu.shot_id)
     return True
 
 

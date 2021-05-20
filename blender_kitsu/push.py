@@ -45,7 +45,7 @@ def new_shot(
         nb_frames=strip.frame_final_duration,
         frame_in=frame_range[0],
         frame_out=frame_range[1],
-        data={"fps": bkglobals.FPS}
+        data={"fps": bkglobals.FPS},
     )
     # update description, no option to pass that on create
     if strip.kitsu.shot_description:
@@ -80,6 +80,6 @@ def delete_shot(strip: bpy.types.Sequence, shot: Shot) -> str:
 
 
 def _remap_frame_range(frame_in: int, frame_out: int) -> Tuple[int, int]:
-    start_frame = 101
+    start_frame = bkglobals.FRAME_START
     nb_of_frames = frame_out - frame_in
     return (start_frame, start_frame + nb_of_frames)
