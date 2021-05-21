@@ -1017,16 +1017,11 @@ class KITSU_OT_sqe_uninit_strip(bpy.types.Operator):
     bl_description = "Uninitialize selecetd strips. Only affects Sequence Editor. "
     bl_options = {"REGISTER", "UNDO"}
 
-    confirm: bpy.props.BoolProperty(name="Confirm")
-
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        if not self.confirm:
-            self.report({"WARNING"}, "Uninitializing aborted.")
-            return {"CANCELLED"}
 
         failed: List[bpy.types.Sequence] = []
         succeeded: List[bpy.types.Sequence] = []
@@ -1068,30 +1063,6 @@ class KITSU_OT_sqe_uninit_strip(bpy.types.Operator):
         ui_redraw()
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        self.confirm = False
-        return context.window_manager.invoke_props_dialog(self, width=500)
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-
-        selshots = context.selected_sequences
-        strips_to_uninit = [
-            s for s in selshots if s.kitsu.initialized and not s.kitsu.linked
-        ]
-
-        if len(strips_to_uninit) > 1:
-            noun = "%i shots" % len(strips_to_uninit)
-        else:
-            noun = "this shot"
-
-        col.prop(
-            self,
-            "confirm",
-            text="Uninitialize %s. Only affects Sequence Editor." % noun,
-        )
-
 
 class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
     """
@@ -1106,17 +1077,11 @@ class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
-    confirm: bpy.props.BoolProperty(name="Confirm")
-
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        if not self.confirm:
-            self.report({"WARNING"}, "Unlinking aborted.")
-            return {"CANCELLED"}
-
         failed: List[bpy.types.Sequence] = []
         succeeded: List[bpy.types.Sequence] = []
         logger.info("-START- Unlinking shots")
@@ -1157,28 +1122,6 @@ class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
         logger.info("-END- Unlinking shots")
         ui_redraw()
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        self.confirm = False
-        return context.window_manager.invoke_props_dialog(self, width=500)
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-
-        selshots = context.selected_sequences
-        strips_to_unlink = [s for s in selshots if s.kitsu.linked]
-
-        if len(strips_to_unlink) > 1:
-            noun = "%i shots" % len(strips_to_unlink)
-        else:
-            noun = "this shot"
-
-        col.prop(
-            self,
-            "confirm",
-            text="Deletes link to server of %s. Only affects Sequence Editor." % noun,
-        )
 
 
 class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
