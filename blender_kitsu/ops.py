@@ -2028,8 +2028,8 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
     bl_idname = "kitsu.sqe_pull_edit"
     bl_label = "Pull Edit"
     bl_description = (
-        "Pulls the entire edit from kitsu and creates color strips for each shot."
-    )
+        "Pulls the entire edit from kitsu and creates color strips for each shot. "
+        "Does not change existing strips. Only places new strips if there is space")
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
