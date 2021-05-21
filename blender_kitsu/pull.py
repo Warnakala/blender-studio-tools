@@ -6,9 +6,11 @@ from .logger import ZLoggerFactory
 logger = ZLoggerFactory.getLogger(name=__name__)
 
 
-def shot_meta(strip: bpy.types.Sequence, shot: Shot) -> None:
-    # clear cache before pulling
-    Cache.clear_all()
+def shot_meta(strip: bpy.types.Sequence, shot: Shot, clear_cache: bool = True) -> None:
+
+    if clear_cache:
+        # clear cache before pulling
+        Cache.clear_all()
 
     # update sequence props
     zseq = Sequence.by_id(shot.parent_id)
