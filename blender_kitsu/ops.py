@@ -397,7 +397,7 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_push_new_shot"
     bl_label = "Submit New Shot"
-    bl_options = {"INTERNAL"}
+    bl_description = "Creates a new shot based on all selected sequencce strips on server. Checks if shot already exists on sevrer"
 
     confirm: bpy.props.BoolProperty(name="confirm")
 
@@ -549,7 +549,9 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_push_new_sequence"
     bl_label = "Submit New Sequence"
-    bl_options = {"INTERNAL"}
+    bl_description = (
+        "Creates new sequence on server. Will skip if sequence already exists."
+    )
 
     sequence_name: bpy.props.StringProperty(
         name="Name", default="", description="Name of new sequence"
@@ -631,6 +633,7 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
     bl_idname = "kitsu.sqe_init_strip"
     bl_label = "Initialize Shot"
     bl_description = "Adds required shot metadata to selecetd strips"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -686,7 +689,7 @@ class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_link_sequence"
     bl_label = "Link Sequence"
-    bl_options = {"INTERNAL"}
+    bl_options = {"REGISTER", "UNDO"}
     bl_property = "enum_prop"
 
     enum_prop: bpy.props.EnumProperty(
@@ -735,6 +738,7 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
     bl_description = (
         "Adds required shot metadata to selecetd strip based on data from server."
     )
+    bl_options = {"REGISTER", "UNDO"}
 
     sequence_enum: bpy.props.EnumProperty(items=opsdata._get_sequences, name="Sequence")  # type: ignore
     shots_enum: bpy.props.EnumProperty(items=opsdata._get_shots_from_op_enum, name="Shot")  # type: ignore
@@ -837,6 +841,7 @@ class KITSU_OT_sqe_multi_edit_strip(bpy.types.Operator):
     bl_idname = "kitsu.sqe_multi_edit_strip"
     bl_label = "Multi Edit Strip"
     bl_options = {"INTERNAL"}
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -939,6 +944,7 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
     bl_idname = "kitsu.sqe_pull_shot_meta"
     bl_label = "Pull Shot Metadata"
     bl_options = {"INTERNAL"}
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1008,7 +1014,9 @@ class KITSU_OT_sqe_uninit_strip(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_uninit_strip"
     bl_label = "Uninitialize"
-    bl_description = "c selecetd strips. Only affects Sequence Editor. "
+    bl_description = "Uninitialize selecetd strips. Only affects Sequence Editor. "
+    bl_options = {"REGISTER", "UNDO"}
+
     confirm: bpy.props.BoolProperty(name="Confirm")
 
     @classmethod
@@ -1096,6 +1104,8 @@ class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
     bl_description = (
         "Deletes link to the server of selecetd shots. Only affects Sequence Editor."
     )
+    bl_options = {"REGISTER", "UNDO"}
+
     confirm: bpy.props.BoolProperty(name="Confirm")
 
     @classmethod
@@ -1839,7 +1849,6 @@ class KITSU_OT_set_playblast_version(bpy.types.Operator):
 
     bl_idname = "kitsu.set_playblast_version"
     bl_label = "Version"
-    # bl_options = {"REGISTER", "UNDO"}
     bl_property = "versions"
 
     versions: bpy.props.EnumProperty(
@@ -1879,7 +1888,6 @@ class KITSU_OT_open_path(bpy.types.Operator):
 
     bl_idname = "kitsu.open_path"
     bl_label = "Open"
-    # bl_options = {"REGISTER", "UNDO"}
 
     filepath: bpy.props.StringProperty(  # type: ignore
         name="Filepath",
@@ -1929,6 +1937,7 @@ class KITSU_OT_pull_frame_range(bpy.types.Operator):
 
     bl_idname = "kitsu.pull_frame_range"
     bl_label = "Update Frame Range"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -2001,8 +2010,8 @@ class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_debug_duplicates"
     bl_label = "Debug Duplicates"
-    bl_options = {"REGISTER", "UNDO"}
     bl_property = "duplicates"
+    bl_options = {"REGISTER", "UNDO"}
 
     duplicates: bpy.props.EnumProperty(
         items=opsdata._sqe_get_duplicates, name="Duplicates"
@@ -2037,8 +2046,8 @@ class KITSU_OT_sqe_debug_not_linked(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_debug_not_linked"
     bl_label = "Debug Not Linked"
-    bl_options = {"REGISTER", "UNDO"}
     bl_property = "not_linked"
+    bl_options = {"REGISTER", "UNDO"}
 
     not_linked: bpy.props.EnumProperty(
         items=opsdata._sqe_get_not_linked, name="Not Linked"
@@ -2074,8 +2083,8 @@ class KITSU_OT_sqe_debug_multi_project(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_debug_multi_project"
     bl_label = "Debug Multi Projects"
-    bl_options = {"REGISTER", "UNDO"}
     bl_property = "multi_project"
+    bl_options = {"REGISTER", "UNDO"}
 
     multi_project: bpy.props.EnumProperty(
         items=opsdata._sqe_get_multi_project, name="Multi Project"
@@ -2119,6 +2128,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         "Pulls the entire edit from kitsu and creates color strips for each shot. "
         "Does not change existing strips. Only places new strips if there is space"
     )
+    bl_options = {"REGISTER", "UNDO", "UNDO_GROUPED"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
