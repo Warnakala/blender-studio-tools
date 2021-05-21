@@ -808,7 +808,6 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        self.use_url = False
         return context.window_manager.invoke_props_dialog(  # type: ignore
             self, width=300
         )
