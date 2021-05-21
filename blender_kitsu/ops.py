@@ -2133,8 +2133,13 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         occupied_ranges = self._get_occupied_ranges(context)
         strip_color_min = bkglobals.STRIP_COLOR_RANGE[0]
         strip_color_max = bkglobals.STRIP_COLOR_RANGE[1]
+        all_shots = active_project.get_shots_all()
 
         logger.info("-START- Pulling Edit")
+
+        # begin progress update
+        context.window_manager.progress_begin(0, len(all_shots))
+        progress_idx = 0
 
         # process sequence after sequence
         for seq in sequences:
@@ -2151,6 +2156,8 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
 
             # process all shots for sequence
             for shot in shots:
+                context.window_manager.progress_update(progress_idx)
+                progress_idx += 1
 
                 # get frame range information
                 frame_start = shot.data["frame_in"]
@@ -2221,6 +2228,11 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
             if color_override:
                 for strip in seq_strips:
                     strip.color = color_override
+
+        # end progress update
+        context.window_manager.progress_update(len(all_shots))
+        context.window_manager.progress_end()
+
         # report
         report_str = f"Shots: Succeded:{len(succeeded)} | Created  {len(created)} | Existing: {len(existing)}"
         report_state = "INFO"
