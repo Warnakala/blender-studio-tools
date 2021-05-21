@@ -164,6 +164,15 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
+    # sequence editor tools
+    pull_edit_channel: bpy.props.IntProperty(
+        name="Channel",
+        description="On which channel the operator will create the color strips.",
+        default=1,
+        min=1,
+        max=32,
+    )
+
     def clear(self):
         self.sequence_active_id = ""
         self.shot_active_id = ""

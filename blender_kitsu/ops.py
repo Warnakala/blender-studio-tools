@@ -2031,14 +2031,6 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         "Pulls the entire edit from kitsu and creates color strips for each shot."
     )
 
-    channel: bpy.props.IntProperty(
-        name="Channel",
-        description="On which channel the operator will create the color strips.",
-        default=1,
-        min=1,
-        max=32,
-    )
-
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(prefs.zsession_auth(context) and cache.project_active_get())
@@ -2047,8 +2039,8 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         failed = []
         created = []
         succeeded = []
-        modified = []
-        channel = self.channel
+        existing = []
+        channel = context.scene.kitsu.pull_edit_channel
         active_project = cache.project_active_get()
         sequences = active_project.get_sequences_all()
         shot_strips = self._get_shot_strips(context)
@@ -2068,6 +2060,8 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                 random.uniform(strip_color_min, strip_color_max),
                 random.uniform(strip_color_min, strip_color_max),
             )
+            color_override = ()
+            seq_strips = []
 
             # process all shots for sequence
             for shot in shots:
@@ -2120,21 +2114,31 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                 else:
                     # update properties of existing strip
                     strip.channel = channel
-                    strip.frame_final_start = frame_start
-                    strip.frame_final_end = frame_end
+                    # strip.frame_final_start = frame_start
+                    # strip.frame_final_end = frame_end
                     logger.info("Shot %s use existing strip: %s", shot.name, strip.name)
+                    color_override = strip.color
+                    existing.append(strip)
 
                 # set blend alpha
                 strip.blend_alpha = 0
 
                 # pull shot meta and link shot
-                pull.shot_meta(strip, shot)
+                pull.shot_meta(strip, shot, clear_cache=False)
+
+                # append to seq strips list for potential color overwrite
+                seq_strips.append(strip)
 
                 succeeded.append(shot)
 
+            # if there already was a strip of that sequence use that color
+            if color_override:
+                for strip in seq_strips:
+                    strip.color = color_override
+
         self.report(
             {"INFO"},
-            f"Shots: Succeded:{len(succeeded)} | Created  {len(created)} | Modified: {len(modified)} | Failed: {len(failed)}",
+            f"Shots: Succeded:{len(succeeded)} | Created  {len(created)} | Existing: {len(existing)} | Failed: {len(failed)}",
         )
         logger.info("-END- Pulling Edit")
 
@@ -2151,7 +2155,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         row = layout.row()
         row.label(text="Set channel in which the entire edit should be created.")
         row = layout.row()
-        row.prop(self, "channel")
+        row.prop(context.scene.kitsu, "pull_edit_channel")
 
     def _find_shot_strip(
         self, shot_strips: List[bpy.types.Sequence], shot_id: str
