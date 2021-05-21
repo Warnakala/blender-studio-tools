@@ -5,7 +5,7 @@ import random
 import subprocess
 import webbrowser
 from pathlib import Path
-from typing import Dict, List, Set, Optional, Tuple
+from typing import Dict, List, Set, Optional, Text, Tuple
 
 import bpy
 
@@ -808,8 +808,11 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        if context.window_manager.clipboard:
+            self.url = context.window_manager.clipboard
+
         return context.window_manager.invoke_props_dialog(  # type: ignore
-            self, width=300
+            self, width=400
         )
 
     def draw(self, context):
@@ -818,7 +821,8 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
         row = layout.row()
         row.prop(self, "use_url")
         if self.use_url:
-            row.prop(self, "url")
+            row = layout.row()
+            row.prop(self, "url", text="")
         else:
             row = layout.row()
             row.prop(self, "sequence_enum")
