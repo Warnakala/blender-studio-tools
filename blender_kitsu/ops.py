@@ -371,11 +371,21 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
         context.window_manager.progress_update(len(selected_sequences))
         context.window_manager.progress_end()
 
+        # report
+        report_str = f"Pushed Metadata of {len(succeeded)} Shots"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
         self.report(
-            {"INFO"},
-            f"Pushed Metadata of {len(succeeded)} Shots | Failed: {len(failed)}.",
+            {report_state},
+            report_str,
         )
+
+        # log
         logger.info("-END- Pushing Metadata")
+
         return {"FINISHED"}
 
 
@@ -472,10 +482,19 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
         # clear cache
         Cache.clear_all()
 
+        # report
+        report_str = f"Submitted {len(succeeded)} new shots"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
         self.report(
-            {"INFO"},
-            f"Submitted {len(succeeded)} new shots | Failed: {len(failed)}",
+            {report_state},
+            report_str,
         )
+
+        # log
         logger.info("-END- Submitting new shots to: %s", project_active.name)
         ui_redraw()
         return {"FINISHED"}
@@ -641,12 +660,22 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
             succeeded.append(strip)
             logger.info("Initiated strip: %s as shot.", strip.name)
 
+        # report
+        report_str = f"Initiated {len(succeeded)} shots"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
         self.report(
-            {"INFO"},
-            f"Initiated {len(succeeded)} shots | Failed: {len(failed)}.",
+            {report_state},
+            report_str,
         )
+
+        # log
         logger.info("-END- Initializing shots")
         ui_redraw()
+
         return {"FINISHED"}
 
 
@@ -880,10 +909,19 @@ class KITSU_OT_sqe_multi_edit_strip(bpy.types.Operator):
                 % (strip.name, sequence, shot)
             )
 
+        # report
+        report_str = f"Assigned {len(succeeded)} Shots"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
         self.report(
-            {"INFO"},
-            f"Assigned {len(succeeded)} Shots | Failed: {len(failed)}.",
+            {report_state},
+            report_str,
         )
+
+        # log
         logger.info("-END- Multi Edit Shot")
         ui_redraw()
         return {"FINISHED"}
@@ -940,10 +978,20 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
         # end progress update
         context.window_manager.progress_update(len(selected_sequences))
         context.window_manager.progress_end()
+
+        # report
+        report_str = f"Pulled metadata for {len(succeeded)} shots"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
         self.report(
-            {"INFO"},
-            f"Pulled metadata for {len(succeeded)} shots | Failed: {len(failed)}.",
+            {report_state},
+            report_str,
         )
+
+        # log
         logger.info("-END- Pulling shot metadata")
         ui_redraw()
         return {"FINISHED"}
@@ -992,10 +1040,19 @@ class KITSU_OT_sqe_uninit_strip(bpy.types.Operator):
             succeeded.append(strip)
             logger.info("Uninitialized strip: %s", strip.name)
 
+        # report
+        report_str = f"Uninitialized {len(succeeded)} strips"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
         self.report(
-            {"INFO"},
-            f"Uninitialized {len(succeeded)} strips | Failed: {len(failed)}.",
+            {report_state},
+            report_str,
         )
+
+        # log
         logger.info("-END- Uninitializing strips")
         ui_redraw()
         return {"FINISHED"}
@@ -1071,10 +1128,19 @@ class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
             succeeded.append(strip)
             logger.info("Unlinked shot: %s", shot_name)
 
+        # report
+        report_str = f"Unlinked {len(succeeded)} shots"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
         self.report(
-            {"INFO"},
-            f"Unlinked {len(succeeded)} shots | Failed: {len(failed)}.",
+            {report_state},
+            report_str,
         )
+
+        # log
         logger.info("-END- Unlinking shots")
         ui_redraw()
         return {"FINISHED"}
@@ -1158,10 +1224,19 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
         context.window_manager.progress_update(len(selected_sequences))
         context.window_manager.progress_end()
 
+        # report
+        report_str = f"Deleted {len(succeeded)} shots"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
         self.report(
-            {"INFO"},
-            f"Deleted {len(succeeded)} shots | Failed: {len(failed)}",
+            {report_state},
+            report_str,
         )
+
+        # log
         logger.info("-END- Deleting shots")
         ui_redraw()
         return {"FINISHED"}
@@ -1311,10 +1386,19 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
                 context.window_manager.progress_update(len(upload_queue))
                 context.window_manager.progress_end()
 
+        # report
+        report_str = f"Created thumbnails for {len(upload_queue)} shots"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
         self.report(
-            {"INFO"},
-            f"Created thumbnails for {len(upload_queue)} shots | Failed: {len(failed)}",
+            {report_state},
+            report_str,
         )
+
+        # log
         logger.info("-END- Pushing shot thumbnails")
         return {"FINISHED"}
 
@@ -1902,9 +1986,10 @@ class KITSU_OT_increment_playblast_version(bpy.types.Operator):
         # update cache_version prop
         context.scene.kitsu.playblast_version = version
 
-        ui_redraw()
-
+        # report
         self.report({"INFO"}, f"Add playblast version {version}")
+
+        ui_redraw()
         return {"FINISHED"}
 
 
@@ -2029,7 +2114,8 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
     bl_label = "Pull Edit"
     bl_description = (
         "Pulls the entire edit from kitsu and creates color strips for each shot. "
-        "Does not change existing strips. Only places new strips if there is space")
+        "Does not change existing strips. Only places new strips if there is space"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -2135,11 +2221,19 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
             if color_override:
                 for strip in seq_strips:
                     strip.color = color_override
+        # report
+        report_str = f"Shots: Succeded:{len(succeeded)} | Created  {len(created)} | Existing: {len(existing)}"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
 
         self.report(
-            {"INFO"},
-            f"Shots: Succeded:{len(succeeded)} | Created  {len(created)} | Existing: {len(existing)} | Failed: {len(failed)}",
+            {report_state},
+            report_str,
         )
+
+        # log
         logger.info("-END- Pulling Edit")
 
         return {"FINISHED"}
