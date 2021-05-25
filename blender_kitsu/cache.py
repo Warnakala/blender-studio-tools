@@ -159,6 +159,26 @@ def task_type_active_reset(context: bpy.types.Context) -> None:
     logger.info("Reset active task type")
 
 
+def _init_cache_entity(
+    entity_id: str, entity_type: Any, cache_variable_name: Any, cache_name: str
+) -> None:
+
+    if entity_id:
+        try:
+            globals()[cache_variable_name] = entity_type.by_id(entity_id)
+            logger.info(
+                "Initiated active %s cache to: %s",
+                cache_name,
+                globals()[cache_variable_name].name,
+            )
+        except RouteNotFoundException:
+            logger.error(
+                "Failed to initialize active %s cache. ID not found on server: %s",
+                cache_name,
+                entity_id,
+            )
+
+
 def init_cache_variables() -> None:
     global _project_active
     global _sequence_active
@@ -167,14 +187,7 @@ def init_cache_variables() -> None:
     global _asset_type_active
     global _task_type_active
     global _cache_initialized
-
     addon_prefs = _addon_prefs_get(bpy.context)
-    project_active_id = addon_prefs.project_active_id
-    sequence_active_id = bpy.context.scene.kitsu.sequence_active_id
-    shot_active_id = bpy.context.scene.kitsu.shot_active_id
-    asset_active_id = bpy.context.scene.kitsu.asset_active_id
-    asset_type_active_id = bpy.context.scene.kitsu.asset_type_active_id
-    task_type_active_id = bpy.context.scene.kitsu.task_type_active_id
 
     if not addon_prefs.session.is_auth():
         logger.info("Skip initiating cache. Session not authorized.")
@@ -184,71 +197,21 @@ def init_cache_variables() -> None:
         logger.info("Cache already initiated.")
         return
 
-    # TODO: refactor in one function with parameter for entity
+    project_active_id = addon_prefs.project_active_id
+    sequence_active_id = bpy.context.scene.kitsu.sequence_active_id
+    shot_active_id = bpy.context.scene.kitsu.shot_active_id
+    asset_active_id = bpy.context.scene.kitsu.asset_active_id
+    asset_type_active_id = bpy.context.scene.kitsu.asset_type_active_id
+    task_type_active_id = bpy.context.scene.kitsu.task_type_active_id
 
-    if project_active_id:
-        try:
-            _project_active = Project.by_id(project_active_id)
-            logger.info("Initiated active project cache to: %s", _project_active.name)
-        except RouteNotFoundException:
-            logger.error(
-                "Failed to initialize active project cache. ID not found on server: %s",
-                project_active_id,
-            )
-
-    if sequence_active_id:
-        try:
-            _sequence_active = Sequence.by_id(sequence_active_id)
-            logger.info("Initiated active sequence cache to: %s", _sequence_active.name)
-        except RouteNotFoundException:
-            logger.error(
-                "Failed to initialize active sequence cache. ID not found on server: %s",
-                sequence_active_id,
-            )
-
-    if shot_active_id:
-        try:
-            _shot_active = Shot.by_id(shot_active_id)
-            logger.info("Initiated active shot cache to: %s ", _shot_active.name)
-        except RouteNotFoundException:
-            logger.error(
-                "Failed to initialize active shot cache. ID not found on server: %s",
-                shot_active_id,
-            )
-
-    if asset_active_id:
-        try:
-            _asset_active = Asset.by_id(asset_active_id)
-            logger.info("Initiated active asset cache to: %s", _asset_active.name)
-        except RouteNotFoundException:
-            logger.error(
-                "Failed to initialize active asset cache. ID not found on server: %s",
-                asset_active_id,
-            )
-
-    if asset_type_active_id:
-        try:
-            _asset_type_active = AssetType.by_id(asset_type_active_id)
-            logger.info(
-                "Initiated active asset type cache to: %s ", _asset_type_active.name
-            )
-        except RouteNotFoundException:
-            logger.error(
-                "Failed to initialize active asset type cache. ID not found on server: %s",
-                asset_type_active_id,
-            )
-
-    if task_type_active_id:
-        try:
-            _task_type_active = TaskType.by_id(task_type_active_id)
-            logger.info(
-                "Initiated active task type cache to: %s ", _task_type_active.name
-            )
-        except RouteNotFoundException:
-            logger.error(
-                "Failed to initialize active task type cache. ID not found on server: %s",
-                task_type_active_id,
-            )
+    _init_cache_entity(project_active_id, Project, "_project_active", "project")
+    _init_cache_entity(sequence_active_id, Sequence, "_sequence_active", "sequence")
+    _init_cache_entity(
+        asset_type_active_id, AssetType, "_asset_type_active", "asset type"
+    )
+    _init_cache_entity(shot_active_id, Shot, "_shot_active", "shot")
+    _init_cache_entity(asset_active_id, Asset, "_asset_active", "asset")
+    _init_cache_entity(task_type_active_id, TaskType, "_task_type_active", "task type")
 
     _cache_initialized = True
 
@@ -259,6 +222,7 @@ def clear_cache_variables():
     global _shot_active
     global _asset_active
     global _asset_type_active
+    global _task_type_active
     global _cache_initialized
 
     _shot_active = Shot()
@@ -275,6 +239,9 @@ def clear_cache_variables():
 
     _project_active = Project()
     logger.info("Cleared Active Project Cache")
+
+    _task_type_active = TaskType()
+    logger.info("Cleared Active Task Type Cache")
 
     _cache_initialized = False
 
