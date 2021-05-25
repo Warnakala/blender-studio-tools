@@ -13,9 +13,9 @@ def shot_meta(strip: bpy.types.Sequence, shot: Shot, clear_cache: bool = True) -
         Cache.clear_all()
 
     # update sequence props
-    zseq = Sequence.by_id(shot.parent_id)
-    strip.kitsu.sequence_id = zseq.id
-    strip.kitsu.sequence_name = zseq.name
+    seq = Sequence.by_id(shot.parent_id)
+    strip.kitsu.sequence_id = seq.id
+    strip.kitsu.sequence_name = seq.name
 
     # update shot props
     strip.kitsu.shot_id = shot.id
@@ -30,4 +30,9 @@ def shot_meta(strip: bpy.types.Sequence, shot: Shot, clear_cache: bool = True) -
     # update meta props
     strip.kitsu.initialized = True
     strip.kitsu.linked = True
+
+    # update strip name
+    strip.name = shot.name
+
+    # log
     logger.info("Pulled meta from shot: %s to strip: %s", shot.name, strip.name)
