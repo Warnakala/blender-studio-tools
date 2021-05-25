@@ -1,4 +1,5 @@
 import contextlib
+import colorsys
 import random
 from pathlib import Path
 from typing import Dict, List, Set, Optional, Tuple, Any
@@ -1312,8 +1313,6 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         sequences = active_project.get_sequences_all()
         shot_strips = self._get_shot_strips(context)
         occupied_ranges = self._get_occupied_ranges(context)
-        strip_color_min = bkglobals.STRIP_COLOR_RANGE[0]
-        strip_color_max = bkglobals.STRIP_COLOR_RANGE[1]
         all_shots = active_project.get_shots_all()
 
         logger.info("-START- Pulling Edit")
@@ -1327,11 +1326,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
             print("\n" * 2)
             logger.info("Processing Sequence %s", seq.name)
             shots = seq.get_all_shots()
-            seq_strip_color = (
-                random.uniform(strip_color_min, strip_color_max),
-                random.uniform(strip_color_min, strip_color_max),
-                random.uniform(strip_color_min, strip_color_max),
-            )
+            seq_strip_color = self._get_random_pastel_color_rgb()
             color_override = ()
             seq_strips = []
 
@@ -1509,6 +1504,15 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
             return False  # must have a single value or integer multiple step
         return range1.start in range2 or range1[-1] in range2
 
+    def _get_random_pastel_color_rgb(self) -> Tuple[float, float, float]:
+        """Returns a randomly generated color with high brightness and low saturation."""
+
+        hue = random.random()
+        saturation = random.uniform(0.25, 0.33)
+        brightness = random.uniform(0.75, 0.83)
+
+        color = colorsys.hsv_to_rgb(hue, saturation, brightness)
+        return (color[0], color[1], color[2])
 
 # ---------REGISTER ----------
 
