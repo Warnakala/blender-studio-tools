@@ -57,8 +57,6 @@ class KITSU_OT_con_sequences_load(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    # TODO: reduce api request to one, we request in get_sequences and also in execute to set sequence_active
-
     enum_prop: bpy.props.EnumProperty(items=ops_context_data.get_sequences_enum_list)  # type: ignore
 
     @classmethod
@@ -95,8 +93,6 @@ class KITSU_OT_con_shots_load(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    # TODO: reduce api request to one, we request in _get_shots and also in execute to set active shot
-
     enum_prop: bpy.props.EnumProperty(items=ops_context_data.get_shots_enum_for_active_seq)  # type: ignore
 
     @classmethod
@@ -129,8 +125,6 @@ class KITSU_OT_con_asset_types_load(bpy.types.Operator):
     bl_label = "Asset Types Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
-
-    # TODO: reduce api request to one, we request in get_sequences and also in execute to set sequence_active
 
     enum_prop: bpy.props.EnumProperty(items=ops_context_data.get_assetypes_enum_list)  # type: ignore
 
@@ -167,7 +161,6 @@ class KITSU_OT_con_assets_load(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    # TODO: reduce api request to one, we request in get_sequences and also in execute to set sequence_active
     enum_prop: bpy.props.EnumProperty(items=ops_context_data.get_assets_enum_for_active_asset_type)  # type: ignore
 
     @classmethod
@@ -201,8 +194,6 @@ class KITSU_OT_con_task_types_load(bpy.types.Operator):
     bl_label = "Task Types Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
-
-    # TODO: reduce api request to one, we request in get_sequences and also in execute to set sequence_active
 
     enum_prop: bpy.props.EnumProperty(items=ops_context_data.get_task_types_enum_for_current_context)  # type: ignore
 
