@@ -287,6 +287,7 @@ def load_post_handler_update_cache(dummy: Any) -> None:
 
 @persistent
 def load_post_handler_check_frame_range(dummy: Any) -> None:
+    # TODO: put this in ops_anim
     """
     Compares current scenes frame range with the active shot one on kitsu.
     If mismatch sets kitsu_error.frame_range -> True. This will enable

@@ -10,8 +10,15 @@ from . import models
 from . import propsdata
 from . import props
 from . import prefs
-from . import opsdata
-from . import ops
+from . import ops_generic_data
+from . import ops_generic
+from . import ops_auth
+from . import ops_context_data
+from . import ops_context
+from . import ops_anim_data
+from . import ops_anim
+from . import ops_sqe_data
+from . import ops_sqe
 from . import ui
 from .logger import ZLoggerFactory, ZLoggerLevelManager
 
@@ -30,7 +37,7 @@ bl_info = {
     "category": "Generic",
 }
 
-_need_reload = "ops" in locals()
+_need_reload = "props" in locals()
 
 if _need_reload:
     import importlib
@@ -46,8 +53,15 @@ if _need_reload:
     propsdata = importlib.reload(propsdata)
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)
-    opsdata = importlib.reload(opsdata)
-    ops = importlib.reload(ops)
+    ops_generic_data = importlib.reload(ops_generic_data)
+    ops_generic = importlib.reload(ops_generic)
+    ops_auth = importlib.reload(ops_auth)
+    ops_context_data = importlib.reload(ops_context_data)
+    ops_context = importlib.reload(ops_context)
+    ops_anim_data = importlib.reload(ops_anim_data)
+    ops_anim = importlib.reload(ops_anim)
+    ops_sqe_data = importlib.reload(ops_sqe_data)
+    ops_sqe = importlib.reload(ops_sqe)
     ui = importlib.reload(ui)
     ZLoggerLevelManager.configure_levels()
     logger.info("-END- Reloading blender-kitsu")
@@ -58,8 +72,11 @@ def register():
     cache.register()
     props.register()
     prefs.register()
-    opsdata.register()
-    ops.register()
+    ops_generic.register()
+    ops_auth.register()
+    ops_context.register()
+    ops_anim.register()
+    ops_sqe.register()
     ui.register()
     ZLoggerLevelManager.configure_levels()
     logger.info("-END- Registering blender-kitsu")
@@ -68,8 +85,11 @@ def register():
 def unregister():
     logger.info("-START- Unregistering blender-kitsu")
     ui.unregister()
-    ops.unregister()
-    opsdata.unregister()
+    ops_sqe.unregister()
+    ops_anim.unregister()
+    ops_context.unregister()
+    ops_auth.unregister()
+    ops_generic.unregister()
     prefs.unregister()
     props.unregister()
     cache.unregister()

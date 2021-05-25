@@ -10,11 +10,13 @@ from bpy import context
 
 from .auth import ZSession
 from .logger import ZLoggerFactory
-from .ops import (
-    KITSU_OT_productions_load,
+
+from .ops_auth import (
     KITSU_OT_session_end,
     KITSU_OT_session_start,
 )
+from .ops_context import KITSU_OT_con_productions_load
+
 from . import cache
 
 logger = ZLoggerFactory.getLogger(name=__name__)
@@ -160,7 +162,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             prod_load_text = project_active.name
 
         row.operator(
-            KITSU_OT_productions_load.bl_idname,
+            KITSU_OT_con_productions_load.bl_idname,
             text=prod_load_text,
             icon="DOWNARROW_HLT",
         )

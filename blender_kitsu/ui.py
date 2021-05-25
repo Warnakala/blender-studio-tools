@@ -5,36 +5,46 @@ from pathlib import Path
 from . import cache
 from . import checkstrip
 from . import prefs
-from .ops import (
-    KITSU_OT_assets_load,
-    KITSU_OT_asset_types_load,
-    KITSU_OT_productions_load,
-    KITSU_OT_sequences_load,
-    KITSU_OT_session_end,
+
+from .ops_generic import KITSU_OT_open_path
+
+from .ops_auth import (
     KITSU_OT_session_start,
-    KITSU_OT_shots_load,
-    KITSU_OT_task_types_load,
-    KITSU_OT_sqe_debug_duplicates,
-    KITSU_OT_sqe_debug_multi_project,
-    KITSU_OT_sqe_debug_not_linked,
-    KITSU_OT_sqe_init_strip,
-    KITSU_OT_sqe_link_sequence,
-    KITSU_OT_sqe_link_shot,
-    KITSU_OT_sqe_multi_edit_strip,
-    KITSU_OT_sqe_pull_shot_meta,
-    KITSU_OT_sqe_push_del_shot,
+    KITSU_OT_session_end,
+)
+
+from .ops_anim import (
+    KITSU_OT_anim_create_playblast,
+    KITSU_OT_anim_set_playblast_version,
+    KITSU_OT_anim_increment_playblast_version,
+    KITSU_OT_anim_pull_frame_range,
+)
+from .ops_context import (
+    KITSU_OT_con_productions_load,
+    KITSU_OT_con_sequences_load,
+    KITSU_OT_con_shots_load,
+    KITSU_OT_con_asset_types_load,
+    KITSU_OT_con_assets_load,
+    KITSU_OT_con_task_types_load,
+)
+
+from .ops_sqe import (
     KITSU_OT_sqe_push_new_sequence,
     KITSU_OT_sqe_push_new_shot,
     KITSU_OT_sqe_push_shot_meta,
-    KITSU_OT_set_thumbnail_task_type,
-    KITSU_OT_sqe_push_thumbnail,
-    KITSU_OT_create_playblast,
-    KITSU_OT_set_playblast_version,
-    KITSU_OT_increment_playblast_version,
     KITSU_OT_sqe_uninit_strip,
     KITSU_OT_sqe_unlink_shot,
-    KITSU_OT_open_path,
-    KITSU_OT_pull_frame_range,
+    KITSU_OT_sqe_init_strip,
+    KITSU_OT_sqe_link_shot,
+    KITSU_OT_sqe_link_sequence,
+    KITSU_OT_sqe_set_thumbnail_task_type,
+    KITSU_OT_sqe_push_thumbnail,
+    KITSU_OT_sqe_push_del_shot,
+    KITSU_OT_sqe_pull_shot_meta,
+    KITSU_OT_sqe_multi_edit_strip,
+    KITSU_OT_sqe_debug_duplicates,
+    KITSU_OT_sqe_debug_not_linked,
+    KITSU_OT_sqe_debug_multi_project,
     KITSU_OT_sqe_pull_edit,
 )
 
@@ -105,12 +115,12 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         item_group_data = {
             "name": "Sequence",
             "zobject": cache.sequence_active_get(),
-            "operator": KITSU_OT_sequences_load.bl_idname,
+            "operator": KITSU_OT_con_sequences_load.bl_idname,
         }
         item_data = {
             "name": "Shot",
             "zobject": cache.shot_active_get(),
-            "operator": KITSU_OT_shots_load.bl_idname,
+            "operator": KITSU_OT_con_shots_load.bl_idname,
         }
         # Production
         layout.row().label(text=f"Production: {project_active.name}")
@@ -127,7 +137,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         if category == "ASSETS":
             item_group_data["name"] = "AssetType"
             item_group_data["zobject"] = cache.asset_type_active_get()
-            item_group_data["operator"] = KITSU_OT_asset_types_load.bl_idname
+            item_group_data["operator"] = KITSU_OT_con_asset_types_load.bl_idname
 
         row = box.row(align=True)
         item_group_text = f"Select {item_group_data['name']}"
@@ -145,7 +155,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         if category == "ASSETS":
             item_data["name"] = "Asset"
             item_data["zobject"] = cache.asset_active_get()
-            item_data["operator"] = KITSU_OT_assets_load.bl_idname
+            item_data["operator"] = KITSU_OT_con_assets_load.bl_idname
 
         row = box.row(align=True)
         item_text = f"Select {item_data['name']}"
@@ -165,7 +175,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
             t_text = task_type_active.name
         row = box.row(align=True)
         row.operator(
-            KITSU_OT_task_types_load.bl_idname, text=t_text, icon="DOWNARROW_HLT"
+            KITSU_OT_con_task_types_load.bl_idname, text=t_text, icon="DOWNARROW_HLT"
         )
 
 
@@ -202,7 +212,7 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
             row = box.row(align=True)
             row.label(text="Frame Range Outdated")
             row.operator(
-                KITSU_OT_pull_frame_range.bl_idname,
+                KITSU_OT_anim_pull_frame_range.bl_idname,
                 icon="FILE_REFRESH",
             )
 
@@ -234,20 +244,20 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         # playlast version op
         row = box.row(align=True)
         row.operator(
-            KITSU_OT_set_playblast_version.bl_idname,
+            KITSU_OT_anim_set_playblast_version.bl_idname,
             text=context.scene.kitsu.playblast_version,
             icon="DOWNARROW_HLT",
         )
         # playblast increment version op
         row.operator(
-            KITSU_OT_increment_playblast_version.bl_idname,
+            KITSU_OT_anim_increment_playblast_version.bl_idname,
             text="",
             icon="ADD",
         )
 
         # playblast op
         row = box.row(align=True)
-        row.operator(KITSU_OT_create_playblast.bl_idname, icon="RENDER_ANIMATION")
+        row.operator(KITSU_OT_anim_create_playblast.bl_idname, icon="RENDER_ANIMATION")
 
         # playblast path label
         if Path(context.scene.kitsu.playblast_file).exists():
@@ -272,7 +282,7 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         # pull frame range
         row = box.row(align=True)
         row.operator(
-            KITSU_OT_pull_frame_range.bl_idname,
+            KITSU_OT_anim_pull_frame_range.bl_idname,
             icon="FILE_REFRESH",
         )
 
@@ -695,7 +705,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
             # select task types op
             noun = context.scene.kitsu.task_type_thumbnail_name or "Select Task Type"
             split.operator(
-                KITSU_OT_set_thumbnail_task_type.bl_idname,
+                KITSU_OT_sqe_set_thumbnail_task_type.bl_idname,
                 text=noun,
                 icon="DOWNARROW_HLT",
             )
