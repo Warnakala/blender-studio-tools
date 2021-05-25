@@ -461,6 +461,39 @@ def load_post_handler_init_version_model(dummy: Any) -> None:
     ops_anim_data.init_playblast_file_model(bpy.context)
 
 
+@persistent
+def load_post_handler_check_frame_range(dummy: Any) -> None:
+    """
+    Compares current scenes frame range with the active shot one on kitsu.
+    If mismatch sets kitsu_error.frame_range -> True. This will enable
+    a warning in the Animation Tools Tab UI
+    """
+    active_shot = cache.shot_active_get()
+
+    if not active_shot:
+        return
+
+    if not active_shot.nb_frames:
+        logger.warning(
+            "Failed to check frame range. Shot %s missing 'nb_frames' attribute on server.",
+            active_shot.name,
+        )
+        return
+
+    frame_in = bkglobals.FRAME_START
+    frame_out = frame_in + active_shot.nb_frames - 1
+
+    if (
+        frame_in == bpy.context.scene.frame_start
+        and frame_out == bpy.context.scene.frame_end
+    ):
+        bpy.context.scene.kitsu_error.frame_range = False
+        return
+
+    bpy.context.scene.kitsu_error.frame_range = True
+    logger.warning("Current frame range is outdated!")
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -480,11 +513,13 @@ def register():
 
     # handlers
     bpy.app.handlers.load_post.append(load_post_handler_init_version_model)
+    bpy.app.handlers.load_post.append(load_post_handler_check_frame_range)
 
 
 def unregister():
 
     # clear handlers
+    bpy.app.handlers.load_post.remove(load_post_handler_check_frame_range)
     bpy.app.handlers.load_post.remove(load_post_handler_init_version_model)
 
     for cls in reversed(classes):
