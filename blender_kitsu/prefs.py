@@ -6,7 +6,6 @@ from typing import Optional
 from pathlib import Path
 
 import bpy
-from bpy import context
 
 from .auth import ZSession
 from .logger import ZLoggerFactory
@@ -17,7 +16,7 @@ from .ops_auth import (
 )
 from .ops_context import KITSU_OT_con_productions_load
 
-from . import cache
+from . import cache, ops_anim_data
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
@@ -55,6 +54,9 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         storage_dir = self.get_datadir() / "blender_kitsu" / hashed_filepath
         return storage_dir.as_posix()
 
+    def init_playblast_file_model(self, context: bpy.types.Context) -> None:
+        ops_anim_data.init_playblast_file_model(context)
+
     bl_idname = __package__
 
     host: bpy.props.StringProperty(  # type: ignore
@@ -82,7 +84,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         description="Directory path to playblast root folder.",
         default="",
         subtype="DIR_PATH",
-        # TODO: update=update_
+        update=init_playblast_file_model,
     )
 
     project_active_id: bpy.props.StringProperty(  # type: ignore

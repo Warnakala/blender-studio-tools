@@ -3,7 +3,6 @@ from pathlib import Path
 
 import bpy
 
-from . import prefs
 from .models import FileListModel
 from .logger import ZLoggerFactory
 
@@ -14,13 +13,20 @@ _playblast_enum_list: List[Tuple[str, str, str]] = []
 _playblast_file_model_init: bool = False
 
 
+def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
+    """
+    shortcut to get blender_kitsu addon preferences
+    """
+    return context.preferences.addons["blender_kitsu"].preferences
+
+
 def init_playblast_file_model(
     context: bpy.types.Context,
 ) -> None:
 
     global PLAYBLAST_FILE_MODEL
     global _playblast_file_model_init
-    addon_prefs = prefs.addon_prefs_get(context)
+    addon_prefs = addon_prefs_get(context)
 
     # is None if invalid
     if not context.scene.kitsu.playblast_dir:
