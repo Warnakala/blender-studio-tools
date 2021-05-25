@@ -49,12 +49,16 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
         succeeded = []
         failed = []
         logger.info("-START- Pushing Metadata")
+
         # begin progress update
         selected_sequences = context.selected_sequences
         if not selected_sequences:
             selected_sequences = context.scene.sequence_editor.sequences_all
 
         context.window_manager.progress_begin(0, len(selected_sequences))
+
+        # clear cache
+        Cache.clear_all()
 
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
@@ -69,7 +73,7 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
                 continue
 
             # check if shot is still available by id
-            shot = checkstrip.shot_exists_by_id(strip)
+            shot = checkstrip.shot_exists_by_id(strip, clear_cache=False)
             if not shot:
                 failed.append(strip)
                 continue
@@ -138,6 +142,9 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
         failed = []
         logger.info("-START- Submitting new shots to: %s", project_active.name)
 
+        # clear cache
+        Cache.clear_all()
+
         # begin progress update
         selected_sequences = context.selected_sequences
         if not selected_sequences:
@@ -168,12 +175,16 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
                 continue
 
             # check if seq already to sevrer  > create it
-            zseq = checkstrip.seq_exists_by_name(strip, project_active)
+            zseq = checkstrip.seq_exists_by_name(
+                strip, project_active, clear_cache=False
+            )
             if not zseq:
                 zseq = push.new_sequence(strip, project_active)
 
             # check if shot already to sevrer  > create it
-            shot = checkstrip.shot_exists_by_name(strip, project_active, zseq)
+            shot = checkstrip.shot_exists_by_name(
+                strip, project_active, zseq, clear_cache=False
+            )
             if shot:
                 failed.append(strip)
                 continue
@@ -673,6 +684,9 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
 
         context.window_manager.progress_begin(0, len(selected_sequences))
 
+        # clear cache once
+        Cache.clear_all()
+
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
@@ -686,13 +700,13 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
                 continue
 
             # check if shot is still available by id
-            shot = checkstrip.shot_exists_by_id(strip)
+            shot = checkstrip.shot_exists_by_id(strip, clear_cache=False)
             if not shot:
                 failed.append(strip)
                 continue
 
             # push update to shot
-            pull.shot_meta(strip, shot)
+            pull.shot_meta(strip, shot, clear_cache=False)
             succeeded.append(strip)
 
         # end progress update
@@ -860,6 +874,9 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
         failed = []
         logger.info("-START- Deleting shots")
 
+        # clear cache
+        Cache.clear_all()
+
         # begin progress update
         selected_sequences = context.selected_sequences
 
@@ -878,7 +895,7 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
                 continue
 
             # check if shot still exists to sevrer
-            shot = checkstrip.shot_exists_by_id(strip)
+            shot = checkstrip.shot_exists_by_id(strip, clear_cache=False)
             if not shot:
                 failed.append(strip)
                 continue
@@ -993,6 +1010,10 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         upload_queue: List[Path] = []  # will be used as successed list
 
         logger.info("-START- Pushing shot thumbnails")
+
+        # clear cache
+        Cache.clear_all()
+
         with self.override_render_settings(context):
             with self.temporary_current_frame(context) as original_curframe:
 
@@ -1018,7 +1039,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
                         continue
 
                     # check if shot is still available by id
-                    shot = checkstrip.shot_exists_by_id(strip)
+                    shot = checkstrip.shot_exists_by_id(strip, clear_cache=False)
                     if not shot:
                         failed.append(strip)
                         continue
@@ -1513,6 +1534,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
 
         color = colorsys.hsv_to_rgb(hue, saturation, brightness)
         return (color[0], color[1], color[2])
+
 
 # ---------REGISTER ----------
 

@@ -55,10 +55,13 @@ def has_meta(strip: bpy.types.Sequence) -> bool:
     return True
 
 
-def shot_exists_by_id(strip: bpy.types.Sequence) -> Optional[Shot]:
+def shot_exists_by_id(
+    strip: bpy.types.Sequence, clear_cache: bool = True
+) -> Optional[Shot]:
     """Returns Shot instance if shot with strip.kitsu.shot_id exists else None"""
 
-    Cache.clear_all()
+    if clear_cache:
+        Cache.clear_all()
 
     try:
         shot = Shot.by_id(strip.kitsu.shot_id)
@@ -77,11 +80,12 @@ def shot_exists_by_id(strip: bpy.types.Sequence) -> Optional[Shot]:
 
 
 def seq_exists_by_name(
-    strip: bpy.types.Sequence, project: Project
+    strip: bpy.types.Sequence, project: Project, clear_cache: bool = True
 ) -> Optional[Sequence]:
     """Returns Sequence instance if strip.kitsu.sequence_name exists on server, else None"""
 
-    Cache.clear_all()
+    if clear_cache:
+        Cache.clear_all()
 
     zseq = project.get_sequence_by_name(strip.kitsu.sequence_name)
     if not zseq:
@@ -102,11 +106,15 @@ def seq_exists_by_name(
 
 
 def shot_exists_by_name(
-    strip: bpy.types.Sequence, project: Project, sequence: Sequence
+    strip: bpy.types.Sequence,
+    project: Project,
+    sequence: Sequence,
+    clear_cache: bool = True,
 ) -> Optional[Shot]:
     """Returns Shot instance if strip.kitsu.shot_name exists on server, else None."""
 
-    Cache.clear_all()
+    if clear_cache:
+        Cache.clear_all()
 
     shot = project.get_shot_by_name(sequence, strip.kitsu.shot_name)
     if not shot:
