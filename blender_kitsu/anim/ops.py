@@ -21,9 +21,6 @@ from blender_kitsu.types import (
 )
 from blender_kitsu.anim import opsdata
 
-# TODO: restructure this to not import from context
-from blender_kitsu.context import opsdata as ops_context_data
-
 logger = LoggerFactory.getLogger(name=__name__)
 
 
@@ -40,7 +37,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
     )
     confirm: bpy.props.BoolProperty(name="Confirm", default=False)
 
-    task_status: bpy.props.EnumProperty(items=ops_context_data.get_all_task_statuses_enum)  # type: ignore
+    task_status: bpy.props.EnumProperty(items=cache.get_all_task_statuses_enum)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -185,7 +182,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         sp = context.space_data
         # get first last name for stamp note text
         session = prefs.session_get(context)
-        first_name = session.data.user["first_name"]  # TODO: add prop
+        first_name = session.data.user["first_name"]
         last_name = session.data.user["last_name"]
         # Remember current render settings in order to restore them later.
 

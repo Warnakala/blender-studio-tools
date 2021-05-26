@@ -2,7 +2,6 @@ from typing import Set, Any
 
 import bpy
 
-from blender_kitsu.context import opsdata
 from blender_kitsu import cache, util, prefs
 from blender_kitsu.logger import LoggerFactory
 
@@ -20,7 +19,7 @@ class KITSU_OT_con_productions_load(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    enum_prop: bpy.props.EnumProperty(items=opsdata.get_projects_enum_list)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=cache.get_projects_enum_list)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -58,7 +57,7 @@ class KITSU_OT_con_sequences_load(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    enum_prop: bpy.props.EnumProperty(items=opsdata.get_sequences_enum_list)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=cache.get_sequences_enum_list)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -94,7 +93,7 @@ class KITSU_OT_con_shots_load(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    enum_prop: bpy.props.EnumProperty(items=opsdata.get_shots_enum_for_active_seq)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=cache.get_shots_enum_for_active_seq)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -127,7 +126,7 @@ class KITSU_OT_con_asset_types_load(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    enum_prop: bpy.props.EnumProperty(items=opsdata.get_assetypes_enum_list)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=cache.get_assetypes_enum_list)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -162,7 +161,7 @@ class KITSU_OT_con_assets_load(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    enum_prop: bpy.props.EnumProperty(items=opsdata.get_assets_enum_for_active_asset_type)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=cache.get_assets_enum_for_active_asset_type)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -196,7 +195,7 @@ class KITSU_OT_con_task_types_load(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    enum_prop: bpy.props.EnumProperty(items=opsdata.get_task_types_enum_for_current_context)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=cache.get_task_types_enum_for_current_context)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:

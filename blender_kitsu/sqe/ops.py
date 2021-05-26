@@ -6,8 +6,6 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 
 import bpy
 
-# TODO: restructure this to not import from context
-from blender_kitsu.context import opsdata as ops_context_data
 from blender_kitsu import gazu, cache, util, prefs
 from blender_kitsu.sqe import push, pull, checkstrip, opsdata
 
@@ -408,7 +406,7 @@ class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
     bl_property = "enum_prop"
 
     enum_prop: bpy.props.EnumProperty(
-        items=ops_context_data.get_sequences_enum_list,
+        items=cache.get_sequences_enum_list,
     )  # type: ignore
 
     @classmethod
@@ -455,7 +453,7 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
-    sequence_enum: bpy.props.EnumProperty(items=ops_context_data.get_sequences_enum_list, name="Sequence")  # type: ignore
+    sequence_enum: bpy.props.EnumProperty(items=cache.get_sequences_enum_list, name="Sequence")  # type: ignore
     shots_enum: bpy.props.EnumProperty(items=opsdata.get_shots_enum_for_link_shot_op, name="Shot")  # type: ignore
     use_url: bpy.props.BoolProperty(
         name="Use URL",
@@ -951,7 +949,7 @@ class KITSU_OT_sqe_set_thumbnail_task_type(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
-    enum_prop: bpy.props.EnumProperty(items=ops_context_data.get_shot_task_types_enum)  # type: ignore
+    enum_prop: bpy.props.EnumProperty(items=cache.get_shot_task_types_enum)  # type: ignore
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
