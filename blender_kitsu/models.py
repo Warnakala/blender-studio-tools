@@ -134,7 +134,7 @@ class FileListModel:
 
     def __detect_files(self, path: Path) -> List[str]:
         if path.exists() and path.is_dir():
-            # iterate through directory and return all pathes that are dirs, only return their name
+            # iterate through directory and return all pathes that are files, only return their name
             return sorted(
                 [str(x.name) for x in path.iterdir() if x.is_file()], reverse=True
             )
@@ -156,8 +156,18 @@ class FileListModel:
         return self.__combined
 
     @property
+    def items_as_paths(self) -> List[Path]:
+        if not self.__root_path:
+            return []
+        return [self.__root_path.joinpath(item).absolute() for item in self.items]
+
+    @property
     def items_as_enum_list(self) -> List[Tuple[str, str, str]]:
         return [(item, item, "") for item in self.__combined]
+
+    @property
+    def items_as_path_enum_list(self) -> List[Tuple[str, str, str]]:
+        return [(item.as_posix(), item.name, "") for item in self.items_as_paths]
 
     @property
     def versions(self) -> List[str]:
