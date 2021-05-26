@@ -8,6 +8,8 @@ from pathlib import Path
 import bpy
 
 from blender_kitsu import cache
+
+# TODO: restructure this to not acess ops_anim_data
 from blender_kitsu.anim import opsdata as ops_anim_data
 from blender_kitsu.types import Session
 from blender_kitsu.logger import LoggerFactory
