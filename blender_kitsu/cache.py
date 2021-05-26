@@ -394,10 +394,10 @@ def clear_cache_variables():
     logger.info("Cleared active asset type cache")
 
     _project_active = Project()
-    logger.info("Cleared Active Project Cache")
+    logger.info("Cleared active project cache")
 
     _task_type_active = TaskType()
-    logger.info("Cleared Active Task Type Cache")
+    logger.info("Cleared active task type cache")
 
     _cache_initialized = False
 
