@@ -56,7 +56,6 @@ classes = [RDPRESET_preferences]
 
 def register():
     for cls in classes:
-        print(f"REGISTERING CLS: {cls}")
         bpy.utils.register_class(cls)
 
 

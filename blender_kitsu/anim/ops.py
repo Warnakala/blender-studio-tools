@@ -185,8 +185,8 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         sp = context.space_data
         # get first last name for stamp note text
         session = prefs.session_get(context)
-        first_name = session.session.user["first_name"]  # TODO: add prop
-        last_name = session.session.user["last_name"]
+        first_name = session.data.user["first_name"]  # TODO: add prop
+        last_name = session.data.user["last_name"]
         # Remember current render settings in order to restore them later.
 
         # filepath

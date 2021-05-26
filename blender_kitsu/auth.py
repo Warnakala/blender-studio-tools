@@ -21,12 +21,12 @@ class Session:
         self._email = email
         self._passwd = passwd
         self._host = self.get_host_api_url(host)
-        self._session: SessionInfo = SessionInfo()
+        self._data: SessionData = SessionData()
 
         if self._host:
             gazu.client.set_host(self._host)
 
-    def start(self) -> Optional[SessionInfo]:
+    def start(self) -> Optional[SessionData]:
         # clear all data
         gazu.cache.disable()
         gazu.cache.clear_all()
@@ -41,14 +41,14 @@ class Session:
             return None
 
         logger.info("Session started with user: %s", self.email)
-        return self._session
+        return self._data
 
     def end(self) -> bool:
-        if not self._session.login:
+        if not self._data.login:
             logger.info("Failed to log out. Session not started yet.")
             return False
 
-        self._session = SessionInfo(gazu.log_out())  # returns empty dict
+        self._data = SessionData(gazu.log_out())  # returns empty dict
         gazu.cache.clear_all()
         logger.info("Session ended.")
         return True
@@ -69,11 +69,11 @@ class Session:
             return False
 
         logger.info("Login was succesfull")
-        self._session.update(session_dict)
+        self._data.update(session_dict)
         return True
 
     def is_auth(self) -> bool:
-        return self._session.login
+        return self._data.login
 
     def set_credentials(self, email: str, passwd: str) -> None:
         self.email = email
@@ -84,7 +84,7 @@ class Session:
             "email": self.email,
             "passwd": self._passwd,
             "host": self.host,
-        }  # TODO: save those in SessionInfo
+        }  # TODO: save those in SessionData
 
     def set_config(self, config: Dict[str, str]) -> None:
         email = config.get("email", "")
@@ -134,15 +134,15 @@ class Session:
         self._email = email
 
     @property
-    def session(self) -> SessionInfo:
-        return self._session
+    def data(self) -> SessionData:
+        return self._data
 
     def __del__(self) -> None:
         self.end()
 
 
 @dataclass
-class SessionInfo:
+class SessionData:
     login: bool = False
     user: Dict[str, str] = field(default_factory=dict)
     ldap: bool = False
