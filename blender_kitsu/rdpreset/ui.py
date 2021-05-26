@@ -3,7 +3,10 @@ from pathlib import Path
 import bpy
 
 from blender_kitsu import prefs, rdpreset
-from blender_kitsu.rdpreset.ops import RDPRESET_OT_set_preset
+from blender_kitsu.rdpreset.ops import (
+    RDPRESET_OT_set_preset,
+    RDPRESET_OT_rdpreset_apply,
+)
 
 
 class RDPRESET_PT_vi3d_general_tools(bpy.types.Panel):
@@ -25,7 +28,7 @@ class RDPRESET_PT_vi3d_general_tools(bpy.types.Panel):
         box.label(text="Render Settings", icon="RESTRICT_RENDER_OFF")
 
         # render settings
-        row = box.row()
+        row = box.row(align=True)
         rdpreset_text = "Select Render Preset"
         if context.scene.rdpreset.preset_file:
             rdpreset_text = Path(context.scene.rdpreset.preset_file).name
@@ -33,6 +36,11 @@ class RDPRESET_PT_vi3d_general_tools(bpy.types.Panel):
             RDPRESET_OT_set_preset.bl_idname,
             text=rdpreset_text,
             icon="DOWNARROW_HLT",
+        )
+        row.operator(
+            RDPRESET_OT_rdpreset_apply.bl_idname,
+            text="",
+            icon="PLAY",
         )
 
 

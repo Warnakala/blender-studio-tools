@@ -1,3 +1,5 @@
+import importlib.util
+
 from pathlib import Path
 from typing import Dict, List, Set, Optional, Tuple, Any
 
@@ -37,7 +39,7 @@ class RDPRESET_OT_set_preset(bpy.types.Operator):
 
         # update global scene cache version prop
         context.scene.rdpreset.preset_file = file
-        logger.info("Set render settings file to %s", file)
+        logger.info("Set render preset file to %s", file)
 
         # redraw ui
         ops_generic_data.ui_redraw()
@@ -54,40 +56,43 @@ class RDPRESET_OT_rdpreset_apply(bpy.types.Operator):
 
     bl_idname = "rdpreset.apply"
     bl_label = "Apply Preset"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return True
-        # return bool(context.scene.kitsu.)
+        return bool(context.scene.rdpreset.preset_file)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        file = ""
+        preset_file = context.scene.rdpreset.preset_file
+        preset_path = Path(preset_file).absolute()
 
-        if not file:
+        if not preset_file:
             return {"CANCELLED"}
 
-        if context.scene.rdpreset.preset_file == file:
+        # load module
+        spec = importlib.util.spec_from_file_location(
+            preset_path.name, preset_path.as_posix()
+        )
+
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        # exec module main function
+        if "main" not in dir(module):
+            self.report(
+                {"ERROR"}, f"{preset_path.name} does not contain a 'main' function"
+            )
             return {"CANCELLED"}
 
-        # update global scene cache version prop
-        context.scene.rdpreset.preset_file = file
-        logger.info("Set render settings file to %s", file)
+        module.main()
+        self.report({"INFO"}, f"Applied: {preset_path.name}")
 
-        # redraw ui
-        ops_generic_data.ui_redraw()
-
-        return {"FINISHED"}
-
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        context.window_manager.invoke_search_popup(self)  # type: ignore
         return {"FINISHED"}
 
 
 # ---------REGISTER ----------
 
-classes = [
-    RDPRESET_OT_set_preset,
-]
+classes = [RDPRESET_OT_set_preset, RDPRESET_OT_rdpreset_apply]
 
 
 def register():
