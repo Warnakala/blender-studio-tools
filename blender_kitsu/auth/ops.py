@@ -3,6 +3,8 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 import bpy
 
 from blender_kitsu import cache, prefs
+
+# TODO: restructure this to not acess ops_anim_data
 from blender_kitsu.anim import opsdata as ops_anim_data
 from blender_kitsu.logger import ZLoggerFactory
 

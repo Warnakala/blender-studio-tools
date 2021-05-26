@@ -11,7 +11,7 @@ from blender_kitsu import cache
 from blender_kitsu.anim import opsdata as ops_anim_data
 from blender_kitsu.types import Session
 from blender_kitsu.logger import ZLoggerFactory
-from blender_kitsu.ops_auth import (
+from blender_kitsu.auth.ops import (
     KITSU_OT_session_end,
     KITSU_OT_session_start,
 )
