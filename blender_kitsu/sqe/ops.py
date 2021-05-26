@@ -8,7 +8,7 @@ import bpy
 
 # TODO: restructure this to not import from context
 from blender_kitsu.context import opsdata as ops_context_data
-from blender_kitsu import gazu, cache, ops_generic_data, prefs
+from blender_kitsu import gazu, cache, util, prefs
 from blender_kitsu.sqe import push, pull, checkstrip, opsdata
 
 from blender_kitsu.logger import ZLoggerFactory
@@ -211,7 +211,7 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
 
         # log
         logger.info("-END- Submitting new shots to: %s", project_active.name)
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -392,7 +392,7 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
 
         # log
         logger.info("-END- Initializing shots")
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
 
         return {"FINISHED"}
 
@@ -433,7 +433,7 @@ class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
         strip.kitsu.sequence_name = zseq.name
         strip.kitsu.sequence_id = zseq.id
 
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -522,7 +522,7 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
         )
         logger.info(t)
         self.report({"INFO"}, t)
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
 
         return {"FINISHED"}
 
@@ -646,7 +646,7 @@ class KITSU_OT_sqe_multi_edit_strip(bpy.types.Operator):
 
         # log
         logger.info("-END- Multi Edit Shot")
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
 
@@ -720,7 +720,7 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
 
         # log
         logger.info("-END- Pulling shot metadata")
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
 
@@ -778,7 +778,7 @@ class KITSU_OT_sqe_uninit_strip(bpy.types.Operator):
 
         # log
         logger.info("-END- Uninitializing strips")
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
 
@@ -838,7 +838,7 @@ class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
 
         # log
         logger.info("-END- Unlinking shots")
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
 
@@ -915,7 +915,7 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
 
         # log
         logger.info("-END- Deleting shots")
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -971,7 +971,7 @@ class KITSU_OT_sqe_set_thumbnail_task_type(bpy.types.Operator):
         context.scene.kitsu.task_type_thumbnail_name = task_type.name
         context.scene.kitsu.task_type_thumbnail_id = task_type_id
 
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):

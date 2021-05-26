@@ -9,8 +9,8 @@ from blender_kitsu import (
     props,
     prefs,
     sqe,
-    ops_generic_data,
-    ops_generic,
+    util,
+    generic,
     auth,
     context,
     anim,
@@ -49,8 +49,8 @@ if _need_reload:
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)
     sqe.reload()
-    ops_generic_data = importlib.reload(ops_generic_data)
-    ops_generic = importlib.reload(ops_generic)
+    util = importlib.reload(util)
+    generic.reload()
     auth.reload()
     context.reload()
     anim.reload()
@@ -67,7 +67,7 @@ def register():
     cache.register()
     props.register()
     sqe.register()
-    ops_generic.register()
+    generic.register()
     auth.register()
     context.register()
     anim.register()
@@ -82,7 +82,7 @@ def unregister():
     anim.unregister()
     context.unregister()
     auth.unregister()
-    ops_generic.unregister()
+    generic.unregister()
     sqe.unregister()
     props.unregister()
     cache.unregister()

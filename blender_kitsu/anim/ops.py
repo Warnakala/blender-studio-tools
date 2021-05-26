@@ -8,7 +8,7 @@ from bpy.app.handlers import persistent
 
 from blender_kitsu import (
     cache,
-    ops_generic_data,
+    util,
     prefs,
     bkglobals,
 )
@@ -94,7 +94,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         logger.info("-END- Creating Playblast")
 
         # redraw ui
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
 
         # open webbrowser
         if addon_prefs.pb_open_webbrowser:
@@ -383,7 +383,7 @@ class KITSU_OT_anim_set_playblast_version(bpy.types.Operator):
         logger.info("Set playblast version to %s", version)
 
         # redraw ui
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
 
         return {"FINISHED"}
 
@@ -461,7 +461,7 @@ class KITSU_OT_anim_increment_playblast_version(bpy.types.Operator):
         # report
         self.report({"INFO"}, f"Add playblast version {version}")
 
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
 

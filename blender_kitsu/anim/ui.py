@@ -9,7 +9,7 @@ from blender_kitsu.anim.ops import (
     KITSU_OT_anim_increment_playblast_version,
     KITSU_OT_anim_pull_frame_range,
 )
-from blender_kitsu.ops_generic import KITSU_OT_open_path
+from blender_kitsu.generic.ops import KITSU_OT_open_path
 
 
 class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):

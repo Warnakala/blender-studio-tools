@@ -7,8 +7,7 @@ import bpy
 
 
 from blender_kitsu.logger import ZLoggerFactory
-from blender_kitsu import prefs
-from blender_kitsu import ops_generic_data
+from blender_kitsu import prefs, util
 from blender_kitsu.rdpreset import opsdata
 
 logger = ZLoggerFactory.getLogger(name=__name__)
@@ -42,7 +41,7 @@ class RDPRESET_OT_set_preset(bpy.types.Operator):
         logger.info("Set render preset file to %s", file)
 
         # redraw ui
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
 
         return {"FINISHED"}
 

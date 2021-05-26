@@ -3,7 +3,7 @@ from typing import Set, Any
 import bpy
 
 from blender_kitsu.context import opsdata
-from blender_kitsu import cache, ops_generic_data, prefs
+from blender_kitsu import cache, util, prefs
 from blender_kitsu.logger import ZLoggerFactory
 
 
@@ -40,7 +40,7 @@ class KITSU_OT_con_productions_load(bpy.types.Operator):
             cache.shot_active_reset(context)
             cache.asset_active_reset(context)
 
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -76,7 +76,7 @@ class KITSU_OT_con_sequences_load(bpy.types.Operator):
         if self.enum_prop != zseq_prev_id:
             cache.shot_active_reset(context)
 
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -109,7 +109,7 @@ class KITSU_OT_con_shots_load(bpy.types.Operator):
         # update kitsu metadata
         if self.enum_prop:
             cache.shot_active_set_by_id(context, self.enum_prop)
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -144,7 +144,7 @@ class KITSU_OT_con_asset_types_load(bpy.types.Operator):
         if self.enum_prop != asset_type_prev_id:
             cache.asset_active_reset(context)
 
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -178,7 +178,7 @@ class KITSU_OT_con_assets_load(bpy.types.Operator):
 
         # update kitsu metadata
         cache.asset_active_set_by_id(context, self.enum_prop)
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -222,7 +222,7 @@ class KITSU_OT_con_task_types_load(bpy.types.Operator):
         # update kitsu metadata
         cache.task_type_active_set_by_id(context, self.enum_prop)
 
-        ops_generic_data.ui_redraw()
+        util.ui_redraw()
         return {"FINISHED"}
 
     def invoke(self, context, event):
