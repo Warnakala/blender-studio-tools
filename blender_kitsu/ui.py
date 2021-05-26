@@ -51,22 +51,21 @@ class KITSU_PT_vi3d_auth(bpy.types.Panel):
 
     def draw(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
-        zsession = prefs.zsession_get(context)
+        session = prefs.session_get(context)
 
         layout = self.layout
 
         row = layout.row(align=True)
-        if not zsession.is_auth():
+        if not session.is_auth():
             row.label(text=f"Email: {addon_prefs.email}")
             row = layout.row(align=True)
             row.operator(KITSU_OT_session_start.bl_idname, text="Login", icon="PLAY")
         else:
-            row.label(text=f"Logged in: {zsession.email}")
+            row.label(text=f"Logged in: {session.email}")
             row = layout.row(align=True)
             row.operator(
                 KITSU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
             )
-
 
 
 class KITSU_PT_sqe_auth(bpy.types.Panel):
@@ -82,21 +81,21 @@ class KITSU_PT_sqe_auth(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(not prefs.zsession_auth(context))
+        return bool(not prefs.session_auth(context))
 
     def draw(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
-        zsession = prefs.zsession_get(context)
+        session = prefs.session_get(context)
 
         layout = self.layout
 
         row = layout.row(align=True)
-        if not zsession.is_auth():
+        if not session.is_auth():
             row.label(text=f"Email: {addon_prefs.email}")
             row = layout.row(align=True)
             row.operator(KITSU_OT_session_start.bl_idname, text="Login", icon="PLAY")
         else:
-            row.label(text=f"Logged in: {zsession.email}")
+            row.label(text=f"Logged in: {session.email}")
             row = layout.row(align=True)
             row.operator(
                 KITSU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
@@ -135,7 +134,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context) or context.selected_sequences)
+        return bool(prefs.session_auth(context) or context.selected_sequences)
 
     def draw(self, context: bpy.types.Context) -> None:
 
@@ -193,7 +192,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         box.label(text="Setup Shots", icon="TOOL_SETTINGS")
 
         # Production
-        if prefs.zsession_auth(context):
+        if prefs.session_auth(context):
             box.row().label(text=f"Production: {project_active.name}")
 
         # Single Selection
@@ -393,7 +392,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
     @classmethod
     def poll_push(cls, context: bpy.types.Context) -> bool:
         # if only one strip is selected and it is not init then hide panel
-        if not prefs.zsession_auth(context):
+        if not prefs.session_auth(context):
             return False
 
         selshots = context.selected_sequences
@@ -509,7 +508,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
     @classmethod
     def poll_pull(cls, context: bpy.types.Context) -> bool:
         # if only one strip is selected and it is not init then hide panel
-        return bool(prefs.zsession_auth(context))
+        return bool(prefs.session_auth(context))
 
     def draw_pull(self, context: bpy.types.Context) -> None:
         """

@@ -25,7 +25,7 @@ def get_projects_enum_list(
 ) -> List[Tuple[str, str, str]]:
     global _projects_list
 
-    if not prefs.zsession_auth(context):
+    if not prefs.session_auth(context):
         return []
 
     projectlist = ProjectList()

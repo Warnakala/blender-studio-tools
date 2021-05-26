@@ -45,7 +45,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(
-            prefs.zsession_auth(context)
+            prefs.session_auth(context)
             and cache.shot_active_get()
             and context.scene.camera
             and context.scene.kitsu.playblast_file
@@ -184,9 +184,9 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         sps = context.space_data.shading
         sp = context.space_data
         # get first last name for stamp note text
-        zsession = prefs.zsession_get(context)
-        first_name = zsession.session.user["first_name"]
-        last_name = zsession.session.user["last_name"]
+        session = prefs.session_get(context)
+        first_name = session.session.user["first_name"]  # TODO: add prop
+        last_name = session.session.user["last_name"]
         # Remember current render settings in order to restore them later.
 
         # filepath
@@ -401,7 +401,7 @@ class KITSU_OT_anim_pull_frame_range(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context) and cache.shot_active_get())
+        return bool(prefs.session_auth(context) and cache.shot_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 

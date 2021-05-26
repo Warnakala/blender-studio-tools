@@ -26,7 +26,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return prefs.zsession_auth(context)
+        return prefs.session_auth(context)
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -50,7 +50,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         row = box.row(align=True)
         row.prop(context.scene.kitsu, "category", expand=True)
 
-        if not prefs.zsession_auth(context) or not project_active:
+        if not prefs.session_auth(context) or not project_active:
             row.enabled = False
 
         # Sequence / AssetType

@@ -24,7 +24,7 @@ class KITSU_OT_con_productions_load(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return prefs.zsession_auth(context)
+        return prefs.session_auth(context)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # store vars to check if project / seq / shot changed
@@ -62,7 +62,7 @@ class KITSU_OT_con_sequences_load(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context) and cache.project_active_get())
+        return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -100,7 +100,7 @@ class KITSU_OT_con_shots_load(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         # only if session is auth active_project and active sequence selected
         return bool(
-            prefs.zsession_auth(context)
+            prefs.session_auth(context)
             and cache.sequence_active_get()
             and cache.project_active_get()
         )
@@ -131,7 +131,7 @@ class KITSU_OT_con_asset_types_load(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context) and cache.project_active_get())
+        return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # store vars to check if project / seq / shot changed
@@ -167,7 +167,7 @@ class KITSU_OT_con_assets_load(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(
-            prefs.zsession_auth(context)
+            prefs.session_auth(context)
             and cache.project_active_get()
             and cache.asset_type_active_get()
         )
@@ -201,7 +201,7 @@ class KITSU_OT_con_task_types_load(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        precon = bool(prefs.zsession_auth(context) and cache.project_active_get())
+        precon = bool(prefs.session_auth(context) and cache.project_active_get())
 
         if context.scene.kitsu.category == "SHOTS":
             return bool(

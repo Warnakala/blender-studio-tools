@@ -9,7 +9,7 @@ from blender_kitsu.logger import ZLoggerFactory
 logger = ZLoggerFactory.getLogger(name=__name__)
 
 
-class ZSession:
+class Session:
 
     """
     Class that will be instanced to blender_kitsu addon preferences.
@@ -21,12 +21,12 @@ class ZSession:
         self._email = email
         self._passwd = passwd
         self._host = self.get_host_api_url(host)
-        self._session: ZSessionInfo = ZSessionInfo()
+        self._session: SessionInfo = SessionInfo()
 
         if self._host:
             gazu.client.set_host(self._host)
 
-    def start(self) -> Optional[ZSessionInfo]:
+    def start(self) -> Optional[SessionInfo]:
         # clear all data
         gazu.cache.disable()
         gazu.cache.clear_all()
@@ -48,7 +48,7 @@ class ZSession:
             logger.info("Failed to log out. Session not started yet.")
             return False
 
-        self._session = ZSessionInfo(gazu.log_out())  # returns empty dict
+        self._session = SessionInfo(gazu.log_out())  # returns empty dict
         gazu.cache.clear_all()
         logger.info("Session ended.")
         return True
@@ -84,7 +84,7 @@ class ZSession:
             "email": self.email,
             "passwd": self._passwd,
             "host": self.host,
-        }  # TODO: save those in ZSessionInfo
+        }  # TODO: save those in SessionInfo
 
     def set_config(self, config: Dict[str, str]) -> None:
         email = config.get("email", "")
@@ -134,7 +134,7 @@ class ZSession:
         self._email = email
 
     @property
-    def session(self) -> ZSessionInfo:
+    def session(self) -> SessionInfo:
         return self._session
 
     def __del__(self) -> None:
@@ -142,7 +142,7 @@ class ZSession:
 
 
 @dataclass
-class ZSessionInfo:
+class SessionInfo:
     login: bool = False
     user: Dict[str, str] = field(default_factory=dict)
     ldap: bool = False

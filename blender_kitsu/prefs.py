@@ -9,7 +9,7 @@ import bpy
 
 from blender_kitsu import cache
 from blender_kitsu.anim import opsdata as ops_anim_data
-from blender_kitsu.auth import ZSession
+from blender_kitsu.auth import Session
 from blender_kitsu.logger import ZLoggerFactory
 from blender_kitsu.ops_auth import (
     KITSU_OT_session_end,
@@ -135,7 +135,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         default=True,
     )
 
-    session: ZSession = ZSession()
+    session: Session = Session()
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -216,9 +216,9 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         return True
 
 
-def zsession_get(context: bpy.types.Context) -> ZSession:
+def session_get(context: bpy.types.Context) -> Session:
     """
-    shortcut to get zsession from blender_kitsu addon preferences
+    shortcut to get session from blender_kitsu addon preferences
     """
     prefs = context.preferences.addons["blender_kitsu"].preferences
     return prefs.session  # type: ignore
@@ -231,11 +231,11 @@ def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     return context.preferences.addons["blender_kitsu"].preferences
 
 
-def zsession_auth(context: bpy.types.Context) -> bool:
+def session_auth(context: bpy.types.Context) -> bool:
     """
     shortcut to check if zession is authorized
     """
-    return zsession_get(context).is_auth()
+    return session_get(context).is_auth()
 
 
 # ---------REGISTER ----------

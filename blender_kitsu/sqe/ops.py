@@ -36,7 +36,7 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context))
+        return bool(prefs.session_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -116,13 +116,13 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
         if nr_of_shots == 1:
             strip = context.scene.sequence_editor.active_strip
             return bool(
-                prefs.zsession_auth(context)
+                prefs.session_auth(context)
                 and cache.project_active_get()
                 and strip.kitsu.sequence_name
                 and strip.kitsu.shot_name
             )
 
-        return bool(prefs.zsession_auth(context) and cache.project_active_get())
+        return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -276,7 +276,7 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # needs to be logged in, active project
-        return bool(prefs.zsession_auth(context) and cache.project_active_get())
+        return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -415,7 +415,7 @@ class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         strip = context.scene.sequence_editor.active_strip
         return bool(
-            prefs.zsession_auth(context)
+            prefs.session_auth(context)
             and cache.project_active_get()
             and strip
             and context.selected_sequences
@@ -471,7 +471,7 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         strip = context.scene.sequence_editor.active_strip
         return bool(
-            prefs.zsession_auth(context)
+            prefs.session_auth(context)
             and cache.project_active_get()
             and strip
             and context.selected_sequences
@@ -663,7 +663,7 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context))
+        return bool(prefs.session_auth(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
@@ -856,7 +856,7 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context) and context.selected_sequences)
+        return bool(prefs.session_auth(context) and context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.confirm:
@@ -955,7 +955,7 @@ class KITSU_OT_sqe_set_thumbnail_task_type(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context) and cache.project_active_get())
+        return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -993,7 +993,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(
-            prefs.zsession_auth(context) and context.scene.kitsu.task_type_thumbnail_id
+            prefs.session_auth(context) and context.scene.kitsu.task_type_thumbnail_id
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -1313,7 +1313,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.zsession_auth(context) and cache.project_active_get())
+        return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         failed = []

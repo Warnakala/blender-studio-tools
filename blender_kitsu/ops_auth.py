@@ -11,7 +11,7 @@ logger = ZLoggerFactory.getLogger(name=__name__)
 
 class KITSU_OT_session_start(bpy.types.Operator):
     """
-    Starts the ZSession, which  is stored in blender_kitsu addon preferences.
+    Starts the Session, which  is stored in blender_kitsu addon preferences.
     Authenticates user with server until session ends.
     Host, email and password are retrieved from blender_kitsu addon preferences.
     """
@@ -25,10 +25,10 @@ class KITSU_OT_session_start(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        zsession = prefs.zsession_get(context)
+        session = prefs.session_get(context)
 
-        zsession.set_config(self.get_config(context))
-        zsession.start()
+        session.set_config(self.get_config(context))
+        session.start()
 
         # init cache variables, will skip if cache already initiated
         cache.init_cache_variables()
@@ -49,7 +49,7 @@ class KITSU_OT_session_start(bpy.types.Operator):
 
 class KITSU_OT_session_end(bpy.types.Operator):
     """
-    Ends the ZSession which is stored in blender_kitsu addon preferences.
+    Ends the Session which is stored in blender_kitsu addon preferences.
     """
 
     bl_idname = "kitsu.session_end"
@@ -58,11 +58,11 @@ class KITSU_OT_session_end(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return prefs.zsession_auth(context)
+        return prefs.session_auth(context)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        zsession = prefs.zsession_get(context)
-        zsession.end()
+        session = prefs.session_get(context)
+        session.end()
         # clear cache variables
         cache.clear_cache_variables()
         return {"FINISHED"}
