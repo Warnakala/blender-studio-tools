@@ -14,7 +14,6 @@ from blender_kitsu import (
     auth,
     context,
     anim,
-    ui,
 )
 
 from blender_kitsu.logger import ZLoggerFactory, ZLoggerLevelManager
@@ -55,7 +54,6 @@ if _need_reload:
     auth.reload()
     context.reload()
     anim.reload()
-    ui = importlib.reload(ui)
 
     ZLoggerLevelManager.configure_levels()
     logger.info("-END- Reloading blender-kitsu")
@@ -73,7 +71,6 @@ def register():
     auth.register()
     context.register()
     anim.register()
-    ui.register()
 
     ZLoggerLevelManager.configure_levels()
     logger.info("-END- Registering blender-kitsu")
@@ -82,7 +79,6 @@ def register():
 def unregister():
     logger.info("-START- Unregistering blender-kitsu")
 
-    ui.unregister()
     anim.unregister()
     context.unregister()
     auth.unregister()
