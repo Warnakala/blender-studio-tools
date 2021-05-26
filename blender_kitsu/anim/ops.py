@@ -8,7 +8,6 @@ from bpy.app.handlers import persistent
 
 from blender_kitsu import (
     cache,
-    ops_anim_data,
     ops_context_data,
     ops_generic_data,
     prefs,
@@ -21,6 +20,7 @@ from blender_kitsu.types import (
     TaskStatus,
     TaskType,
 )
+from blender_kitsu.anim import opsdata
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
@@ -77,7 +77,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             Path(context.scene.kitsu.playblast_dir).mkdir(parents=True, exist_ok=True)
 
             # make opengl render
-            bpy.ops.render.opengl(animation=True)
+            bpy.opsdata.render.opengl(animation=True)
 
         context.window_manager.progress_update(1)
 
@@ -359,7 +359,7 @@ class KITSU_OT_anim_set_playblast_version(bpy.types.Operator):
     bl_property = "versions"
 
     versions: bpy.props.EnumProperty(
-        items=ops_anim_data.get_playblast_versions_enum_list, name="Versions"
+        items=opsdata.get_playblast_versions_enum_list, name="Versions"
     )
 
     @classmethod
@@ -451,7 +451,7 @@ class KITSU_OT_anim_increment_playblast_version(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # incremenet version
-        version = ops_anim_data.add_playblast_version_increment(context)
+        version = opsdata.add_playblast_version_increment(context)
 
         # update cache_version prop
         context.scene.kitsu.playblast_version = version
@@ -465,7 +465,7 @@ class KITSU_OT_anim_increment_playblast_version(bpy.types.Operator):
 
 @persistent
 def load_post_handler_init_version_model(dummy: Any) -> None:
-    ops_anim_data.init_playblast_file_model(bpy.context)
+    opsdata.init_playblast_file_model(bpy.context)
 
 
 @persistent

@@ -2,7 +2,8 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 
 import bpy
 
-from blender_kitsu import cache, ops_anim_data, prefs
+from blender_kitsu import cache, prefs
+from blender_kitsu.anim import opsdata as ops_anim_data
 from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)

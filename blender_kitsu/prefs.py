@@ -7,17 +7,16 @@ from pathlib import Path
 
 import bpy
 
+from blender_kitsu import cache
+from blender_kitsu.anim import opsdata as ops_anim_data
 from blender_kitsu.auth import ZSession
 from blender_kitsu.logger import ZLoggerFactory
-
 from blender_kitsu.ops_auth import (
     KITSU_OT_session_end,
     KITSU_OT_session_start,
 )
 from blender_kitsu.ops_context import KITSU_OT_con_productions_load
 from blender_kitsu.rdpreset.prefs import RDPRESET_preferences
-
-from . import cache, ops_anim_data
 
 
 logger = ZLoggerFactory.getLogger(name=__name__)

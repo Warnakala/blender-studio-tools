@@ -14,8 +14,7 @@ from blender_kitsu import (
     ops_auth,
     ops_context_data,
     ops_context,
-    ops_anim_data,
-    ops_anim,
+    anim,
     ui,
 )
 
@@ -57,8 +56,7 @@ if _need_reload:
     ops_auth = importlib.reload(ops_auth)
     ops_context_data = importlib.reload(ops_context_data)
     ops_context = importlib.reload(ops_context)
-    ops_anim_data = importlib.reload(ops_anim_data)
-    ops_anim = importlib.reload(ops_anim)
+    anim.reload()
     ui = importlib.reload(ui)
 
     ZLoggerLevelManager.configure_levels()
@@ -76,7 +74,7 @@ def register():
     ops_generic.register()
     ops_auth.register()
     ops_context.register()
-    ops_anim.register()
+    anim.register()
     ui.register()
 
     ZLoggerLevelManager.configure_levels()
@@ -87,7 +85,7 @@ def unregister():
     logger.info("-START- Unregistering blender-kitsu")
 
     ui.unregister()
-    ops_anim.unregister()
+    anim.unregister()
     ops_context.unregister()
     ops_auth.unregister()
     ops_generic.unregister()

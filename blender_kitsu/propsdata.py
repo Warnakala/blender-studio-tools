@@ -5,7 +5,11 @@ from pathlib import Path
 
 import bpy
 
-from blender_kitsu import cache, prefs, ops_anim, ops_anim_data
+from blender_kitsu import cache, prefs
+
+# TODO: restructure that to not import from anim
+from blender_kitsu.anim import ops as ops_anim
+from blender_kitsu.anim import opsdata as ops_anim_data
 from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
