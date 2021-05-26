@@ -87,6 +87,14 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         update=init_playblast_file_model,
     )
 
+    rd_settings_dir: bpy.props.StringProperty(  # type: ignore
+        name="Render Settings Directory",
+        description="Directory path to folder in which render settings python files are stored.",
+        default="",
+        subtype="DIR_PATH",
+        # update=init_playblast_file_model,
+    )
+
     project_active_id: bpy.props.StringProperty(  # type: ignore
         name="Project Active ID",
         description="Server Id that refers to the last active project",
@@ -130,6 +138,24 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     session: ZSession = ZSession()
 
+    @property
+    def is_rd_settings_dir_valid(self) -> bool:
+
+        # check if file is saved
+        if not self.rd_settings_dir:
+            return False
+
+        if not bpy.data.filepath and self.rd_settings_dir.startswith("//"):
+            return False
+
+        return True
+
+    @property
+    def rd_settings_dir_path(self) -> Optional[Path]:
+        if not self.rd_settings_dir:
+            return None
+        return Path(os.path.abspath(bpy.path.abspath(self.rd_settings_dir)))
+
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         project_active = cache.project_active_get()
@@ -168,11 +194,16 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             text=prod_load_text,
             icon="DOWNARROW_HLT",
         )
-        # misc settings
+        # anim tools settings
         box = layout.box()
-        box.label(text="Playblast", icon="RENDER_ANIMATION")
+        box.label(text="Anim Tools", icon="RENDER_ANIMATION")
         box.row().prop(self, "playblast_root_dir")
         box.row().prop(self, "pb_open_webbrowser")
+
+        # general tools settings
+        box = layout.box()
+        box.label(text="General Tools", icon="PREFERENCES")
+        box.row().prop(self, "rd_settings_dir")
 
         # misc settings
         box = layout.box()

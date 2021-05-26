@@ -79,6 +79,7 @@ def get_playblast_versions_enum_list(
     global _playblast_enum_list
     global PLAYBLAST_FILE_MODEL
     global init_playblast_file_model
+    global _playblast_file_model_init
 
     # init model if it did not happen
     if not _playblast_file_model_init:

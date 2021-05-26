@@ -20,6 +20,7 @@ from . import ops_anim
 from . import ops_sqe_data
 from . import ops_sqe
 from . import ui
+from blender_kitsu import rdpreset
 from .logger import ZLoggerFactory, ZLoggerLevelManager
 
 logger = ZLoggerFactory.getLogger(__name__)
@@ -63,6 +64,7 @@ if _need_reload:
     ops_sqe_data = importlib.reload(ops_sqe_data)
     ops_sqe = importlib.reload(ops_sqe)
     ui = importlib.reload(ui)
+    rdpreset.reload()
     ZLoggerLevelManager.configure_levels()
     logger.info("-END- Reloading blender-kitsu")
 
@@ -78,12 +80,14 @@ def register():
     ops_anim.register()
     ops_sqe.register()
     ui.register()
+    rdpreset.register()
     ZLoggerLevelManager.configure_levels()
     logger.info("-END- Registering blender-kitsu")
 
 
 def unregister():
     logger.info("-START- Unregistering blender-kitsu")
+    rdpreset.unregister()
     ui.unregister()
     ops_sqe.unregister()
     ops_anim.unregister()

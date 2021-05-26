@@ -173,11 +173,13 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         max=32,
     )
 
-    def clear(self):
-        self.sequence_active_id = ""
-        self.shot_active_id = ""
-        self.asset_active_id = ""
-        self.asset_type_active_id = ""
+    # render settings
+    rd_settings_file: bpy.props.StringProperty(  # type: ignore
+        name="Render Settings File",
+        description="Path to file that is the active render settings preset",
+        default="",
+        subtype="FILE_PATH",
+    )
 
 
 class KITSU_property_group_error(bpy.types.PropertyGroup):
