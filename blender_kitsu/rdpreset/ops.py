@@ -32,11 +32,11 @@ class KITSU_OT_rdpreset_set_file(bpy.types.Operator):
         if not file:
             return {"CANCELLED"}
 
-        if context.scene.kitsu.rd_settings_file == file:
+        if context.scene.kitsu.rd_preset_file == file:
             return {"CANCELLED"}
 
         # update global scene cache version prop
-        context.scene.kitsu.rd_settings_file = file
+        context.scene.kitsu.rd_preset_file = file
         logger.info("Set render settings file to %s", file)
 
         # redraw ui

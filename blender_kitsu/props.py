@@ -174,7 +174,7 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
     )
 
     # render settings
-    rd_settings_file: bpy.props.StringProperty(  # type: ignore
+    rd_preset_file: bpy.props.StringProperty(  # type: ignore
         name="Render Settings File",
         description="Path to file that is the active render settings preset",
         default="",

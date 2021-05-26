@@ -28,8 +28,8 @@ class KITSU_PT_vi3d_general_tools(bpy.types.Panel):
         # render settings
         row = box.row()
         rdpreset_text = "Select Render Preset"
-        if context.scene.kitsu.rd_settings_file:
-            rdpreset_text = Path(context.scene.kitsu.rd_settings_file).name
+        if context.scene.kitsu.rd_preset_file:
+            rdpreset_text = Path(context.scene.kitsu.rd_preset_file).name
         row.operator(
             KITSU_OT_rdpreset_set_file.bl_idname,
             text=rdpreset_text,
