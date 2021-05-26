@@ -6,20 +6,11 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 
 import bpy
 
-from . import (
-    gazu,
-    cache,
-    ops_sqe_data,
-    ops_context_data,
-    ops_generic_data,
-    prefs,
-    push,
-    pull,
-    checkstrip,
-    bkglobals,
-)
-from .logger import ZLoggerFactory
-from .types import (
+from blender_kitsu import gazu, cache, ops_context_data, ops_generic_data, prefs
+from blender_kitsu.sqe import push, pull, checkstrip, opsdata
+
+from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.types import (
     Cache,
     Sequence,
     Shot,
@@ -463,7 +454,7 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     sequence_enum: bpy.props.EnumProperty(items=ops_context_data.get_sequences_enum_list, name="Sequence")  # type: ignore
-    shots_enum: bpy.props.EnumProperty(items=ops_sqe_data.get_shots_enum_for_link_shot_op, name="Shot")  # type: ignore
+    shots_enum: bpy.props.EnumProperty(items=opsdata.get_shots_enum_for_link_shot_op, name="Shot")  # type: ignore
     use_url: bpy.props.BoolProperty(
         name="Use URL",
         description="Use URL of shot on server to initiate strip. Paste complete URL.",
@@ -627,7 +618,7 @@ class KITSU_OT_sqe_multi_edit_strip(bpy.types.Operator):
             }
 
             # run shot name resolver
-            shot = ops_sqe_data.resolve_pattern(shot_pattern, var_lookup_table)
+            shot = opsdata.resolve_pattern(shot_pattern, var_lookup_table)
 
             # set metadata
             strip.kitsu.sequence_name = sequence
@@ -1202,7 +1193,7 @@ class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     duplicates: bpy.props.EnumProperty(
-        items=ops_sqe_data.sqe_get_duplicates, name="Duplicates"
+        items=opsdata.sqe_get_duplicates, name="Duplicates"
     )
 
     @classmethod
@@ -1225,7 +1216,7 @@ class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        ops_sqe_data._sqe_duplicates[:] = ops_sqe_data.sqe_update_duplicates(context)
+        opsdata._sqe_duplicates[:] = opsdata.sqe_update_duplicates(context)
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
@@ -1238,7 +1229,7 @@ class KITSU_OT_sqe_debug_not_linked(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     not_linked: bpy.props.EnumProperty(
-        items=ops_sqe_data.sqe_get_not_linked, name="Not Linked"
+        items=opsdata.sqe_get_not_linked, name="Not Linked"
     )
 
     @classmethod
@@ -1262,7 +1253,7 @@ class KITSU_OT_sqe_debug_not_linked(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        ops_sqe_data._sqe_not_linked[:] = ops_sqe_data.sqe_update_not_linked(context)
+        opsdata._sqe_not_linked[:] = opsdata.sqe_update_not_linked(context)
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 
@@ -1275,7 +1266,7 @@ class KITSU_OT_sqe_debug_multi_project(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     multi_project: bpy.props.EnumProperty(
-        items=ops_sqe_data.sqe_get_multi_project, name="Multi Project"
+        items=opsdata.sqe_get_multi_project, name="Multi Project"
     )
 
     @classmethod
@@ -1299,9 +1290,7 @@ class KITSU_OT_sqe_debug_multi_project(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        ops_sqe_data._sqe_multi_project[:] = ops_sqe_data.sqe_update_multi_project(
-            context
-        )
+        opsdata._sqe_multi_project[:] = opsdata.sqe_update_multi_project(context)
         return context.window_manager.invoke_props_popup(self, event)  # type: ignore
 
 

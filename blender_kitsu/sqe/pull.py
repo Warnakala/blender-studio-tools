@@ -1,7 +1,7 @@
 import bpy
 
-from .types import Cache, Sequence, Project, Shot
-from .logger import ZLoggerFactory
+from blender_kitsu.types import Cache, Sequence, Project, Shot
+from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

@@ -4,10 +4,9 @@ import bpy
 
 from bpy.app.handlers import persistent
 
-from . import bkglobals
-from .types import Project, Sequence, Shot, Asset, AssetType, TaskType
-from .logger import ZLoggerFactory
-from .gazu.exception import RouteNotFoundException
+from blender_kitsu.types import Project, Sequence, Shot, Asset, AssetType, TaskType
+from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.gazu.exception import RouteNotFoundException
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

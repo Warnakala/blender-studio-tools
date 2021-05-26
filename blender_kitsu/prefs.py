@@ -4,18 +4,17 @@ import os
 
 from typing import Optional
 from pathlib import Path
-from blender_kitsu import rdpreset
 
 import bpy
 
-from .auth import ZSession
-from .logger import ZLoggerFactory
+from blender_kitsu.auth import ZSession
+from blender_kitsu.logger import ZLoggerFactory
 
-from .ops_auth import (
+from blender_kitsu.ops_auth import (
     KITSU_OT_session_end,
     KITSU_OT_session_start,
 )
-from .ops_context import KITSU_OT_con_productions_load
+from blender_kitsu.ops_context import KITSU_OT_con_productions_load
 from blender_kitsu.rdpreset.prefs import RDPRESET_preferences
 
 from . import cache, ops_anim_data

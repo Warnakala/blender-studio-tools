@@ -2,9 +2,9 @@ from typing import Tuple
 
 import bpy
 
-from . import bkglobals
-from .types import Sequence, Project, Shot
-from .logger import ZLoggerFactory
+from blender_kitsu import bkglobals
+from blender_kitsu.types import Sequence, Project, Shot
+from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

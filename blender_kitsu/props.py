@@ -1,7 +1,7 @@
 import bpy
 
-from . import propsdata
-from .logger import ZLoggerFactory
+from blender_kitsu import propsdata
+from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

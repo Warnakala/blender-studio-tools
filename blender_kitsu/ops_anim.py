@@ -6,9 +6,16 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 import bpy
 from bpy.app.handlers import persistent
 
-from . import cache, ops_anim_data, ops_context_data, ops_generic_data, prefs, bkglobals
-from .logger import ZLoggerFactory
-from .types import (
+from blender_kitsu import (
+    cache,
+    ops_anim_data,
+    ops_context_data,
+    ops_generic_data,
+    prefs,
+    bkglobals,
+)
+from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.types import (
     Shot,
     Task,
     TaskStatus,

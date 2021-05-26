@@ -2,9 +2,9 @@ from typing import Optional
 
 import bpy
 
-from . import gazu
-from .types import Sequence, Project, Shot, Cache
-from .logger import ZLoggerFactory
+from blender_kitsu import gazu
+from blender_kitsu.types import Sequence, Project, Shot, Cache
+from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

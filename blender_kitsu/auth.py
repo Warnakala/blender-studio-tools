@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Tuple, Union
 
-from . import gazu
-from .logger import ZLoggerFactory
+from blender_kitsu import gazu
+from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

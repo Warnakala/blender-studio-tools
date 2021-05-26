@@ -2,8 +2,8 @@ from typing import Set, Any
 
 import bpy
 
-from . import cache, ops_context_data, ops_generic_data, prefs
-from .logger import ZLoggerFactory
+from blender_kitsu import cache, ops_context_data, ops_generic_data, prefs
+from blender_kitsu.logger import ZLoggerFactory
 
 
 logger = ZLoggerFactory.getLogger(name=__name__)

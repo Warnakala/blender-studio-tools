@@ -2,25 +2,22 @@ import bpy
 
 from pathlib import Path
 
-from . import cache
-from . import checkstrip
-from . import prefs
+from blender_kitsu import cache, prefs
 
-from .ops_generic import KITSU_OT_open_path
+from blender_kitsu.ops_generic import KITSU_OT_open_path
 
-from .ops_auth import (
+from blender_kitsu.ops_auth import (
     KITSU_OT_session_start,
     KITSU_OT_session_end,
 )
 
-from .ops_anim import (
+from blender_kitsu.ops_anim import (
     KITSU_OT_anim_create_playblast,
     KITSU_OT_anim_set_playblast_version,
     KITSU_OT_anim_increment_playblast_version,
     KITSU_OT_anim_pull_frame_range,
 )
-from .ops_context import (
-    KITSU_OT_con_productions_load,
+from blender_kitsu.ops_context import (
     KITSU_OT_con_sequences_load,
     KITSU_OT_con_shots_load,
     KITSU_OT_con_asset_types_load,
@@ -28,7 +25,8 @@ from .ops_context import (
     KITSU_OT_con_task_types_load,
 )
 
-from .ops_sqe import (
+from blender_kitsu.sqe import checkstrip
+from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_push_new_sequence,
     KITSU_OT_sqe_push_new_shot,
     KITSU_OT_sqe_push_shot_meta,

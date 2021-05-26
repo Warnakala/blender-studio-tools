@@ -5,8 +5,8 @@ from pathlib import Path
 
 import bpy
 
-from . import cache, prefs, ops_anim, ops_anim_data
-from .logger import ZLoggerFactory
+from blender_kitsu import cache, prefs, ops_anim, ops_anim_data
+from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

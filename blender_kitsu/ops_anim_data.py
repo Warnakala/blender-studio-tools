@@ -3,8 +3,8 @@ from pathlib import Path
 
 import bpy
 
-from .models import FileListModel
-from .logger import ZLoggerFactory
+from blender_kitsu.models import FileListModel
+from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

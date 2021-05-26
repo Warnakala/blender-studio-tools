@@ -4,8 +4,8 @@ from blender_kitsu.gazu.task import all_task_statuses
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Union, Tuple
 
-from . import gazu
-from .logger import ZLoggerFactory
+from blender_kitsu import gazu
+from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

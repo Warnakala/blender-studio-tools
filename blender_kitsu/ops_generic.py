@@ -5,7 +5,7 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 
 import bpy
 
-from .logger import ZLoggerFactory
+from blender_kitsu.logger import ZLoggerFactory
 
 
 logger = ZLoggerFactory.getLogger(name=__name__)

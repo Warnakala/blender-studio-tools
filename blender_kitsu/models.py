@@ -3,9 +3,8 @@ import re
 from pathlib import Path
 from typing import Union, Optional, Dict, List, Tuple
 
-from . import bkglobals
-
-from .logger import ZLoggerFactory
+from blender_kitsu import bkglobals
+from blender_kitsu.logger import ZLoggerFactory
 
 logger = ZLoggerFactory.getLogger(__name__)
 

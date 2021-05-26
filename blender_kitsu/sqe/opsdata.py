@@ -3,8 +3,8 @@ from typing import Any, Dict, List, Tuple, Union
 
 import bpy
 
-from .logger import ZLoggerFactory
-from .types import Sequence
+from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.types import Sequence
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

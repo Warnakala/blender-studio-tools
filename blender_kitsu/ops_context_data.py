@@ -2,9 +2,9 @@ from typing import Any, Dict, List, Tuple, Union
 
 import bpy
 
-from . import cache, prefs
-from .logger import ZLoggerFactory
-from .types import Sequence, ProjectList, TaskStatus, TaskType
+from blender_kitsu import cache, prefs
+from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.types import ProjectList, TaskStatus, TaskType
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
