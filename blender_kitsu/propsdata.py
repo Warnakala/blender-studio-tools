@@ -107,11 +107,18 @@ def get_playblast_file(self: Any) -> str:
     return Path(self.playblast_dir).joinpath(file_name).as_posix()
 
 
-_active_category_cache = str
+_active_category_cache_init: bool = False
+_active_category_cache: str = ""
 
 
 def reset_task_type(self: Any, context: bpy.types.Context) -> None:
+    global _active_category_cache_init
     global _active_category_cache
+
+    if not _active_category_cache_init:
+        _active_category_cache = self.category
+        _active_category_cache_init = True
+        return
 
     if self.category == _active_category_cache:
         return None
