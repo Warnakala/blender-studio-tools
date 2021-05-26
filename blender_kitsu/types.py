@@ -5,9 +5,9 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Union, Tuple
 
 from blender_kitsu import gazu
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 
 class Session:

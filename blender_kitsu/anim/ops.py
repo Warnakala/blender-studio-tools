@@ -12,7 +12,7 @@ from blender_kitsu import (
     prefs,
     bkglobals,
 )
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.types import (
     Shot,
     Task,
@@ -24,7 +24,7 @@ from blender_kitsu.anim import opsdata
 # TODO: restructure this to not import from context
 from blender_kitsu.context import opsdata as ops_context_data
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 
 class KITSU_OT_anim_create_playblast(bpy.types.Operator):

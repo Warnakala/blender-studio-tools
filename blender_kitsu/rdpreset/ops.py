@@ -6,11 +6,11 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 import bpy
 
 
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 from blender_kitsu import prefs, util
 from blender_kitsu.rdpreset import opsdata
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 
 class RDPRESET_OT_set_preset(bpy.types.Operator):

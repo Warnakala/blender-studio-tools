@@ -4,9 +4,9 @@ from pathlib import Path
 import bpy
 
 from blender_kitsu.models import FileListModel
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 RD_PRESET_FILE_MODEL = FileListModel()
 _rd_preset_enum_list: List[Tuple[str, str, str]] = []

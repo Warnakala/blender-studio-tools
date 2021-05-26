@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Union, Optional, Dict, List, Tuple
 
 from blender_kitsu import bkglobals
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 
-logger = ZLoggerFactory.getLogger(__name__)
+logger = LoggerFactory.getLogger(__name__)
 
 
 class FolderListModel:

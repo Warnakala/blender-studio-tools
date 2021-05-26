@@ -16,9 +16,9 @@ from blender_kitsu import (
     anim,
 )
 
-from blender_kitsu.logger import ZLoggerFactory, ZLoggerLevelManager
+from blender_kitsu.logger import LoggerFactory, LoggerLevelManager
 
-logger = ZLoggerFactory.getLogger(__name__)
+logger = LoggerFactory.getLogger(__name__)
 
 bl_info = {
     "name": "Blender Kitsu",
@@ -55,7 +55,7 @@ if _need_reload:
     context.reload()
     anim.reload()
 
-    ZLoggerLevelManager.configure_levels()
+    LoggerLevelManager.configure_levels()
     logger.info("-END- Reloading blender-kitsu")
 
 
@@ -72,7 +72,7 @@ def register():
     context.register()
     anim.register()
 
-    ZLoggerLevelManager.configure_levels()
+    LoggerLevelManager.configure_levels()
     logger.info("-END- Registering blender-kitsu")
 
 
@@ -89,7 +89,7 @@ def unregister():
     prefs.unregister()
     rdpreset.unregister()
 
-    ZLoggerLevelManager.restore_levels()
+    LoggerLevelManager.restore_levels()
     logger.info("-END- Unregistering blender-kitsu")
 
 

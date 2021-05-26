@@ -3,10 +3,10 @@ from typing import Any, Dict, List, Tuple, Union
 
 import bpy
 
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.types import Sequence
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 _sqe_shot_enum_list: List[Tuple[str, str, str]] = []
 _sqe_not_linked: List[Tuple[str, str, str]] = []

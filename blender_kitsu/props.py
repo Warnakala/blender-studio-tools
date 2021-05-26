@@ -1,9 +1,9 @@
 import bpy
 
 from blender_kitsu import propsdata
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 
 class KITSU_property_group_sequence(bpy.types.PropertyGroup):

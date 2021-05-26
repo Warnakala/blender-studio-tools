@@ -5,10 +5,10 @@ import bpy
 from bpy.app.handlers import persistent
 
 from blender_kitsu.types import Project, Sequence, Shot, Asset, AssetType, TaskType
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.gazu.exception import RouteNotFoundException
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 # CACHE VARIABLES
 # used to cache active entitys to prevent a new api request when read only

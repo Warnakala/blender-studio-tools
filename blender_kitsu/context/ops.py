@@ -4,10 +4,10 @@ import bpy
 
 from blender_kitsu.context import opsdata
 from blender_kitsu import cache, util, prefs
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 
 class KITSU_OT_con_productions_load(bpy.types.Operator):

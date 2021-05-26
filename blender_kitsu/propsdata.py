@@ -10,9 +10,9 @@ from blender_kitsu import cache, prefs
 # TODO: restructure that to not import from anim
 from blender_kitsu.anim import ops as ops_anim
 from blender_kitsu.anim import opsdata as ops_anim_data
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 # get functions for window manager properties
 def _get_project_active(self):

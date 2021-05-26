@@ -5,10 +5,10 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 
 import bpy
 
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 
 class KITSU_OT_open_path(bpy.types.Operator):

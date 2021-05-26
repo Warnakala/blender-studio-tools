@@ -11,7 +11,7 @@ from blender_kitsu.context import opsdata as ops_context_data
 from blender_kitsu import gazu, cache, util, prefs
 from blender_kitsu.sqe import push, pull, checkstrip, opsdata
 
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.types import (
     Cache,
     Sequence,
@@ -21,7 +21,7 @@ from blender_kitsu.types import (
     TaskType,
 )
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 
 class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):

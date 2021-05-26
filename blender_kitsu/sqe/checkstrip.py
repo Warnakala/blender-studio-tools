@@ -4,9 +4,9 @@ import bpy
 
 from blender_kitsu import gazu
 from blender_kitsu.types import Sequence, Project, Shot, Cache
-from blender_kitsu.logger import ZLoggerFactory
+from blender_kitsu.logger import LoggerFactory
 
-logger = ZLoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger(name=__name__)
 
 VALID_STRIP_TYPES = {"MOVIE", "COLOR"}
 

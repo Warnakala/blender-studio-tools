@@ -3,7 +3,7 @@ import sys
 from typing import List, Tuple
 
 
-class ZLoggerFactory:
+class LoggerFactory:
 
     """
     Utility class to streamline logger creation
@@ -26,10 +26,10 @@ class ZLoggerFactory:
         return logger
 
 
-logger = ZLoggerFactory.getLogger(__name__)
+logger = LoggerFactory.getLogger(__name__)
 
 
-class ZLoggerLevelManager:
+class LoggerLevelManager:
     logger_levels: List[Tuple[logging.Logger, int]] = []
 
     @classmethod
