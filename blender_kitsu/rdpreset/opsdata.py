@@ -29,24 +29,24 @@ def init_rd_preset_file_model(
     addon_prefs = addon_prefs_get(context)
 
     # is None if invalid
-    if not addon_prefs.is_rd_settings_dir_valid:
+    if not addon_prefs.rdpreset.is_presets_dir_valid:
         logger.error(
             "Failed to initialize render settings file model. Invalid path. Check addon preferences."
         )
         return
 
-    rd_settings_dir = addon_prefs.rd_settings_dir_path
+    rd_settings_dir = addon_prefs.rdpreset.presets_dir_path
 
     RD_PRESET_FILE_MODEL.reset()
     RD_PRESET_FILE_MODEL.root_path = rd_settings_dir
 
     if not RD_PRESET_FILE_MODEL.items:
         # update playblast_version prop
-        context.scene.kitsu.rd_preset_file = ""
+        context.scene.rdpreset.preset_file = ""
 
     else:
         # update playblast_version prop
-        context.scene.kitsu.rd_preset_file = RD_PRESET_FILE_MODEL.items_as_paths[
+        context.scene.rdpreset.preset_file = RD_PRESET_FILE_MODEL.items_as_paths[
             0
         ].as_posix()
 

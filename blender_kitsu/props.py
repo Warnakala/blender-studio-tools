@@ -173,14 +173,6 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         max=32,
     )
 
-    # render settings
-    rd_preset_file: bpy.props.StringProperty(  # type: ignore
-        name="Render Settings File",
-        description="Path to file that is the active render settings preset",
-        default="",
-        subtype="FILE_PATH",
-    )
-
 
 class KITSU_property_group_error(bpy.types.PropertyGroup):
     """"""

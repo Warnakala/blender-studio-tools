@@ -12,10 +12,10 @@ from blender_kitsu.rdpreset import opsdata
 logger = ZLoggerFactory.getLogger(name=__name__)
 
 
-class KITSU_OT_rdpreset_set_file(bpy.types.Operator):
+class RDPRESET_OT_set_preset(bpy.types.Operator):
     """"""
 
-    bl_idname = "kitsu.rdpreset_set_file"
+    bl_idname = "rdpreset.set_preset"
     bl_label = "Render Preset"
     bl_property = "files"
 
@@ -24,7 +24,7 @@ class KITSU_OT_rdpreset_set_file(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return addon_prefs.is_rd_settings_dir_valid
+        return addon_prefs.rdpreset.is_presets_dir_valid
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         file = self.files
@@ -32,11 +32,45 @@ class KITSU_OT_rdpreset_set_file(bpy.types.Operator):
         if not file:
             return {"CANCELLED"}
 
-        if context.scene.kitsu.rd_preset_file == file:
+        if context.scene.rdpreset.preset_file == file:
             return {"CANCELLED"}
 
         # update global scene cache version prop
-        context.scene.kitsu.rd_preset_file = file
+        context.scene.rdpreset.preset_file = file
+        logger.info("Set render settings file to %s", file)
+
+        # redraw ui
+        ops_generic_data.ui_redraw()
+
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        context.window_manager.invoke_search_popup(self)  # type: ignore
+        return {"FINISHED"}
+
+
+class RDPRESET_OT_rdpreset_apply(bpy.types.Operator):
+    """"""
+
+    bl_idname = "rdpreset.apply"
+    bl_label = "Apply Preset"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+        # return bool(context.scene.kitsu.)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        file = ""
+
+        if not file:
+            return {"CANCELLED"}
+
+        if context.scene.rdpreset.preset_file == file:
+            return {"CANCELLED"}
+
+        # update global scene cache version prop
+        context.scene.rdpreset.preset_file = file
         logger.info("Set render settings file to %s", file)
 
         # redraw ui
@@ -52,7 +86,7 @@ class KITSU_OT_rdpreset_set_file(bpy.types.Operator):
 # ---------REGISTER ----------
 
 classes = [
-    KITSU_OT_rdpreset_set_file,
+    RDPRESET_OT_set_preset,
 ]
 
 

@@ -4,6 +4,7 @@ import os
 
 from typing import Optional
 from pathlib import Path
+from blender_kitsu import rdpreset
 
 import bpy
 
@@ -15,8 +16,10 @@ from .ops_auth import (
     KITSU_OT_session_start,
 )
 from .ops_context import KITSU_OT_con_productions_load
+from blender_kitsu.rdpreset.prefs import RDPRESET_preferences
 
 from . import cache, ops_anim_data
+
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 
@@ -79,20 +82,18 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         get=get_thumbnails_dir,
     )
 
+    rdpreset: bpy.props.PointerProperty(
+        name="Render Preset",
+        type=RDPRESET_preferences,
+        description="Metadata that is required for rdpreset",
+    )
+
     playblast_root_dir: bpy.props.StringProperty(  # type: ignore
         name="Playblasts Root Directory",
         description="Directory path to playblast root folder.",
         default="",
         subtype="DIR_PATH",
         update=init_playblast_file_model,
-    )
-
-    rd_settings_dir: bpy.props.StringProperty(  # type: ignore
-        name="Render Settings Directory",
-        description="Directory path to folder in which render settings python files are stored.",
-        default="",
-        subtype="DIR_PATH",
-        # update=init_playblast_file_model,
     )
 
     project_active_id: bpy.props.StringProperty(  # type: ignore
@@ -138,24 +139,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     session: ZSession = ZSession()
 
-    @property
-    def is_rd_settings_dir_valid(self) -> bool:
-
-        # check if file is saved
-        if not self.rd_settings_dir:
-            return False
-
-        if not bpy.data.filepath and self.rd_settings_dir.startswith("//"):
-            return False
-
-        return True
-
-    @property
-    def rd_settings_dir_path(self) -> Optional[Path]:
-        if not self.rd_settings_dir:
-            return None
-        return Path(os.path.abspath(bpy.path.abspath(self.rd_settings_dir)))
-
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         project_active = cache.project_active_get()
@@ -194,16 +177,15 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             text=prod_load_text,
             icon="DOWNARROW_HLT",
         )
+
         # anim tools settings
         box = layout.box()
         box.label(text="Anim Tools", icon="RENDER_ANIMATION")
         box.row().prop(self, "playblast_root_dir")
         box.row().prop(self, "pb_open_webbrowser")
 
-        # general tools settings
-        box = layout.box()
-        box.label(text="General Tools", icon="PREFERENCES")
-        box.row().prop(self, "rd_settings_dir")
+        # rd preset tools settings
+        self.rdpreset.draw(context, layout)
 
         # misc settings
         box = layout.box()
