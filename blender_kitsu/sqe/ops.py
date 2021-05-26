@@ -6,7 +6,9 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 
 import bpy
 
-from blender_kitsu import gazu, cache, ops_context_data, ops_generic_data, prefs
+# TODO: restructure this to not import from context
+from blender_kitsu.context import opsdata as ops_context_data
+from blender_kitsu import gazu, cache, ops_generic_data, prefs
 from blender_kitsu.sqe import push, pull, checkstrip, opsdata
 
 from blender_kitsu.logger import ZLoggerFactory

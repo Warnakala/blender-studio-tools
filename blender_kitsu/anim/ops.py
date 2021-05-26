@@ -8,7 +8,6 @@ from bpy.app.handlers import persistent
 
 from blender_kitsu import (
     cache,
-    ops_context_data,
     ops_generic_data,
     prefs,
     bkglobals,
@@ -21,6 +20,9 @@ from blender_kitsu.types import (
     TaskType,
 )
 from blender_kitsu.anim import opsdata
+
+# TODO: restructure this to not import from context
+from blender_kitsu.context import opsdata as ops_context_data
 
 logger = ZLoggerFactory.getLogger(name=__name__)
 

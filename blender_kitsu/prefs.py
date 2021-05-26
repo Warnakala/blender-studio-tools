@@ -15,7 +15,7 @@ from blender_kitsu.ops_auth import (
     KITSU_OT_session_end,
     KITSU_OT_session_start,
 )
-from blender_kitsu.ops_context import KITSU_OT_con_productions_load
+from blender_kitsu.context.ops import KITSU_OT_con_productions_load
 from blender_kitsu.rdpreset.prefs import RDPRESET_preferences
 
 

@@ -12,8 +12,7 @@ from blender_kitsu import (
     ops_generic_data,
     ops_generic,
     ops_auth,
-    ops_context_data,
-    ops_context,
+    context,
     anim,
     ui,
 )
@@ -54,8 +53,7 @@ if _need_reload:
     ops_generic_data = importlib.reload(ops_generic_data)
     ops_generic = importlib.reload(ops_generic)
     ops_auth = importlib.reload(ops_auth)
-    ops_context_data = importlib.reload(ops_context_data)
-    ops_context = importlib.reload(ops_context)
+    context.reload()
     anim.reload()
     ui = importlib.reload(ui)
 
@@ -73,7 +71,7 @@ def register():
     sqe.register()
     ops_generic.register()
     ops_auth.register()
-    ops_context.register()
+    context.register()
     anim.register()
     ui.register()
 
@@ -86,7 +84,7 @@ def unregister():
 
     ui.unregister()
     anim.unregister()
-    ops_context.unregister()
+    context.unregister()
     ops_auth.unregister()
     ops_generic.unregister()
     sqe.unregister()
