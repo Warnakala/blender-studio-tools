@@ -57,6 +57,13 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         storage_dir = self.get_datadir() / "blender_kitsu" / hashed_filepath
         return storage_dir.as_posix()
 
+    def get_sqe_render_dir(self) -> str:
+        hashed_filepath = hashlib.md5(bpy.data.filepath.encode()).hexdigest()
+        storage_dir = (
+            self.get_datadir() / "blender_kitsu" / "sqe_render" / hashed_filepath
+        )
+        return storage_dir.absolute().as_posix()
+
     def init_playblast_file_model(self, context: bpy.types.Context) -> None:
         ops_anim_data.init_playblast_file_model(context)
 
@@ -75,14 +82,22 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
     )
 
     thumbnail_dir: bpy.props.StringProperty(  # type: ignore
-        name="Thumbnail Folder",
-        description="Folder in which thumbnails will be saved",
+        name="Thumbnail Directory",
+        description="Directory in which thumbnails will be saved",
         default="",
         subtype="DIR_PATH",
         get=get_thumbnails_dir,
     )
 
-    rdpreset: bpy.props.PointerProperty(
+    sqe_render_dir: bpy.props.StringProperty(  # type: ignore
+        name="Sqe Render Directory",
+        description="Directory in which thumbnails will be saved",
+        default="",
+        subtype="DIR_PATH",
+        get=get_sqe_render_dir,
+    )
+
+    rdpreset: bpy.props.PointerProperty(  # type: ignore
         name="Render Preset",
         type=RDPRESET_preferences,
         description="Metadata that is required for rdpreset",
@@ -191,6 +206,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         box = layout.box()
         box.label(text="Misc", icon="MODIFIER")
         box.row().prop(self, "thumbnail_dir")
+        box.row().prop(self, "sqe_render_dir")
         box.row().prop(self, "enable_debug")
         box.row().prop(self, "show_advanced")
 

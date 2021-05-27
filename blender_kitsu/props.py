@@ -137,6 +137,21 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         options={"HIDDEN", "SKIP_SAVE"},
     )
 
+    # sqe render props
+    task_type_sqe_render_id: bpy.props.StringProperty(  # type: ignore
+        name="Sqe Render Task Type ID",
+        description="ID that refers to the task type on server for which the sqe render will be uploaded",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+
+    task_type_sqe_render_name: bpy.props.StringProperty(  # type: ignore
+        name="Sqe Render Task Type Name",
+        description="Name that refers to the task type on server for which the sqe render will be uploaded",
+        default="",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+
     # playblast props
 
     playblast_version: bpy.props.StringProperty(name="Version", default="v001")

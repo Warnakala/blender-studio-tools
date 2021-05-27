@@ -977,6 +977,44 @@ class KITSU_OT_sqe_set_thumbnail_task_type(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class KITSU_OT_sqe_set_sqe_render_task_type(bpy.types.Operator):
+    """
+    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    """
+
+    bl_idname = "kitsu.set_sqe_render_task_type"
+    bl_label = "Set Sqe Render Task Type"
+    bl_options = {"INTERNAL"}
+    bl_property = "enum_prop"
+
+    enum_prop: bpy.props.EnumProperty(items=cache.get_shot_task_types_enum)  # type: ignore
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(prefs.session_auth(context) and cache.project_active_get())
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # task type selected by user
+        task_type_id = self.enum_prop
+
+        if not task_type_id:
+            return {"CANCELLED"}
+
+        task_type = TaskType.by_id(task_type_id)
+
+        # update scene properties
+        context.scene.kitsu.task_type_sqe_render_name = task_type.name
+        context.scene.kitsu.task_type_sqe_render_id = task_type_id
+
+        util.ui_redraw()
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"FINISHED"}
+
+
 class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
     """
     Operator that takes thumbnail of all selected sequencce strips and saves them
@@ -999,6 +1037,8 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         do_multishot: bool = nr_of_strips > 1
         failed = []
         upload_queue: List[Path] = []  # will be used as successed list
+        # get task stype by id from user selection enum property
+        task_type = TaskType.by_id(context.scene.kitsu.task_type_thumbnail_id)
 
         logger.info("-START- Pushing shot thumbnails")
 
@@ -1051,19 +1091,21 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
                 context.window_manager.progress_update(len(upload_queue))
                 context.window_manager.progress_end()
 
-                # ----ULPOAD THUMBNAILS ------
+        # ----ULPOAD THUMBNAILS ------
 
-                # begin second progress update
-                context.window_manager.progress_begin(0, len(upload_queue))
+        # begin second progress update
+        context.window_manager.progress_begin(0, len(upload_queue))
 
-                # process thumbnail queue
-                for idx, filepath in enumerate(upload_queue):
-                    context.window_manager.progress_update(idx)
-                    self._upload_thumbnail(context, filepath)
+        # process thumbnail queue
+        for idx, filepath in enumerate(upload_queue):
+            context.window_manager.progress_update(idx)
+            opsdata.upload_preview(
+                context, filepath, task_type, comment="Update thumbnail"
+            )
 
-                # end second progress update
-                context.window_manager.progress_update(len(upload_queue))
-                context.window_manager.progress_end()
+        # end second progress update
+        context.window_manager.progress_update(len(upload_queue))
+        context.window_manager.progress_end()
 
         # report
         report_str = f"Created thumbnails for {len(upload_queue)} shots"
@@ -1105,35 +1147,6 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         path = folder_path.joinpath(file_name)
         datablock.save_render(str(path))
         return path.absolute()
-
-    def _upload_thumbnail(self, context: bpy.types.Context, filepath: Path) -> None:
-        # get shot by id which is in filename of thumbnail
-        shot_id = filepath.name.split("_")[0]
-        shot = Shot.by_id(shot_id)
-
-        # get task stype by id from user selection enum property
-        task_type = TaskType.by_id(context.scene.kitsu.task_type_thumbnail_id)
-
-        # find task from task type for that shot, ca be None of no task was added for that task type
-        task = Task.by_name(shot, task_type)
-
-        if not task:
-            # turns out a entitiy on server can have 0 tasks even tough task types exist
-            # you have to create a task first before being able to upload a thumbnail
-            task_status = TaskStatus.by_short_name("wip")
-            task = Task.new_task(shot, task_type, task_status=task_status)
-        else:
-            task_status = TaskStatus.by_id(task.task_status_id)
-
-        # create a comment, e.G 'Update thumbnail'
-        comment = task.add_comment(task_status, comment="Update thumbnail")
-
-        # add_preview_to_comment
-        preview = task.add_preview_to_comment(comment, filepath.as_posix())
-
-        # preview.set_main_preview()
-        preview.set_main_preview()
-        logger.info(f"Uploaded thumbnail for shot: {shot.name} under: {task_type.name}")
 
     @contextlib.contextmanager
     def override_render_settings(self, context, thumbnail_width=256):
@@ -1182,6 +1195,170 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         middle = round((strip.frame_final_start + strip.frame_final_end) / 2)
         context.scene.frame_set(middle)
         return middle
+
+
+class KITSU_OT_sqe_push_render(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.sqe_push_render"
+    bl_label = "Push Render"
+    bl_options = {"INTERNAL"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(
+            prefs.session_auth(context) and context.scene.kitsu.task_type_sqe_render_id
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        failed = []
+        upload_queue: List[Path] = []  # will be used as successed list
+        # get task stype by id from user selection enum property
+        task_type = TaskType.by_id(context.scene.kitsu.task_type_sqe_render_id)
+
+        logger.info("-START- Pushing Sequence Render")
+
+        # clear cache
+        Cache.clear_all()
+
+        with self.override_render_settings(context):
+
+            # ----RENDER AND SAVE SQE ------
+
+            # begin first progress update
+            selected_sequences = context.selected_sequences
+            if not selected_sequences:
+                selected_sequences = context.scene.sequence_editor.sequences_all
+
+            context.window_manager.progress_begin(0, len(selected_sequences))
+
+            for idx, strip in enumerate(selected_sequences):
+                context.window_manager.progress_update(idx)
+
+                if not checkstrip.is_valid_type(strip):
+                    # failed.append(strip)
+                    continue
+
+                # only if strip is linked to sevrer
+                if not checkstrip.is_linked(strip):
+                    # failed.append(strip)
+                    continue
+
+                # check if shot is still available by id
+                shot = checkstrip.shot_exists_by_id(strip, clear_cache=False)
+                if not shot:
+                    failed.append(strip)
+                    continue
+
+                # output path
+                output_path = self._gen_output_path(strip, task_type)
+                context.scene.render.filepath = output_path.as_posix()
+
+                # frame range
+                context.scene.frame_start = strip.frame_final_start
+                context.scene.frame_end = strip.frame_final_end - 1
+
+                # ensure folder exists
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # make opengl render
+                bpy.ops.render.opengl(animation=True, sequencer=True)
+
+                # append path to upload queue
+                upload_queue.append(output_path)
+
+            # end first progress update
+            context.window_manager.progress_update(len(upload_queue))
+            context.window_manager.progress_end()
+
+        # ----ULPOAD SQE RENDER ------
+
+        # begin second progress update
+        context.window_manager.progress_begin(0, len(upload_queue))
+
+        # process thumbnail queue
+        for idx, filepath in enumerate(upload_queue):
+            context.window_manager.progress_update(idx)
+            opsdata.upload_preview(
+                context, filepath, task_type, comment="Sequence Editor Render"
+            )
+
+        # end second progress update
+        context.window_manager.progress_update(len(upload_queue))
+        context.window_manager.progress_end()
+
+        # report
+        report_str = f"Uploaded sequence editor render for {len(upload_queue)} shots"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
+        self.report(
+            {report_state},
+            report_str,
+        )
+
+        # log
+        logger.info("-END- Pushing Sequence Editor Render")
+        return {"FINISHED"}
+
+    def _gen_output_path(self, strip: bpy.types.Sequence, task_type: TaskType) -> Path:
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
+        folder_name = addon_prefs.sqe_render_dir
+        file_name = f"{strip.kitsu.shot_id}_{strip.kitsu.shot_name}.{(task_type.name).lower()}.mp4"
+        return Path(folder_name).absolute().joinpath(file_name)
+
+    @contextlib.contextmanager
+    def override_render_settings(self, context, thumbnail_width=256):
+        """Overrides the render settings for thumbnail size in a 'with' block scope."""
+
+        rd = context.scene.render
+
+        # Remember current render settings in order to restore them later.
+
+        # filepath
+        filepath = rd.filepath
+
+        # format render settings
+        percentage = rd.resolution_percentage
+        file_format = rd.image_settings.file_format
+        ffmpeg_constant_rate = rd.ffmpeg.constant_rate_factor
+        ffmpeg_codec = rd.ffmpeg.codec
+        ffmpeg_format = rd.ffmpeg.format
+        ffmpeg_audio_codec = rd.ffmpeg.audio_codec
+
+        # scene settings
+        frame_start = context.scene.frame_start
+        frame_end = context.scene.frame_end
+        current_frame = context.scene.frame_current
+
+        try:
+            # format render settings
+            rd.resolution_percentage = 100
+            rd.image_settings.file_format = "FFMPEG"
+            rd.ffmpeg.constant_rate_factor = "MEDIUM"
+            rd.ffmpeg.codec = "H264"
+            rd.ffmpeg.format = "MPEG4"
+            rd.ffmpeg.audio_codec = "AAC"
+            yield
+
+        finally:
+            # filepath
+            rd.filepath = filepath
+
+            # Return the render settings to normal.
+            rd.resolution_percentage = percentage
+            rd.image_settings.file_format = file_format
+            rd.ffmpeg.codec = ffmpeg_codec
+            rd.ffmpeg.constant_rate_factor = ffmpeg_constant_rate
+            rd.ffmpeg.format = ffmpeg_format
+            rd.ffmpeg.audio_codec = ffmpeg_audio_codec
+
+            # scene settings
+            context.scene.frame_start = frame_start
+            context.scene.frame_end = frame_end
+            context.scene.frame_current = current_frame
 
 
 class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
@@ -1537,7 +1714,9 @@ classes = [
     KITSU_OT_sqe_link_shot,
     KITSU_OT_sqe_link_sequence,
     KITSU_OT_sqe_set_thumbnail_task_type,
+    KITSU_OT_sqe_set_sqe_render_task_type,
     KITSU_OT_sqe_push_thumbnail,
+    KITSU_OT_sqe_push_render,
     KITSU_OT_sqe_push_del_shot,
     KITSU_OT_sqe_pull_shot_meta,
     KITSU_OT_sqe_multi_edit_strip,

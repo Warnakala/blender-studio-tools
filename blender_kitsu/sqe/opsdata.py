@@ -1,10 +1,11 @@
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
 import bpy
 
 from blender_kitsu.logger import LoggerFactory
-from blender_kitsu.types import Sequence
+from blender_kitsu.types import Sequence, Task, TaskStatus, Shot, TaskType
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -146,3 +147,32 @@ def get_shots_enum_for_link_shot_op(
         [(s.id, s.name, s.description or "") for s in zseq_active.get_all_shots()]
     )
     return _sqe_shot_enum_list
+
+
+def upload_preview(
+    context: bpy.types.Context, filepath: Path, task_type: TaskType, comment: str = ""
+) -> None:
+    # get shot by id which is in filename of thumbnail
+    shot_id = filepath.name.split("_")[0]
+    shot = Shot.by_id(shot_id)
+
+    # find task from task type for that shot, ca be None of no task was added for that task type
+    task = Task.by_name(shot, task_type)
+
+    if not task:
+        # turns out a entitiy on server can have 0 tasks even tough task types exist
+        # you have to create a task first before being able to upload a thumbnail
+        task_status = TaskStatus.by_short_name("wip")
+        task = Task.new_task(shot, task_type, task_status=task_status)
+    else:
+        task_status = TaskStatus.by_id(task.task_status_id)
+
+    # create a comment, e.G 'Update thumbnail'
+    comment_obj = task.add_comment(task_status, comment=comment)
+
+    # add_preview_to_comment
+    preview = task.add_preview_to_comment(comment_obj, filepath.as_posix())
+
+    # preview.set_main_preview()
+    preview.set_main_preview()
+    logger.info(f"Uploaded preview for shot: {shot.name} under: {task_type.name}")

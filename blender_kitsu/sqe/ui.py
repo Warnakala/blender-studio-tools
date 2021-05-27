@@ -12,7 +12,9 @@ from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_link_shot,
     KITSU_OT_sqe_link_sequence,
     KITSU_OT_sqe_set_thumbnail_task_type,
+    KITSU_OT_sqe_set_sqe_render_task_type,
     KITSU_OT_sqe_push_thumbnail,
+    KITSU_OT_sqe_push_render,
     KITSU_OT_sqe_push_del_shot,
     KITSU_OT_sqe_pull_shot_meta,
     KITSU_OT_sqe_multi_edit_strip,
@@ -403,7 +405,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 icon="ALIGN_LEFT",
             )
 
-        # thumbnail operator
+        # thumbnail and seqeunce renderoperator
         if strips_to_tb:
 
             # upload thumbnail op
@@ -418,6 +420,22 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
             noun = context.scene.kitsu.task_type_thumbnail_name or "Select Task Type"
             split.operator(
                 KITSU_OT_sqe_set_thumbnail_task_type.bl_idname,
+                text=noun,
+                icon="DOWNARROW_HLT",
+            )
+
+            # sqe render op
+            noun = get_selshots_noun(len(strips_to_tb), prefix=f"{len(strips_to_meta)}")
+            split = col.split(factor=0.7, align=True)
+            split.operator(
+                KITSU_OT_sqe_push_render.bl_idname,
+                text=f"Render {noun}",
+                icon="IMAGE_DATA",
+            )
+            # select task types op
+            noun = context.scene.kitsu.task_type_sqe_render_name or "Select Task Type"
+            split.operator(
+                KITSU_OT_sqe_set_sqe_render_task_type.bl_idname,
                 text=noun,
                 icon="DOWNARROW_HLT",
             )
