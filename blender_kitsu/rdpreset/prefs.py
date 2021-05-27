@@ -4,6 +4,8 @@ from pathlib import Path
 
 import bpy
 
+from blender_kitsu.rdpreset import opsdata
+
 
 class RDPRESET_preferences(bpy.types.PropertyGroup):
 
@@ -11,12 +13,15 @@ class RDPRESET_preferences(bpy.types.PropertyGroup):
     Addon preferences for rdpreset.
     """
 
+    def update_rd_preset_file_model(self, context: bpy.types.Context) -> None:
+        opsdata.init_rd_preset_file_model(context)
+
     presets_dir: bpy.props.StringProperty(  # type: ignore
         name="Render Settings Directory",
         description="Directory path to folder in which render settings python files are stored.",
         default="",
         subtype="DIR_PATH",
-        # update=init_playblast_file_model,
+        update=update_rd_preset_file_model,
     )
 
     @property
