@@ -27,7 +27,7 @@ logger = LoggerFactory.getLogger(name=__name__)
 class KITSU_OT_anim_create_playblast(bpy.types.Operator):
     """"""
 
-    bl_idname = "kitsu.create_playblast"
+    bl_idname = "kitsu.anim_create_playblast"
     bl_label = "Create Playblast"
 
     comment: bpy.props.StringProperty(
@@ -353,7 +353,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
 class KITSU_OT_anim_set_playblast_version(bpy.types.Operator):
     """"""
 
-    bl_idname = "kitsu.set_playblast_version"
+    bl_idname = "kitsu.anim_set_playblast_version"
     bl_label = "Version"
     bl_property = "versions"
 
@@ -392,7 +392,7 @@ class KITSU_OT_anim_set_playblast_version(bpy.types.Operator):
 class KITSU_OT_anim_pull_frame_range(bpy.types.Operator):
     """"""
 
-    bl_idname = "kitsu.pull_frame_range"
+    bl_idname = "kitsu.anim_pull_frame_range"
     bl_label = "Update Frame Range"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -440,7 +440,7 @@ class KITSU_OT_anim_pull_frame_range(bpy.types.Operator):
 class KITSU_OT_anim_increment_playblast_version(bpy.types.Operator):
     """"""
 
-    bl_idname = "kitsu.increment_playblast_version"
+    bl_idname = "kitsu.anim_increment_playblast_version"
     bl_label = "Add Version Increment"
 
     @classmethod

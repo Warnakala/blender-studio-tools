@@ -5,7 +5,7 @@ import bpy
 from blender_kitsu import prefs, rdpreset
 from blender_kitsu.rdpreset.ops import (
     RDPRESET_OT_set_preset,
-    RDPRESET_OT_rdpreset_apply,
+    RDPRESET_OT_apply_preset,
 )
 
 
@@ -38,7 +38,7 @@ class RDPRESET_PT_vi3d_general_tools(bpy.types.Panel):
             icon="DOWNARROW_HLT",
         )
         row.operator(
-            RDPRESET_OT_rdpreset_apply.bl_idname,
+            RDPRESET_OT_apply_preset.bl_idname,
             text="",
             icon="PLAY",
         )

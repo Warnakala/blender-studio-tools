@@ -50,10 +50,10 @@ class RDPRESET_OT_set_preset(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RDPRESET_OT_rdpreset_apply(bpy.types.Operator):
+class RDPRESET_OT_apply_preset(bpy.types.Operator):
     """"""
 
-    bl_idname = "rdpreset.apply"
+    bl_idname = "rdpreset.apply_preset"
     bl_label = "Apply Preset"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -91,7 +91,7 @@ class RDPRESET_OT_rdpreset_apply(bpy.types.Operator):
 
 # ---------REGISTER ----------
 
-classes = [RDPRESET_OT_set_preset, RDPRESET_OT_rdpreset_apply]
+classes = [RDPRESET_OT_set_preset, RDPRESET_OT_apply_preset]
 
 
 def register():

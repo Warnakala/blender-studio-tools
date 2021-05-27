@@ -14,7 +14,7 @@ class KITSU_OT_con_productions_load(bpy.types.Operator):
     Gets all productions that are available in server and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "kitsu.productions_load"
+    bl_idname = "kitsu.con_productions_load"
     bl_label = "Productions Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -52,7 +52,7 @@ class KITSU_OT_con_sequences_load(bpy.types.Operator):
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "kitsu.sequences_load"
+    bl_idname = "kitsu.con_sequences_load"
     bl_label = "Sequences Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -88,7 +88,7 @@ class KITSU_OT_con_shots_load(bpy.types.Operator):
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "kitsu.shots_load"
+    bl_idname = "kitsu.con_shots_load"
     bl_label = "Shots Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -121,7 +121,7 @@ class KITSU_OT_con_asset_types_load(bpy.types.Operator):
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "kitsu.asset_types_load"
+    bl_idname = "kitsu.con_asset_types_load"
     bl_label = "Asset Types Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -156,7 +156,7 @@ class KITSU_OT_con_assets_load(bpy.types.Operator):
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "kitsu.assets_load"
+    bl_idname = "kitsu.con_assets_load"
     bl_label = "Assets Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
@@ -190,7 +190,7 @@ class KITSU_OT_con_task_types_load(bpy.types.Operator):
     Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
-    bl_idname = "kitsu.task_types_load"
+    bl_idname = "kitsu.con_task_types_load"
     bl_label = "Task Types Load"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
