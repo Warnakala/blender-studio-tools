@@ -25,6 +25,8 @@ class KITSU_PT_vi3d_auth(bpy.types.Panel):
         if not session.is_auth():
             row.label(text=f"Email: {addon_prefs.email}")
             row = layout.row(align=True)
+            row.label(text=f"Host:  {addon_prefs.host}")
+            row = layout.row(align=True)
             row.operator(KITSU_OT_session_start.bl_idname, text="Login", icon="PLAY")
         else:
             row.label(text=f"Logged in: {session.email}")
@@ -58,6 +60,8 @@ class KITSU_PT_sqe_auth(bpy.types.Panel):
         row = layout.row(align=True)
         if not session.is_auth():
             row.label(text=f"Email: {addon_prefs.email}")
+            row = layout.row(align=True)
+            row.label(text=f"Host:  {addon_prefs.host}")
             row = layout.row(align=True)
             row.operator(KITSU_OT_session_start.bl_idname, text="Login", icon="PLAY")
         else:
