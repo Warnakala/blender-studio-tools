@@ -27,7 +27,7 @@ class Session:
         if self._host:
             gazu.client.set_host(self._host)
 
-    def start(self) -> Optional[SessionData]:
+    def start(self) -> SessionData:
         # clear all data
         gazu.cache.disable()
         gazu.cache.clear_all()
@@ -36,12 +36,11 @@ class Session:
         gazu.cache.enable()
 
         if not self._is_host_up():
-            return None
+            raise gazu.exception.HostException
 
-        if not self._login():
-            return None
+        # login
+        self._login()
 
-        logger.info("Session started with user: %s", self.email)
         return self._data
 
     def end(self) -> bool:
@@ -62,16 +61,10 @@ class Session:
             logger.error("Failed to reach host at: %s", self.host)
             return False
 
-    def _login(self) -> bool:
-        try:
-            session_dict = gazu.log_in(self._email, self._passwd)
-        except:
-            logger.exception("Failed to login. Credentials maybe incorrect?")
-            return False
-
-        logger.info("Login was succesfull")
+    def _login(self) -> None:
+        session_dict = gazu.log_in(self._email, self._passwd)
         self._data.update(session_dict)
-        return True
+        logger.info("Login was succesfull. Session started with user %s", self.email)
 
     def is_auth(self) -> bool:
         return self._data.login

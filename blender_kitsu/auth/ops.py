@@ -2,7 +2,7 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 
 import bpy
 
-from blender_kitsu import cache, prefs
+from blender_kitsu import cache, prefs, gazu
 
 # TODO: restructure this to not acess ops_anim_data
 from blender_kitsu.anim import opsdata as ops_anim_data
@@ -30,7 +30,14 @@ class KITSU_OT_session_start(bpy.types.Operator):
         session = prefs.session_get(context)
 
         session.set_config(self.get_config(context))
-        session.start()
+
+        try:
+            session_data = session.start()
+
+        except gazu.exception.AuthFailedException:
+            self.report({"ERROR"}, "Login data not correct")
+            logger.error("Login data not correct")
+            return {"CANCELLED"}
 
         # init cache variables, will skip if cache already initiated
         cache.init_cache_variables()
@@ -38,6 +45,7 @@ class KITSU_OT_session_start(bpy.types.Operator):
         # init playblast version dir model
         ops_anim_data.init_playblast_file_model(context)
 
+        self.report({"INFO"}, f"Logged in as {session_data.user['full_name']}")
         return {"FINISHED"}
 
     def get_config(self, context: bpy.types.Context) -> Dict[str, str]:
@@ -65,8 +73,12 @@ class KITSU_OT_session_end(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         session = prefs.session_get(context)
         session.end()
+
         # clear cache variables
         cache.clear_cache_variables()
+
+        self.report({"INFO"}, "Logged out")
+
         return {"FINISHED"}
 
 
