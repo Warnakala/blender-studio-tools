@@ -76,7 +76,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             Path(context.scene.kitsu.playblast_dir).mkdir(parents=True, exist_ok=True)
 
             # make opengl render
-            bpy.opsdata.render.opengl(animation=True)
+            bpy.ops.render.opengl(animation=True)
 
         context.window_manager.progress_update(1)
 
