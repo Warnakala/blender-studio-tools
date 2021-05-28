@@ -1,5 +1,6 @@
 import sys
 import subprocess
+import os
 from pathlib import Path
 from typing import Dict, List, Set, Optional, Tuple, Any
 
@@ -43,7 +44,7 @@ class KITSU_OT_open_path(bpy.types.Operator):
             subprocess.check_call(["xdg-open", filepath.as_posix()])
 
         elif sys.platform == "win32":
-            subprocess.check_call(["explorer", filepath.as_posix()])
+            os.startfile(filepath.as_posix())
 
         else:
             self.report(
