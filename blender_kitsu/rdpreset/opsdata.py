@@ -67,8 +67,16 @@ def get_rd_settings_enum_list(
     if not _rd_preset_file_model_init:
         init_rd_preset_file_model(context)
 
+    # reload model to update
+    RD_PRESET_FILE_MODEL.reload()
+
+    valid_items = [
+        (file, name, descr)
+        for file, name, descr in RD_PRESET_FILE_MODEL.items_as_path_enum_list
+        if file.endswith(".py")
+    ]
     # clear all versions in enum list
     _rd_preset_enum_list.clear()
-    _rd_preset_enum_list.extend(RD_PRESET_FILE_MODEL.items_as_path_enum_list)
+    _rd_preset_enum_list.extend(valid_items)
 
     return _rd_preset_enum_list

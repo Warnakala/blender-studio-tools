@@ -112,7 +112,7 @@ class FileListModel:
             self.reset()
         else:
             self.__root_path = path
-            logger.debug("FileListModel: Root path  was set to %s", path.as_posix())
+            # logger.debug("FileListModel: Root path  was set to %s", path.as_posix())
             self.__load_dir(self.__root_path)
 
     def reset(self) -> None:
