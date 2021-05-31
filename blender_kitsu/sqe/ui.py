@@ -22,7 +22,9 @@ from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_debug_not_linked,
     KITSU_OT_sqe_debug_multi_project,
     KITSU_OT_sqe_pull_edit,
+    KITSU_OT_sqe_init_strip_frame_range,
 )
+from bpy.types import FileAssetSelectParams
 
 
 def get_selshots_noun(nr_of_shots: int, prefix: str = "Active") -> str:
@@ -216,6 +218,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         """
         Panel in sequence editor that shows .kitsu properties of active strip. (shot, sequence)
         """
+        split_factor = 0.2
 
         strip = context.scene.sequence_editor.active_strip
 
@@ -227,19 +230,42 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         col = box.column(align=True)
 
         # sequence
-        sub_row = col.row(align=True)
-        sub_row.prop(strip.kitsu, "sequence_name_display")
+        split = col.split(factor=split_factor, align=True)
+        split.label(text="Sequence")
+        sub_row = split.row(align=True)
+        sub_row.prop(strip.kitsu, "sequence_name_display", text="")
         sub_row.operator(
             KITSU_OT_sqe_link_sequence.bl_idname, text="", icon="DOWNARROW_HLT"
         )
         sub_row.operator(KITSU_OT_sqe_push_new_sequence.bl_idname, text="", icon="ADD")
 
         # shot
-        col.prop(strip.kitsu, "shot_name")
+        split = col.split(factor=split_factor, align=True)
+        split.label(text="Shot")
+        split.prop(strip.kitsu, "shot_name", text="")
 
         # description
-        col.prop(strip.kitsu, "shot_description_display", text="Description")
-        col.enabled = False if not strip.kitsu.initialized else True
+        split = col.split(factor=split_factor, align=True)
+        split.label(text="Description")
+        split.prop(strip.kitsu, "shot_description_display", text="")
+        split.enabled = False if not strip.kitsu.initialized else True
+
+        # frame range
+        split = col.split(factor=split_factor)
+        split.label(text="Frame Range")
+        row = split.row(align=False)
+        row.prop(strip, "calc_kitsu_frame_start", text="In")
+        row.prop(strip, "calc_kitsu_frame_end", text="Out")
+        row.prop(strip.kitsu, "frame_duration", text="Duration")
+        row.operator(
+            KITSU_OT_sqe_init_strip_frame_range.bl_idname, text="", icon="FILE_REFRESH"
+        )
+
+        """
+        row = col.row(align=True)
+        row.prop(strip.kitsu, "frame_start", text="")
+        row.prop(strip.kitsu, "frame_end", text=""
+        """
 
     @classmethod
     def poll_multi_edit(cls, context: bpy.types.Context) -> bool:

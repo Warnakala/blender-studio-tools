@@ -1,6 +1,6 @@
 import bpy
 
-from blender_kitsu import propsdata
+from blender_kitsu import propsdata, bkglobals
 from blender_kitsu.logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(name=__name__)
@@ -18,6 +18,9 @@ class KITSU_property_group_sequence(bpy.types.PropertyGroup):
 
     def _get_sequence_name(self):
         return self.sequence_name
+
+    def _cal_frame_duration(self):
+        return self.frame_end - self.frame_start + 1
 
     # shot
     shot_id: bpy.props.StringProperty(name="Shot ID")  # type: ignore
@@ -38,6 +41,15 @@ class KITSU_property_group_sequence(bpy.types.PropertyGroup):
     )
     linked: bpy.props.BoolProperty(  # type: ignore
         name="Linked", default=False, description="Is linked to an ID on server"
+    )
+
+    # frame range
+    frame_start_offset: bpy.props.IntProperty(name="Frame Start Offset")
+    frame_end_offset: bpy.props.IntProperty(name="Frame End Offset")
+    frame_start: bpy.props.IntProperty(name="Frame Start")
+    frame_end: bpy.props.IntProperty(name="Frame End")
+    frame_duration: bpy.props.IntProperty(
+        name="Frame Duration", get=_cal_frame_duration
     )
 
     # display props
@@ -289,6 +301,73 @@ def _clear_window_manager_props():
     del bpy.types.WindowManager.sequence_enum
 
 
+def _calc_kitsu_frame_start_old(self):
+    offset_start = self.frame_final_start - self.frame_start
+
+    self.kitsu.frame_start = self.kitsu.frame_start_init + offset_start
+    return self.kitsu.frame_start
+
+
+def _calc_kitsu_frame_end_old(self):
+
+    frame_end = self.frame_start + self.frame_duration
+    offset_end = self.frame_final_end - frame_end
+
+    self.kitsu.frame_end = self.kitsu.frame_end_init + offset_end
+    return self.kitsu.frame_end
+
+
+def _calc_kitsu_frame_start(self):
+    # self.frame_final_start = 50
+    # self.frame_start = 60
+    # self.kitsu.frame_start_offset = 10
+
+    offset_start = self.frame_final_start - self.frame_start  # 50 - 60 = -10
+
+    self.kitsu.frame_start = (
+        bkglobals.FRAME_START
+        - self.kitsu.frame_start_offset
+        + offset_start  # 101 - (-10) +(-10) = 101
+    )
+    return self.kitsu.frame_start
+
+
+def _calc_kitsu_frame_end(self):
+    # self.kitsu.frame_end_offset = -939
+    """
+    -> when user hits initialize frame range this is the offset of the total duration of the clip
+    to the 'new ending' it gets calculated in the KITSU_OT_sqe_init_strip_frame_range op:
+    -frame_end = strip.frame_start + strip.frame_duration
+    -strip.kitsu.frame_end_offset = strip.frame_final_end - frame_end
+    """
+
+    # bkglobals.FRAME_START = 101
+    # self.frame_duration = 1000
+    # self.frame_start = 50
+    # self.kitsu.frame_start_offset = 10
+    """
+    frame_end_init is the end frame of the strip when it was originally initialized
+    that is our reference point for any further frame shifts, trims or changes
+    """
+    frame_end_init = (
+        bkglobals.FRAME_START
+        + self.frame_duration
+        + (self.kitsu.frame_end_offset - 1)
+        - self.kitsu.frame_start_offset
+    )  # 101 + 1000 + (-939 -1)  - 10 = 151
+
+    offset_end_init = self.kitsu.frame_end_offset  # -939
+
+    frame_end_global = self.frame_start + self.frame_duration  # (50 + 1000 = 1050)
+    offset_end_global = self.frame_final_end - frame_end_global  # 101 - 1050 = -939)
+
+    offset_end_total = offset_end_global - offset_end_init
+    frame_end_final = frame_end_init + offset_end_total  # 150 + 0 = 150)
+
+    self.kitsu.frame_end = frame_end_final
+    return self.kitsu.frame_end
+
+
 # ----------------REGISTER--------------
 
 classes = [
@@ -302,6 +381,15 @@ def register():
 
     for cls in classes:
         bpy.utils.register_class(cls)
+
+    bpy.types.Sequence.calc_kitsu_frame_start = bpy.props.IntProperty(
+        name="Testi",
+        get=_calc_kitsu_frame_start,
+    )
+    bpy.types.Sequence.calc_kitsu_frame_end = bpy.props.IntProperty(
+        name="Testi",
+        get=_calc_kitsu_frame_end,
+    )
 
     # Sequence Properties
     bpy.types.Sequence.kitsu = bpy.props.PointerProperty(

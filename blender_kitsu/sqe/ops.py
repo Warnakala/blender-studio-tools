@@ -6,7 +6,7 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 
 import bpy
 
-from blender_kitsu import gazu, cache, util, prefs
+from blender_kitsu import gazu, cache, util, prefs, bkglobals
 from blender_kitsu.sqe import push, pull, checkstrip, opsdata
 
 from blender_kitsu.logger import LoggerFactory
@@ -1702,6 +1702,74 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         return (color[0], color[1], color[2])
 
 
+class KITSU_OT_sqe_init_strip_frame_range(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.sqe_init_strip_frame_range"
+    bl_label = "Initialize Shot Frame Range"
+    bl_description = "Adds required shot metadata to selecetd strips"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        succeeded = []
+        failed = []
+        logger.info("-START- Initializing strip frame ranges")
+
+        selected_sequences = context.selected_sequences
+        if not selected_sequences:
+            selected_sequences = context.scene.sequence_editor.sequences_all
+
+        for strip in selected_sequences:
+
+            if not checkstrip.is_valid_type(strip):
+                # failed.append(strip)
+                continue
+
+            if not strip.kitsu.initialized:
+                logger.info("%s not initialized.", strip.name)
+                # failed.append(strip)
+                continue
+
+            # frame start offset
+            offset_start = strip.frame_final_start - strip.frame_start
+            strip.kitsu.frame_start_offset = offset_start
+
+            # frame end offset
+            frame_end = strip.frame_start + strip.frame_duration
+            offset_end = strip.frame_final_end - frame_end
+            strip.kitsu.frame_end_offset = offset_end
+
+            succeeded.append(strip)
+            logger.info(
+                "%s initiated strip frame range: (%i, %i)",
+                strip.name,
+                strip.kitsu.frame_start_offset,
+                strip.kitsu.frame_end_offset,
+            )
+
+        # report
+        report_str = f"Initiated frame range of {len(succeeded)} strips"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
+        self.report(
+            {report_state},
+            report_str,
+        )
+
+        # log
+        logger.info("-END- Initializing strip frame ranges")
+        util.ui_redraw()
+
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -1724,6 +1792,7 @@ classes = [
     KITSU_OT_sqe_debug_not_linked,
     KITSU_OT_sqe_debug_multi_project,
     KITSU_OT_sqe_pull_edit,
+    KITSU_OT_sqe_init_strip_frame_range,
 ]
 
 
