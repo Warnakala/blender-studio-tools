@@ -64,6 +64,11 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         )
         return storage_dir.absolute().as_posix()
 
+    def get_config_dir(self) -> str:
+        if not self.is_project_root_valid:
+            return ""
+        return self.project_root_path.joinpath("pipeline/blender_kitsu").as_posix()
+
     def init_playblast_file_model(self, context: bpy.types.Context) -> None:
         ops_anim_data.init_playblast_file_model(context)
 
@@ -109,6 +114,28 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         default="",
         subtype="DIR_PATH",
         update=init_playblast_file_model,
+    )
+
+    project_root_dir: bpy.props.StringProperty(  # type: ignore
+        name="Project Root Directory",
+        description=(
+            "Directory path to the root of the project."
+            "In this directory blender kitsu searches for ./pipeline/blender_kitsu"
+            "folder to configure the addon per project"
+        ),
+        default="",
+        subtype="DIR_PATH",
+        # update=,
+    )
+    config_dir: bpy.props.StringProperty(  # type: ignore
+        name="Config Directory",
+        description=(
+            "Configuration directory of blender_kitsu."
+            "See readme.md how you can configurate the addon on a per project basis"
+        ),
+        default="",
+        subtype="DIR_PATH",
+        get=get_config_dir,
     )
 
     project_active_id: bpy.props.StringProperty(  # type: ignore
@@ -192,6 +219,8 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             text=prod_load_text,
             icon="DOWNARROW_HLT",
         )
+        box.row().prop(self, "project_root_dir")
+        box.row().prop(self, "config_dir")
 
         # anim tools settings
         box = layout.box()
@@ -229,6 +258,36 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             return False
 
         if not bpy.data.filepath and self.playblast_root_dir.startswith("//"):
+            return False
+
+        return True
+
+    @property
+    def project_root_path(self) -> Optional[Path]:
+        if not self.project_root_dir:
+            return None
+        return Path(os.path.abspath(bpy.path.abspath(self.project_root_dir)))
+
+    @property
+    def is_project_root_valid(self) -> bool:
+
+        # check if file is saved
+        if not self.project_root_dir:
+            return False
+
+        if not bpy.data.filepath and self.project_root_dir.startswith("//"):
+            return False
+
+        return True
+
+    @property
+    def is_config_dir_valid(self) -> bool:
+
+        # check if file is saved
+        if not self.config_dir:
+            return False
+
+        if not bpy.data.filepath and self.config_dir.startswith("//"):
             return False
 
         return True
