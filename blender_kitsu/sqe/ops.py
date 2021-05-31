@@ -1488,9 +1488,15 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.session_auth(context) and cache.project_active_get())
+        addon_prefs = prefs.addon_prefs_get(context)
+        return bool(
+            prefs.session_auth(context)
+            and cache.project_active_get()
+            and addon_prefs.metastrip_file
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        addon_prefs = prefs.addon_prefs_get(context)
         failed = []
         created = []
         succeeded = []
@@ -1513,9 +1519,6 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
             print("\n" * 2)
             logger.info("Processing Sequence %s", seq.name)
             shots = seq.get_all_shots()
-            seq_strip_color = self._get_random_pastel_color_rgb()
-            color_override = ()
-            seq_strips = []
 
             # process all shots for sequence
             for shot in shots:
@@ -1560,12 +1563,19 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
 
                 if not strip:
                     # create new strip
-                    strip = bpy.context.scene.sequence_editor.sequences.new_effect(
-                        shot.name, "COLOR", channel, frame_start, frame_end=frame_end
+                    strip = context.scene.sequence_editor.sequences.new_movie(
+                        shot.name,
+                        addon_prefs.metastrip_file,
+                        channel,
+                        frame_start,
                     )
+                    strip.frame_final_end = frame_end
+
+                    # apply strip.kitsu.frame_end_offset & strip.kitsu.frame_start_offset
+                    opsdata.init_meta_strip_frame_offsets(strip)
+
                     created.append(shot)
                     logger.info("Shot %s created new strip", shot.name)
-                    strip.color = seq_strip_color
 
                 else:
                     # update properties of existing strip
@@ -1573,7 +1583,6 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                     # strip.frame_final_start = frame_start
                     # strip.frame_final_end = frame_end
                     logger.info("Shot %s use existing strip: %s", shot.name, strip.name)
-                    color_override = strip.color
                     existing.append(strip)
 
                 # set blend alpha
@@ -1582,15 +1591,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                 # pull shot meta and link shot
                 pull.shot_meta(strip, shot, clear_cache=False)
 
-                # append to seq strips list for potential color overwrite
-                seq_strips.append(strip)
-
                 succeeded.append(shot)
-
-            # if there already was a strip of that sequence use that color
-            if color_override:
-                for strip in seq_strips:
-                    strip.color = color_override
 
         # end progress update
         context.window_manager.progress_update(len(all_shots))
@@ -1678,14 +1679,8 @@ class KITSU_OT_sqe_init_strip_frame_range(bpy.types.Operator):
                 # failed.append(strip)
                 continue
 
-            # frame start offset
-            offset_start = strip.frame_final_start - strip.frame_start
-            strip.kitsu.frame_start_offset = offset_start
-
-            # frame end offset
-            frame_end = strip.frame_start + strip.frame_duration
-            offset_end = strip.frame_final_end - frame_end
-            strip.kitsu.frame_end_offset = offset_end
+            # apply strip.kitsu.frame_end_offset & strip.kitsu.frame_start_offset
+            opsdata.init_meta_strip_frame_offsets(strip)
 
             succeeded.append(strip)
             logger.info(
@@ -1767,6 +1762,9 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
                 strip.frame_final_start,
             )
             created.append(meta_strip)
+
+            # set blend alpha
+            meta_strip.blend_alpha = 0
 
             # set frame in and out
             meta_strip.frame_final_start = strip.frame_final_start

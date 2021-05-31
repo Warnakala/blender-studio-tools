@@ -274,9 +274,11 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         )
 
         """
-        row = col.row(align=True)
-        row.prop(strip.kitsu, "frame_start", text="")
-        row.prop(strip.kitsu, "frame_end", text=""
+        split = col.split(factor=split_factor)
+        split.label(text="Offsets")
+        row = split.row(align=False)
+        row.prop(strip.kitsu, "frame_start_offset", text="In")
+        row.prop(strip.kitsu, "frame_end_offset", text="Out")
         """
 
     @classmethod
