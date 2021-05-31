@@ -78,6 +78,9 @@ class KITSU_property_group_sequence(bpy.types.PropertyGroup):
         self.initialized = False
         self.linked = False
 
+        self.frame_start_offset = 0
+        self.frame_end_offset = 0
+
     def unlink(self):
         self.sequence_id = ""
 
