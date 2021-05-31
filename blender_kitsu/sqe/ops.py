@@ -373,6 +373,10 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
                 continue
 
             strip.kitsu.initialized = True
+
+            # apply strip.kitsu.frame_end_offset & strip.kitsu.frame_start_offset
+            opsdata.init_meta_strip_frame_offsets(strip)
+
             succeeded.append(strip)
             logger.info("Initiated strip: %s as shot.", strip.name)
 
