@@ -90,7 +90,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
     )
 
     sqe_render_dir: bpy.props.StringProperty(  # type: ignore
-        name="Sqe Render Directory",
+        name="Sequence Editor Render Directory",
         description="Directory in which thumbnails will be saved",
         default="",
         subtype="DIR_PATH",
