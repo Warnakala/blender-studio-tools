@@ -352,11 +352,11 @@ def _calc_kitsu_frame_end(self):
     frame_end_init = (
         bkglobals.FRAME_START
         + self.frame_duration
-        + (self.kitsu.frame_end_offset - 1)
+        + (self.kitsu.frame_end_offset - 1)  # TODO: can be discarded
         - self.kitsu.frame_start_offset
     )  # 101 + 1000 + (-939 -1)  - 10 = 151
 
-    offset_end_init = self.kitsu.frame_end_offset  # -939
+    offset_end_init = self.kitsu.frame_end_offset  # -939 #TODO: can be discarded
 
     frame_end_global = self.frame_start + self.frame_duration  # (50 + 1000 = 1050)
     offset_end_global = self.frame_final_end - frame_end_global  # 101 - 1050 = -939)
