@@ -1538,7 +1538,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                 # frame info comes in str format from kitsu
                 frame_start = int(frame_start)
                 frame_end = int(frame_end)
-                shot_range = range(frame_start, frame_start + 1)
+                shot_range = range(frame_start, frame_end + 1)
 
                 # try to find existing strip that is already linked to that shot
                 strip = self._find_shot_strip(shot_strips, shot.id)
