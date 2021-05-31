@@ -23,6 +23,7 @@ from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_debug_multi_project,
     KITSU_OT_sqe_pull_edit,
     KITSU_OT_sqe_init_strip_frame_range,
+    KITSU_OT_sqe_create_meta_strip,
 )
 from bpy.types import FileAssetSelectParams
 
@@ -152,6 +153,12 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                     text=f"Link {noun}",
                     icon="LINKED",
                 )
+                # create metastrip from uninitialized strip
+                row = box.row(align=True)
+                row.operator(
+                    KITSU_OT_sqe_create_meta_strip.bl_idname,
+                    text=f"Create Metastrip {noun}",
+                )
 
             # unlink
             elif strip.kitsu.linked:
@@ -185,6 +192,11 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                     text=f"Init {len(strips_to_init)} Shots",
                     icon="ADD",
                 )
+                row.operator(
+                    KITSU_OT_sqe_create_meta_strip.bl_idname,
+                    text=f"Create {len(strips_to_init)} Metastrips",
+                )
+
             # make row
             if strips_to_uninit or strips_to_unlink:
                 row = box.row(align=True)

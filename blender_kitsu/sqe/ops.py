@@ -7,7 +7,7 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 import bpy
 
 from blender_kitsu import gazu, cache, util, prefs, bkglobals
-from blender_kitsu.sqe import push, pull, checkstrip, opsdata
+from blender_kitsu.sqe import push, pull, checkstrip, opsdata, checksqe
 
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.types import (
@@ -1498,8 +1498,8 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         channel = context.scene.kitsu.pull_edit_channel
         active_project = cache.project_active_get()
         sequences = active_project.get_sequences_all()
-        shot_strips = self._get_shot_strips(context)
-        occupied_ranges = self._get_occupied_ranges(context)
+        shot_strips = checksqe.get_shot_strips(context)
+        occupied_ranges = checksqe.get_occupied_ranges(context)
         all_shots = active_project.get_shots_all()
 
         logger.info("-START- Pulling Edit")
@@ -1545,7 +1545,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
 
                 # check if on the specified channel there is space to put the strip
                 if str(channel) in occupied_ranges:
-                    if self._is_range_occupied(
+                    if checksqe.is_range_occupied(
                         shot_range, occupied_ranges[str(channel)]
                     ):
                         failed.append(shot)
@@ -1635,62 +1635,6 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
 
         return None
 
-    def _get_shot_strips(self, context: bpy.types.Context) -> List[bpy.types.Sequence]:
-        shot_strips = []
-        shot_strips.extend(
-            [
-                strip
-                for strip in context.scene.sequence_editor.sequences_all
-                if checkstrip.is_valid_type(strip, log=False)
-                and checkstrip.is_linked(strip, log=False)
-            ]
-        )
-        return shot_strips
-
-    def _get_occupied_ranges(
-        self, context: bpy.types.Context
-    ) -> Dict[str, List[range]]:
-        # {'1': [(101, 213), (300, 320)]}
-        ranges: Dict[str, List[range]] = {}
-
-        # populate ranges
-        for strip in context.scene.sequence_editor.sequences_all:
-            ranges.setdefault(str(strip.channel), [])
-            ranges[str(strip.channel)].append(
-                range(strip.frame_final_start, strip.frame_final_end + 1)
-            )
-
-        # sort ranges tuple list
-        for channel in ranges:
-            liste = ranges[channel]
-            ranges[channel] = sorted(liste, key=lambda item: item.start)
-
-        return ranges
-
-    def _is_range_occupied(
-        self, range_to_check: range, occupied_ranges: List[range]
-    ) -> bool:
-        for r in occupied_ranges:
-            # range(101, 150)
-            if self.__is_range_in(range_to_check, r):
-                return True
-            continue
-        return False
-
-    def __is_range_in(self, range1: range, range2: range) -> bool:
-        """Whether range1 is a subset of range2."""
-        # usual strip setup strip1(101, 120)|strip2(120, 130)|strip3(130, 140)
-        # first and last frame can be the same for each strip
-        range2 = range(range2.start + 1, range2.stop - 1)
-
-        if not range1:
-            return True  # empty range is subset of anything
-        if not range2:
-            return False  # non-empty range can't be subset of empty range
-        if len(range1) > 1 and range1.step % range2.step:
-            return False  # must have a single value or integer multiple step
-        return range1.start in range2 or range1[-1] in range2
-
     def _get_random_pastel_color_rgb(self) -> Tuple[float, float, float]:
         """Returns a randomly generated color with high brightness and low saturation."""
 
@@ -1770,6 +1714,99 @@ class KITSU_OT_sqe_init_strip_frame_range(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.sqe_create_meta_strip"
+    bl_label = "Create Meta Strip"
+    bl_description = "Adds meta strip for each selected strip"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        return bool(context.selected_sequences and addon_prefs.metastrip_file)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        addon_prefs = prefs.addon_prefs_get(context)
+        failed = []
+        created = []
+        occupied_ranges = checksqe.get_occupied_ranges(context)
+        logger.info("-START- Creating Meta Strips")
+
+        selected_sequences = context.selected_sequences
+
+        for strip in selected_sequences:
+
+            # get frame range information from current strip
+            strip_range = range(strip.frame_final_start, strip.frame_final_end)
+            channel = strip.channel + 1
+
+            # check if one channel above strip there is space to put the meta strip
+            if str(channel) in occupied_ranges:
+                if checksqe.is_range_occupied(
+                    strip_range, occupied_ranges[str(channel)]
+                ):
+                    failed.append(strip)
+                    logger.error(
+                        "Failed to create metastrip for %s. Channel: %i Range: %i - %i is occupied.",
+                        strip.name,
+                        channel,
+                        strip.frame_final_start,
+                        strip.frame_final_end,
+                    )
+                    continue
+
+            # create new meta strip
+            # TODO: frame range of metastrip is 1000 which is problematic because it needs to fit
+            # on the frist try, EDIT: seems to work maybe per python overlaps of sequences possible?
+            meta_strip = context.scene.sequence_editor.sequences.new_movie(
+                f"{strip.name}_metastrip",
+                addon_prefs.metastrip_file,
+                strip.channel + 1,
+                strip.frame_final_start,
+            )
+            created.append(meta_strip)
+
+            # set frame in and out
+            meta_strip.frame_final_start = strip.frame_final_start
+            meta_strip.frame_final_end = strip.frame_final_end
+            meta_strip.channel = strip.channel + 1
+
+            # frame start offset
+            offset_start = meta_strip.frame_final_start - meta_strip.frame_start
+            meta_strip.kitsu.frame_start_offset = offset_start
+
+            # frame end offset
+            frame_end = meta_strip.frame_start + meta_strip.frame_duration
+            offset_end = meta_strip.frame_final_end - frame_end
+            meta_strip.kitsu.frame_end_offset = offset_end
+
+            logger.info(
+                "%s created metastrip: %s",
+                strip.name,
+                meta_strip.name,
+            )
+
+        # report
+        report_str = f"Created {len(created)} meta strips"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
+        self.report(
+            {report_state},
+            report_str,
+        )
+
+        # log
+        logger.info("-END- Creating Meta Strips")
+        util.ui_redraw()
+
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -1793,6 +1830,7 @@ classes = [
     KITSU_OT_sqe_debug_multi_project,
     KITSU_OT_sqe_pull_edit,
     KITSU_OT_sqe_init_strip_frame_range,
+    KITSU_OT_sqe_create_meta_strip,
 ]
 
 
