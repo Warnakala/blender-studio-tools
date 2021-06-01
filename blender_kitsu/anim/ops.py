@@ -14,6 +14,7 @@ from blender_kitsu import (
 )
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.types import (
+    Cache,
     Shot,
     Task,
     TaskStatus,
@@ -401,21 +402,17 @@ class KITSU_OT_anim_pull_frame_range(bpy.types.Operator):
         return bool(prefs.session_auth(context) and cache.shot_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        active_shot = cache.shot_active_pull_update()
 
-        active_shot = cache.shot_active_get()
-
-        if not active_shot.nb_frames:
+        if "3d_in" not in active_shot.data or "3d_out" not in active_shot.data:
             self.report(
                 {"ERROR"},
-                f"Shot {active_shot.name} missing 'nb_frames' attribute on server.",
+                f"Failed to pull frame range. Shot {active_shot.name} missing '3d_in', '3d_out' attribute on server.",
             )
             return {"CANCELLED"}
 
-        shot_frame_in = active_shot.frame_in
-        shot_frame_out = active_shot.frame_out
-
-        frame_in = bkglobals.FRAME_START
-        frame_out = frame_in + active_shot.nb_frames - 1
+        frame_in = int(active_shot.data["3d_in"])
+        frame_out = int(active_shot.data["3d_out"])
 
         # check if current frame range matches the one for active shot
         if (
@@ -475,19 +472,21 @@ def load_post_handler_check_frame_range(dummy: Any) -> None:
     a warning in the Animation Tools Tab UI
     """
     active_shot = cache.shot_active_get()
-
     if not active_shot:
         return
 
-    if not active_shot.nb_frames:
+    # pull update for shot
+    cache.shot_active_pull_update()
+
+    if "3d_in" not in active_shot.data or "3d_out" not in active_shot.data:
         logger.warning(
-            "Failed to check frame range. Shot %s missing 'nb_frames' attribute on server.",
+            "Failed to check frame range. Shot %s missing '3d_in', '3d_out' attribute on server.",
             active_shot.name,
         )
         return
 
-    frame_in = bkglobals.FRAME_START
-    frame_out = frame_in + active_shot.nb_frames - 1
+    frame_in = int(active_shot.data["3d_in"])
+    frame_out = int(active_shot.data["3d_out"])
 
     if (
         frame_in == bpy.context.scene.frame_start

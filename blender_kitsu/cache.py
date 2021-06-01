@@ -13,6 +13,7 @@ from blender_kitsu.types import (
     TaskType,
     ProjectList,
     TaskStatus,
+    Cache,
 )
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.gazu.exception import RouteNotFoundException
@@ -96,6 +97,7 @@ def shot_active_get() -> Shot:
 
 def shot_active_pull_update() -> Shot:
     global _shot_active
+    Cache.clear_all()
     shot_active_id = bpy.context.scene.kitsu.shot_active_id
     _init_cache_entity(shot_active_id, Shot, "_shot_active", "shot")
     return _shot_active
