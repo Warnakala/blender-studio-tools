@@ -468,6 +468,12 @@ class Shot:
         gazu.shot.update_shot(asdict(self))
         return self
 
+    def update_data(self, data: Dict[str, Any]) -> Shot:
+        gazu.shot.update_shot_data(asdict(self), data=data)
+        for key in data:
+            self.data[key] = data[key]
+        return self
+
     def remove(self, force: bool = False) -> str:
         return str(gazu.shot.remove_shot(asdict(self), force=force))
 
