@@ -94,6 +94,13 @@ def shot_active_get() -> Shot:
     return _shot_active
 
 
+def shot_active_pull_update() -> Shot:
+    global _shot_active
+    shot_active_id = bpy.context.scene.kitsu.shot_active_id
+    _init_cache_entity(shot_active_id, Shot, "_shot_active", "shot")
+    return _shot_active
+
+
 def shot_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
     global _shot_active
 
