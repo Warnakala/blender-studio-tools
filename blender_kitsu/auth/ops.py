@@ -6,6 +6,7 @@ from blender_kitsu import cache, prefs, gazu
 
 # TODO: restructure this to not acess ops_anim_data
 from blender_kitsu.anim import opsdata as ops_anim_data
+from blender_kitsu.anim import ops as ops_anim
 from blender_kitsu.logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(name=__name__)
@@ -44,6 +45,9 @@ class KITSU_OT_session_start(bpy.types.Operator):
 
         # init playblast version dir model
         ops_anim_data.init_playblast_file_model(context)
+
+        # check frame range
+        ops_anim.load_post_handler_check_frame_range(None)
 
         self.report({"INFO"}, f"Logged in as {session_data.user['full_name']}")
         return {"FINISHED"}
