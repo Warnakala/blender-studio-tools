@@ -1731,6 +1731,14 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
 
         selected_sequences = context.selected_sequences
 
+        #check if metastrip file actually exists
+        if not Path(addon_prefs.metastrip_file).exists():
+            self.report(
+                {"ERROR"},
+                f"Failed to load metastrip file: {addon_prefs.metastrip_file}. Path does not exist.",
+            )
+            return {"CANCELLED"}
+
         for strip in selected_sequences:
 
             # get frame range information from current strip
