@@ -374,8 +374,8 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
 
             strip.kitsu.initialized = True
 
-            # apply strip.kitsu.frame_end_offset & strip.kitsu.frame_start_offset
-            opsdata.init_meta_strip_frame_offsets(strip)
+            # apply strip.kitsu.frame_start_offset
+            opsdata.init_start_frame_offset(strip)
 
             succeeded.append(strip)
             logger.info("Initiated strip: %s as shot.", strip.name)
@@ -896,7 +896,7 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
                 continue
 
             # delete shot
-            push.delete_shot(strip, shot)
+            push.delete_shot(strip, shot)  # this clears all kitsu properties
             succeeded.append(strip)
 
         # end progress update
@@ -1575,8 +1575,10 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                     )
                     strip.frame_final_end = frame_end
 
-                    # apply strip.kitsu.frame_end_offset & strip.kitsu.frame_start_offset
-                    opsdata.init_meta_strip_frame_offsets(strip)
+                    # apply strip.kitsu.frame_start_offset
+                    opsdata.init_start_frame_offset(
+                        strip
+                    )  # TODO: here we want to get the actual data from kitsu
 
                     created.append(shot)
                     logger.info("Shot %s created new strip", shot.name)
@@ -1651,12 +1653,12 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         return (color[0], color[1], color[2])
 
 
-class KITSU_OT_sqe_init_strip_frame_range(bpy.types.Operator):
+class KITSU_OT_sqe_init_strip_start_frame(bpy.types.Operator):
     """"""
 
-    bl_idname = "kitsu.sqe_init_strip_frame_range"
-    bl_label = "Initialize Shot Frame Range"
-    bl_description = "Adds required shot metadata to selecetd strips"
+    bl_idname = "kitsu.sqe_init_strip_start_frame"
+    bl_label = "Initialize Shot Start Frame"
+    bl_description = "Calculates offset so the current shot starts at 101"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1666,7 +1668,7 @@ class KITSU_OT_sqe_init_strip_frame_range(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
         failed = []
-        logger.info("-START- Initializing strip frame ranges")
+        logger.info("-START- Initializing strip start frame")
 
         selected_sequences = context.selected_sequences
         if not selected_sequences:
@@ -1683,19 +1685,18 @@ class KITSU_OT_sqe_init_strip_frame_range(bpy.types.Operator):
                 # failed.append(strip)
                 continue
 
-            # apply strip.kitsu.frame_end_offset & strip.kitsu.frame_start_offset
-            opsdata.init_meta_strip_frame_offsets(strip)
+            # apply strip.kitsu.frame_start_offset
+            opsdata.init_start_frame_offset(strip)
 
             succeeded.append(strip)
             logger.info(
-                "%s initiated strip frame range: (%i, %i)",
+                "%s initiated start frame to 101 by applying offset: %i ",
                 strip.name,
                 strip.kitsu.frame_start_offset,
-                strip.kitsu.frame_end_offset,
             )
 
         # report
-        report_str = f"Initiated frame range of {len(succeeded)} strips"
+        report_str = f"Initiated start frame of {len(succeeded)} strips"
         report_state = "INFO"
         if failed:
             report_state = "WARNING"
@@ -1707,7 +1708,7 @@ class KITSU_OT_sqe_init_strip_frame_range(bpy.types.Operator):
         )
 
         # log
-        logger.info("-END- Initializing strip frame ranges")
+        logger.info("-END- Initializing strip start frame")
         util.ui_redraw()
 
         return {"FINISHED"}
@@ -1775,14 +1776,8 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
             meta_strip.frame_final_end = strip.frame_final_end
             meta_strip.channel = strip.channel + 1
 
-            # frame start offset
-            offset_start = meta_strip.frame_final_start - meta_strip.frame_start
-            meta_strip.kitsu.frame_start_offset = offset_start
-
-            # frame end offset
-            frame_end = meta_strip.frame_start + meta_strip.frame_duration
-            offset_end = meta_strip.frame_final_end - frame_end
-            meta_strip.kitsu.frame_end_offset = offset_end
+            # init start frame offst
+            opsdata.init_start_frame_offset(meta_strip)
 
             logger.info(
                 "%s created metastrip: %s",
@@ -1831,7 +1826,7 @@ classes = [
     KITSU_OT_sqe_debug_not_linked,
     KITSU_OT_sqe_debug_multi_project,
     KITSU_OT_sqe_pull_edit,
-    KITSU_OT_sqe_init_strip_frame_range,
+    KITSU_OT_sqe_init_strip_start_frame,
     KITSU_OT_sqe_create_meta_strip,
 ]
 

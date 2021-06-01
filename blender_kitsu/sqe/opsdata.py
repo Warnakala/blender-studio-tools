@@ -178,12 +178,7 @@ def upload_preview(
     logger.info(f"Uploaded preview for shot: {shot.name} under: {task_type.name}")
 
 
-def init_meta_strip_frame_offsets(strip: bpy.types.Sequence) -> None:
+def init_start_frame_offset(strip: bpy.types.Sequence) -> None:
     # frame start offset
     offset_start = strip.frame_final_start - strip.frame_start
     strip.kitsu.frame_start_offset = offset_start
-
-    # frame end offset
-    frame_end = strip.frame_start + strip.frame_duration
-    offset_end = strip.frame_final_end - frame_end
-    strip.kitsu.frame_end_offset = offset_end

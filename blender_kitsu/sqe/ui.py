@@ -22,7 +22,7 @@ from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_debug_not_linked,
     KITSU_OT_sqe_debug_multi_project,
     KITSU_OT_sqe_pull_edit,
-    KITSU_OT_sqe_init_strip_frame_range,
+    KITSU_OT_sqe_init_strip_start_frame,
     KITSU_OT_sqe_create_meta_strip,
 )
 from bpy.types import FileAssetSelectParams
@@ -270,7 +270,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         row.prop(strip, "calc_kitsu_frame_end", text="Out")
         row.prop(strip.kitsu, "frame_duration", text="Duration")
         row.operator(
-            KITSU_OT_sqe_init_strip_frame_range.bl_idname, text="", icon="FILE_REFRESH"
+            KITSU_OT_sqe_init_strip_start_frame.bl_idname, text="", icon="FILE_REFRESH"
         )
 
         """
@@ -278,7 +278,6 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         split.label(text="Offsets")
         row = split.row(align=False)
         row.prop(strip.kitsu, "frame_start_offset", text="In")
-        row.prop(strip.kitsu, "frame_end_offset", text="Out")
         """
 
     @classmethod
