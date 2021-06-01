@@ -16,6 +16,8 @@ def shot_meta(strip: bpy.types.Sequence, shot: Shot) -> None:
     shot.description = strip.kitsu.shot_description
     shot.data["frame_in"] = strip.frame_final_start
     shot.data["frame_out"] = strip.frame_final_end
+    shot.data["3d_in"] = strip.kitsu.frame_start
+    shot.data["3d_out"] = strip.kitsu.frame_end
     shot.nb_frames = strip.frame_final_duration
     shot.data["fps"] = bkglobals.FPS
 
@@ -45,7 +47,11 @@ def new_shot(
         nb_frames=strip.frame_final_duration,
         frame_in=frame_range[0],
         frame_out=frame_range[1],
-        data={"fps": bkglobals.FPS},
+        data={
+            "fps": bkglobals.FPS,
+            "3d_in": strip.kitsu.frame_start,
+            "3d_out": strip.kitsu.frame_end,
+        },
     )
     # update description, no option to pass that on create
     if strip.kitsu.shot_description:
@@ -77,9 +83,3 @@ def delete_shot(strip: bpy.types.Sequence, shot: Shot) -> str:
     )
     strip.kitsu.clear()
     return result
-
-
-def _remap_frame_range(frame_in: int, frame_out: int) -> Tuple[int, int]:
-    start_frame = bkglobals.FRAME_START
-    nb_of_frames = frame_out - frame_in
-    return (start_frame, start_frame + nb_of_frames)

@@ -1575,18 +1575,13 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                     )
                     strip.frame_final_end = frame_end
 
-                    # apply strip.kitsu.frame_start_offset
-                    opsdata.init_start_frame_offset(
-                        strip
-                    )  # TODO: here we want to get the actual data from kitsu
-
                     created.append(shot)
                     logger.info("Shot %s created new strip", shot.name)
 
                 else:
                     # update properties of existing strip
                     strip.channel = channel
-                    # strip.frame_final_start = frame_start
+                    # strip.frame_final_start = frame_start #edit is central for frame ranges > one directional
                     # strip.frame_final_end = frame_end
                     logger.info("Shot %s use existing strip: %s", shot.name, strip.name)
                     existing.append(strip)
