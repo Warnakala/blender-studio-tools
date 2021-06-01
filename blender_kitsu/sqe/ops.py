@@ -1511,6 +1511,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         shot_strips = checksqe.get_shot_strips(context)
         occupied_ranges = checksqe.get_occupied_ranges(context)
         all_shots = active_project.get_shots_all()
+        selection = context.selected_sequences
 
         logger.info("-START- Pulling Edit")
 
@@ -1575,6 +1576,9 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                     )
                     strip.frame_final_end = frame_end
 
+                    # apply slip to match offset
+                    self._apply_strip_slip_from_shot(context, strip, shot)
+
                     created.append(shot)
                     logger.info("Shot %s created new strip", shot.name)
 
@@ -1597,6 +1601,13 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         # end progress update
         context.window_manager.progress_update(len(all_shots))
         context.window_manager.progress_end()
+
+        # restore selection
+        if context.selected_sequences:
+            bpy.ops.sequencer.select_all()
+
+        for s in selection:
+            s.select = True
 
         # report
         report_str = f"Shots: Succeded:{len(succeeded)} | Created  {len(created)} | Existing: {len(existing)}"
@@ -1646,6 +1657,40 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
 
         color = colorsys.hsv_to_rgb(hue, saturation, brightness)
         return (color[0], color[1], color[2])
+
+    def _apply_strip_slip_from_shot(
+        self, context: bpy.types.Context, strip: bpy.types.Sequence, shot: Shot
+    ) -> None:
+        if "3d_in" not in shot.data:
+            logger.warning(
+                "%s no update to frame_start_offset. '3d_in' key not in shot.data",
+                shot.name,
+            )
+            return
+
+        if not shot.data["3d_in"]:
+            logger.warning(
+                "%s no update to frame_start_offset. '3d_in' key invalid value: %i",
+                shot.name,
+                shot.data["3d_in"],
+            )
+            return
+        # get offset
+        # dg = context.evaluated_depsgraph_get()
+        # dg.update()
+        offset = strip.calc_kitsu_frame_start - int(shot.data["3d_in"])
+        print(
+            f"frame_start: {strip.calc_kitsu_frame_start} 3d_in: {int(shot.data['3d_in'])}"
+        )
+        # deselect everything
+        if context.selected_sequences:
+            bpy.ops.sequencer.select_all()
+
+        # select strip and run slip op
+        strip.select = True
+        bpy.ops.sequencer.slip(offset=offset)
+        """
+        """
 
 
 class KITSU_OT_sqe_init_strip_start_frame(bpy.types.Operator):
@@ -1731,7 +1776,7 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
 
         selected_sequences = context.selected_sequences
 
-        #check if metastrip file actually exists
+        # check if metastrip file actually exists
         if not Path(addon_prefs.metastrip_file).exists():
             self.report(
                 {"ERROR"},
