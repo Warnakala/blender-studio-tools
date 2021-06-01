@@ -18,14 +18,11 @@
 
 # <pep8 compliant>
 
-import logging
 import typing
 
 import bpy
 import bgl
 import gpu
-
-log = logging.getLogger(__name__)
 
 strip_status_colour = {
     None: (0.7, 0.7, 0.7),
@@ -35,6 +32,7 @@ strip_status_colour = {
     "on_hold": (0.796078431372549, 0.6196078431372549, 0.08235294117647059),
     "review": (0.8941176470588236, 0.9607843137254902, 0.9764705882352941),
     "todo": (1.0, 0.5019607843137255, 0.5019607843137255),
+    "linked": (0.247, 0.992, 0.474),
 }
 
 CONFLICT_COLOUR = (0.576, 0.118, 0.035, 1.0)  # RGBA tuple
@@ -166,7 +164,7 @@ def draw_callback_px(line_drawer: AttractLineDrawer):
     if not context.scene.sequence_editor:
         return
 
-    from . import shown_strips
+    # from . import shown_strips
 
     region = context.region
     xwin1, ywin1 = region.view2d.region_to_view(0, 0)
@@ -174,14 +172,15 @@ def draw_callback_px(line_drawer: AttractLineDrawer):
     one_pixel_further_x, one_pixel_further_y = region.view2d.region_to_view(1, 1)
     pixel_size_x = one_pixel_further_x - xwin1
 
-    strips = shown_strips(context)
+    # strips = shown_strips(context)
+    strips = context.scene.sequence_editor.sequences_all
 
     coords = []  # type: typing.List[Float2]
     colors = []  # type: typing.List[Float4]
 
     # Collect all the lines (vertex coords + vertex colours) to draw.
     for strip in strips:
-        if not strip.atc_object_id:
+        if not strip.kitsu.initialized:
             continue
 
         # Get corners (x1, y1), (x2, y2) of the strip rectangle in px region coords
@@ -196,19 +195,15 @@ def draw_callback_px(line_drawer: AttractLineDrawer):
         ):
             continue
 
-        # Draw
-        status = strip.atc_status
-        if status in strip_status_colour:
-            color = strip_status_colour[status]
-        else:
-            color = strip_status_colour[None]
+        color = strip_status_colour["linked"]
 
-        alpha = 1.0 if strip.atc_is_synced else 0.5
+        alpha = 1.0 if strip.kitsu.linked else 0.5
 
         underline_in_strip(strip_coords, pixel_size_x, color + (alpha,), coords, colors)
+        """
         if strip.atc_is_synced and strip.atc_object_id_conflict:
             strip_conflict(strip_coords, coords, colors)
-
+        """
     line_drawer.draw(coords, colors)
 
 
@@ -230,6 +225,8 @@ cb_handle = []
 
 
 def callback_enable():
+    global cb_handle
+
     if cb_handle:
         return
 
@@ -248,6 +245,8 @@ def callback_enable():
 
 
 def callback_disable():
+    global cb_handle
+
     if not cb_handle:
         return
 
@@ -259,3 +258,14 @@ def callback_disable():
     cb_handle.clear()
 
     tag_redraw_all_sequencer_editors()
+
+
+# ---------REGISTER ----------
+
+
+def register():
+    callback_enable()
+
+
+def unregister():
+    callback_disable()
