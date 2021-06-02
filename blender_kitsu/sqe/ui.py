@@ -1,6 +1,6 @@
 import bpy
 
-from blender_kitsu import cache, prefs
+from blender_kitsu import cache, prefs, ui
 from blender_kitsu.sqe import checkstrip
 from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_push_new_sequence,
@@ -74,6 +74,9 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
     def draw(self, context: bpy.types.Context) -> None:
 
+        if self.poll_error(context):
+            self.draw_error(context)
+
         if self.poll_setup(context):
             self.draw_setup(context)
 
@@ -91,6 +94,22 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
         if self.poll_debug(context):
             self.draw_debug(context)
+
+    @classmethod
+    def poll_error(cls, context: bpy.types.Context) -> bool:
+        project_active = cache.project_active_get()
+
+        if not prefs.session_auth(context):
+            return False
+        return bool(not project_active)
+
+    def draw_error(self, context: bpy.types.Context) -> None:
+        layout = self.layout
+        project_active = cache.project_active_get()
+        box = ui.draw_error_box(layout)
+
+        if not project_active:
+            ui.draw_error_active_project_unset(box)
 
     @classmethod
     def poll_setup(cls, context: bpy.types.Context) -> bool:
