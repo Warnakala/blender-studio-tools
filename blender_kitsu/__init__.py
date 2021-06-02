@@ -14,6 +14,7 @@ from blender_kitsu import (
     auth,
     context,
     anim,
+    ui,
 )
 
 from blender_kitsu.logger import LoggerFactory, LoggerLevelManager
@@ -48,6 +49,7 @@ if _need_reload:
     propsdata = importlib.reload(propsdata)
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)
+    ui = importlib.reload(ui)
     sqe.reload()
     util = importlib.reload(util)
     generic.reload()
