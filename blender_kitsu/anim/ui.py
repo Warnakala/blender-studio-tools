@@ -41,6 +41,16 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
             or not addon_prefs.is_playblast_root_valid
         )
 
+    def draw_error(self, context: bpy.types.Context) -> None:
+        addon_prefs = prefs.addon_prefs_get(context)
+        layout = self.layout
+
+        box = ui.draw_error_box(layout)
+        if context.scene.kitsu_error.frame_range:
+            ui.draw_error_frame_range_outdated(box)
+        if not addon_prefs.is_playblast_root_valid:
+            ui.draw_error_invalid_playblast_root_dir(box)
+
     def draw(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
@@ -48,11 +58,7 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
 
         # ERROR
         if self.poll_error(context):
-            box = ui.draw_error_box(layout)
-            if context.scene.kitsu_error.frame_range:
-                ui.draw_error_frame_range_outdated(box)
-            if not addon_prefs.is_playblast_root_valid:
-                ui.draw_error_invalid_playblast_root_dir(box)
+            self.draw_error(context)
 
         # playblast box
         box = layout.box()
