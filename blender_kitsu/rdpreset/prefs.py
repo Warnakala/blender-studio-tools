@@ -17,7 +17,7 @@ class RDPRESET_preferences(bpy.types.PropertyGroup):
         opsdata.init_rd_preset_file_model(context)
 
     presets_dir: bpy.props.StringProperty(  # type: ignore
-        name="Render Settings Directory",
+        name="Render Presets Directory",
         description="Directory path to folder in which render settings python files are stored.",
         default="",
         subtype="DIR_PATH",

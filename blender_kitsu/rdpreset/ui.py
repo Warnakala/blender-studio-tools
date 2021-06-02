@@ -2,7 +2,7 @@ from pathlib import Path
 
 import bpy
 
-from blender_kitsu import prefs, rdpreset
+from blender_kitsu import prefs, rdpreset, ui
 from blender_kitsu.rdpreset.ops import (
     RDPRESET_OT_set_preset,
     RDPRESET_OT_apply_preset,
@@ -21,8 +21,24 @@ class RDPRESET_PT_vi3d_general_tools(bpy.types.Panel):
     bl_options = {"DEFAULT_CLOSED"}
     bl_order = 50
 
+    @classmethod
+    def poll_error(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        return not addon_prefs.rdpreset.is_presets_dir_valid
+
+    def draw_error(self, context: bpy.types.Context) -> None:
+        addon_prefs = prefs.addon_prefs_get(context)
+        layout = self.layout
+        box = ui.draw_error_box(layout)
+
+        if not addon_prefs.rdpreset.is_presets_dir_valid:
+            ui.draw_error_invalid_render_preset_dir(box)
+
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
+
+        if self.poll_error(context):
+            self.draw_error(context)
 
         box = layout.box()
         box.label(text="Render Settings", icon="RESTRICT_RENDER_OFF")

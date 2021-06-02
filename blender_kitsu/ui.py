@@ -33,3 +33,13 @@ def draw_error_frame_range_outdated(
     row = box.row(align=True)
     row.label(text="Frame Range Outdated")
     row.operator(KITSU_OT_anim_pull_frame_range.bl_idname, icon="FILE_REFRESH")
+
+
+def draw_error_invalid_render_preset_dir(
+    box: bpy.types.UILayout,
+) -> bpy.types.UILayout:
+    row = box.row(align=True)
+    row.label(text="Invalid Render Preset Directory")
+    row.operator(
+        "preferences.addon_show", text="Open Addon Preferences"
+    ).module = "blender_kitsu"
