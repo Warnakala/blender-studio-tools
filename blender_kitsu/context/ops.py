@@ -1,10 +1,11 @@
 from typing import Set, Any
+from pathlib import Path
 
 import bpy
 
-from blender_kitsu import cache, util, prefs
+from blender_kitsu import bkglobals, cache, util, prefs
 from blender_kitsu.logger import LoggerFactory
-
+from blender_kitsu.types import TaskType
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -16,7 +17,6 @@ class KITSU_OT_con_productions_load(bpy.types.Operator):
 
     bl_idname = "kitsu.con_productions_load"
     bl_label = "Productions Load"
-    bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_projects_enum_list)  # type: ignore
@@ -54,7 +54,6 @@ class KITSU_OT_con_sequences_load(bpy.types.Operator):
 
     bl_idname = "kitsu.con_sequences_load"
     bl_label = "Sequences Load"
-    bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_sequences_enum_list)  # type: ignore
@@ -90,7 +89,6 @@ class KITSU_OT_con_shots_load(bpy.types.Operator):
 
     bl_idname = "kitsu.con_shots_load"
     bl_label = "Shots Load"
-    bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_shots_enum_for_active_seq)  # type: ignore
@@ -123,7 +121,6 @@ class KITSU_OT_con_asset_types_load(bpy.types.Operator):
 
     bl_idname = "kitsu.con_asset_types_load"
     bl_label = "Asset Types Load"
-    bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_assetypes_enum_list)  # type: ignore
@@ -158,7 +155,6 @@ class KITSU_OT_con_assets_load(bpy.types.Operator):
 
     bl_idname = "kitsu.con_assets_load"
     bl_label = "Assets Load"
-    bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_assets_enum_for_active_asset_type)  # type: ignore
@@ -192,7 +188,6 @@ class KITSU_OT_con_task_types_load(bpy.types.Operator):
 
     bl_idname = "kitsu.con_task_types_load"
     bl_label = "Task Types Load"
-    bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_task_types_enum_for_current_context)  # type: ignore
@@ -229,6 +224,133 @@ class KITSU_OT_con_task_types_load(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class KITSU_OT_con_detect_context(bpy.types.Operator):
+    """
+    Auto detects context by looking at file path
+    """
+
+    bl_idname = "kitsu.con_detect_context"
+    bl_label = "Detect Context"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(
+            prefs.session_auth(context)
+            and cache.project_active_get()
+            and bpy.data.filepath
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        # update kitsu metadata
+        filepath = Path(bpy.data.filepath)
+        active_project = cache.project_active_get()
+        category = filepath.parents[2].name
+        item_group = filepath.parents[1].name
+        item = filepath.parents[0].name
+        item_task = filepath.stem.split(".")[-1]
+
+        if category == bkglobals.SHOT_DIR_NAME:
+
+            # set category
+            context.scene.kitsu.category = "SHOTS"
+
+            # detect ad load seqeunce
+            sequence = active_project.get_sequence_by_name(item_group)
+            if not sequence:
+                self.report(
+                    {"ERROR"}, f"Failed to find sequence: '{item_group}' on server"
+                )
+                return {"CANCELLED"}
+
+            bpy.ops.kitsu.con_sequences_load(enum_prop=sequence.id)
+
+            # detect and load shot
+            shot = active_project.get_shot_by_name(sequence, item)
+            if not shot:
+                self.report({"ERROR"}, f"Failed to find shot: '{item}' on server")
+                return {"CANCELLED"}
+
+            bpy.ops.kitsu.con_shots_load(enum_prop=shot.id)
+
+            # detect and load shot task
+            if not item_task in bkglobals.SHOT_TASK_MAPPING:
+                self.report(
+                    {"ERROR"},
+                    f"Failed to find task type: '{item_task}' in shot task remapping",
+                )
+                return {"CANCELLED"}
+
+            kitsu_task_name = bkglobals.SHOT_TASK_MAPPING[item_task]
+            task = TaskType.by_name(kitsu_task_name)
+            if not task:
+                self.report(
+                    {"ERROR"},
+                    f"Failed to find task type: '{kitsu_task_name}' on server",
+                )
+                return {"CANCELLED"}
+
+            bpy.ops.kitsu.con_task_types_load(enum_prop=task.id)
+
+        elif category == bkglobals.ASSET_DIR_NAME:
+            pass
+
+            """
+            # set category
+            context.scene.kitsu.category = "ASSETS"
+
+            # detect ad load seqeunce
+            asset_type = active_project.get_asset_type_by_name(item_group)
+            if not sequence:
+                self.report(
+                    {"ERROR"}, f"Failed to find sequence: '{item_group}' on server"
+                )
+                return {"CANCELLED"}
+
+            bpy.ops.kitsu.con_sequences_load(enum_prop=sequence.id)
+
+            # detect and load shot
+            shot = active_project.get_shot_by_name(sequence, item)
+            if not shot:
+                self.report({"ERROR"}, f"Failed to find shot: '{item}' on server")
+                return {"CANCELLED"}
+
+            bpy.ops.kitsu.con_shots_load(enum_prop=shot.id)
+
+            # detect and load shot task
+            if not item_task in bkglobals.SHOT_TASK_MAPPING:
+                self.report(
+                    {"ERROR"},
+                    f"Failed to find task type: '{item_task}' in shot task remapping",
+                )
+                return {"CANCELLED"}
+
+            kitsu_task_name = bkglobals.SHOT_TASK_MAPPING[item_task]
+            task = TaskType.by_name(kitsu_task_name)
+            if not task:
+                self.report(
+                    {"ERROR"},
+                    f"Failed to find task type: '{kitsu_task_name}' on server",
+                )
+                return {"CANCELLED"}
+
+            bpy.ops.kitsu.con_task_types_load(enum_prop=task.id)
+            """
+
+        else:
+            self.report(
+                {"ERROR"},
+                (
+                    f"Expected '{bkglobals.SHOT_DIR_NAME}' or '{bkglobals.ASSET_DIR_NAME}' 3 folders up. "
+                    f"Got: '{filepath.parents[2].as_posix()}' instead. "
+                    "Blend file might not be saved in project structure."
+                ),
+            )
+            return {"CANCELLED"}
+
+        util.ui_redraw()
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -238,6 +360,7 @@ classes = [
     KITSU_OT_con_asset_types_load,
     KITSU_OT_con_assets_load,
     KITSU_OT_con_task_types_load,
+    KITSU_OT_con_detect_context,
 ]
 
 

@@ -7,6 +7,7 @@ from blender_kitsu.context.ops import (
     KITSU_OT_con_asset_types_load,
     KITSU_OT_con_assets_load,
     KITSU_OT_con_task_types_load,
+    KITSU_OT_con_detect_context,
 )
 
 
@@ -57,8 +58,15 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         # Production
         layout.row().label(text=f"Production: {project_active.name}")
 
-        # Category
+        row = layout.row(align=True)
+
         box = layout.box()
+        box.label(text="Context", icon="FILEBROWSER")
+
+        # Detect Context
+        box.operator(KITSU_OT_con_detect_context.bl_idname, icon="SORT_ASC")
+
+        # Category
         row = box.row(align=True)
         row.prop(context.scene.kitsu, "category", expand=True)
 
