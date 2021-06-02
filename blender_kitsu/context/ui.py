@@ -61,10 +61,16 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         row = layout.row(align=True)
 
         box = layout.box()
-        box.label(text="Context", icon="FILEBROWSER")
+        row = box.row(align=True)
+        row.label(text="Browser", icon="FILEBROWSER")
 
         # Detect Context
-        box.operator(KITSU_OT_con_detect_context.bl_idname, icon="SORT_ASC")
+        row.operator(
+            KITSU_OT_con_detect_context.bl_idname,
+            icon="FILE_REFRESH",
+            text="",
+            emboss=False,
+        )
 
         # Category
         row = box.row(align=True)
