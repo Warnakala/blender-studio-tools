@@ -2,7 +2,7 @@ import bpy
 
 from pathlib import Path
 
-from blender_kitsu import prefs, cache
+from blender_kitsu import prefs, cache, ui
 from blender_kitsu.anim.ops import (
     KITSU_OT_anim_create_playblast,
     KITSU_OT_anim_set_playblast_version,
@@ -32,23 +32,29 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
             and cache.task_type_active_get().name == "Animation"
         )
 
+    @classmethod
+    def poll_error(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+
+        return bool(
+            context.scene.kitsu_error.frame_range
+            or not addon_prefs.is_playblast_root_valid
+        )
+
     def draw(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
         split_factor_small = 0.95
 
-        if context.scene.kitsu_error.frame_range:
-            # scene operators
-            box = layout.box()
-            box.label(text="Error", icon="ERROR")
+        # ERROR
+        if self.poll_error(context):
+            box = ui.draw_error_box(layout)
+            if context.scene.kitsu_error.frame_range:
+                ui.draw_error_frame_range_outdated(box)
+            if not addon_prefs.is_playblast_root_valid:
+                ui.draw_error_invalid_playblast_root_dir(box)
 
-            row = box.row(align=True)
-            row.label(text="Frame Range Outdated")
-            row.operator(
-                KITSU_OT_anim_pull_frame_range.bl_idname,
-                icon="FILE_REFRESH",
-            )
-
+        # playblast box
         box = layout.box()
         box.label(text="Playblast")
 
