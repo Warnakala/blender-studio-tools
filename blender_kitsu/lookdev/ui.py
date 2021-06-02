@@ -2,7 +2,7 @@ from pathlib import Path
 
 import bpy
 
-from blender_kitsu import prefs, lookdev, ui
+from blender_kitsu import prefs, lookdev, ui, cache
 from blender_kitsu.lookdev.ops import (
     KITSU_OT_lookdev_set_preset,
     KITSU_OT_lookdev_apply_preset,
@@ -20,6 +20,13 @@ class KITSU_PT_vi3d_lookdev_tools(bpy.types.Panel):
     bl_region_type = "UI"
     bl_options = {"DEFAULT_CLOSED"}
     bl_order = 60
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(
+            cache.task_type_active_get().name
+            in ["Lighting", "Rendering", "Compositing"]
+        )
 
     @classmethod
     def poll_error(cls, context: bpy.types.Context) -> bool:
