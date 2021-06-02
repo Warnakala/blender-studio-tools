@@ -19,9 +19,6 @@ class KITSU_property_group_sequence(bpy.types.PropertyGroup):
     def _get_sequence_name(self):
         return self.sequence_name
 
-    def _cal_frame_duration(self):
-        return self.frame_end - self.frame_start + 1
-
     # shot
     shot_id: bpy.props.StringProperty(name="Shot ID")  # type: ignore
     shot_name: bpy.props.StringProperty(name="Shot", default="")  # type: ignore
@@ -45,15 +42,6 @@ class KITSU_property_group_sequence(bpy.types.PropertyGroup):
 
     # frame range
     frame_start_offset: bpy.props.IntProperty(name="Frame Start Offset")
-    frame_start: bpy.props.IntProperty(
-        name="Frame Start"
-    )  # gets calculated by _calc_kitsu_frame_start
-    frame_end: bpy.props.IntProperty(
-        name="Frame End"
-    )  # gets calculated by _calc_kitsu_frame_end
-    frame_duration: bpy.props.IntProperty(
-        name="Frame Duration", get=_cal_frame_duration
-    )
 
     # display props
     shot_description_display: bpy.props.StringProperty(name="Description", get=_get_shot_description)  # type: ignore
@@ -306,25 +294,9 @@ def _clear_window_manager_props():
     del bpy.types.WindowManager.sequence_enum
 
 
-def _calc_kitsu_frame_start_old(self):
-    offset_start = self.frame_final_start - self.frame_start
-
-    self.kitsu.frame_start = self.kitsu.frame_start_init + offset_start
-    return self.kitsu.frame_start
-
-
-def _calc_kitsu_frame_end_old(self):
-
-    frame_end = self.frame_start + self.frame_duration
-    offset_end = self.frame_final_end - frame_end
-
-    self.kitsu.frame_end = self.kitsu.frame_end_init + offset_end
-    return self.kitsu.frame_end
-
-
 def _calc_kitsu_frame_start(self):
     """
-    Calculates self.kitsu.frame_start, little hack because it seems like we cant access the strip from a property group
+    Calculates strip.kitsu_frame_start, little hack because it seems like we cant access the strip from a property group
     But we need acess to seqeuence properties.
     """
     # self.frame_final_start = 50
@@ -333,19 +305,17 @@ def _calc_kitsu_frame_start(self):
 
     offset_start = self.frame_final_start - self.frame_start  # 50 - 60 = -10
 
-    self.kitsu.frame_start = (
-        bkglobals.FRAME_START
-        - self.kitsu.frame_start_offset
-        + offset_start  # 101 - (-10) +(-10) = 101
+    frame_start_final = (
+        bkglobals.FRAME_START - self.kitsu.frame_start_offset + offset_start
     )
+    # 101 - (-10) +(-10) = 101
 
-    # set kitsu.frame_start property
-    return self.kitsu.frame_start
+    return frame_start_final
 
 
 def _calc_kitsu_frame_end(self):
     """
-    Calculates self.kitsu.frame_end, little hack because it seems like we cant access the strip from a property group
+    Calculates strip.kitsu_frame_end, little hack because it seems like we cant access the strip from a property group
     But we need acess to seqeuence properties.
     """
     # example strip goes from frame 50 - 101 (endpoint picture 100 > 51 frames duration) is trimmed
@@ -365,9 +335,11 @@ def _calc_kitsu_frame_end(self):
     )
     # 101 + 1000 - 10 + ((101 -1) - 1040) = 151
 
-    # set kitsu.frame_end property
-    self.kitsu.frame_end = frame_end_final
-    return self.kitsu.frame_end
+    return frame_end_final
+
+
+def _get_frame_final_duration(self):
+    return self.frame_final_duration
 
 
 # ----------------REGISTER--------------
@@ -384,13 +356,21 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.Sequence.calc_kitsu_frame_start = bpy.props.IntProperty(
-        name="Testi",
+    # FRAME RANGE PROPERTIES
+    # because we cant acess strip properties from a sequence group we need to create this properties
+    # directly on the strip, as we need strip properties to calculate
+    bpy.types.Sequence.kitsu_frame_start = bpy.props.IntProperty(
+        name="3D In",
         get=_calc_kitsu_frame_start,
     )
-    bpy.types.Sequence.calc_kitsu_frame_end = bpy.props.IntProperty(
-        name="Testi",
+
+    bpy.types.Sequence.kitsu_frame_end = bpy.props.IntProperty(
+        name="3D Out",
         get=_calc_kitsu_frame_end,
+    )
+    bpy.types.Sequence.kitsu_frame_duration = bpy.props.IntProperty(
+        name="Duration",
+        get=_get_frame_final_duration,
     )
 
     # Sequence Properties

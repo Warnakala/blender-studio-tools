@@ -16,8 +16,8 @@ def shot_meta(strip: bpy.types.Sequence, shot: Shot) -> None:
     shot.description = strip.kitsu.shot_description
     shot.data["frame_in"] = strip.frame_final_start
     shot.data["frame_out"] = strip.frame_final_end
-    shot.data["3d_in"] = strip.kitsu.frame_start
-    shot.data["3d_out"] = strip.kitsu.frame_end
+    shot.data["3d_in"] = strip.kitsu_frame_start
+    shot.data["3d_out"] = strip.kitsu_frame_end
     shot.nb_frames = strip.frame_final_duration
     shot.data["fps"] = bkglobals.FPS
 
@@ -49,8 +49,8 @@ def new_shot(
         frame_out=frame_range[1],
         data={
             "fps": bkglobals.FPS,
-            "3d_in": strip.kitsu.frame_start,
-            "3d_out": strip.kitsu.frame_end,
+            "3d_in": strip.kitsu_frame_start,
+            "3d_out": strip.kitsu_frame_end,
         },
     )
     # update description, no option to pass that on create

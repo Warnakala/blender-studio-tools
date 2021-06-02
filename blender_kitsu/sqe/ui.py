@@ -266,9 +266,9 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         split = col.split(factor=split_factor)
         split.label(text="Frame Range")
         row = split.row(align=False)
-        row.prop(strip, "calc_kitsu_frame_start", text="In")
-        row.prop(strip, "calc_kitsu_frame_end", text="Out")
-        row.prop(strip.kitsu, "frame_duration", text="Duration")
+        row.prop(strip, "kitsu_frame_start", text="In")
+        row.prop(strip, "kitsu_frame_end", text="Out")
+        row.prop(strip, "kitsu_frame_duration", text="Duration")
         row.operator(
             KITSU_OT_sqe_init_strip_start_frame.bl_idname, text="", icon="FILE_REFRESH"
         )

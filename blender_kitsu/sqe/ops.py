@@ -1678,10 +1678,8 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         # get offset
         # dg = context.evaluated_depsgraph_get()
         # dg.update()
-        offset = strip.calc_kitsu_frame_start - int(shot.data["3d_in"])
-        print(
-            f"frame_start: {strip.calc_kitsu_frame_start} 3d_in: {int(shot.data['3d_in'])}"
-        )
+        offset = strip.kitsu_frame_start - int(shot.data["3d_in"])
+
         # deselect everything
         if context.selected_sequences:
             bpy.ops.sequencer.select_all()
