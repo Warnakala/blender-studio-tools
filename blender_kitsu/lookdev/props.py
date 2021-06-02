@@ -1,7 +1,7 @@
 import bpy
 
 
-class RDPRESET_property_group_scene(bpy.types.PropertyGroup):
+class LOOKDEV_property_group_scene(bpy.types.PropertyGroup):
     """"""
 
     # render settings
@@ -16,7 +16,7 @@ class RDPRESET_property_group_scene(bpy.types.PropertyGroup):
 # ----------------REGISTER--------------
 
 classes = [
-    RDPRESET_property_group_scene,
+    LOOKDEV_property_group_scene,
 ]
 
 
@@ -26,10 +26,10 @@ def register():
         bpy.utils.register_class(cls)
 
     # Scene Properties
-    bpy.types.Scene.rdpreset = bpy.props.PointerProperty(
+    bpy.types.Scene.lookdev = bpy.props.PointerProperty(
         name="Render Preset",
-        type=RDPRESET_property_group_scene,
-        description="Metadata that is required for rdpreset",
+        type=LOOKDEV_property_group_scene,
+        description="Metadata that is required for lookdev",
     )
 
 

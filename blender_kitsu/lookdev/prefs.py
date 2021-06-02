@@ -4,13 +4,13 @@ from pathlib import Path
 
 import bpy
 
-from blender_kitsu.rdpreset import opsdata
+from blender_kitsu.lookdev import opsdata
 
 
-class RDPRESET_preferences(bpy.types.PropertyGroup):
+class LOOKDEV_preferences(bpy.types.PropertyGroup):
 
     """
-    Addon preferences for rdpreset.
+    Addon preferences for lookdev module.
     """
 
     def update_rd_preset_file_model(self, context: bpy.types.Context) -> None:
@@ -50,13 +50,13 @@ class RDPRESET_preferences(bpy.types.PropertyGroup):
 
         # rd preset
         box = layout.box()
-        box.label(text="General Tools", icon="PREFERENCES")
+        box.label(text="Lookdev Tools", icon="RESTRICT_RENDER_OFF")
         box.row().prop(self, "presets_dir")
 
 
 # ---------REGISTER ----------
 
-classes = [RDPRESET_preferences]
+classes = [LOOKDEV_preferences]
 
 
 def register():

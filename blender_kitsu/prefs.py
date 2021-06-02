@@ -18,7 +18,7 @@ from blender_kitsu.auth.ops import (
     KITSU_OT_session_start,
 )
 from blender_kitsu.context.ops import KITSU_OT_con_productions_load
-from blender_kitsu.rdpreset.prefs import RDPRESET_preferences
+from blender_kitsu.lookdev.prefs import LOOKDEV_preferences
 
 
 logger = LoggerFactory.getLogger(name=__name__)
@@ -107,10 +107,10 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         get=get_sqe_render_dir,
     )
 
-    rdpreset: bpy.props.PointerProperty(  # type: ignore
-        name="Render Preset",
-        type=RDPRESET_preferences,
-        description="Metadata that is required for rdpreset",
+    lookdev: bpy.props.PointerProperty(  # type: ignore
+        name="Lookdev Preferences",
+        type=LOOKDEV_preferences,
+        description="Metadata that is required for lookdev",
     )
 
     playblast_root_dir: bpy.props.StringProperty(  # type: ignore
@@ -243,8 +243,8 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         box.row().prop(self, "playblast_root_dir")
         box.row().prop(self, "pb_open_webbrowser")
 
-        # rd preset tools settings
-        self.rdpreset.draw(context, layout)
+        # lookdev tools settings
+        self.lookdev.draw(context, layout)
 
         # misc settings
         box = layout.box()

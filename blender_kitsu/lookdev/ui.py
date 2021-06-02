@@ -2,36 +2,36 @@ from pathlib import Path
 
 import bpy
 
-from blender_kitsu import prefs, rdpreset, ui
-from blender_kitsu.rdpreset.ops import (
-    RDPRESET_OT_set_preset,
-    RDPRESET_OT_apply_preset,
+from blender_kitsu import prefs, lookdev, ui
+from blender_kitsu.lookdev.ops import (
+    KITSU_OT_lookdev_set_preset,
+    KITSU_OT_lookdev_apply_preset,
 )
 
 
-class RDPRESET_PT_vi3d_general_tools(bpy.types.Panel):
+class KITSU_PT_vi3d_lookdev_tools(bpy.types.Panel):
     """
     Panel in 3dview that exposes a set of tools that are useful for general tasks
     """
 
     bl_category = "Kitsu"
-    bl_label = "General Tools"
+    bl_label = "Lookdev Tools"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_order = 50
+    bl_order = 60
 
     @classmethod
     def poll_error(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return not addon_prefs.rdpreset.is_presets_dir_valid
+        return not addon_prefs.lookdev.is_presets_dir_valid
 
     def draw_error(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
         layout = self.layout
         box = ui.draw_error_box(layout)
 
-        if not addon_prefs.rdpreset.is_presets_dir_valid:
+        if not addon_prefs.lookdev.is_presets_dir_valid:
             ui.draw_error_invalid_render_preset_dir(box)
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -46,15 +46,15 @@ class RDPRESET_PT_vi3d_general_tools(bpy.types.Panel):
         # render settings
         row = box.row(align=True)
         rdpreset_text = "Select Render Preset"
-        if context.scene.rdpreset.preset_file:
-            rdpreset_text = Path(context.scene.rdpreset.preset_file).name
+        if context.scene.lookdev.preset_file:
+            rdpreset_text = Path(context.scene.lookdev.preset_file).name
         row.operator(
-            RDPRESET_OT_set_preset.bl_idname,
+            KITSU_OT_lookdev_set_preset.bl_idname,
             text=rdpreset_text,
             icon="DOWNARROW_HLT",
         )
         row.operator(
-            RDPRESET_OT_apply_preset.bl_idname,
+            KITSU_OT_lookdev_apply_preset.bl_idname,
             text="",
             icon="PLAY",
         )
@@ -62,7 +62,7 @@ class RDPRESET_PT_vi3d_general_tools(bpy.types.Panel):
 
 # ---------REGISTER ----------
 
-classes = [RDPRESET_PT_vi3d_general_tools]
+classes = [KITSU_PT_vi3d_lookdev_tools]
 
 
 def register():

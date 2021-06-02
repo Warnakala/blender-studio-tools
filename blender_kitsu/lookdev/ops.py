@@ -8,15 +8,15 @@ import bpy
 
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu import prefs, util
-from blender_kitsu.rdpreset import opsdata
+from blender_kitsu.lookdev import opsdata
 
 logger = LoggerFactory.getLogger(name=__name__)
 
 
-class RDPRESET_OT_set_preset(bpy.types.Operator):
+class KITSU_OT_lookdev_set_preset(bpy.types.Operator):
     """"""
 
-    bl_idname = "rdpreset.set_preset"
+    bl_idname = "kitsu.lookdev_set_preset"
     bl_label = "Render Preset"
     bl_property = "files"
 
@@ -25,7 +25,7 @@ class RDPRESET_OT_set_preset(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return addon_prefs.rdpreset.is_presets_dir_valid
+        return addon_prefs.lookdev.is_presets_dir_valid
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         file = self.files
@@ -33,11 +33,11 @@ class RDPRESET_OT_set_preset(bpy.types.Operator):
         if not file:
             return {"CANCELLED"}
 
-        if context.scene.rdpreset.preset_file == file:
+        if context.scene.lookdev.preset_file == file:
             return {"CANCELLED"}
 
         # update global scene cache version prop
-        context.scene.rdpreset.preset_file = file
+        context.scene.lookdev.preset_file = file
         logger.info("Set render preset file to %s", file)
 
         # redraw ui
@@ -50,19 +50,19 @@ class RDPRESET_OT_set_preset(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RDPRESET_OT_apply_preset(bpy.types.Operator):
+class KITSU_OT_lookdev_apply_preset(bpy.types.Operator):
     """"""
 
-    bl_idname = "rdpreset.apply_preset"
+    bl_idname = "kitsu.lookdev_apply_preset"
     bl_label = "Apply Preset"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.scene.rdpreset.preset_file)
+        return bool(context.scene.lookdev.preset_file)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        preset_file = context.scene.rdpreset.preset_file
+        preset_file = context.scene.lookdev.preset_file
         preset_path = Path(preset_file).absolute()
 
         if not preset_file:
@@ -91,7 +91,7 @@ class RDPRESET_OT_apply_preset(bpy.types.Operator):
 
 # ---------REGISTER ----------
 
-classes = [RDPRESET_OT_set_preset, RDPRESET_OT_apply_preset]
+classes = [KITSU_OT_lookdev_set_preset, KITSU_OT_lookdev_apply_preset]
 
 
 def register():

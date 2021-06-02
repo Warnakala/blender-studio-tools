@@ -1,6 +1,6 @@
 import bpy
 from blender_kitsu import (
-    rdpreset,
+    lookdev,
     bkglobals,
     types,
     cache,
@@ -41,7 +41,7 @@ if _need_reload:
 
     logger.info("-START- Reloading blender-kitsu")
 
-    rdpreset.reload()
+    lookdev.reload()
     bkglobals = importlib.reload(bkglobals)
     cache = importlib.reload(cache)
     types = importlib.reload(types)
@@ -64,7 +64,7 @@ if _need_reload:
 def register():
     logger.info("-START- Registering blender-kitsu")
 
-    rdpreset.register()
+    lookdev.register()
     prefs.register()
     cache.register()
     props.register()
@@ -89,7 +89,7 @@ def unregister():
     props.unregister()
     cache.unregister()
     prefs.unregister()
-    rdpreset.unregister()
+    lookdev.unregister()
 
     LoggerLevelManager.restore_levels()
     logger.info("-END- Unregistering blender-kitsu")

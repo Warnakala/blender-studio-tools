@@ -1,9 +1,9 @@
 import importlib
-from blender_kitsu.rdpreset import prefs
-from blender_kitsu.rdpreset import props
-from blender_kitsu.rdpreset import opsdata
-from blender_kitsu.rdpreset import ops
-from blender_kitsu.rdpreset import ui
+from blender_kitsu.lookdev import prefs
+from blender_kitsu.lookdev import props
+from blender_kitsu.lookdev import opsdata
+from blender_kitsu.lookdev import ops
+from blender_kitsu.lookdev import ui
 
 
 # ---------REGISTER ----------
