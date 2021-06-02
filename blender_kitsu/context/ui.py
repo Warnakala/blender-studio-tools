@@ -1,6 +1,6 @@
 import bpy
 
-from blender_kitsu import cache, prefs
+from blender_kitsu import cache, prefs, ui
 from blender_kitsu.context.ops import (
     KITSU_OT_con_sequences_load,
     KITSU_OT_con_shots_load,
@@ -28,10 +28,22 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
     def poll(cls, context: bpy.types.Context) -> bool:
         return prefs.session_auth(context)
 
+    @classmethod
+    def poll_error(cls, context: bpy.types.Context) -> bool:
+        project_active = cache.project_active_get()
+        return bool(not project_active)
+
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         category = context.scene.kitsu.category  # can be either 'SHOTS' or 'ASSETS'
         project_active = cache.project_active_get()
+
+        # ERRORS
+        if self.poll_error(context):
+            box = ui.draw_error_box(layout)
+            if not project_active:
+                ui.draw_error_active_project_unset(box)
+
         item_group_data = {
             "name": "Sequence",
             "zobject": cache.sequence_active_get(),
