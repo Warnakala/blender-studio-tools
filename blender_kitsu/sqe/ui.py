@@ -514,8 +514,19 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
     @classmethod
     def poll_pull(cls, context: bpy.types.Context) -> bool:
-        # if only one strip is selected and it is not init then hide panel
-        return bool(prefs.session_auth(context))
+        project_active = cache.project_active_get()
+        selshots = context.selected_sequences
+        all_shots = context.scene.sequence_editor.sequences_all
+
+        strips_to_meta_sel = [s for s in selshots if s.kitsu.linked]
+        strips_to_meta_all = [s for s in all_shots if s.kitsu.linked]
+
+        if not prefs.session_auth(context):
+            return False
+
+        if not selshots:
+            return bool(strips_to_meta_all)
+        return bool(strips_to_meta_sel)
 
     def draw_pull(self, context: bpy.types.Context) -> None:
         """
