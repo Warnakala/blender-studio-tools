@@ -39,16 +39,16 @@ def init_rd_preset_file_model(
 
     RD_PRESET_FILE_MODEL.reset()
     RD_PRESET_FILE_MODEL.root_path = rd_settings_dir
-
-    if not RD_PRESET_FILE_MODEL.items:
+    valid_items = [
+        file for file in RD_PRESET_FILE_MODEL.items_as_paths if file.suffix == ".py"
+    ]
+    if not valid_items:
         # update playblast_version prop
         context.scene.lookdev.preset_file = ""
 
     else:
         # update playblast_version prop
-        context.scene.lookdev.preset_file = RD_PRESET_FILE_MODEL.items_as_paths[
-            0
-        ].as_posix()
+        context.scene.lookdev.preset_file = valid_items[0].as_posix()
 
     _rd_preset_file_model_init = True
 
