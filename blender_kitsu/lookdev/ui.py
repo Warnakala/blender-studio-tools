@@ -24,7 +24,10 @@ class KITSU_PT_vi3d_lookdev_tools(bpy.types.Panel):
     @classmethod
     def poll_error(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return not addon_prefs.lookdev.is_presets_dir_valid
+        return bool(
+            context.scene.kitsu_error.frame_range
+            or not addon_prefs.lookdev.is_presets_dir_valid
+        )
 
     def draw_error(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
@@ -33,6 +36,9 @@ class KITSU_PT_vi3d_lookdev_tools(bpy.types.Panel):
 
         if not addon_prefs.lookdev.is_presets_dir_valid:
             ui.draw_error_invalid_render_preset_dir(box)
+
+        if context.scene.kitsu_error.frame_range:
+            ui.draw_error_frame_range_outdated(box)
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
