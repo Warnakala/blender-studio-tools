@@ -10,6 +10,7 @@ from .ops import (
     AS_OT_import_camera_action,
     AS_OT_shift_cam_anim,
     AS_OT_get_frame_shift,
+    AS_OT_apply_additional_settings
 )
 
 
@@ -36,15 +37,22 @@ class AS_PT_vi3d_main(bpy.types.Panel):
         box = layout.box()
         box.label(text="", icon="MODIFIER")
 
+        # load edit
+        row = box.row(align=True)
+        row.operator(AS_OT_load_latest_edit.bl_idname)
+
         # create actions
         row = box.row(align=True)
         row.operator(
             AS_OT_create_actions.bl_idname, text=f"Create {len(valid_colls)} actions"
         )
 
-        # load edit
+
+        # apply additional settings
         row = box.row(align=True)
-        row.operator(AS_OT_load_latest_edit.bl_idname)
+        row.operator(
+            AS_OT_apply_additional_settings.bl_idname
+        )
 
         # import camera
         box_cam = layout.box()

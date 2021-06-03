@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
-from typing import Dict, List, Set, Optional
+import types
+from typing import Container, Dict, List, Set, Optional
 
 import bpy
 
@@ -428,6 +429,37 @@ class AS_OT_get_frame_shift(bpy.types.Operator):
         self.report({"WARNING"}, "Not implemente yet")
         return {"FINISHED"}
 
+class AS_OT_apply_additional_settings(bpy.types.Operator):
+
+    bl_idname = "as.apply_additional_settings"
+    bl_label = "Apply Additional Settings"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        sqe_area = cls._get_sqe_area(context)
+        return bool(sqe_area)
+
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        sqe_area = self._get_sqe_area(context)
+
+        sqe_area.spaces.active.use_proxies = True
+        sqe_area.spaces.active.proxy_render_size = 'PROXY_100'
+
+        self.report({"INFO"}, "Set: use_proxies | proxy_render_size")
+        return {"FINISHED"}
+
+    @classmethod
+    def _get_sqe_area(cls, context: bpy.types.Context):
+        for window in context.window_manager.windows:
+            screen = window.screen
+
+            for area in screen.areas:
+                if area.type == 'SEQUENCE_EDITOR':
+                    return area
+
+        return None
 
 # ---------REGISTER ----------
 
@@ -439,6 +471,7 @@ classes = [
     AS_OT_import_camera_action,
     AS_OT_shift_cam_anim,
     AS_OT_get_frame_shift,
+    AS_OT_apply_additional_settings,
 ]
 
 
