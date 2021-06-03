@@ -918,8 +918,12 @@ class User:
     full_name: str = ""
 
     def __post_init__(self):
-        user_dict = gazu.client.get_current_user()
-        self.__dict__.update(user_dict)
+        try:
+            user_dict = gazu.client.get_current_user()
+        except:  # gazu.exception.NotAuthenticatedException
+            logger.info("No current user authenticated")
+        else:
+            self.__dict__.update(user_dict)
 
     def all_open_projects(self) -> List[Project]:
         project_list = [
