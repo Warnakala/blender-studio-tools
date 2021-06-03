@@ -5,7 +5,21 @@ FRAME_START = 101
 SHOT_DIR_NAME = "shots"
 ASSET_DIR_NAME = "lib"
 
-ASSET_TASK_MAPPING = {}
+ASSET_TASK_MAPPING = {
+    "geometry": "Geometry",
+    "grooming": "Grooming",
+    "modeling": "Modeling",
+    "rigging": "Rigging",
+    "sculpting": "Sculpting",
+    "shading": "Shading",
+}
+
+ASSET_TYPE_MAPPING = {
+    "char": "Character",
+    "set": "Set",
+    "props": "Prop",
+    "env": "Library",
+}
 
 SHOT_TASK_MAPPING = {
     "anim": "Animation",

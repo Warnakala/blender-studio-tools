@@ -1,11 +1,11 @@
-from typing import Set, Any
+from typing import Dict, Optional, Set, Any
 from pathlib import Path
 
 import bpy
 
 from blender_kitsu import bkglobals, cache, util, prefs
 from blender_kitsu.logger import LoggerFactory
-from blender_kitsu.types import TaskType
+from blender_kitsu.types import TaskType, AssetType
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -247,9 +247,10 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
         category = filepath.parents[2].name
         item_group = filepath.parents[1].name
         item = filepath.parents[0].name
-        item_task = filepath.stem.split(".")[-1]
+        item_task_type = filepath.stem.split(".")[-1]
 
         if category == bkglobals.SHOT_DIR_NAME:
+            # TODO: check if frame range update gets triggered
 
             # set category
             context.scene.kitsu.category = "SHOTS"
@@ -272,69 +273,69 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
 
             bpy.ops.kitsu.con_shots_load(enum_prop=shot.id)
 
-            # detect and load shot task
-            if not item_task in bkglobals.SHOT_TASK_MAPPING:
+            # detect and load shot task type
+            kitsu_task_type_name = self._find_in_mapping(
+                item_task_type, bkglobals.SHOT_TASK_MAPPING, "shot task type"
+            )
+            if not kitsu_task_type_name:
+                return {"CANCELLED"}
+
+            task_type = TaskType.by_name(kitsu_task_type_name)
+            if not task_type:
                 self.report(
                     {"ERROR"},
-                    f"Failed to find task type: '{item_task}' in shot task remapping",
+                    f"Failed to find task type: '{kitsu_task_type_name}' on server",
                 )
                 return {"CANCELLED"}
 
-            kitsu_task_name = bkglobals.SHOT_TASK_MAPPING[item_task]
-            task = TaskType.by_name(kitsu_task_name)
-            if not task:
-                self.report(
-                    {"ERROR"},
-                    f"Failed to find task type: '{kitsu_task_name}' on server",
-                )
-                return {"CANCELLED"}
-
-            bpy.ops.kitsu.con_task_types_load(enum_prop=task.id)
+            bpy.ops.kitsu.con_task_types_load(enum_prop=task_type.id)
 
         elif category == bkglobals.ASSET_DIR_NAME:
-            pass
 
-            """
             # set category
             context.scene.kitsu.category = "ASSETS"
 
-            # detect ad load seqeunce
-            asset_type = active_project.get_asset_type_by_name(item_group)
-            if not sequence:
-                self.report(
-                    {"ERROR"}, f"Failed to find sequence: '{item_group}' on server"
-                )
+            # detect and load asset type
+            kitsu_asset_type_name = self._find_in_mapping(
+                item_group, bkglobals.ASSET_TYPE_MAPPING, "asset type"
+            )
+            if not kitsu_asset_type_name:
                 return {"CANCELLED"}
 
-            bpy.ops.kitsu.con_sequences_load(enum_prop=sequence.id)
-
-            # detect and load shot
-            shot = active_project.get_shot_by_name(sequence, item)
-            if not shot:
-                self.report({"ERROR"}, f"Failed to find shot: '{item}' on server")
-                return {"CANCELLED"}
-
-            bpy.ops.kitsu.con_shots_load(enum_prop=shot.id)
-
-            # detect and load shot task
-            if not item_task in bkglobals.SHOT_TASK_MAPPING:
+            asset_type = AssetType.by_name(kitsu_asset_type_name)
+            if not asset_type:
                 self.report(
                     {"ERROR"},
-                    f"Failed to find task type: '{item_task}' in shot task remapping",
+                    f"Failed to find asset type: '{kitsu_asset_type_name}' on server",
                 )
                 return {"CANCELLED"}
 
-            kitsu_task_name = bkglobals.SHOT_TASK_MAPPING[item_task]
-            task = TaskType.by_name(kitsu_task_name)
-            if not task:
+            bpy.ops.kitsu.con_asset_types_load(enum_prop=asset_type.id)
+
+            # detect and load asset
+            asset = active_project.get_asset_by_name(item)
+            if not asset:
+                self.report({"ERROR"}, f"Failed to find asset: '{item}' on server")
+                return {"CANCELLED"}
+
+            bpy.ops.kitsu.con_assets_load(enum_prop=asset.id)
+
+            # detect and load asset task_type
+            kitsu_task_type_name = self._find_in_mapping(
+                item_task_type, bkglobals.ASSET_TASK_MAPPING, "task type"
+            )
+            if not kitsu_task_type_name:
+                return {"CANCELLED"}
+
+            task_type = TaskType.by_name(kitsu_task_type_name)
+            if not task_type:
                 self.report(
                     {"ERROR"},
-                    f"Failed to find task type: '{kitsu_task_name}' on server",
+                    f"Failed to find task type: '{kitsu_task_type_name}' on server",
                 )
                 return {"CANCELLED"}
 
-            bpy.ops.kitsu.con_task_types_load(enum_prop=task.id)
-            """
+            bpy.ops.kitsu.con_task_types_load(enum_prop=task_type.id)
 
         else:
             self.report(
@@ -349,6 +350,17 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
 
         util.ui_redraw()
         return {"FINISHED"}
+
+    def _find_in_mapping(
+        self, key: str, mapping: Dict[str, str], entity_type: str
+    ) -> Optional[str]:
+        if not key in mapping:
+            self.report(
+                {"ERROR"},
+                f"Failed to find {entity_type}: '{key}' in {entity_type} remapping",
+            )
+            return None
+        return mapping[key]
 
 
 # ---------REGISTER ----------
