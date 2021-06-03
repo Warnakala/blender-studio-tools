@@ -64,3 +64,12 @@ def draw_error_config_dir_not_exists(
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     row = box.row(align=True)
     row.label(text=f"Config Directory does not exist: {addon_prefs.config_dir}")
+
+
+def draw_error_no_active_camera(
+    box: bpy.types.UILayout,
+) -> bpy.types.UILayout:
+
+    row = box.row(align=True)
+    row.label(text=f"No active camera")
+    row.prop(bpy.context.scene, "camera", text="")
