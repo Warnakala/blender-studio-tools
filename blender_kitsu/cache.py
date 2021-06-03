@@ -14,6 +14,7 @@ from blender_kitsu.types import (
     ProjectList,
     TaskStatus,
     Cache,
+    User,
 )
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.gazu.exception import RouteNotFoundException
@@ -28,6 +29,7 @@ _shot_active: Shot = Shot()
 _asset_active: Asset = Asset()
 _asset_type_active: AssetType = AssetType()
 _task_type_active: TaskType = TaskType()
+_user_active: User = User()
 
 _cache_initialized: bool = False
 
@@ -39,6 +41,7 @@ _projects_enum_list: List[Tuple[str, str, str]] = []
 _task_types_enum_list: List[Tuple[str, str, str]] = []
 _task_types_shots_enum_list: List[Tuple[str, str, str]] = []
 _task_statuses_enum_list: List[Tuple[str, str, str]] = []
+_user_all_tasks_enum_list: List[Tuple[str, str, str]] = []
 
 
 def _addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
@@ -46,6 +49,12 @@ def _addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     shortcut to get blender_kitsu addon preferences
     """
     return context.preferences.addons["blender_kitsu"].preferences
+
+
+def user_active_get() -> User:
+    global _user_active
+
+    return _user_active
 
 
 def project_active_get() -> Project:
@@ -324,6 +333,19 @@ def get_all_task_statuses_enum(
     return _task_statuses_enum_list
 
 
+def get_user_all_tasks(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    global _user_all_tasks_enum_list
+    global _user_active
+    items = [(t.id, t.name, "") for t in _user_active.all_tasks_to_do()]
+
+    _user_all_tasks_enum_list.clear()
+    _user_all_tasks_enum_list.extend(items)
+
+    return _user_all_tasks_enum_list
+
+
 def _init_cache_entity(
     entity_id: str, entity_type: Any, cache_variable_name: Any, cache_name: str
 ) -> None:
@@ -345,6 +367,7 @@ def _init_cache_entity(
 
 
 def init_cache_variables() -> None:
+    global _user_active
     global _project_active
     global _sequence_active
     global _shot_active
@@ -369,6 +392,10 @@ def init_cache_variables() -> None:
     asset_type_active_id = bpy.context.scene.kitsu.asset_type_active_id
     task_type_active_id = bpy.context.scene.kitsu.task_type_active_id
 
+    # user special handling because we dont save last user id
+    _user_active = User()
+    logger.info("Initiated active user cache to: %s", _user_active.full_name)
+
     _init_cache_entity(project_active_id, Project, "_project_active", "project")
     _init_cache_entity(sequence_active_id, Sequence, "_sequence_active", "sequence")
     _init_cache_entity(
@@ -382,6 +409,7 @@ def init_cache_variables() -> None:
 
 
 def clear_cache_variables():
+    global _user_active
     global _project_active
     global _sequence_active
     global _shot_active
@@ -389,6 +417,9 @@ def clear_cache_variables():
     global _asset_type_active
     global _task_type_active
     global _cache_initialized
+
+    _user_active = User()
+    logger.info("Cleared active user cache")
 
     _shot_active = Shot()
     logger.info("Cleared active shot cache")
