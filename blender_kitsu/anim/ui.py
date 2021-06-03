@@ -1,3 +1,4 @@
+from blender_kitsu.anim import opsdata
 import bpy
 
 from pathlib import Path
@@ -8,6 +9,7 @@ from blender_kitsu.anim.ops import (
     KITSU_OT_anim_set_playblast_version,
     KITSU_OT_anim_increment_playblast_version,
     KITSU_OT_anim_pull_frame_range,
+    KITSU_OT_anim_quick_duplicate,
 )
 from blender_kitsu.generic.ops import KITSU_OT_open_path
 
@@ -39,6 +41,7 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         return bool(
             context.scene.kitsu_error.frame_range
             or not addon_prefs.is_playblast_root_valid
+            or not context.scene.camera
         )
 
     def draw_error(self, context: bpy.types.Context) -> None:
@@ -50,6 +53,8 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
             ui.draw_error_frame_range_outdated(box)
         if not addon_prefs.is_playblast_root_valid:
             ui.draw_error_invalid_playblast_root_dir(box)
+        if not context.scene.camera:
+            ui.draw_error_no_active_camera(box)
 
     def draw(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
@@ -63,28 +68,6 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         # playblast box
         box = layout.box()
         box.label(text="Playblast")
-
-        # if playblast directory is not valid dont show other
-        if not addon_prefs.playblast_root_dir:
-            split = box.split(factor=1 - split_factor_small, align=True)
-            split.label(icon="ERROR")
-            split.label(
-                text="Invalid Playblast Root Directory. Check Addon Preferences."
-            )
-            return
-
-        # if playblast directory is not valid dont show other
-        if not context.scene.kitsu.playblast_dir:
-            split = box.split(factor=1 - split_factor_small, align=True)
-            split.label(icon="ERROR")
-            split.label(text="Select Sequence and Shot in Context Tab.")
-            return
-
-        if not context.scene.camera:
-            split = box.split(factor=1 - split_factor_small, align=True)
-            split.label(icon="ERROR")
-            split.label(text="Scene has no active camera.")
-            return
 
         # playlast version op
         row = box.row(align=True)
@@ -129,6 +112,21 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         row.operator(
             KITSU_OT_anim_pull_frame_range.bl_idname,
             icon="FILE_REFRESH",
+        )
+
+        # quick duplicate
+        act_coll = context.view_layer.active_layer_collection.collection
+        dupli_text = "Duplicate: Select Collection"
+
+        if act_coll:
+            dupli_text = f"Duplicate: {act_coll.name}"
+
+        if act_coll and opsdata.is_item_local(act_coll):
+            dupli_text = f"Duplicate: Select Overwritten Collection"
+
+        row = box.row(align=True)
+        row.operator(
+            KITSU_OT_anim_quick_duplicate.bl_idname, icon="DUPLICATE", text=dupli_text
         )
 
 

@@ -21,6 +21,7 @@ from blender_kitsu.types import (
     TaskType,
 )
 from blender_kitsu.anim import opsdata
+from bpy.types import Scene
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -459,6 +460,79 @@ class KITSU_OT_anim_increment_playblast_version(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.anim_quick_duplicate"
+    bl_label = "Quick Duplicate"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        act_coll = context.view_layer.active_layer_collection.collection
+
+        return bool(
+            cache.shot_active_get()
+            and context.view_layer.active_layer_collection.collection
+            and not opsdata.is_item_local(act_coll)
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        act_coll = context.view_layer.active_layer_collection.collection
+        shot_active = cache.shot_active_get()
+
+        if not act_coll:
+            self.report({"ERROR"}, f"No collection selected")
+            return {"CANCELLED"}
+
+        # get ref coll
+        ref_coll = self._get_ref_coll(act_coll)
+
+        # create collection instance
+        instance_obj = opsdata.create_collection_instance(
+            context, ref_coll, f"{ref_coll.name}_instance"
+        )
+
+        # create library override on coll instance
+        coll = opsdata.create_library_override_coll_instance(context, instance_obj)
+
+        # move coll in output collection
+        try:
+            output_coll = bpy.data.collections[self._get_output_coll_name(shot_active)]
+
+        except KeyError:
+            # create output collection if not exists
+            output_coll = bpy.data.collections.new(
+                self._get_output_coll_name(shot_active)
+            )
+            # link collection to scene
+            context.scene.collection.children.link(output_coll)
+
+            # TODO: exclude from view layer
+
+        output_coll.children.link(coll)
+
+        # report
+        self.report(
+            {"INFO"},
+            f"Duplicated Collection: {act_coll.name} and added to {output_coll.name}",
+        )
+
+        util.ui_redraw()
+        return {"FINISHED"}
+
+    @classmethod
+    def _get_output_coll_name(cls, shot: Shot) -> str:
+        return f"{shot.name}.anim.output"
+
+    @classmethod
+    def _get_ref_coll(cls, coll: bpy.types.Collection) -> bpy.types.Collection:
+        if not coll.override_library:
+            return coll
+
+        return coll.override_library.reference
+
+
 @persistent
 def load_post_handler_init_version_model(dummy: Any) -> None:
     opsdata.init_playblast_file_model(bpy.context)
@@ -506,6 +580,7 @@ classes = [
     KITSU_OT_anim_set_playblast_version,
     KITSU_OT_anim_increment_playblast_version,
     KITSU_OT_anim_pull_frame_range,
+    KITSU_OT_anim_quick_duplicate,
 ]
 
 

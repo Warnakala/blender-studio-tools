@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List, Tuple, Union
 from pathlib import Path
 
@@ -97,3 +98,91 @@ def add_version_custom(custom_version: str) -> None:
     global PLAYBLAST_FILE_MODEL
 
     PLAYBLAST_FILE_MODEL.append_item(custom_version)
+
+
+def is_item_local(
+    item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
+) -> bool:
+    # local collection of blend file
+    if not item.override_library and not item.library:
+        return True
+    return False
+
+
+def is_item_lib_override(
+    item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
+) -> bool:
+    # collection from libfile and overwritten
+    if item.override_library and not item.library:
+        return True
+    return False
+
+
+def is_item_lib_source(
+    item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
+) -> bool:
+    #  source collection from libfile not overwritten
+    if not item.override_library and item.library:
+        return True
+    return False
+
+
+def create_collection_instance(
+    context: bpy.types.Context,
+    ref_coll: bpy.types.Collection,
+    instance_name: str,
+) -> bpy.types.Object:
+    # use empty to instance source collection
+    instance_obj = bpy.data.objects.new(name=instance_name, object_data=None)
+    instance_obj.instance_collection = ref_coll
+    instance_obj.instance_type = "COLLECTION"
+
+    parent_collection = context.scene.collection
+    parent_collection.objects.link(instance_obj)
+
+    logger.info(
+        "Instanced collection: %s as: %s",
+        ref_coll.name,
+        instance_obj.name,
+    )
+
+    return instance_obj
+
+
+def create_library_override_coll_instance(
+    context: bpy.types.Context, instance_obj: bpy.types.Object
+) -> bpy.types.Collection:
+    ref_coll = instance_obj.instance_collection
+    existing_coll_overrides: List[bpy.types.Collection] = []
+    created_coll: bpy.types.Collection
+
+    # deselect all
+    bpy.ops.object.select_all(action="DESELECT")
+
+    # needs active object (coll instance)
+    context.view_layer.objects.active = instance_obj
+    instance_obj.select_set(True)
+
+    # add lib override
+    bpy.ops.object.make_override_library()
+
+    # search for created collection
+    for coll in bpy.data.collections:
+        if is_item_lib_override(coll):
+            if coll.override_library.reference == ref_coll:
+                match = re.search("\.\d\d\d$", coll.name)
+                if match:
+                    existing_coll_overrides.append(coll)
+
+    existing_coll_overrides = sorted(
+        existing_coll_overrides, reverse=True, key=lambda coll: coll.name
+    )
+    created_coll = existing_coll_overrides[0]
+
+    print(existing_coll_overrides)
+
+    logger.info(
+        "%s make library override. Created: %s", ref_coll.name, created_coll.name
+    )
+
+    return created_coll
