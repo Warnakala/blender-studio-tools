@@ -678,21 +678,21 @@ class Task:
     @classmethod
     def new_task(
         cls,
-        zentity: Any,
+        entity: Any,
         task_type: TaskType,
         name: str = "main",
         task_status: Optional[TaskStatus] = None,
-        zassigner: Optional[User] = None,
-        zassignees: Optional[List[User]] = None,
+        assigner: Optional[Person] = None,
+        assignees: Optional[List[Person]] = None,
     ) -> Task:
 
         # convert args
-        assigner = asdict(zassigner) if zassigner else zassigner
+        assigner = asdict(assigner) if assigner else assigner
         task_status = asdict(task_status) if task_status else task_status
-        assignees = asdict(zassignees) if zassignees else zassignees
+        assignees = asdict(assignees) if assignees else assignees
 
         task_dict = gazu.task.new_task(
-            asdict(zentity),
+            asdict(entity),
             asdict(task_type),
             name=name,
             task_status=task_status,
@@ -703,10 +703,10 @@ class Task:
 
     @classmethod
     def all_tasks_for_entity_and_task_type(
-        cls, zentity: Any, task_type: TaskType
+        cls, entity: Any, task_type: TaskType
     ) -> List[Task]:
         task_list = gazu.task.all_tasks_for_entity_and_task_type(
-            asdict(zentity), asdict(task_type)
+            asdict(entity), asdict(task_type)
         )
         return [cls(**t) for t in task_list]
 
@@ -730,7 +730,7 @@ class Task:
         self,
         task_status: TaskStatus,
         comment: str = "",
-        user: Optional[User] = None,
+        user: Optional[Person] = None,
         checklist: List[Dict[str, Any]] = [],
         attachments: List[Dict[str, Any]] = [],
         # i think equal to attachment_files in Comment
@@ -749,8 +749,8 @@ class Task:
             attachments=attachments,
             created_at=created_at,
         )
-        comment = Comment(**comment_dict)
-        return comment
+        comment_obj = Comment(**comment_dict)
+        return comment_obj
 
     def add_preview_to_comment(
         self, comment: Comment, preview_file_path: str
@@ -916,6 +916,116 @@ class User:
     notifications_slack_userid: str = ""
     type: str = "Person"
     full_name: str = ""
+
+    def __post_init__(self):
+        user_dict = gazu.client.get_current_user()
+        self.__dict__.update(user_dict)
+
+    def all_open_projects(self) -> List[Project]:
+        project_list = [
+            Project(**project_dict) for project_dict in gazu.user.all_open_projects()
+        ]
+        return project_list
+
+    def all_tasks_to_do(self) -> List[Task]:
+        task_list = [Task(**task_dict) for task_dict in gazu.user.all_tasks_to_do()]
+        return task_list
+
+    # SHOTS
+
+    def all_sequences_for_project(self, project: Project) -> List[Sequence]:
+        seq_list = [
+            Sequence(**seq_dict)
+            for seq_dict in gazu.user.all_sequences_for_project(asdict(project))
+        ]
+        return seq_list
+
+    def all_shots_for_sequence(self, sequence: Sequence) -> List[Shot]:
+        shot_list = [
+            Shot(**shot_dict)
+            for shot_dict in gazu.user.all_shots_for_sequence(asdict(sequence))
+        ]
+        return shot_list
+
+    def all_tasks_for_shot(self, shot: Shot) -> List[Task]:
+        task_list = [
+            Task(**task_dict)
+            for task_dict in gazu.user.all_tasks_for_shot(asdict(shot))
+        ]
+        return task_list
+
+    def all_tasks_for_sequence(self, sequence: Sequence) -> List[Task]:
+        task_list = [
+            Task(**task_dict)
+            for task_dict in gazu.user.all_tasks_for_sequence(asdict(sequence))
+        ]
+        return task_list
+
+    # ASSETS
+
+    def all_asset_types_for_project(self, project: Project) -> List[AssetType]:
+        asset_type_list = [
+            AssetType(**asset_type_dict)
+            for asset_type_dict in gazu.user.all_asset_types_for_project(
+                asdict(project)
+            )
+        ]
+        return asset_type_list
+
+    def all_assets_for_asset_type_and_project(
+        self, project: Project, asset_type: AssetType
+    ) -> List[Asset]:
+        asset_list = [
+            Asset(**asset_dict)
+            for asset_dict in gazu.user.all_assets_for_asset_type_and_project(
+                asdict(project), asdict(asset_type)
+            )
+        ]
+        return asset_list
+
+    def all_tasks_for_asset(self, asset: Asset) -> List[Task]:
+        task_list = [
+            Task(**task_dict)
+            for task_dict in gazu.user.all_tasks_for_asset(asdict(asset))
+        ]
+        return task_list
+
+    def __bool__(self) -> bool:
+        return bool(self.id)
+
+
+@dataclass
+class Person:
+    """
+    Class to get object oriented representation of backend sequence data structure.
+    Has multiple constructor functions (by_name, by_id, init>by_dict)
+    """
+
+    id: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+    first_name: str = ""
+    last_name: str = ""
+    email: str = ""
+    phone: str = ""
+    active: bool = True
+    last_presence: Optional[str] = None
+    desktop_login: str = ""
+    shotgun_id: Optional[str] = None
+    timezone: str = ""
+    locale: str = ""
+    data: Optional[Dict[str, Any]] = None
+    role: str = ""
+    has_avatar: bool = False
+    notifications_enabled: bool = False
+    notifications_slack_enabled: bool = False
+    notifications_slack_userid: str = ""
+    type: str = "Person"
+    full_name: str = ""
+
+    def by_id(cls, user_id: str) -> Person:
+        person_dict = gazu.person.get_person(user_id)
+        return cls(**person_dict)
 
     def __bool__(self) -> bool:
         return bool(self.id)
