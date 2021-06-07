@@ -651,6 +651,22 @@ class Task:
     entity_type_name: str = ""
     entity_name: str = ""
 
+    # extra attributes from gazu.user.all_tasks_to_do()
+    project_has_avatar: str = "False"
+    entity_description: str = ""
+    entity_preview_file_id: str = ""
+    entity_source_id: str = ""
+    sequence_name: str = ""
+    episode_id: str = ""
+    episode_name: str = ""
+    task_estimation: str = ""
+    task_duration: str = ""
+    task_due_date: str = ""
+    task_type_color: str = ""
+    task_status_color: str = ""
+    task_status_short_name: str = ""
+    last_comment: Dict[str, Any] = field(default_factory=dict)  # comment dict
+
     @classmethod
     def by_name(
         cls,
