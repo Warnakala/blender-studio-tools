@@ -14,6 +14,7 @@ from blender_kitsu import (
     auth,
     context,
     anim,
+    tasks,
     ui,
 )
 
@@ -55,6 +56,7 @@ if _need_reload:
     generic.reload()
     auth.reload()
     context.reload()
+    tasks.reload()
     anim.reload()
 
     LoggerLevelManager.configure_levels()
@@ -72,6 +74,7 @@ def register():
     generic.register()
     auth.register()
     context.register()
+    tasks.register()
     anim.register()
 
     LoggerLevelManager.configure_levels()
@@ -82,6 +85,7 @@ def unregister():
     logger.info("-START- Unregistering blender-kitsu")
 
     anim.unregister()
+    tasks.unregister()
     context.unregister()
     auth.unregister()
     generic.unregister()

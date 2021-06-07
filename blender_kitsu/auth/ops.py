@@ -43,6 +43,9 @@ class KITSU_OT_session_start(bpy.types.Operator):
         # init cache variables, will skip if cache already initiated
         cache.init_cache_variables()
 
+        # init startup variables, will skip if cache already initiated
+        cache.init_startup_variables(context)
+
         # init playblast version dir model
         ops_anim_data.init_playblast_file_model(context)
 
@@ -80,6 +83,9 @@ class KITSU_OT_session_end(bpy.types.Operator):
 
         # clear cache variables
         cache.clear_cache_variables()
+
+        # clear startup variables
+        cache.clear_startup_variables()
 
         self.report({"INFO"}, "Logged out")
 

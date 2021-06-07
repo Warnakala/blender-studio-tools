@@ -24,6 +24,15 @@ from blender_kitsu.lookdev.prefs import LOOKDEV_preferences
 logger = LoggerFactory.getLogger(name=__name__)
 
 
+class KITSU_task(bpy.types.PropertyGroup):
+    # name: StringProperty() -> Instantiated by default
+    id: bpy.props.StringProperty(name="Task ID", default="")
+    entity_id: bpy.props.StringProperty(name="Entity ID", default="")
+    entity_name: bpy.props.StringProperty(name="Entity Name", default="")
+    task_type_id: bpy.props.StringProperty(name="Task Type ID", default="")
+    task_type_name: bpy.props.StringProperty(name="Task Type Name", default="")
+
+
 class KITSU_addon_preferences(bpy.types.AddonPreferences):
     """
     Addon preferences to kitsu. Holds variables that are important for authentification.
@@ -196,6 +205,8 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     session: Session = Session()
 
+    tasks: bpy.props.CollectionProperty(type=KITSU_task)
+
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         project_active = cache.project_active_get()
@@ -332,7 +343,7 @@ def session_auth(context: bpy.types.Context) -> bool:
 
 # ---------REGISTER ----------
 
-classes = [KITSU_addon_preferences]
+classes = [KITSU_task, KITSU_addon_preferences]
 
 
 def register():

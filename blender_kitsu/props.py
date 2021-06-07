@@ -204,17 +204,13 @@ class KITSU_property_group_error(bpy.types.PropertyGroup):
     )
 
 
-class KITSU_property_group_window(bpy.types.PropertyGroup):
+class KITSU_property_group_window_manager(bpy.types.PropertyGroup):
     """"""
 
-    multi_edit_seq: bpy.props.StringProperty(  # type: ignore
-        name="Sequence",
-        description="",
-        default="",
-    )
+    tasks_index: bpy.props.IntProperty(name="Tasks Index", default=0)
 
     def clear(self):
-        self.multi_edit_seq = ""
+        pass
 
 
 def _add_window_manager_props():
@@ -348,6 +344,7 @@ classes = [
     KITSU_property_group_sequence,
     KITSU_property_group_scene,
     KITSU_property_group_error,
+    KITSU_property_group_window_manager,
 ]
 
 
@@ -379,10 +376,17 @@ def register():
         type=KITSU_property_group_sequence,
         description="Metadata that is required for blender_kitsu",
     )
+
     # Scene Properties
     bpy.types.Scene.kitsu = bpy.props.PointerProperty(
         name="Kitsu",
         type=KITSU_property_group_scene,
+        description="Metadata that is required for blender_kitsu",
+    )
+    # Window Manager
+    bpy.types.WindowManager.kitsu = bpy.props.PointerProperty(
+        name="Kitsu",
+        type=KITSU_property_group_window_manager,
         description="Metadata that is required for blender_kitsu",
     )
 

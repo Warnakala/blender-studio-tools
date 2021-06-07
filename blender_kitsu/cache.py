@@ -11,6 +11,7 @@ from blender_kitsu.types import (
     Asset,
     AssetType,
     TaskType,
+    Task,
     ProjectList,
     TaskStatus,
     Cache,
@@ -30,8 +31,10 @@ _asset_active: Asset = Asset()
 _asset_type_active: AssetType = AssetType()
 _task_type_active: TaskType = TaskType()
 _user_active: User = User()
+_user_all_tasks: List[Task] = []
 
 _cache_initialized: bool = False
+_cache_startup_initialized: bool = False
 
 _sequence_enum_list: List[Tuple[str, str, str]] = []
 _shot_enum_list: List[Tuple[str, str, str]] = []
@@ -333,17 +336,62 @@ def get_all_task_statuses_enum(
     return _task_statuses_enum_list
 
 
-def get_user_all_tasks(
+def load_user_all_tasks(context: bpy.types.Context) -> List[Task]:
+    global _user_all_tasks
+    global _user_active
+
+    tasks = _user_active.all_tasks_to_do()
+    _user_all_tasks.clear()
+    _user_all_tasks.extend(tasks)
+
+    _update_tasks_collection_prop(context)
+
+    logger.info("Loaded assigned tasks for: %s", _user_active.full_name)
+
+    return _user_all_tasks
+
+
+def _update_tasks_collection_prop(context: bpy.types.Context) -> None:
+    global _user_all_tasks
+    addon_prefs = _addon_prefs_get(bpy.context)
+    tasks_coll_prop = addon_prefs.tasks
+
+    # get current index
+    idx = context.window_manager.kitsu.tasks_index
+
+    # clear all old tasks
+    tasks_coll_prop.clear()
+
+    # populate with new tasks
+    for task in _user_all_tasks:
+        item = tasks_coll_prop.add()
+        item.id = task.id
+        item.entity_id = task.entity_id
+        item.entity_name = task.entity_name
+        item.task_type_id = task.task_type_id
+        item.task_type_name = task.task_type_name
+
+    # update index
+    idx = len(tasks_coll_prop) - 1
+
+
+def get_user_all_tasks_enum(
     self: bpy.types.Operator, context: bpy.types.Context
 ) -> List[Tuple[str, str, str]]:
     global _user_all_tasks_enum_list
-    global _user_active
-    items = [(t.id, t.name, "") for t in _user_active.all_tasks_to_do()]
+    global _user_all_tasks
+
+    enum_items = [(t.id, t.name, "") for t in _user_all_tasks]
 
     _user_all_tasks_enum_list.clear()
-    _user_all_tasks_enum_list.extend(items)
+    _user_all_tasks_enum_list.extend(enum_items)
 
     return _user_all_tasks_enum_list
+
+
+def get_user_all_tasks() -> List[Task]:
+    global _user_all_tasks
+    return _user_all_tasks
 
 
 def _init_cache_entity(
@@ -366,8 +414,47 @@ def _init_cache_entity(
             )
 
 
-def init_cache_variables() -> None:
+def init_startup_variables(context: bpy.types.Context) -> None:
+    addon_prefs = _addon_prefs_get(context)
+    global _cache_startup_initialized
     global _user_active
+    global _user_all_tasks
+
+    if not addon_prefs.session.is_auth():
+        logger.info("Skip initiating startup cache. Session not authorized")
+        return
+
+    if _cache_startup_initialized:
+        logger.info("Startup Cache already initiated")
+        return
+
+    # User
+    _user_active = User()
+    logger.info("Initiated active user cache to: %s", _user_active.full_name)
+
+    # User Tasks
+    load_user_all_tasks(context)
+    logger.info("Initiated active user tasks")
+
+    _cache_startup_initialized = True
+
+
+def clear_startup_variables():
+    global _user_active
+    global _user_all_tasks
+    global _cache_startup_initialized
+
+    _user_active = User()
+    logger.info("Cleared active user cache")
+
+    _user_all_tasks.clear()
+    _update_tasks_collection_prop(bpy.context)
+    logger.info("Cleared active user all tasks cache")
+
+    _cache_startup_initialized = False
+
+
+def init_cache_variables() -> None:
     global _project_active
     global _sequence_active
     global _shot_active
@@ -378,11 +465,11 @@ def init_cache_variables() -> None:
     addon_prefs = _addon_prefs_get(bpy.context)
 
     if not addon_prefs.session.is_auth():
-        logger.info("Skip initiating cache. Session not authorized.")
+        logger.info("Skip initiating cache. Session not authorized")
         return
 
     if _cache_initialized:
-        logger.info("Cache already initiated.")
+        logger.info("Cache already initiated")
         return
 
     project_active_id = addon_prefs.project_active_id
@@ -391,10 +478,6 @@ def init_cache_variables() -> None:
     asset_active_id = bpy.context.scene.kitsu.asset_active_id
     asset_type_active_id = bpy.context.scene.kitsu.asset_type_active_id
     task_type_active_id = bpy.context.scene.kitsu.task_type_active_id
-
-    # user special handling because we dont save last user id
-    _user_active = User()
-    logger.info("Initiated active user cache to: %s", _user_active.full_name)
 
     _init_cache_entity(project_active_id, Project, "_project_active", "project")
     _init_cache_entity(sequence_active_id, Sequence, "_sequence_active", "sequence")
@@ -409,7 +492,6 @@ def init_cache_variables() -> None:
 
 
 def clear_cache_variables():
-    global _user_active
     global _project_active
     global _sequence_active
     global _shot_active
@@ -448,14 +530,21 @@ def load_post_handler_update_cache(dummy: Any) -> None:
     init_cache_variables()
 
 
+@persistent
+def load_post_handler_init_startup_variables(dummy: Any) -> None:
+    init_startup_variables(bpy.context)
+
+
 # ---------REGISTER ----------
 
 
 def register():
     # handlers
     bpy.app.handlers.load_post.append(load_post_handler_update_cache)
+    bpy.app.handlers.load_post.append(load_post_handler_init_startup_variables)
 
 
 def unregister():
     # clear handlers
+    bpy.app.handlers.load_post.remove(load_post_handler_init_startup_variables)
     bpy.app.handlers.load_post.remove(load_post_handler_update_cache)
