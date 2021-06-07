@@ -485,32 +485,31 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
             self.report({"ERROR"}, f"No collection selected")
             return {"CANCELLED"}
 
-        # get ref coll
-        ref_coll = self._get_ref_coll(act_coll)
-
-        # create collection instance
-        instance_obj = opsdata.create_collection_instance(
-            context, ref_coll, f"{ref_coll.name}_instance"
-        )
-
-        # create library override on coll instance
-        coll = opsdata.create_library_override_coll_instance(context, instance_obj)
-
-        # move coll in output collection
+        # check if output colletion exists in scene
         try:
             output_coll = bpy.data.collections[self._get_output_coll_name(shot_active)]
 
         except KeyError:
-            # create output collection if not exists
-            output_coll = bpy.data.collections.new(
-                self._get_output_coll_name(shot_active)
+            self.report(
+                {"ERROR"},
+                f"Missing output collection: {self._get_output_coll_name(shot_active)}",
             )
-            # link collection to scene
-            context.scene.collection.children.link(output_coll)
+            return {"CANCELLED"}
 
-            # TODO: exclude from view layer
+        # get ref coll
+        ref_coll = self._get_ref_coll(act_coll)
 
-        output_coll.children.link(coll)
+        # create library override
+        coll = ref_coll.override_hierarchy_create(
+            context.scene, context.view_layer, reference=act_coll
+        )
+
+        # set color tag to be the same
+        coll.color_tag = act_coll.color_tag
+
+        # link coll in output collection
+        if coll not in list(output_coll.children):
+            output_coll.children.link(coll)
 
         # report
         self.report(
