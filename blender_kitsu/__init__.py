@@ -74,7 +74,7 @@ def register():
     generic.register()
     auth.register()
     context.register()
-    tasks.register()
+    # tasks.register()
     anim.register()
 
     LoggerLevelManager.configure_levels()
@@ -85,7 +85,7 @@ def unregister():
     logger.info("-START- Unregistering blender-kitsu")
 
     anim.unregister()
-    tasks.unregister()
+    # tasks.unregister()
     context.unregister()
     auth.unregister()
     generic.unregister()
