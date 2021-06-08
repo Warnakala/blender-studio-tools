@@ -10,6 +10,7 @@ from blender_kitsu.anim.ops import (
     KITSU_OT_anim_increment_playblast_version,
     KITSU_OT_anim_pull_frame_range,
     KITSU_OT_anim_quick_duplicate,
+    KITSU_OT_anim_check_action_names,
 )
 from blender_kitsu.generic.ops import KITSU_OT_open_path
 
@@ -129,6 +130,14 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
             KITSU_OT_anim_quick_duplicate.bl_idname, icon="DUPLICATE", text=dupli_text
         )
         split.prop(context.window_manager.kitsu, "quick_duplicate_amount", text="")
+
+        # check action names
+        row = layout.row(align=True)
+        row.operator(
+            KITSU_OT_anim_check_action_names.bl_idname,
+            icon="ACTION",
+            text="Check Action Names",
+        )
 
 
 # ---------REGISTER ----------

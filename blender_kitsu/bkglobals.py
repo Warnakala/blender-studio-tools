@@ -32,3 +32,11 @@ SHOT_TASK_MAPPING = {
     "smear_to_mesh": "Smear to mesh",
     "storyboard": "Storyboard",
 }
+
+PREFIX_RIG = "RIG-"
+
+MULTI_ASSETS = [
+    "sprite",
+    "snail",
+    "spider",
+]  # list of assets that gets duplicated and therefore follows another naming sheme

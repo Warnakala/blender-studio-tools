@@ -1,10 +1,12 @@
 import re
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from pathlib import Path
 
 import bpy
 
+from blender_kitsu import bkglobals, util
 from blender_kitsu.models import FileListModel
+from blender_kitsu.types import Shot
 from blender_kitsu.logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(name=__name__)
@@ -147,3 +149,110 @@ def create_collection_instance(
     )
 
     return instance_obj
+
+
+def get_all_rigs_with_override() -> List[bpy.types.Armature]:
+    valid_rigs = []
+
+    for obj in bpy.data.objects:
+        # default rig name: 'RIG-rex' / 'RIG-Rex'
+        if not is_item_lib_override(obj):
+            continue
+
+        if obj.type != "ARMATURE":
+            continue
+
+        if not obj.name.startswith(bkglobals.PREFIX_RIG):
+            continue
+
+        valid_rigs.append(obj)
+
+    return valid_rigs
+
+
+def find_asset_name(name: str) -> str:
+    name = _kill_increment_end(name)
+    if name.endswith("_rig"):
+        name = name[:-4]
+    return name.split("-")[-1]  # CH-rex -> 'rex'
+
+
+def _kill_increment_end(str_value: str) -> str:
+    match = re.search(r"\.\d\d\d$", str_value)
+    if match:
+        return str_value.replace(match.group(0), "")
+    return str_value
+
+
+def is_multi_asset(asset_name: str) -> bool:
+    if asset_name.startswith("thorn"):
+        return True
+
+    if asset_name.lower() in bkglobals.MULTI_ASSETS:
+        return True
+
+    return False
+
+
+def gen_action_name_for_rig(armature: bpy.types.Armature, shot: Shot) -> str:
+    def _find_postfix(action: bpy.types.Action) -> Optional[str]:
+        # ANI-lady_bug_A.030_0020_A.v001
+        split1 = action.name.split("-")[-1]  # lady_bug_A.030_0020_A.v001
+        split2 = split1.split(".")[0]  # lady_bug_A
+        split3 = split2.split("_")[-1]  # A
+        if len(split3) == 1:
+            # is postfix
+            # print(f"{action.name} found postfix: {split3}")
+            return split3
+        else:
+            return None
+
+    action_prefix = "ANI"
+    asset_name = find_asset_name(armature.name).lower()
+    # print(f"asset name:{asset_name}")
+    asset_name = asset_name.replace(".", "_")
+    version = "v001"
+    shot_name = shot.name
+    has_action = False
+    final_postfix = ""
+
+    # overwrite version if version exists
+    if armature.animation_data:
+        if armature.animation_data.action:
+            has_action = True
+            version = util.get_version(armature.animation_data.action.name) or "v001"
+
+    # action name for single aset
+    action_name = f"{action_prefix}-{asset_name}.{shot_name}.{version}"
+
+    if is_multi_asset(asset_name):
+        existing_postfixes = []
+
+        # find all actions that relate to the same asset
+        for action in bpy.data.actions:
+            if action.name.startswith(f"{action_prefix}-{asset_name}"):
+                multi_postfix = _find_postfix(action)
+                if multi_postfix:
+                    existing_postfixes.append(multi_postfix)
+
+        # print(f"EXISTING: {existing_postfixes}")
+        if existing_postfixes:
+            existing_postfixes.sort()
+            final_postfix = chr(
+                ord(existing_postfixes[-1]) + 1
+            )  # handle postfix == Z > [
+        else:
+            final_postfix = "A"
+
+        if has_action:
+            # overwrite multi_postfix if multi_postfix exists
+            current_postfix = _find_postfix(armature.animation_data.action)
+            if current_postfix:
+                final_postfix = current_postfix
+
+        # action name for multi asset
+        action_name = (
+            f"{action_prefix}-{asset_name}_{final_postfix}.{shot_name}.{version}"
+        )
+
+    return action_name

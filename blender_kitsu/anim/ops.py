@@ -534,6 +534,101 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
         return coll.override_library.reference
 
 
+class KITSU_OT_anim_check_action_names(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.anim_check_action_names"
+    bl_label = "Check Action Names "
+    bl_options = {"REGISTER", "UNDO"}
+
+    wrong: List[Tuple[bpy.types.Action, str]] = []
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        act_coll = context.view_layer.active_layer_collection.collection
+
+        return bool(cache.shot_active_get())
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        existing_action_names = [a.name for a in bpy.data.actions]
+        failed = []
+        succeeded = []
+
+        # rename actions
+        for action, name in self.wrong:
+            if name in existing_action_names:
+                logger.warning(
+                    "Failed to rename action %s to %s. Action with that name already exists",
+                    action.name,
+                    name,
+                )
+                failed.append(action)
+                continue
+
+            old_name = action.name
+            action.name = name
+            existing_action_names.append(action.name)
+            succeeded.append(action)
+            logger.info("Renamed action %s to %s", old_name, action.name)
+
+        # report
+        report_str = f"Renamed actions: {len(succeeded)}"
+        report_state = "INFO"
+        if failed:
+            report_state = "WARNING"
+            report_str += f" | Failed: {len(failed)}"
+
+        self.report(
+            {report_state},
+            report_str,
+        )
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        shot_active = cache.shot_active_get()
+        rigs = opsdata.get_all_rigs_with_override()
+        self.wrong.clear()
+
+        if not rigs:
+            self.report(
+                {"WARNING"},
+                f"No valid rigs found in blend file",
+            )
+            return {"CANCELLED"}
+
+        # for each rig check the current action name if it matches the convention
+        for rig in rigs:
+            if not rig.animation_data or not rig.animation_data.action:
+                logger.info("%s has no animation data", rig.name)
+                continue
+
+            action_name_should = opsdata.gen_action_name_for_rig(rig, shot_active)
+            action_name_is = rig.animation_data.action.name
+
+            # if action name does not follow convention append it to wrong list
+            if action_name_is != action_name_should:
+                logger.warning(
+                    "Action %s should be named %s", action_name_is, action_name_should
+                )
+                self.wrong.append((rig.animation_data.action, action_name_should))
+
+        if not self.wrong:
+            self.report({"INFO"}, "All actions names correct")
+            return {"FINISHED"}
+
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+    def draw(self, context):
+        layout = self.layout
+
+        for action, name in self.wrong:
+            row = layout.row()
+            row.label(text=action.name)
+            row.label(text="", icon="FORWARD")
+            row.label(text=name)
+
+
 @persistent
 def load_post_handler_init_version_model(dummy: Any) -> None:
     opsdata.init_playblast_file_model(bpy.context)
@@ -582,6 +677,7 @@ classes = [
     KITSU_OT_anim_increment_playblast_version,
     KITSU_OT_anim_pull_frame_range,
     KITSU_OT_anim_quick_duplicate,
+    KITSU_OT_anim_check_action_names,
 ]
 
 
