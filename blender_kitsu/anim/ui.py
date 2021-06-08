@@ -132,7 +132,7 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         split.prop(context.window_manager.kitsu, "quick_duplicate_amount", text="")
 
         # check action names
-        row = layout.row(align=True)
+        row = box.row(align=True)
         row.operator(
             KITSU_OT_anim_check_action_names.bl_idname,
             icon="ACTION",
