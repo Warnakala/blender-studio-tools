@@ -209,6 +209,13 @@ class KITSU_property_group_window_manager(bpy.types.PropertyGroup):
 
     tasks_index: bpy.props.IntProperty(name="Tasks Index", default=0)
 
+    quick_duplicate_amount: bpy.props.IntProperty(
+        name="Amount",
+        default=1,
+        min=1,
+        description="Specifies the number of copies that will be created",
+    )
+
     def clear(self):
         pass
 

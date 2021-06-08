@@ -480,6 +480,7 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
 
         act_coll = context.view_layer.active_layer_collection.collection
         shot_active = cache.shot_active_get()
+        amount = context.window_manager.kitsu.quick_duplicate_amount
 
         if not act_coll:
             self.report({"ERROR"}, f"No collection selected")
@@ -499,22 +500,23 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
         # get ref coll
         ref_coll = self._get_ref_coll(act_coll)
 
-        # create library override
-        coll = ref_coll.override_hierarchy_create(
-            context.scene, context.view_layer, reference=act_coll
-        )
+        for i in range(amount):
+            # create library override
+            coll = ref_coll.override_hierarchy_create(
+                context.scene, context.view_layer, reference=act_coll
+            )
 
-        # set color tag to be the same
-        coll.color_tag = act_coll.color_tag
+            # set color tag to be the same
+            coll.color_tag = act_coll.color_tag
 
-        # link coll in output collection
-        if coll not in list(output_coll.children):
-            output_coll.children.link(coll)
+            # link coll in output collection
+            if coll not in list(output_coll.children):
+                output_coll.children.link(coll)
 
         # report
         self.report(
             {"INFO"},
-            f"Duplicated Collection: {act_coll.name} and added to {output_coll.name}",
+            f"Created {amount} Duplicates of: {act_coll.name} and added to {output_coll.name}",
         )
 
         util.ui_redraw()
