@@ -70,7 +70,7 @@ class AS_PT_vi3d_main(bpy.types.Panel):
         split.operator(AS_OT_shift_cam_anim.bl_idname, text="Shift Anim")
 
         # udpate shift amount
-        column.operator(AS_OT_get_frame_shift.bl_idname)
+        #column.operator(AS_OT_get_frame_shift.bl_idname)
 
 
 # ---------REGISTER ----------
