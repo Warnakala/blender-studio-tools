@@ -1162,6 +1162,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         percentage = rd.resolution_percentage
         file_format = rd.image_settings.file_format
         quality = rd.image_settings.quality
+        use_stamp_frame = rd.use_stamp_frame
 
         try:
             # Set the render settings to thumbnail size.
@@ -1169,6 +1170,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
             rd.resolution_percentage = round(thumbnail_width * 100 / rd.resolution_x)
             rd.image_settings.file_format = "JPEG"
             rd.image_settings.quality = 80
+            rd.use_stamp_frame = False
             yield
 
         finally:
@@ -1176,6 +1178,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
             rd.resolution_percentage = percentage
             rd.image_settings.file_format = file_format
             rd.image_settings.quality = quality
+            rd.use_stamp_frame = use_stamp_frame
 
     @contextlib.contextmanager
     def temporary_current_frame(self, context):
