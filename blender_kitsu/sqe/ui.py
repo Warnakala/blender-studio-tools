@@ -535,15 +535,19 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
     @classmethod
     def poll_pull(cls, context: bpy.types.Context) -> bool:
+        if not prefs.session_auth(context):
+            return False
+
         project_active = cache.project_active_get()
+
         selshots = context.selected_sequences
         all_shots = context.scene.sequence_editor.sequences_all
 
+        if not selshots:
+            return True
+
         strips_to_meta_sel = [s for s in selshots if s.kitsu.linked]
         strips_to_meta_all = [s for s in all_shots if s.kitsu.linked]
-
-        if not prefs.session_auth(context):
-            return False
 
         if not selshots:
             return bool(strips_to_meta_all)
