@@ -40,3 +40,5 @@ MULTI_ASSETS = [
     "snail",
     "spider",
 ]  # list of assets that gets duplicated and therefore follows another naming sheme
+
+ASSET_COLL_PREFIXES = ["CH-", "PR-", "SE-"]

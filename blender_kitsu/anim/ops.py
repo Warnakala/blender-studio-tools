@@ -541,7 +541,6 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
     bl_label = "Check Action Names "
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Inspects all actions of .blend file and checks if they follow the Blender Studio naming convention"
-
     wrong: List[Tuple[bpy.types.Action, str]] = []
     # list of tuples that contains the action on index 0 with the wrong name
     # and the name it should have on index 1
@@ -583,30 +582,54 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
             {report_state},
             report_str,
         )
+
+        # clear action names cache
+        opsdata.action_names_cache.clear()
+
         return {"FINISHED"}
 
     def invoke(self, context, event):
         shot_active = cache.shot_active_get()
-        rigs = opsdata.get_all_rigs_with_override()
         self.wrong.clear()
         no_action = []
         correct = []
 
-        if not rigs:
+        # clear action names cache
+        opsdata.action_names_cache.clear()
+        opsdata.action_names_cache.extend([a.name for a in bpy.data.actions])
+
+        # find all asset collections in .blend
+        asset_colls = opsdata.find_asset_collections()
+
+        if not asset_colls:
             self.report(
                 {"WARNING"},
-                f"No valid rigs found in blend file",
+                f"Failed to find any asset collections",
+            )
+            return {"CANCELLED"}
+
+        # find rig of each asset collection
+        asset_rigs: List[Tuple[bpy.types.Collection, bpy.types.Armature]] = []
+        for coll in asset_colls:
+            rig = opsdata.find_rig(coll)
+            if rig:
+                asset_rigs.append((coll, rig))
+
+        if not asset_rigs:
+            self.report(
+                {"WARNING"},
+                f"Failed to find any valid rigs",
             )
             return {"CANCELLED"}
 
         # for each rig check the current action name if it matches the convention
-        for rig in rigs:
+        for coll, rig in asset_rigs:
             if not rig.animation_data or not rig.animation_data.action:
                 logger.info("%s has no animation data", rig.name)
                 no_action.append(rig)
                 continue
 
-            action_name_should = opsdata.gen_action_name_for_rig(rig, shot_active)
+            action_name_should = opsdata.gen_action_name(rig, coll, shot_active)
             action_name_is = rig.animation_data.action.name
 
             # if action name does not follow convention append it to wrong list
@@ -615,6 +638,10 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
                     "Action %s should be named %s", action_name_is, action_name_should
                 )
                 self.wrong.append((rig.animation_data.action, action_name_should))
+
+                # extend action_names_cache list so any follow up items in loop can
+                # acess that information and adjust postfix accordingly
+                opsdata.action_names_cache.append(action_name_should)
                 continue
 
             # action name of rig is correct
@@ -626,7 +653,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
 
         self.report(
             {"INFO"},
-            f"Checked Rigs: {len(rigs)} | Wrong Actions {len(correct)} | Correct Actions: {len(correct)} | No Actions: {len(no_action)}",
+            f"Checked Rigs: {len(asset_rigs)} | Wrong Actions {len(correct)} | Correct Actions: {len(correct)} | No Actions: {len(no_action)}",
         )
         return context.window_manager.invoke_props_dialog(self, width=500)
 

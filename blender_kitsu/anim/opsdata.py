@@ -173,6 +173,56 @@ def get_all_rigs_with_override() -> List[bpy.types.Armature]:
     return valid_rigs
 
 
+def find_rig(coll: bpy.types.Collection) -> Optional[bpy.types.Armature]:
+
+    valid_rigs = []
+
+    for obj in coll.all_objects:
+        # default rig name: 'RIG-rex' / 'RIG-Rex'
+        if obj.type != "ARMATURE":
+            continue
+
+        if not obj.name.startswith(bkglobals.PREFIX_RIG):
+            continue
+
+        valid_rigs.append(obj)
+
+    if not valid_rigs:
+        return None
+
+    elif len(valid_rigs) == 1:
+        logger.info("Found rig: %s", valid_rigs[0].name)
+        return valid_rigs[0]
+    else:
+        logger.error("%s found multiple rigs %s", coll.name, str(valid_rigs))
+        return None
+
+
+def find_asset_collections():
+    asset_colls: List[bpy.types.Collection] = []
+    for coll in bpy.data.collections:
+
+        if not is_item_lib_override(coll):
+            continue
+
+        for prefix in bkglobals.ASSET_COLL_PREFIXES:
+
+            if not coll.name.startswith(prefix):
+                continue
+
+            logger.info("Found asset collection: %s", coll.name)
+            asset_colls.append(coll)
+
+    return asset_colls
+
+
+def get_ref_coll(coll: bpy.types.Collection) -> bpy.types.Collection:
+    if not coll.override_library:
+        return coll
+
+    return coll.override_library.reference
+
+
 def find_asset_name(name: str) -> str:
     name = _kill_increment_end(name)
     if name.endswith("_rig"):
@@ -197,10 +247,21 @@ def is_multi_asset(asset_name: str) -> bool:
     return False
 
 
-def gen_action_name_for_rig(armature: bpy.types.Armature, shot: Shot) -> str:
-    def _find_postfix(action: bpy.types.Action) -> Optional[str]:
+action_names_cache: List[str] = []
+# we need this in order to increment prefixes of duplications of the same asset correctly
+# gets cleared populated during call of KITSU_OT_anim_check_action_names
+
+
+def gen_action_name(
+    armature: bpy.types.Armature, collection: bpy.types.Collection, shot: Shot
+) -> str:
+
+    global action_names_cache
+    print(action_names_cache)
+
+    def _find_postfix(action_name: str) -> Optional[str]:
         # ANI-lady_bug_A.030_0020_A.v001
-        split1 = action.name.split("-")[-1]  # lady_bug_A.030_0020_A.v001
+        split1 = action_name.split("-")[-1]  # lady_bug_A.030_0020_A.v001
         split2 = split1.split(".")[0]  # lady_bug_A
         split3 = split2.split("_")[-1]  # A
         if len(split3) == 1:
@@ -210,8 +271,9 @@ def gen_action_name_for_rig(armature: bpy.types.Armature, shot: Shot) -> str:
         else:
             return None
 
+    ref_coll = get_ref_coll(collection)
     action_prefix = "ANI"
-    asset_name = find_asset_name(armature.name).lower()
+    asset_name = find_asset_name(ref_coll.name).lower()
     asset_name = asset_name.replace(".", "_")
     version = "v001"
     shot_name = shot.name
@@ -230,10 +292,15 @@ def gen_action_name_for_rig(armature: bpy.types.Armature, shot: Shot) -> str:
     if is_multi_asset(asset_name):
         existing_postfixes = []
 
-        # find all actions that relate to the same asset
-        for action in bpy.data.actions:
-            if action.name.startswith(f"{action_prefix}-{asset_name}"):
-                multi_postfix = _find_postfix(action)
+        # find all actions that relate to the same asset except for the asset
+        for action_name in action_names_cache:
+
+            # skip action that was input as parameter of this function
+            if has_action and action_name == armature.animation_data.action.name:
+                continue
+
+            if action_name.startswith(f"{action_prefix}-{asset_name}"):
+                multi_postfix = _find_postfix(action_name)
                 if multi_postfix:
                     existing_postfixes.append(multi_postfix)
 
@@ -248,9 +315,13 @@ def gen_action_name_for_rig(armature: bpy.types.Armature, shot: Shot) -> str:
 
         if has_action:
             # overwrite multi_postfix if multi_postfix exists
-            current_postfix = _find_postfix(armature.animation_data.action)
+            current_postfix = _find_postfix(armature.animation_data.action.name)
+
+            # if existing action already has a postfix check if that one is in
+            # existing postfixes, if not use the actions post fix
             if current_postfix:
-                final_postfix = current_postfix
+                if current_postfix not in existing_postfixes:
+                    final_postfix = current_postfix
 
         # action name for multi asset
         action_name = (
