@@ -1,5 +1,6 @@
 import bpy
 
+from . import asglobals
 from . import prefs
 from . import kitsu
 from . import props
@@ -29,6 +30,7 @@ if _need_reload:
     import importlib
 
     logger.info("-START- Reloading anim-setup")
+    asglobals = importlib.reload(asglobals)
     prefs = importlib.reload(prefs)
     kitsu = importlib.reload(kitsu)
     props = importlib.reload(props)

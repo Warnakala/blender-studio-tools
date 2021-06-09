@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Optional, Dict, Union, Any, List
+from typing import Optional, Dict, Union, Any, List, Generator
 import bpy
 from bpy.types import Key
 
@@ -73,6 +73,13 @@ def get_previs_file(context: bpy.types.Context) -> Optional[Path]:
                 continue
             return f
     return None
+
+def traverse_collection_tree(
+    collection: bpy.types.Collection,
+) -> Generator[bpy.types.Collection, None, None]:
+    yield collection
+    for child in collection.children:
+        yield from traverse_collection_tree(child)
 
 
 def import_data_from_lib(
@@ -253,3 +260,31 @@ def gen_action_name(coll: bpy.types.Collection):
         action_name_new = f"{action_prefix}-{asset_name}_A.{shot_name}.{version}"
 
     return action_name_new
+
+
+def set_layer_coll_exlcude(
+    layer_collections: List[bpy.types.LayerCollection], exclude: bool
+) -> None:
+
+
+    noun = "Excluded" if exclude else "Included"
+
+    for lcoll in layer_collections:
+
+        if exclude:
+            if lcoll.exclude:
+                continue
+
+            lcoll.exclude = True
+
+        else:
+            if not lcoll.exclude:
+                continue
+
+            lcoll.exclude = False
+
+        logger.info("%s %s", noun, lcoll.name)
+
+
+def get_all_view_layer_colls(context: bpy.types.Context) -> List[bpy.types.LayerCollection]:
+    return list(traverse_collection_tree(context.view_layer.layer_collection))

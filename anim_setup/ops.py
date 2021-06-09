@@ -610,6 +610,37 @@ class AS_OT_apply_additional_settings(bpy.types.Operator):
 
         return None
 
+
+class AS_OT_exclude_colls(bpy.types.Operator):
+    """
+    Excludes Collections that are not needed for Animation
+    """
+
+    bl_idname = "as.exclude_colls"
+    bl_label = "Exclude Collections"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        view_layer_colls = opsdata.get_all_view_layer_colls(context)
+        view_layer_colls_names = [v.name for v in view_layer_colls]
+
+        excluded = []
+        for coll_name in asglobals.HIDE_COLLS:
+            #find view layer collection
+            try:
+                index = view_layer_colls_names.index(coll_name)
+            except ValueError:
+                logger.info("No view layer collection named: %s", coll_name)
+                continue
+
+            view_layer_coll = view_layer_colls[index]
+            view_layer_coll.exclude = True
+            logger.info("Excluded view layer collection: %s", view_layer_coll.name)
+            excluded.append(view_layer_coll)
+
+        self.report({"INFO"}, f"Exluded Collections: {list([v.name for v in excluded])}")
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -621,7 +652,8 @@ classes = [
     AS_OT_shift_anim,
     AS_OT_get_frame_shift,
     AS_OT_apply_additional_settings,
-    AS_OT_import_asset_actions
+    AS_OT_import_asset_actions,
+    AS_OT_exclude_colls
 ]
 
 

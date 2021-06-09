@@ -11,7 +11,8 @@ from .ops import (
     AS_OT_shift_anim,
     AS_OT_get_frame_shift,
     AS_OT_apply_additional_settings,
-    AS_OT_import_asset_actions
+    AS_OT_import_asset_actions,
+    AS_OT_exclude_colls
 )
 
 
@@ -82,6 +83,17 @@ class AS_PT_vi3d_main(bpy.types.Panel):
         )
         # udpate shift amount
         #column.operator(AS_OT_get_frame_shift.bl_idname)
+
+         #---------scene ops
+        box = layout.box()
+        box.label(text="Scene", icon="SCENE_DATA")
+
+        # exclude colls
+        row = box.row(align=True)
+        row.operator(
+            AS_OT_exclude_colls.bl_idname, text="Exclude Collections"
+        )
+
 
 
 # ---------REGISTER ----------
