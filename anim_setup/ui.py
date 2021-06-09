@@ -8,9 +8,10 @@ from .ops import (
     AS_OT_load_latest_edit,
     AS_OT_import_camera,
     AS_OT_import_camera_action,
-    AS_OT_shift_cam_anim,
+    AS_OT_shift_anim,
     AS_OT_get_frame_shift,
-    AS_OT_apply_additional_settings
+    AS_OT_apply_additional_settings,
+    AS_OT_import_asset_actions
 )
 
 
@@ -29,46 +30,56 @@ class AS_PT_vi3d_main(bpy.types.Panel):
         valid_colls = opsdata.get_valid_collections(context)
         layout = self.layout
 
-        # workspace
-        row = layout.row(align=True)
-        row.operator(AS_OT_setup_workspaces.bl_idname)
 
-        # filepath dependent ops
+        # ------general ops
         box = layout.box()
-        box.label(text="", icon="MODIFIER")
+        box.label(text="General", icon="MODIFIER")
+
+        column = box.column(align=True)
+
+        # workspace
+        column.operator(AS_OT_setup_workspaces.bl_idname)
 
         # load edit
-        row = box.row(align=True)
-        row.operator(AS_OT_load_latest_edit.bl_idname)
+        column.operator(AS_OT_load_latest_edit.bl_idname)
+
+        # apply additional settings
+        column.operator(
+            AS_OT_apply_additional_settings.bl_idname
+        )
+
+        #---------action and anim ops
+        box = layout.box()
+        box.label(text="Animation and Actions", icon="KEYTYPE_KEYFRAME_VEC")
+
+        box.label(text=f"Previs file: {opsdata.get_previs_file(context)}")
+
+
+        column = box.column(align=True)
+
+        # import camera action
+        column.operator(AS_OT_import_camera_action.bl_idname)
+
+        # import action
+        column.operator(
+            AS_OT_import_asset_actions.bl_idname, text=f"Import Asset Actions"
+        )
+
+        # import camera
+        #column = box_cam.column(align=True)
+        #column.operator(AS_OT_import_camera.bl_idname)
+
+
+        # shift animation
+        split = column.split(factor=0.3, align=True)
+        split.prop(context.scene.anim_setup, "shift_frames", text="")
+        split.operator(AS_OT_shift_anim.bl_idname, text="Shift Anim")
 
         # create actions
         row = box.row(align=True)
         row.operator(
             AS_OT_create_actions.bl_idname, text=f"Create {len(valid_colls)} actions"
         )
-
-
-        # apply additional settings
-        row = box.row(align=True)
-        row.operator(
-            AS_OT_apply_additional_settings.bl_idname
-        )
-
-        # import camera
-        box_cam = layout.box()
-        box_cam.label(text="", icon="OUTLINER_OB_CAMERA")
-        box_cam.label(text=f"Previs file: {opsdata.get_previs_file(context)}")
-        column = box_cam.column(align=True)
-        column.operator(AS_OT_import_camera.bl_idname)
-
-        # import camera action
-        column.operator(AS_OT_import_camera_action.bl_idname)
-
-        # shift camera animation
-        split = column.split(factor=0.3, align=True)
-        split.prop(context.scene.anim_setup, "shift_frames", text="")
-        split.operator(AS_OT_shift_cam_anim.bl_idname, text="Shift Anim")
-
         # udpate shift amount
         #column.operator(AS_OT_get_frame_shift.bl_idname)
 

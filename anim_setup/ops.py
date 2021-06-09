@@ -54,11 +54,11 @@ class AS_OT_create_actions(bpy.types.Operator):
                 continue
 
             # create new action
-            action_name = self._gen_action_name(coll)
+            action_name_new = opsdata.gen_action_name_new(coll)
             try:
-                action = bpy.data.actions[action_name]
+                action = bpy.data.actions[action_name_new]
             except KeyError:
-                action = bpy.data.actions.new(action_name)
+                action = bpy.data.actions.new(action_name_new)
                 logger.info("Created action: %s", action.name)
                 created.append(action)
             else:
@@ -83,28 +83,6 @@ class AS_OT_create_actions(bpy.types.Operator):
             % (len(created), len(assigned), len(failed)),
         )
         return {"FINISHED"}
-
-    def _gen_action_name(self, coll: bpy.types.Collection):
-        action_prefix = "ANI"
-        asset_name = opsdata.find_asset_name(coll.name).lower()
-        asset_name = asset_name.replace(".", "_")
-        version = "v001"
-        shot_name = opsdata.get_shot_name_from_file()
-
-        action_name = f"{action_prefix}-{asset_name}.{shot_name}.{version}"
-
-        if self._is_multi_asset(asset_name):
-            action_name = f"{action_prefix}-{asset_name}_A.{shot_name}.{version}"
-
-        return action_name
-
-    def _is_multi_asset(self, asset_name: str) -> bool:
-        if asset_name.startswith('thorn'):
-            return True
-        multi_assets = ["sprite", "snail", "spider"]
-        if asset_name.lower() in multi_assets:
-            return True
-        return False
 
 
 class AS_OT_setup_workspaces(bpy.types.Operator):
@@ -321,17 +299,17 @@ class AS_OT_import_camera_action(bpy.types.Operator):
             return {"CANCELLED"}
 
         # check if cam action name exists in previs library
-        cam_action_name = opsdata.get_cam_action_name_from_lib(shotname, previs_path)
-        if not cam_action_name:
+        cam_action_name_new = opsdata.get_cam_action_name_from_lib(shotname, previs_path)
+        if not cam_action_name_new:
             self.report(
                 {"ERROR"},
-                f"Camera action: {cam_action_name} not found in lib: {previs_path.name}",
+                f"Camera action: {cam_action_name_new} not found in lib: {previs_path.name}",
             )
             return {"CANCELLED"}
 
         # import cam action data block
         cam_action = opsdata.import_data_from_lib(
-            "actions", cam_action_name, previs_path, link=False
+            "actions", cam_action_name_new, previs_path, link=False
         )
 
         # find rig to assing action to
@@ -354,62 +332,233 @@ class AS_OT_import_camera_action(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AS_OT_shift_cam_anim(bpy.types.Operator):
+class AS_OT_import_asset_actions(bpy.types.Operator):
+    """
+    Imports asset action of previs file that matches current shot and assigne it
+    """
+
+    bl_idname = "as.import_asset_actions"
+    bl_label = "Import Asset Actions"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        return bool(addon_prefs.is_project_root_valid and bpy.data.filepath)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        succeeded = []
+        failed = []
+        actions_imported = []
+        renamed_actions = []
+
+        # get shotname and previs filepath
+        shotname = opsdata.get_shot_name_from_file()
+        if not shotname:
+            self.report({"ERROR"}, "Failed to retrieve shotname from current file.")
+            return {"CANCELLED"}
+
+        previs_path = opsdata.get_previs_file(context)
+        if not previs_path:
+            self.report({"ERROR"}, "Failed to find previz file")
+            return {"CANCELLED"}
+
+        # check if cam action name exists in previs library
+        action_candidates: Dict[str, List[str]] = {}
+        asset_colls = []
+
+        with bpy.data.libraries.load(previs_path.as_posix(), relative=True, link=False) as (
+            data_from,
+            data_to,
+        ):
+
+            for asset in asglobals.ACTION_ASSETS:
+
+                #check if asset is in current scene
+                try:
+                    coll = bpy.data.collections[asset]
+                except KeyError:
+                    #can continue here if not in scene we
+                    #cant load action anyway
+                    continue
+                else:
+                    logger.info("Found asset in scene: %s", coll.name)
+                    asset_colls.append(coll)
+
+
+                #find if actions exists for that asset in previs file
+                asset_name = opsdata.find_asset_name(asset)
+                for action in data_from.actions:
+                    if action.startswith(f"ANI-{asset_name}."):
+
+                        #create key if not existent yet
+                        if asset not in action_candidates:
+                            action_candidates[asset] = []
+
+                        #append action to that asset
+                        action_candidates[asset].append(action)
+
+        #load and assign actions for asset colls
+        for coll in asset_colls:
+
+            #find rig
+            rig = opsdata.find_rig(coll)
+            if not rig:
+                logger.warning("%s contains no rig.", coll.name)
+                continue
+
+            #check if action was found in previs file for that asset
+            if not coll.name in action_candidates:
+                logger.warning("%s no action found in previs file". coll.name)
+                continue
+            else:
+                logger.info("%s found actions in previs file: %s", asset, str(action_candidates[coll.name]))
+
+            #check if multiple actions are in the prvis file for that asset
+            if len(action_candidates[coll.name]) > 1:
+                logger.warning("%s Multiple actions found in previs file: %s", coll.name, str(action_candidates[coll.name]))
+                continue
+
+            #import action from previs file
+            actions = action_candidates[coll.name]
+
+            """
+            try:
+                bpy.data.actions[actions[0]]
+            except KeyError:
+                pass
+            else:
+                logger.warning("%s failed to import action")
+            """
+            action = opsdata.import_data_from_lib(
+                    "actions", actions[0], previs_path, link=False
+                )
+            if not action:
+                continue
+
+            actions_imported.append(action)
+
+            #create animation data if not existent
+            if not rig.animation_data:
+                rig.animation_data_create()
+                logger.info("%s created animation data", rig.name)
+
+            # assign action
+            rig.animation_data.action = action
+            logger.info("%s assigned action %s", rig.name, action.name)
+
+            # add fake user
+            action.use_fake_user = True
+
+            #rename actions
+            action_name_new = opsdata.gen_action_name(coll)
+            try:
+                action_existing = bpy.data.actions[action_name_new]
+            except KeyError:
+                #action does not exists can rename
+                old_name = action.name
+                action.name = action_name_new
+                logger.info("Renamed action: %s to %s", old_name, action.name)
+                renamed_actions.append(action)
+            else:
+                #action name already exists in this scene
+                logger.info("Failed to rename action action %s to %s. Already exists", action.name, action_name_new)
+                continue
+
+        self.report({"INFO"}, f"Found Assets: {len(asset_colls)} | Imported Actions: {len(actions_imported)} | Renamed Actions: {len(renamed_actions)}")
+        return {"FINISHED"}
+
+
+class AS_OT_shift_anim(bpy.types.Operator):
     """
     Shifts the animation as well as anim modifier values of the camera by number of frames
     """
 
-    bl_idname = "as.shift_cam_anim"
-    bl_label = "Shift Camera Anim"
+    bl_idname = "as.shift_anim"
+    bl_label = "Shift Anim"
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         nr_of_frames = context.scene.anim_setup.shift_frames
+        rigs : List[bpy.types.Armature] = []
 
         # get cam coll
         try:
             rig = bpy.data.objects["RIG-camera", None]
         except KeyError:
-            self.report({"ERROR"}, f"Failed to find camera object 'RIG-camera'")
-            return {"CANCELELD"}
+            logger.warning("Failed to find camera object 'RIG-camera'")
+        else:
+            rigs.append(rig)
 
-        for fcurve in rig.animation_data.action.fcurves:
+        #find assets
+        for asset in asglobals.ACTION_ASSETS:
 
-            # shift all keyframes
-            for point in fcurve.keyframe_points:
-                # print(f"{fcurve.data_path}|{fcurve.array_index}: {point.co.x}|{point.co.y}")
-                point.co.x += nr_of_frames
-                # don't forget the keyframe's handles:
-                point.handle_left.x += nr_of_frames
-                point.handle_right.x += nr_of_frames
-
-            logger.info(
-                "%s: %s shifted all keyframes by %i frames",
-                fcurve.id_data.name,
-                fcurve.data_path,
-                nr_of_frames,
-            )
-
-            # shift all noise modififers values
-            for m in fcurve.modifiers:
-                if not m.type == "NOISE":
+            #check if asset is in current scene
+            try:
+                coll = bpy.data.collections[asset]
+            except KeyError:
+                #can continue here if not in scene we
+                #cant load action anyway
+                continue
+            else:
+                logger.info("Found asset in scene: %s", coll.name)
+                #find rig
+                rig = opsdata.find_rig(coll)
+                if not rig:
+                    logger.warning("%s contains no rig.", coll.name)
                     continue
+                rigs.append(rig)
 
-                m.offset += nr_of_frames
+        if not rigs:
+            self.report({"ERROR"}, "Failed to find any assets or cameras to shift animation.")
+            return {"CANCELLED"}
 
-                if m.use_restricted_range:
-                    frame_start = m.frame_start
-                    frame_end = m.frame_end
-                    m.frame_start = frame_start + (nr_of_frames)
-                    m.frame_end = frame_end + (nr_of_frames)
+        for rig in rigs:
+            for fcurve in rig.animation_data.action.fcurves:
 
+                # shift all keyframes
+                for point in fcurve.keyframe_points:
+                    # print(f"{fcurve.data_path}|{fcurve.array_index}: {point.co.x}|{point.co.y}")
+                    point.co.x += nr_of_frames
+                    # don't forget the keyframe's handles:
+                    point.handle_left.x += nr_of_frames
+                    point.handle_right.x += nr_of_frames
+
+                """
                 logger.info(
-                    "%s shifted %s modifier values by %i frames",
-                    m.id_data.name,
-                    m.type.lower(),
+                    "%s: %s shifted all keyframes by %i frames",
+                    fcurve.id_data.name,
+                    fcurve.data_path,
+                    nr_of_frames,
+                )
+                """
+
+                # shift all noise modififers values
+                for m in fcurve.modifiers:
+                    if not m.type == "NOISE":
+                        continue
+
+                    m.offset += nr_of_frames
+
+                    if m.use_restricted_range:
+                        frame_start = m.frame_start
+                        frame_end = m.frame_end
+                        m.frame_start = frame_start + (nr_of_frames)
+                        m.frame_end = frame_end + (nr_of_frames)
+
+                    logger.info(
+                        "%s shifted %s modifier values by %i frames",
+                        m.id_data.name,
+                        m.type.lower(),
+                        nr_of_frames,
+                    )
+            logger.info(
+                    "%s: %s shifted all keyframes by %i frames",
+                    rig.name,
+                    rig.animation_data.action.name,
                     nr_of_frames,
                 )
 
-        self.report({"INFO"}, f"{rig.name} shifted animation by {nr_of_frames}")
+        self.report({"INFO"}, f"Shifted animation of {len(rigs)} actions by {nr_of_frames}")
         return {"FINISHED"}
 
 
@@ -444,7 +593,7 @@ class AS_OT_apply_additional_settings(bpy.types.Operator):
 
         sqe_area = self._get_sqe_area(context)
 
-        sqe_area.spaces.active.use_proxies = True
+        sqe_area.spaces.active.use_proxies = False
         sqe_area.spaces.active.proxy_render_size = 'PROXY_100'
 
         self.report({"INFO"}, "Set: use_proxies | proxy_render_size")
@@ -469,9 +618,10 @@ classes = [
     AS_OT_load_latest_edit,
     AS_OT_import_camera,
     AS_OT_import_camera_action,
-    AS_OT_shift_cam_anim,
+    AS_OT_shift_anim,
     AS_OT_get_frame_shift,
     AS_OT_apply_additional_settings,
+    AS_OT_import_asset_actions
 ]
 
 

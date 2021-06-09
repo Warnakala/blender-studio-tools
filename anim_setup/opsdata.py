@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from typing import Optional, Dict, Union, Any, List
 import bpy
+from bpy.types import Key
 
 from . import prefs
 
@@ -99,17 +100,24 @@ def import_data_from_lib(
             )
             return None
 
-        if data_name in eval(f"data_to.{data_category}"):
-            logger.info("%s %s already in blendfile.", data_category, data_name)
-
+        #check if datablock with same name already exists in blend file
+        try:
+            eval(f"bpy.data.{data_category}['{data_name}']")
+        except KeyError:
+            pass
         else:
-            eval(f"data_to.{data_category}.append('{data_name}')")
-            logger.info(
-                "%s: %s from library: %s",
-                noun,
-                data_name,
-                libpath.as_posix(),
-            )
+            logger.info("%s already in bpy.data.%s of this blendfile.", data_name, data_category)
+            return None
+
+        #link appen data block
+        eval(f"data_to.{data_category}.append('{data_name}')")
+        logger.info(
+            "%s: %s from library: %s",
+            noun,
+            data_name,
+            libpath.as_posix(),
+        )
+
     if link:
         return eval(
             f"bpy.data.{data_category}['{data_name}', '{bpy.path.relpath(libpath.as_posix())}']"
@@ -223,3 +231,25 @@ def get_valid_collections(context: bpy.types.Context) -> List[bpy.types.Collecti
         valid_colls.append(coll)
 
     return valid_colls
+
+def is_multi_asset(asset_name: str) -> bool:
+    if asset_name.startswith('thorn'):
+        return True
+    multi_assets = ["sprite", "snail", "spider"]
+    if asset_name.lower() in multi_assets:
+        return True
+    return False
+
+def gen_action_name(coll: bpy.types.Collection):
+    action_prefix = "ANI"
+    asset_name = find_asset_name(coll.name).lower()
+    asset_name = asset_name.replace(".", "_")
+    version = "v001"
+    shot_name = get_shot_name_from_file()
+
+    action_name_new = f"{action_prefix}-{asset_name}.{shot_name}.{version}"
+
+    if is_multi_asset(asset_name):
+        action_name_new = f"{action_prefix}-{asset_name}_A.{shot_name}.{version}"
+
+    return action_name_new
