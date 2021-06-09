@@ -540,17 +540,17 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
     bl_idname = "kitsu.anim_check_action_names"
     bl_label = "Check Action Names "
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Inspects all actions of .blend file and checks if they follow the Blender Studio naming convention"
 
     wrong: List[Tuple[bpy.types.Action, str]] = []
+    # list of tuples that contains the action on index 0 with the wrong name
+    # and the name it should have on index 1
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        act_coll = context.view_layer.active_layer_collection.collection
-
         return bool(cache.shot_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         existing_action_names = [a.name for a in bpy.data.actions]
         failed = []
         succeeded = []
@@ -589,6 +589,8 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
         shot_active = cache.shot_active_get()
         rigs = opsdata.get_all_rigs_with_override()
         self.wrong.clear()
+        no_action = []
+        correct = []
 
         if not rigs:
             self.report(
@@ -601,6 +603,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
         for rig in rigs:
             if not rig.animation_data or not rig.animation_data.action:
                 logger.info("%s has no animation data", rig.name)
+                no_action.append(rig)
                 continue
 
             action_name_should = opsdata.gen_action_name_for_rig(rig, shot_active)
@@ -612,11 +615,19 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
                     "Action %s should be named %s", action_name_is, action_name_should
                 )
                 self.wrong.append((rig.animation_data.action, action_name_should))
+                continue
+
+            # action name of rig is correct
+            correct.append(rig)
 
         if not self.wrong:
-            self.report({"INFO"}, "All actions names correct")
+            self.report({"INFO"}, "All actions names are correct")
             return {"FINISHED"}
 
+        self.report(
+            {"INFO"},
+            f"Checked Rigs: {len(rigs)} | Wrong Actions {len(correct)} | Correct Actions: {len(correct)} | No Actions: {len(no_action)}",
+        )
         return context.window_manager.invoke_props_dialog(self, width=500)
 
     def draw(self, context):

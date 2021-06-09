@@ -543,7 +543,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         selshots = context.selected_sequences
         all_shots = context.scene.sequence_editor.sequences_all
 
-        if not selshots:
+        if not selshots:  # pull entire edit
             return True
 
         strips_to_meta_sel = [s for s in selshots if s.kitsu.linked]

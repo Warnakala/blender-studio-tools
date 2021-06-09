@@ -152,6 +152,9 @@ def create_collection_instance(
 
 
 def get_all_rigs_with_override() -> List[bpy.types.Armature]:
+    """
+    Returns all library overrider rigs
+    """
     valid_rigs = []
 
     for obj in bpy.data.objects:
@@ -209,14 +212,13 @@ def gen_action_name_for_rig(armature: bpy.types.Armature, shot: Shot) -> str:
 
     action_prefix = "ANI"
     asset_name = find_asset_name(armature.name).lower()
-    # print(f"asset name:{asset_name}")
     asset_name = asset_name.replace(".", "_")
     version = "v001"
     shot_name = shot.name
     has_action = False
     final_postfix = ""
 
-    # overwrite version if version exists
+    # overwrite version v001 if there is an action which already contains a version
     if armature.animation_data:
         if armature.animation_data.action:
             has_action = True
