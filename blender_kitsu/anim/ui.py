@@ -125,7 +125,7 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         if act_coll and opsdata.is_item_local(act_coll):
             dupli_text = f"Duplicate: Select Overwritten Collection"
 
-        split = box.split(factor=0.9, align=True)
+        split = box.split(factor=0.85, align=True)
         split.operator(
             KITSU_OT_anim_quick_duplicate.bl_idname, icon="DUPLICATE", text=dupli_text
         )
