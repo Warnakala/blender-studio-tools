@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Generator
 from pathlib import Path
 
 import bpy
@@ -151,29 +151,13 @@ def create_collection_instance(
     return instance_obj
 
 
-def get_all_rigs_with_override() -> List[bpy.types.Armature]:
-    """
-    Returns all library overrider rigs
-    """
-    valid_rigs = []
-
-    for obj in bpy.data.objects:
-        # default rig name: 'RIG-rex' / 'RIG-Rex'
-        if not is_item_lib_override(obj):
-            continue
-
-        if obj.type != "ARMATURE":
-            continue
-
-        if not obj.name.startswith(bkglobals.PREFIX_RIG):
-            continue
-
-        valid_rigs.append(obj)
-
-    return valid_rigs
+def get_output_coll_name(shot: Shot) -> str:
+    return f"{shot.name}.anim.output"
 
 
-def find_rig(coll: bpy.types.Collection) -> Optional[bpy.types.Armature]:
+def find_rig(
+    coll: bpy.types.Collection, log: bool = True
+) -> Optional[bpy.types.Armature]:
 
     valid_rigs = []
 
@@ -191,14 +175,15 @@ def find_rig(coll: bpy.types.Collection) -> Optional[bpy.types.Armature]:
         return None
 
     elif len(valid_rigs) == 1:
-        logger.info("Found rig: %s", valid_rigs[0].name)
+        if log:
+            logger.info("Found rig: %s", valid_rigs[0].name)
         return valid_rigs[0]
     else:
-        logger.error("%s found multiple rigs %s", coll.name, str(valid_rigs))
+        logger.warning("%s found multiple rigs %s", coll.name, str(valid_rigs))
         return None
 
 
-def find_asset_collections():
+def find_asset_collections(log: bool = True) -> List[bpy.types.Collection]:
     asset_colls: List[bpy.types.Collection] = []
     for coll in bpy.data.collections:
 
@@ -210,8 +195,45 @@ def find_asset_collections():
             if not coll.name.startswith(prefix):
                 continue
 
-            logger.info("Found asset collection: %s", coll.name)
             asset_colls.append(coll)
+    if log:
+        logger.info(
+            "Found asset collections:\n%s", ", ".join([c.name for c in asset_colls])
+        )
+    return asset_colls
+
+
+def traverse_collection_tree(
+    collection: bpy.types.Collection,
+) -> Generator[bpy.types.Collection, None, None]:
+    yield collection
+    for child in collection.children:
+        yield from traverse_collection_tree(child)
+
+
+def find_asset_collections_in_scene(
+    scene: bpy.types.Scene, log: bool = True
+) -> List[bpy.types.Collection]:
+
+    asset_colls: List[bpy.types.Collection] = []
+    colls: List[bpy.types.Collection] = []
+
+    # get all collections that are linked in this scene
+    for coll in scene.collection.children:
+        colls.extend(list(traverse_collection_tree(coll)))
+
+    for coll in colls:
+
+        for prefix in bkglobals.ASSET_COLL_PREFIXES:
+
+            if not coll.name.startswith(prefix):
+                continue
+
+            asset_colls.append(coll)
+    if log:
+        logger.info(
+            "Found asset collections:\n%s", ", ".join([c.name for c in asset_colls])
+        )
 
     return asset_colls
 
@@ -257,7 +279,6 @@ def gen_action_name(
 ) -> str:
 
     global action_names_cache
-    print(action_names_cache)
 
     def _find_postfix(action_name: str) -> Optional[str]:
         # ANI-lady_bug_A.030_0020_A.v001

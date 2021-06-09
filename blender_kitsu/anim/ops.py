@@ -488,17 +488,19 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
 
         # check if output colletion exists in scene
         try:
-            output_coll = bpy.data.collections[self._get_output_coll_name(shot_active)]
+            output_coll = bpy.data.collections[
+                opsdata.get_output_coll_name(shot_active)
+            ]
 
         except KeyError:
             self.report(
                 {"ERROR"},
-                f"Missing output collection: {self._get_output_coll_name(shot_active)}",
+                f"Missing output collection: {opsdata.get_output_coll_name(shot_active)}",
             )
             return {"CANCELLED"}
 
         # get ref coll
-        ref_coll = self._get_ref_coll(act_coll)
+        ref_coll = opsdata.get_ref_coll(act_coll)
 
         for i in range(amount):
             # create library override
@@ -521,17 +523,6 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
 
         util.ui_redraw()
         return {"FINISHED"}
-
-    @classmethod
-    def _get_output_coll_name(cls, shot: Shot) -> str:
-        return f"{shot.name}.anim.output"
-
-    @classmethod
-    def _get_ref_coll(cls, coll: bpy.types.Collection) -> bpy.types.Collection:
-        if not coll.override_library:
-            return coll
-
-        return coll.override_library.reference
 
 
 class KITSU_OT_anim_check_action_names(bpy.types.Operator):
@@ -611,7 +602,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
         # find rig of each asset collection
         asset_rigs: List[Tuple[bpy.types.Collection, bpy.types.Armature]] = []
         for coll in asset_colls:
-            rig = opsdata.find_rig(coll)
+            rig = opsdata.find_rig(coll, log=False)
             if rig:
                 asset_rigs.append((coll, rig))
 
@@ -667,6 +658,52 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
             row.label(text=name)
 
 
+class KITSU_OT_anim_update_output_coll(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.anim_update_output_coll"
+    bl_label = "Update Output Collection"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Scans scene for any collections that are not in output collection yet"
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        active_shot = cache.shot_active_get()
+        output_coll_name = opsdata.get_output_coll_name(active_shot)
+        try:
+            output_coll = bpy.data.collections[output_coll_name]
+        except KeyError:
+            output_coll = None
+
+        return bool(active_shot and output_coll)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        active_shot = cache.shot_active_get()
+        output_coll_name = opsdata.get_output_coll_name(active_shot)
+        output_coll = bpy.data.collections[output_coll_name]
+        asset_colls = opsdata.find_asset_collections_in_scene(context.scene)
+        missing: List[bpy.types.Collection] = []
+        output_coll_childs = list(opsdata.traverse_collection_tree(output_coll))
+
+        # check if all found asset colls are in output coll
+        for coll in asset_colls:
+            if coll in output_coll_childs:
+                continue
+            missing.append(coll)
+
+        for coll in missing:
+            output_coll.children.link(coll)
+            logger.info("%s linked in %s", coll.name, output_coll.name)
+
+        self.report(
+            {"INFO"},
+            f"Found Asset Collections: {len(asset_colls)} | Added to output collection: {len(missing)}",
+        )
+        return {"FINISHED"}
+
+
 @persistent
 def load_post_handler_init_version_model(dummy: Any) -> None:
     opsdata.init_playblast_file_model(bpy.context)
@@ -716,6 +753,7 @@ classes = [
     KITSU_OT_anim_pull_frame_range,
     KITSU_OT_anim_quick_duplicate,
     KITSU_OT_anim_check_action_names,
+    KITSU_OT_anim_update_output_coll,
 ]
 
 
