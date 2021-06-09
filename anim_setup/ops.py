@@ -54,7 +54,7 @@ class AS_OT_create_actions(bpy.types.Operator):
                 continue
 
             # create new action
-            action_name_new = opsdata.gen_action_name_new(coll)
+            action_name_new = opsdata.gen_action_name(coll)
             try:
                 action = bpy.data.actions[action_name_new]
             except KeyError:
