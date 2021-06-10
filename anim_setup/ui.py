@@ -45,9 +45,9 @@ class AS_PT_vi3d_main(bpy.types.Panel):
         column.operator(AS_OT_load_latest_edit.bl_idname)
 
         # apply additional settings
-        column.operator(
-            AS_OT_apply_additional_settings.bl_idname
-        )
+        #column.operator(
+        #    AS_OT_apply_additional_settings.bl_idname
+        #)
 
         #---------action and anim ops
         box = layout.box()
