@@ -621,21 +621,21 @@ class AS_OT_exclude_colls(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         view_layer_colls = opsdata.get_all_view_layer_colls(context)
-        view_layer_colls_names = [v.name for v in view_layer_colls]
 
         excluded = []
         for coll_name in asglobals.HIDE_COLLS:
-            #find view layer collection
-            try:
-                index = view_layer_colls_names.index(coll_name)
-            except ValueError:
-                logger.info("No view layer collection named: %s", coll_name)
+            #find view layer collection, if same collection is linked in in 2 different colls in same scene, these
+            #are 2 different view layer colls, we need to grab all
+            valid_view_layer_colls = [vc for vc in view_layer_colls if vc.name == coll_name]
+
+            if not valid_view_layer_colls:
+                logger.info("No view layer collections named: %s", coll_name)
                 continue
 
-            view_layer_coll = view_layer_colls[index]
-            view_layer_coll.exclude = True
-            logger.info("Excluded view layer collection: %s", view_layer_coll.name)
-            excluded.append(view_layer_coll)
+            for view_layer_coll in valid_view_layer_colls:
+                view_layer_coll.exclude = True
+                logger.info("Excluded view layer collection: %s", view_layer_coll.name)
+                excluded.append(view_layer_coll)
 
         self.report({"INFO"}, f"Exluded Collections: {list([v.name for v in excluded])}")
         return {"FINISHED"}
