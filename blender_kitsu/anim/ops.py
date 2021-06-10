@@ -615,6 +615,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
 
         # for each rig check the current action name if it matches the convention
         for coll, rig in asset_rigs:
+            # print(f"Processing: {coll.name}")
             if not rig.animation_data or not rig.animation_data.action:
                 logger.info("%s has no animation data", rig.name)
                 no_action.append(rig)

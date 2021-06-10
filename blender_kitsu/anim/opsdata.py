@@ -272,6 +272,10 @@ def is_multi_asset(asset_name: str) -> bool:
 action_names_cache: List[str] = []
 # we need this in order to increment prefixes of duplications of the same asset correctly
 # gets cleared populated during call of KITSU_OT_anim_check_action_names
+_current_asset: str = ""
+_curret_asset_idx: int = 0
+# we need these two variables to track if we are on the first asset that is currently processed
+# (if there are multiple ones) because the first one CAN get keep it postfix
 
 
 def gen_action_name(
@@ -279,6 +283,9 @@ def gen_action_name(
 ) -> str:
 
     global action_names_cache
+    global _current_asset
+    global _curret_asset_idx
+    action_names_cache.sort()
 
     def _find_postfix(action_name: str) -> Optional[str]:
         # ANI-lady_bug_A.030_0020_A.v001
@@ -296,6 +303,14 @@ def gen_action_name(
     action_prefix = "ANI"
     asset_name = find_asset_name(ref_coll.name).lower()
     asset_name = asset_name.replace(".", "_")
+
+    # track on which repition we are of the same asset
+    if asset_name == _current_asset:
+        _curret_asset_idx += 1
+    else:
+        _curret_asset_idx = 0
+    _current_asset = asset_name
+
     version = "v001"
     shot_name = shot.name
     has_action = False
@@ -318,20 +333,30 @@ def gen_action_name(
 
             # skip action that was input as parameter of this function
             if has_action and action_name == armature.animation_data.action.name:
+                # print(f"Skipping action same name: {action_name}")
                 continue
 
+            # print(action_names_cache)
             if action_name.startswith(f"{action_prefix}-{asset_name}"):
                 multi_postfix = _find_postfix(action_name)
                 if multi_postfix:
+                    # print(f"Found postfix {multi_postfix} for aseet : {asset_name}")
                     existing_postfixes.append(multi_postfix)
 
         # print(f"EXISTING: {existing_postfixes}")
         if existing_postfixes:
-            existing_postfixes.sort()
-            final_postfix = chr(
-                ord(existing_postfixes[-1]) + 1
-            )  # handle postfix == Z > [
+            if _curret_asset_idx == 0:
+                # print(f"{asset_name} is first asset can keep postifx")
+                # firs asset can keep its postfix
+                final_postfix = multi_postfix
+            else:
+                # otherwise increment the postfix by one
+                existing_postfixes.sort()
+                final_postfix = chr(
+                    ord(existing_postfixes[-1]) + 1
+                )  # handle postfix == Z > [
         else:
+            # if there are no existing postfixes the first one is A
             final_postfix = "A"
 
         if has_action:

@@ -67,7 +67,7 @@ Float3 = typing.Tuple[float, float, float]
 Float4 = typing.Tuple[float, float, float, float]
 
 
-class AttractLineDrawer:
+class LineDrawer:
     def __init__(self):
         self._format = gpu.types.GPUVertFormat()
         self._pos_id = self._format.attr_add(
@@ -158,7 +158,7 @@ def strip_conflict(
     out_colors.append(CONFLICT_COLOUR)
 
 
-def draw_callback_px(line_drawer: AttractLineDrawer):
+def draw_callback_px(line_drawer: LineDrawer):
     context = bpy.context
 
     if not context.scene.sequence_editor:
@@ -234,7 +234,7 @@ def callback_enable():
     if bpy.app.background:
         return
 
-    line_drawer = AttractLineDrawer()
+    line_drawer = LineDrawer()
     cb_handle[:] = (
         bpy.types.SpaceSequenceEditor.draw_handler_add(
             draw_callback_px, (line_drawer,), "WINDOW", "POST_VIEW"
