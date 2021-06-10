@@ -191,6 +191,8 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
         # update shift frame range prop
         frame_in = shot.data["frame_in"]
         frame_out = shot.data["frame_out"]
+        frame_3d_in = shot.data["3d_in"]
+        frame_3d_offset = frame_3d_in - 101
 
         if not frame_in:
             self.report(
@@ -200,7 +202,7 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
 
         # set sequence strip start kitsu data
         for strip in context.scene.sequence_editor.sequences_all:
-            strip.frame_start = -frame_in + (strip_frame_start * 2)
+            strip.frame_start = -frame_in + (strip_frame_start * 2) + frame_3d_offset
 
         self.report({"INFO"}, f"Loaded latest edit: {latest_file.name}")
 
