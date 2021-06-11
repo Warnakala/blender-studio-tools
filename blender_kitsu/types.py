@@ -337,7 +337,7 @@ class Sequence:
     parent_id: str = ""
     source_id: Optional[str] = None
     preview_file_id: Optional[str] = None
-    data: Optional[Dict[str, Any]] = None
+    data: Optional[Dict[str, Any]] = field(default_factory=dict)
     type: str = ""
     project_name: str = ""
 
@@ -377,6 +377,14 @@ class Sequence:
 
     def update(self) -> Sequence:
         gazu.shot.update_sequence(asdict(self))
+        return self
+
+    def update_data(self, data: Dict[str, Any]) -> Sequence:
+        gazu.shot.update_sequence_data(asdict(self), data=data)
+        if not self.data:
+            self.data = {}
+        for key in data:
+            self.data[key] = data[key]
         return self
 
     def __bool__(self) -> bool:
@@ -474,6 +482,8 @@ class Shot:
 
     def update_data(self, data: Dict[str, Any]) -> Shot:
         gazu.shot.update_shot_data(asdict(self), data=data)
+        if not self.data:
+            self.data = {}
         for key in data:
             self.data[key] = data[key]
         return self
