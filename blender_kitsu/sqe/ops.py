@@ -1853,6 +1853,41 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class KITSU_OT_sqe_add_sequence_color(bpy.types.Operator):
+    """
+    Adds sequence of active strip to scene.kitsu.sequence_colors collection property
+    """
+
+    bl_idname = "kitsu.add_sequence_color"
+    bl_label = "Add Sequence Color"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        active_strip = context.scene.sequence_editor.active_strip
+        return bool(active_strip and active_strip.kitsu.sequence_id)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        sequence_colors = context.scene.kitsu.sequence_colors
+        active_strip = context.scene.sequence_editor.active_strip
+        sequence_id = active_strip.kitsu.sequence_id
+
+        if sequence_id in sequence_colors.keys():
+            self.report(
+                {"WARNING"},
+                f"Sequence {sequence_id} (ID: {active_strip.kitsu.sequence_name}) already in scene.kitsu.sequence_colors",
+            )
+            return {"CANCELLED"}
+
+        item = context.scene.kitsu.sequence_colors.add()
+        item.name = active_strip.kitsu.sequence_id
+        self.report(
+            {"INFO"},
+            f"Added {sequence_id} (ID: {active_strip.kitsu.sequence_name}) to scene.kitsu.seqeuence_colors",
+        )
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -1877,6 +1912,7 @@ classes = [
     KITSU_OT_sqe_pull_edit,
     KITSU_OT_sqe_init_strip_start_frame,
     KITSU_OT_sqe_create_meta_strip,
+    KITSU_OT_sqe_add_sequence_color,
 ]
 
 
