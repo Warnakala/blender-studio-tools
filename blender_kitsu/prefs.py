@@ -245,7 +245,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             icon="DOWNARROW_HLT",
         )
         box.row().prop(self, "project_root_dir")
-        box.row().prop(self, "config_dir")
+        # box.row().prop(self, "config_dir") #hide it for now as there is no use so far
 
         # anim tools settings
         box = layout.box()

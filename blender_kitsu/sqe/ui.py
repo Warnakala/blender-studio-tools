@@ -105,14 +105,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         if not prefs.session_auth(context):
             return False
 
-        return bool(
-            not project_active
-            or not addon_prefs.is_project_root_valid
-            or (
-                addon_prefs.is_config_dir_valid
-                and not Path(addon_prefs.config_dir).exists()
-            )
-        )
+        return bool(not project_active or not addon_prefs.is_project_root_valid)
 
     def draw_error(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -125,12 +118,6 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
         if not addon_prefs.is_project_root_valid:
             ui.draw_error_invalid_project_root_dir(box)
-
-        if (
-            addon_prefs.is_config_dir_valid
-            and not Path(addon_prefs.config_dir).exists()
-        ):
-            ui.draw_error_config_dir_not_exists(box)
 
     @classmethod
     def poll_setup(cls, context: bpy.types.Context) -> bool:
