@@ -7,7 +7,7 @@ from pathlib import Path
 
 import bpy
 
-from blender_kitsu import cache
+from blender_kitsu import cache, bkglobals
 
 # TODO: restructure this to not acess ops_anim_data
 from blender_kitsu.anim import opsdata as ops_anim_data
@@ -79,9 +79,8 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         return self.project_root_path.joinpath("pipeline/blender_kitsu").as_posix()
 
     def get_metastrip_file(self) -> str:
-        if not self.is_config_dir_valid:
-            return ""
-        return Path(self.config_dir).joinpath("metastrip.mp4").as_posix()
+        res_dir = bkglobals.RES_DIR_PATH
+        return res_dir.joinpath("metastrip.mp4").as_posix()
 
     def init_playblast_file_model(self, context: bpy.types.Context) -> None:
         ops_anim_data.init_playblast_file_model(context)

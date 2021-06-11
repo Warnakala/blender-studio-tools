@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 FPS = 24
 VERSION_PATTERN = r"v\d\d\d"
 FRAME_START = 101
@@ -42,3 +45,6 @@ MULTI_ASSETS = [
 ]  # list of assets that gets duplicated and therefore follows another naming sheme
 
 ASSET_COLL_PREFIXES = ["CH-", "PR-", "SE-"]
+
+
+RES_DIR_PATH = Path(os.path.abspath(__file__)).parent.joinpath("res")
