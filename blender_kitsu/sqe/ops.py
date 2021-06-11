@@ -51,6 +51,9 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
         # clear cache
         Cache.clear_all()
 
+        # track sequence ids that were processed to later update sequence.data["color"] on kitu
+        sequence_ids: List[str] = []
+
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
@@ -71,10 +74,34 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
 
             # push update to shot
             push.shot_meta(strip, shot)
+
+            # append sequence id
+            if shot.parent_id not in sequence_ids:
+                sequence_ids.append(shot.parent_id)
+
             succeeded.append(strip)
 
         # end progress update
         context.window_manager.progress_update(len(selected_sequences))
+        context.window_manager.progress_end()
+
+        # begin second progress update for sequences
+        context.window_manager.progress_begin(0, len(sequence_ids))
+        for idx, seq_id in enumerate(sequence_ids):
+            context.window_manager.progress_update(idx)
+
+            sequence = Sequence.by_id(seq_id)
+            # updates sequence color and logs
+            try:
+                item = bpy.context.scene.kitsu.sequence_colors[sequence.id]
+            except KeyError:
+                pass
+            else:
+                sequence.update_data({"color": list(item.color)})
+                logger.info("Pushed meta to sequence: %s", sequence.name)
+
+        # end second progress update
+        context.window_manager.progress_update(len(sequence_ids))
         context.window_manager.progress_end()
 
         # report
@@ -1527,6 +1554,21 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
             print("\n" * 2)
             logger.info("Processing Sequence %s", seq.name)
             shots = seq.get_all_shots()
+
+            # pull seqeunece color property
+            if seq.data:
+                if "color" in seq.data:
+                    try:
+                        item = context.scene.kitsu.sequence_colors[seq.id]
+                    except:
+                        item = context.scene.kitsu.sequence_colors.add()
+                        item.name = seq.id
+                        logger.info(
+                            "Added %s to scene.kitsu.seqeuence_colors",
+                            seq.name,
+                        )
+                    finally:
+                        item.color = tuple(seq.data["color"])
 
             # process all shots for sequence
             for shot in shots:

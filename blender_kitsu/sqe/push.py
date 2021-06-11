@@ -24,10 +24,10 @@ def shot_meta(strip: bpy.types.Sequence, shot: Shot) -> None:
     # if user changed the seqeunce the shot belongs to
     # (can only be done by operator not by hand)
     if strip.kitsu.sequence_id != shot.sequence_id:
-        zseq = Sequence.by_id(strip.kitsu.sequence_id)
-        shot.sequence_id = zseq.id
-        shot.parent_id = zseq.id
-        shot.sequence_name = zseq.name
+        sequence = Sequence.by_id(strip.kitsu.sequence_id)
+        shot.sequence_id = sequence.id
+        shot.parent_id = sequence.id
+        shot.sequence_name = sequence.name
 
     # update on server
     shot.update()
