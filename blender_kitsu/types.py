@@ -375,6 +375,10 @@ class Sequence:
     def get_all_tasks(self) -> List[Task]:
         return [Task(**t) for t in gazu.task.all_tasks_for_sequence(asdict(self))]
 
+    def update(self) -> Sequence:
+        gazu.shot.update_sequence(asdict(self))
+        return self
+
     def __bool__(self) -> bool:
         return bool(self.id)
 
@@ -404,10 +408,6 @@ class AssetType:
     def by_id(cls, type_id: str) -> AssetType:
         tpye_dict = gazu.asset.get_asset_type(type_id)
         return cls(**tpye_dict)
-
-    def update(self) -> Sequence:
-        gazu.shot.update_sequence(asdict(self))
-        return self
 
     def __bool__(self) -> bool:
         return bool(self.id)
