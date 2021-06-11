@@ -1,9 +1,24 @@
+from typing import Any, Union, List, Dict, Optional
+
 import bpy
+from bpy.app.handlers import persistent
 
 from blender_kitsu import propsdata, bkglobals
 from blender_kitsu.logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(name=__name__)
+
+
+class KITSU_sequence_colors(bpy.types.PropertyGroup):
+    # name: StringProperty() -> Instantiated by default
+    color: bpy.props.FloatVectorProperty(
+        name="Sequence Color",
+        subtype="COLOR",
+        default=(1.0, 1.0, 1.0),
+        min=0.0,
+        max=1.0,
+        description="Sequence color that will be used as line overlay",
+    )
 
 
 class KITSU_property_group_sequence(bpy.types.PropertyGroup):
@@ -193,6 +208,8 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         max=32,
     )
 
+    sequence_colors: bpy.props.CollectionProperty(type=KITSU_sequence_colors)
+
 
 class KITSU_property_group_error(bpy.types.PropertyGroup):
     """"""
@@ -345,9 +362,27 @@ def _get_frame_final_duration(self):
     return self.frame_final_duration
 
 
+@persistent
+def update_sequence_colors_coll_prop(dummy: Any) -> None:
+    sequences = bpy.context.scene.sequence_editor.sequences_all
+    sequence_colors = bpy.context.scene.kitsu.sequence_colors
+    for seq in sequences:
+
+        if not seq.kitsu.sequence_id:
+            continue
+
+        if seq.kitsu.sequence_id not in sequence_colors.keys():
+            logger.info(
+                "Added %s to scene.kitsu.seqeuence_colors", seq.kitsu.sequence_name
+            )
+            item = sequence_colors.add()
+            item.name = seq.kitsu.sequence_id
+
+
 # ----------------REGISTER--------------
 
 classes = [
+    KITSU_sequence_colors,
     KITSU_property_group_sequence,
     KITSU_property_group_scene,
     KITSU_property_group_error,
@@ -407,6 +442,9 @@ def register():
     # Window Manager Properties
     _add_window_manager_props()
 
+    # handlers
+    bpy.app.handlers.load_post.append(update_sequence_colors_coll_prop)
+
 
 def unregister():
     for cls in reversed(classes):
@@ -414,3 +452,6 @@ def unregister():
 
     # clear properties
     _clear_window_manager_props()
+
+    # handlers
+    bpy.app.handlers.load_post.remove(update_sequence_colors_coll_prop)
