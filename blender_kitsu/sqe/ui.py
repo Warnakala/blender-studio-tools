@@ -1,9 +1,8 @@
-from pathlib import Path
-
 import bpy
 
 from blender_kitsu import cache, prefs, ui
 from blender_kitsu.sqe import checkstrip
+from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_push_new_sequence,
     KITSU_OT_sqe_push_new_shot,
@@ -26,8 +25,10 @@ from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_pull_edit,
     KITSU_OT_sqe_init_strip_start_frame,
     KITSU_OT_sqe_create_meta_strip,
+    KITSU_OT_sqe_add_sequence_color,
 )
-from bpy.types import FileAssetSelectParams
+
+logger = LoggerFactory.getLogger(name=__name__)
 
 
 def get_selshots_noun(nr_of_shots: int, prefix: str = "Active") -> str:
@@ -271,12 +272,44 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         # sequence
         split = col.split(factor=split_factor, align=True)
         split.label(text="Sequence")
-        sub_row = split.row(align=True)
-        sub_row.prop(strip.kitsu, "sequence_name_display", text="")
-        sub_row.operator(
-            KITSU_OT_sqe_link_sequence.bl_idname, text="", icon="DOWNARROW_HLT"
-        )
-        sub_row.operator(KITSU_OT_sqe_push_new_sequence.bl_idname, text="", icon="ADD")
+
+        if not strip.kitsu.sequence_id:
+            sub_row = split.row(align=True)
+            sub_row.prop(strip.kitsu, "sequence_name_display", text="")
+            sub_row.operator(
+                KITSU_OT_sqe_link_sequence.bl_idname, text="", icon="DOWNARROW_HLT"
+            )
+            sub_row.operator(
+                KITSU_OT_sqe_push_new_sequence.bl_idname, text="", icon="ADD"
+            )
+
+        else:
+            # lots of splitting because color prop is too big by default
+            # i dont even know what split is what
+            sub_split = split.split(factor=0.6, align=True)
+            sub_split.prop(strip.kitsu, "sequence_name_display", text="")
+
+            sub_split = sub_split.split(factor=0.3, align=True)
+            sub_split.operator(
+                KITSU_OT_sqe_link_sequence.bl_idname, text="", icon="DOWNARROW_HLT"
+            )
+
+            sub_sub_split = sub_split.split(factor=0.4, align=True)
+            sub_sub_split.operator(
+                KITSU_OT_sqe_push_new_sequence.bl_idname, text="", icon="ADD"
+            )
+
+            try:
+                sequence_color_item = context.scene.kitsu.sequence_colors[
+                    strip.kitsu.sequence_id
+                ]
+            except KeyError:
+                sub_sub_split.operator(
+                    KITSU_OT_sqe_add_sequence_color.bl_idname, text="", icon="COLOR"
+                )
+
+            else:
+                sub_sub_split.prop(sequence_color_item, "color", text="")
 
         # shot
         split = col.split(factor=split_factor, align=True)
