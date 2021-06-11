@@ -405,6 +405,10 @@ class AssetType:
         tpye_dict = gazu.asset.get_asset_type(type_id)
         return cls(**tpye_dict)
 
+    def update(self) -> Sequence:
+        gazu.shot.update_sequence(asdict(self))
+        return self
+
     def __bool__(self) -> bool:
         return bool(self.id)
 
