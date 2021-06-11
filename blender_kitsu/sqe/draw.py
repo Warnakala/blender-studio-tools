@@ -195,9 +195,14 @@ def draw_callback_px(line_drawer: LineDrawer):
         ):
             continue
 
-        color = strip_status_colour["linked"]
+        try:
+            color = tuple(
+                context.scene.kitsu.sequence_colors[strip.kitsu.sequence_id].color
+            )
+        except KeyError:
+            color = (1, 1, 1)
 
-        alpha = 1.0 if strip.kitsu.linked else 0.5
+        alpha = 1.0 if strip.kitsu.linked else 0.25
 
         underline_in_strip(strip_coords, pixel_size_x, color + (alpha,), coords, colors)
         """
