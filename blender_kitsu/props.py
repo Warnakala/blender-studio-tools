@@ -58,6 +58,13 @@ class KITSU_property_group_sequence(bpy.types.PropertyGroup):
     # frame range
     frame_start_offset: bpy.props.IntProperty(name="Frame Start Offset")
 
+    # media
+    media_outdated: bpy.props.BoolProperty(
+        name="Source Media Outdated",
+        default=False,
+        description="Indicated if there is a newer version of the source media available",
+    )
+
     # display props
     shot_description_display: bpy.props.StringProperty(name="Description", get=_get_shot_description)  # type: ignore
     sequence_name_display: bpy.props.StringProperty(name="Sequence", get=_get_sequence_name)  # type: ignore
