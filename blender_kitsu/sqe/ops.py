@@ -1211,7 +1211,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         return path.absolute()
 
     @contextlib.contextmanager
-    def override_render_settings(self, context, thumbnail_width=256):
+    def override_render_settings(self, context, thumbnail_width=512):
         """Overrides the render settings for thumbnail size in a 'with' block scope."""
 
         rd = context.scene.render
