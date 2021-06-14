@@ -1,3 +1,4 @@
+import os
 import contextlib
 import colorsys
 import random
@@ -1949,6 +1950,222 @@ class KITSU_OT_sqe_add_sequence_color(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.sqe_scan_for_outdated_media"
+    bl_label = "Scan Outdated"
+    bl_description = "Scans sequence editor for movie strips and checks if there is a more recent version of their source media."
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(context.scene.sequence_editor.sequences_all)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        outdated: List[bpy.types.Sequence] = []
+        invalid: List[bpy.types.Sequence] = []
+        no_version: List[bpy.types.Sequence] = []
+        up_to_date: List[bpy.types.Sequence] = []
+        checked: List[bpy.types.Sequence] = []
+
+        sequences = context.selected_sequences
+        if not sequences:
+            sequences = context.scene.sequence_editor.sequences_all
+
+        logger.info("-START- Scanning for outdated media")
+
+        for strip in sequences:
+
+            if not strip.type == "MOVIE":
+                continue
+
+            checked.append(strip)
+
+            # check if it has valid filepath key
+            if not strip.filepath:
+                logger.info("%s has invalid filepath. Skip", strip.name)
+                invalid.append(strip)
+                continue
+
+            media_path_old = Path(os.path.abspath(bpy.path.abspath(strip.filepath)))
+            current_version = util.get_version(media_path_old.name)
+
+            # check if source media path contains version string
+            if not current_version:
+                # logger.info(
+                #    "%s source media contains no version string",
+                #    strip.name,
+                #    strip.filepath,
+                # )
+                no_version.append(strip)
+                continue
+
+            # gather valid files to compare source media to
+            media_folder = media_path_old.parent
+            media_all: List[Path] = [
+                f
+                for f in media_folder.iterdir()
+                if f.is_file() and util.get_version(f.name)
+            ]
+
+            valid_files: List[
+                Path
+            ] = []  # list of files that are named as source except for version str
+
+            for file in media_all:
+                # version should exists here, we already check for that in list comprehension
+                version = util.get_version(file.name)
+
+                # we only want to consider files that have the same name except for version string
+                if file.name.replace(version, "") != media_path_old.name.replace(
+                    current_version, ""
+                ):
+                    continue
+
+                valid_files.append(file)
+
+            valid_files.sort(reverse=True)
+
+            # no valid files found, should not happen source file should be at least here
+            if not valid_files:
+                continue
+
+            if valid_files[0] == media_path_old:
+                # logger.info("%s already up to date: %s", strip.name, strip.filepath)
+                strip.kitsu.media_outdated = False
+                up_to_date.append(strip)
+                continue
+
+            # load latest media
+            logger.info(
+                "%s media is out of date: %s > %s",
+                strip.name,
+                current_version,
+                util.get_version(valid_files[0].name),
+            )
+
+            # append to outdated list
+            outdated.append(strip)
+
+            # set media outdatet property for gpu overlay
+            strip.kitsu.media_outdated = True
+
+        # report
+        self.report(
+            {"INFO"},
+            f"Scanned {len(checked)} | Outdated: {len(outdated)} | Up-to-date: {len(up_to_date)} | No Version: {len(no_version)} | Invalid: {len(invalid)}",
+        )
+
+        # log
+        logger.info("-END- Scanning for outdated media")
+        util.ui_redraw()
+        return {"FINISHED"}
+
+
+class KITSU_OT_sqe_change_strip_source(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.sqe_change_strip_source"
+    bl_label = "Change Strip Media Source"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    direction: bpy.props.EnumProperty(items=[("UP", "UP", ""), ("DOWN", "DOWN", "")])
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(context.scene.sequence_editor.active_strip)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        strip = context.scene.sequence_editor.active_strip
+
+        # check if it has valid filepath key
+        if not strip.filepath:
+            self.report({"ERROR"}, f"{strip.name} has invalid filepath")
+            return {"CANCELLED"}
+
+        media_path_old = Path(os.path.abspath(bpy.path.abspath(strip.filepath)))
+        current_version = util.get_version(media_path_old.name)
+
+        # check if source media path contains version string
+        if not current_version:
+            self.report(
+                {"ERROR"},
+                f"{strip.name} source media contains no version string: {strip.filepath}",
+            )
+            return {"CANCELLED"}
+
+        # gather valid files to compare source media to
+        media_folder = media_path_old.parent
+        media_all: List[Path] = [
+            f
+            for f in media_folder.iterdir()
+            if f.is_file() and util.get_version(f.name)
+        ]
+
+        valid_files: List[
+            Path
+        ] = []  # list of files that are named as source except for version str
+
+        for file in media_all:
+            # version should exists here, we already check for that in list comprehension
+            version = util.get_version(file.name)
+
+            # we only want to consider files that have the same name except for version string
+            if file.name.replace(version, "") != media_path_old.name.replace(
+                current_version, ""
+            ):
+                continue
+
+            valid_files.append(file)
+
+        valid_files.sort(reverse=True)
+
+        # no valid files found, should not happen source file should be at least here
+        if not valid_files:
+            self.report({"WARNING"}, f"{strip.name} no other files available")
+
+        current_idx = valid_files.index(media_path_old)
+        if self.direction == "UP":
+            if current_idx == 0:
+                strip.kitsu.media_outdated = False
+                self.report(
+                    {"INFO"},
+                    f"Reached latest version: {util.get_version(valid_files[0].name)}",
+                )
+                return {"FINISHED"}
+
+            new_index = current_idx - 1
+            strip.filepath = bpy.path.relpath(valid_files[new_index].as_posix())
+
+            if new_index == 0:
+                strip.kitsu.media_outdated = False
+
+        elif self.direction == "DOWN":
+            if current_idx == len(valid_files) - 1:
+                self.report(
+                    {"INFO"},
+                    f"Reached oldest version: {util.get_version(valid_files[-1].name)}",
+                )
+                return {"FINISHED"}
+
+            strip.kitsu.media_outdated = True
+            new_index = current_idx + 1
+            strip.filepath = bpy.path.relpath(valid_files[new_index].as_posix())
+
+        # load latest media
+        logger.info(
+            "%s changed source media version: %s > %s",
+            strip.name,
+            current_version,
+            util.get_version(Path(strip.filepath).name),
+        )
+
+        util.ui_redraw()
+        return {"FINISHED"}
+
+
 # ---------REGISTER ----------
 
 classes = [
@@ -1974,6 +2191,8 @@ classes = [
     KITSU_OT_sqe_init_strip_start_frame,
     KITSU_OT_sqe_create_meta_strip,
     KITSU_OT_sqe_add_sequence_color,
+    KITSU_OT_sqe_scan_for_outdated_media,
+    KITSU_OT_sqe_change_strip_source,
 ]
 
 
