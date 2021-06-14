@@ -54,6 +54,8 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
         # track sequence ids that were processed to later update sequence.data["color"] on kitu
         sequence_ids: List[str] = []
 
+        # SHOTS
+
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
@@ -85,20 +87,15 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
         context.window_manager.progress_update(len(selected_sequences))
         context.window_manager.progress_end()
 
+        # SEQUENCES
+
         # begin second progress update for sequences
         context.window_manager.progress_begin(0, len(sequence_ids))
         for idx, seq_id in enumerate(sequence_ids):
             context.window_manager.progress_update(idx)
 
             sequence = Sequence.by_id(seq_id)
-            # updates sequence color and logs
-            try:
-                item = bpy.context.scene.kitsu.sequence_colors[sequence.id]
-            except KeyError:
-                pass
-            else:
-                sequence.update_data({"color": list(item.color)})
-                logger.info("Pushed meta to sequence: %s", sequence.name)
+            opsdata.push_sequence_color(context, sequence)
 
         # end second progress update
         context.window_manager.progress_update(len(sequence_ids))
@@ -193,22 +190,25 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
                 continue
 
             # check if seq already to sevrer  > create it
-            zseq = checkstrip.seq_exists_by_name(
+            seq = checkstrip.seq_exists_by_name(
                 strip, project_active, clear_cache=False
             )
-            if not zseq:
-                zseq = push.new_sequence(strip, project_active)
+            if not seq:
+                seq = push.new_sequence(strip, project_active)
 
             # check if shot already to sevrer  > create it
             shot = checkstrip.shot_exists_by_name(
-                strip, project_active, zseq, clear_cache=False
+                strip, project_active, seq, clear_cache=False
             )
             if shot:
                 failed.append(strip)
                 continue
 
+            # push update to sequence
+            opsdata.push_sequence_color(context, seq)
+
             # push update to shot
-            shot = push.new_shot(strip, zseq, project_active)
+            shot = push.new_shot(strip, seq, project_active)
             pull.shot_meta(strip, shot)
             succeeded.append(strip)
 
@@ -326,6 +326,9 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
 
         # create sequence
         sequence = project_active.create_sequence(self.sequence_name)
+
+        # push sequence color
+        opsdata.push_sequence_color(context, sequence)
 
         # clear cache
         Cache.clear_all()
@@ -458,9 +461,12 @@ class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
             return {"CANCELLED"}
 
         # set sequence properties
-        zseq = Sequence.by_id(sequence_id)
-        strip.kitsu.sequence_name = zseq.name
-        strip.kitsu.sequence_id = zseq.id
+        seq = Sequence.by_id(sequence_id)
+        strip.kitsu.sequence_name = seq.name
+        strip.kitsu.sequence_id = seq.id
+
+        # pull sequence color
+        opsdata.append_sequence_color(context, seq)
 
         util.ui_redraw()
         return {"FINISHED"}
@@ -542,6 +548,10 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
 
         # rename strip
         strip.name = shot.name
+
+        # pull sequence color
+        seq = Sequence.by_id(shot.parent_id)
+        opsdata.append_sequence_color(context, seq)
 
         # log
         t = "Linked strip: %s to shot: %s with ID: %s" % (
@@ -709,6 +719,10 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
         # clear cache once
         Cache.clear_all()
 
+        # track sequence ids that were processed to later update sequence.data["color"] on kitu
+        sequence_ids: List[str] = []
+
+        # SHOTS
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
@@ -729,10 +743,27 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
 
             # push update to shot
             pull.shot_meta(strip, shot, clear_cache=False)
+
+            # append sequence id
+            if shot.parent_id not in sequence_ids:
+                sequence_ids.append(shot.parent_id)
+
             succeeded.append(strip)
 
         # end progress update
         context.window_manager.progress_update(len(selected_sequences))
+        context.window_manager.progress_end()
+
+        # SEQUENCES
+        # begin second progress update for sequences
+        context.window_manager.progress_begin(0, len(sequence_ids))
+        for idx, seq_id in enumerate(sequence_ids):
+            context.window_manager.progress_update(idx)
+            sequence = Sequence.by_id(seq_id)
+            opsdata.append_sequence_color(context, sequence)
+
+        # end second progress update
+        context.window_manager.progress_update(len(sequence_ids))
         context.window_manager.progress_end()
 
         # report
@@ -1555,20 +1586,8 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
             logger.info("Processing Sequence %s", seq.name)
             shots = seq.get_all_shots()
 
-            # pull seqeunece color property
-            if seq.data:
-                if "color" in seq.data:
-                    try:
-                        item = context.scene.kitsu.sequence_colors[seq.id]
-                    except:
-                        item = context.scene.kitsu.sequence_colors.add()
-                        item.name = seq.id
-                        logger.info(
-                            "Added %s to scene.kitsu.seqeuence_colors",
-                            seq.name,
-                        )
-                    finally:
-                        item.color = tuple(seq.data["color"])
+            # extend context.scene.kitsu.sequence_colors property
+            opsdata.append_sequence_color(context, seq)
 
             # process all shots for sequence
             for shot in shots:

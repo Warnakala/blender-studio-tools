@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Optional
 
 import bpy
 
@@ -182,3 +182,47 @@ def init_start_frame_offset(strip: bpy.types.Sequence) -> None:
     # frame start offset
     offset_start = strip.frame_final_start - strip.frame_start
     strip.kitsu.frame_start_offset = offset_start
+
+
+def append_sequence_color(
+    context: bpy.types.Context, seq: Sequence
+) -> Optional[Tuple[str, str, str]]:
+    """
+    Extend scene.kitsu.sequence_colors property with seq.data['color'] value if it exists.
+    """
+    # pull sequencee color property
+
+    if not seq.data:
+        logger.info("%s failed to load sequence color. Missing 'data' key.")
+        return None
+    if not "color" in seq.data:
+        logger.info("%s failed to load sequence color. Missing data['color'] key.")
+        return None
+
+    try:
+        item = context.scene.kitsu.sequence_colors[seq.id]
+    except:
+        item = context.scene.kitsu.sequence_colors.add()
+        item.name = seq.id
+        logger.info(
+            "Added %s to scene.kitsu.seqeuence_colors",
+            seq.name,
+        )
+    finally:
+        item.color = tuple(seq.data["color"])
+
+    return tuple(seq.data["color"])
+
+
+def push_sequence_color(context: bpy.types.Context, sequence: Sequence) -> None:
+    # updates sequence color and logs
+    try:
+        item = context.scene.kitsu.sequence_colors[sequence.id]
+    except KeyError:
+        logger.info(
+            "%s failed to push sequence color. Does not exists in 'context.scene.kitsu.sequence_colors'",
+            sequence.name,
+        )
+    else:
+        sequence.update_data({"color": list(item.color)})
+        logger.info("%s pushed sequence color", sequence.name)
