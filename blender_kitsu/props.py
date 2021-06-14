@@ -366,6 +366,9 @@ def _get_frame_final_duration(self):
 def update_sequence_colors_coll_prop(dummy: Any) -> None:
     sequences = bpy.context.scene.sequence_editor.sequences_all
     sequence_colors = bpy.context.scene.kitsu.sequence_colors
+    existings_seq_ids: List[str] = []
+
+    # append missing sequences to scene.kitsu.seqeuence_colors
     for seq in sequences:
 
         if not seq.kitsu.sequence_id:
@@ -377,6 +380,26 @@ def update_sequence_colors_coll_prop(dummy: Any) -> None:
             )
             item = sequence_colors.add()
             item.name = seq.kitsu.sequence_id
+
+        existings_seq_ids.append(seq.kitsu.sequence_id)
+
+    # delete sequence colors that are not in edit anymore
+    existings_seq_ids = set(existings_seq_ids)
+
+    to_be_removed = [
+        seq_id for seq_id in sequence_colors.keys() if seq_id not in existings_seq_ids
+    ]
+
+    for seq_id in to_be_removed:
+        idx = sequence_colors.find(seq_id)
+        if idx == -1:
+            continue
+
+        sequence_colors.remove(idx)
+        logger.info(
+            "Removed %s from scene.kitsu.seqeuence_colors. Is not used in the sequence editor anymore",
+            seq_id,
+        )
 
 
 # ----------------REGISTER--------------
