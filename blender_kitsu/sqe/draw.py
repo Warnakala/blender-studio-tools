@@ -33,10 +33,12 @@ strip_status_colour = {
     "review": (0.8941176470588236, 0.9607843137254902, 0.9764705882352941),
     "todo": (1.0, 0.5019607843137255, 0.5019607843137255),
     "linked": (0.247, 0.992, 0.474),
+    "media_outdated": (1, 0.00, 0.00),
 }
 
 CONFLICT_COLOUR = (0.576, 0.118, 0.035, 1.0)  # RGBA tuple
 
+# glsl
 gpu_vertex_shader = """
 uniform mat4 ModelViewProjectionMatrix;
 
@@ -135,6 +137,45 @@ def underline_in_strip(
     out_colors.append(color)
 
 
+def topline_in_strip(
+    strip_coords: Float4,
+    pixel_size_x: float,
+    color: Float4,
+    line_height_factor: float,
+    line_width: float,
+    out_coords: typing.List[Float2],
+    out_colors: typing.List[Float4],
+):
+    # Strip coords
+    s_x1, s_y1, s_x2, s_y2 = strip_coords
+
+    # calculate line height with factor
+    line_y = (1 - line_height_factor) * s_y1 + line_height_factor * s_y2
+
+    # if strip is shorter than line_width use stips s_x2
+    # line_x2 = s_x1 + line_width if (s_x2 - s_x1 > line_width) else s_x2
+    line_x2 = s_x2
+
+    # be careful not to draw over the current frame line
+    cf_x = bpy.context.scene.frame_current_final
+
+    # TODO(Sybren): figure out how to pass one colour per line,
+    # instead of one colour per vertex.
+    out_coords.append((s_x1, line_y))
+    out_colors.append(color)
+
+    if s_x1 < cf_x < line_x2:
+        # Bad luck, the line passes our strip, so draw two lines.
+        out_coords.append((cf_x - pixel_size_x, line_y))
+        out_colors.append(color)
+
+        out_coords.append((cf_x + pixel_size_x, line_y))
+        out_colors.append(color)
+
+    out_coords.append((line_x2, line_y))
+    out_colors.append(color)
+
+
 def strip_conflict(
     strip_coords: Float4,
     out_coords: typing.List[Float2],
@@ -205,6 +246,18 @@ def draw_callback_px(line_drawer: LineDrawer):
         alpha = 1.0 if strip.kitsu.linked else 0.25
 
         underline_in_strip(strip_coords, pixel_size_x, color + (alpha,), coords, colors)
+
+        # if strip.kitsu.media_outdated:
+        topline_in_strip(
+            strip_coords,
+            pixel_size_x,
+            strip_status_colour["media_outdated"] + (1,),
+            0.95,
+            10,
+            coords,
+            colors,
+        )
+
         """
         if strip.atc_is_synced and strip.atc_object_id_conflict:
             strip_conflict(strip_coords, coords, colors)
