@@ -221,8 +221,6 @@ def draw_callback_px(line_drawer: LineDrawer):
 
     # Collect all the lines (vertex coords + vertex colours) to draw.
     for strip in strips:
-        if not strip.kitsu.initialized:
-            continue
 
         # Get corners (x1, y1), (x2, y2) of the strip rectangle in px region coords
         strip_coords = get_strip_rectf(strip)
@@ -236,27 +234,30 @@ def draw_callback_px(line_drawer: LineDrawer):
         ):
             continue
 
-        try:
-            color = tuple(
-                context.scene.kitsu.sequence_colors[strip.kitsu.sequence_id].color
+        if strip.kitsu.initialized or strip.kitsu.linked:
+            try:
+                color = tuple(
+                    context.scene.kitsu.sequence_colors[strip.kitsu.sequence_id].color
+                )
+            except KeyError:
+                color = (1, 1, 1)
+
+            alpha = 1.0 if strip.kitsu.linked else 0.25
+
+            underline_in_strip(
+                strip_coords, pixel_size_x, color + (alpha,), coords, colors
             )
-        except KeyError:
-            color = (1, 1, 1)
 
-        alpha = 1.0 if strip.kitsu.linked else 0.25
-
-        underline_in_strip(strip_coords, pixel_size_x, color + (alpha,), coords, colors)
-
-        # if strip.kitsu.media_outdated:
-        topline_in_strip(
-            strip_coords,
-            pixel_size_x,
-            strip_status_colour["media_outdated"] + (1,),
-            0.95,
-            10,
-            coords,
-            colors,
-        )
+        if strip.kitsu.media_outdated:
+            topline_in_strip(
+                strip_coords,
+                pixel_size_x,
+                strip_status_colour["media_outdated"] + (1,),
+                0.95,
+                10,
+                coords,
+                colors,
+            )
 
         """
         if strip.atc_is_synced and strip.atc_object_id_conflict:
