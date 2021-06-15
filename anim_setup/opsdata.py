@@ -288,3 +288,35 @@ def set_layer_coll_exlcude(
 
 def get_all_view_layer_colls(context: bpy.types.Context) -> List[bpy.types.LayerCollection]:
     return list(traverse_collection_tree(context.view_layer.layer_collection))
+
+def get_ref_coll(coll: bpy.types.Collection) -> bpy.types.Collection:
+    if not coll.override_library:
+        return coll
+
+    return coll.override_library.reference
+
+def is_item_local(
+    item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
+) -> bool:
+    # local collection of blend file
+    if not item.override_library and not item.library:
+        return True
+    return False
+
+
+def is_item_lib_override(
+    item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
+) -> bool:
+    # collection from libfile and overwritten
+    if item.override_library and not item.library:
+        return True
+    return False
+
+
+def is_item_lib_source(
+    item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
+) -> bool:
+    #  source collection from libfile not overwritten
+    if not item.override_library and item.library:
+        return True
+    return False

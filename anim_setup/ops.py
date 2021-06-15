@@ -471,6 +471,127 @@ class AS_OT_import_asset_actions(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AS_OT_import_multi_assets(bpy.types.Operator):
+    """
+    Imports asset action of previs file that matches current shot and assigne it
+    """
+
+    bl_idname = "as.import_multi_assets"
+    bl_label = "Import Multi Assets"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        return bool(addon_prefs.is_project_root_valid and bpy.data.filepath)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        actions_imported = []
+        new_colls = []
+
+        # get shotname and previs filepath
+        shotname = opsdata.get_shot_name_from_file()
+        if not shotname:
+            self.report({"ERROR"}, "Failed to retrieve shotname from current file.")
+            return {"CANCELLED"}
+
+        previs_path = opsdata.get_previs_file(context)
+        if not previs_path:
+            self.report({"ERROR"}, "Failed to find previz file")
+            return {"CANCELLED"}
+
+        # check if cam action name exists in previs library
+        action_candidates: Dict[str, List[str]] = {}
+        asset_colls: List[bpy.types.Collection] = []
+
+        with bpy.data.libraries.load(previs_path.as_posix(), relative=True, link=False) as (
+            data_from,
+            data_to,
+        ):
+            data_from_actions: List[str] = data_from.actions
+            data_from_actions.sort()
+
+            #find all sprites actions
+            for asset in asglobals.MULTI_ASSETS:
+                #check if asset is in current scene
+                try:
+                    coll = bpy.data.collections[asset]
+                except KeyError:
+                    #can continue here if not in scene we
+                    #cant load action anyway
+                    continue
+                else:
+                    logger.info("Found asset in scene: %s", coll.name)
+                    asset_colls.append(coll)
+
+
+                #find if actions exists for that asset in previs file
+                asset_name = opsdata.find_asset_name(asset)
+                for action in data_from_actions:
+                    if action.startswith(f"ANI-{asset_name}"):
+
+                        #create key if not existent yet
+                        if asset not in action_candidates:
+                            action_candidates[asset] = []
+
+                        #append action to that asset
+                        action_candidates[asset].append(action)
+
+        #load and assign actions for asset colls
+        color_tag: str = ""
+        for coll in asset_colls:
+
+            #check if action was found in previs file for that asset
+            if not coll.name in action_candidates:
+                logger.warning("%s no action found in previs file", coll.name)
+                continue
+            else:
+                logger.info("%s found actions in previs file: %s", asset, str(action_candidates[coll.name]))
+
+
+            #create duplicate for each action
+            for idx, action_candidate in enumerate(action_candidates[coll.name]):
+
+                #first index use existing collection that was already created by shot builder
+                if idx == 0:
+                    new_coll = bpy.data.collections[asset, None]
+                    logger.info("First index will use existing coll: %s", new_coll.name)
+                    color_tag = new_coll.color_tag #take color from first collection
+                else:
+                    ref_coll = opsdata.get_ref_coll(coll)
+                    new_coll = ref_coll.override_hierarchy_create(context.scene, context.view_layer, reference=coll)
+                    new_coll.color_tag = color_tag
+                    logger.info("Created new override collection: %s", new_coll.name)
+                    new_colls.append(new_coll)
+
+                #find rig of new coll
+                rig = opsdata.find_rig(new_coll)
+                if not rig:
+                    logger.warning("%s contains no rig.", coll.name)
+                    continue
+
+                #import action
+                action = opsdata.import_data_from_lib(
+                        "actions", action_candidate, previs_path, link=False
+                    )
+                if not action:
+                    continue
+
+                actions_imported.append(action)
+
+                #create animation data if not existent
+                if not rig.animation_data:
+                    rig.animation_data_create()
+                    logger.info("%s created animation data", rig.name)
+
+                # assign action
+                rig.animation_data.action = action
+                logger.info("%s assigned action %s", rig.name, action.name)
+
+                # add fake user
+                #action.use_fake_user = True
+
+        self.report({"INFO"}, f"Found Assets: {len(asset_colls)} | Imported Actions: {len(actions_imported)} | New collections: {len(new_colls)}")
+        return {"FINISHED"}
 class AS_OT_shift_anim(bpy.types.Operator):
     """
     Shifts the animation as well as anim modifier values of the camera by number of frames
@@ -478,37 +599,56 @@ class AS_OT_shift_anim(bpy.types.Operator):
 
     bl_idname = "as.shift_anim"
     bl_label = "Shift Anim"
+    multi_assets:  bpy.props.BoolProperty(name="Do Multi Assets")
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         nr_of_frames = context.scene.anim_setup.shift_frames
         rigs : List[bpy.types.Armature] = []
 
-        # get cam coll
-        try:
-            rig = bpy.data.objects["RIG-camera", None]
-        except KeyError:
-            logger.warning("Failed to find camera object 'RIG-camera'")
-        else:
-            rigs.append(rig)
-
-        #find assets
-        for asset in asglobals.ACTION_ASSETS:
-
-            #check if asset is in current scene
+        if not self.multi_assets:
+            # get cam coll
             try:
-                coll = bpy.data.collections[asset]
+                rig = bpy.data.objects["RIG-camera", None]
             except KeyError:
-                #can continue here if not in scene we
-                #cant load action anyway
-                continue
+                logger.warning("Failed to find camera object 'RIG-camera'")
             else:
-                logger.info("Found asset in scene: %s", coll.name)
-                #find rig
-                rig = opsdata.find_rig(coll)
-                if not rig:
-                    logger.warning("%s contains no rig.", coll.name)
-                    continue
                 rigs.append(rig)
+
+            #find assets
+            for asset in asglobals.ACTION_ASSETS:
+
+                #check if asset is in current scene
+                try:
+                    coll = bpy.data.collections[asset]
+                except KeyError:
+                    #can continue here if not in scene we
+                    #cant load action anyway
+                    continue
+                else:
+                    logger.info("Found asset in scene: %s", coll.name)
+                    #find rig
+                    rig = opsdata.find_rig(coll)
+                    if not rig:
+                        logger.warning("%s contains no rig.", coll.name)
+                        continue
+                    rigs.append(rig)
+        else:
+            for asset in asglobals.MULTI_ASSETS:
+                for coll in bpy.data.collections:
+
+                    if not opsdata.is_item_lib_override(coll):
+                        continue
+
+                    if not coll.name.startswith(asset):
+                        continue
+
+                    logger.info("Found asset in scene: %s", coll.name)
+                    #find rig
+                    rig = opsdata.find_rig(coll)
+                    if not rig:
+                        logger.warning("%s contains no rig.", coll.name)
+                        continue
+                    rigs.append(rig)
 
         if not rigs:
             self.report({"ERROR"}, "Failed to find any assets or cameras to shift animation.")
@@ -655,7 +795,8 @@ classes = [
     AS_OT_get_frame_shift,
     AS_OT_apply_additional_settings,
     AS_OT_import_asset_actions,
-    AS_OT_exclude_colls
+    AS_OT_exclude_colls,
+    AS_OT_import_multi_assets
 ]
 
 

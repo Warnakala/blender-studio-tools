@@ -12,7 +12,8 @@ from .ops import (
     AS_OT_get_frame_shift,
     AS_OT_apply_additional_settings,
     AS_OT_import_asset_actions,
-    AS_OT_exclude_colls
+    AS_OT_exclude_colls,
+    AS_OT_import_multi_assets
 )
 
 
@@ -63,9 +64,12 @@ class AS_PT_vi3d_main(bpy.types.Panel):
 
         # import action
         column.operator(
-            AS_OT_import_asset_actions.bl_idname, text=f"Import Asset Actions"
+            AS_OT_import_asset_actions.bl_idname, text=f"Import Char Actions"
         )
 
+        column.operator(
+            AS_OT_import_multi_assets.bl_idname, text=f"Import Multi Asset Actions"
+        )
         # import camera
         #column = box_cam.column(align=True)
         #column.operator(AS_OT_import_camera.bl_idname)
@@ -74,7 +78,9 @@ class AS_PT_vi3d_main(bpy.types.Panel):
         # shift animation
         split = column.split(factor=0.3, align=True)
         split.prop(context.scene.anim_setup, "shift_frames", text="")
-        split.operator(AS_OT_shift_anim.bl_idname, text="Shift Anim")
+        split2 = split.split(factor=0.5, align=True)
+        split2.operator(AS_OT_shift_anim.bl_idname, text="Shift Char/Cam")
+        split2.operator(AS_OT_shift_anim.bl_idname, text="Shift Multi").multi_assets = True
 
         # create actions
         row = box.row(align=True)
