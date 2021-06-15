@@ -2,7 +2,7 @@ import hashlib
 import sys
 import os
 
-from typing import Optional
+from typing import Optional, Any, Set, Tuple, List
 from pathlib import Path
 
 import bpy
@@ -20,7 +20,6 @@ from blender_kitsu.auth.ops import (
 from blender_kitsu.context.ops import KITSU_OT_con_productions_load
 from blender_kitsu.lookdev.prefs import LOOKDEV_preferences
 
-
 logger = LoggerFactory.getLogger(name=__name__)
 
 
@@ -31,6 +30,55 @@ class KITSU_task(bpy.types.PropertyGroup):
     entity_name: bpy.props.StringProperty(name="Entity Name", default="")
     task_type_id: bpy.props.StringProperty(name="Task Type ID", default="")
     task_type_name: bpy.props.StringProperty(name="Task Type Name", default="")
+
+
+class KITSU_filepaths_include(bpy.types.PropertyGroup):
+    # name: StringProperty() -> Instantiated by default
+    filepath: bpy.props.StringProperty(
+        name="Filepath",
+        default="",
+        subtype="DIR_PATH",
+        description="Top level directory path to search for outdatet media in sequence editor",
+    )
+
+
+class KITSU_OT_prefs_paths_include_add(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.prefs_paths_include_add"
+    bl_label = "Add Path"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        addon_prefs = addon_prefs_get(context)
+        filepaths_include = addon_prefs.filepaths_include
+
+        item = filepaths_include.add()
+
+        return {"FINISHED"}
+
+
+class KITSU_OT_prefs_paths_include_remove(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.prefs_paths_include_remove"
+    bl_label = "Remove Path"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    index: bpy.props.IntProperty(
+        name="Index",
+        description="Refers to index that will be removed from collection property",
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        addon_prefs = addon_prefs_get(context)
+        filepaths_include = addon_prefs.filepaths_include
+
+        filepaths_include.remove(self.index)
+
+        return {"FINISHED"}
 
 
 class KITSU_addon_preferences(bpy.types.AddonPreferences):
@@ -202,6 +250,8 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         default=True,
     )
 
+    filepaths_include: bpy.props.CollectionProperty(type=KITSU_filepaths_include)
+
     session: Session = Session()
 
     tasks: bpy.props.CollectionProperty(type=KITSU_task)
@@ -268,6 +318,28 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             box.row().prop(self, "shot_pattern")
             box.row().prop(self, "shot_counter_digits")
             box.row().prop(self, "shot_counter_increment")
+
+        # sequence editor include paths
+        box = layout.box()
+        box.label(text="Outdated Media Search Paths", icon="SEQUENCE")
+
+        for i, item in enumerate(self.filepaths_include):
+            row = box.row()
+            row.prop(item, "filepath", text="")
+            row.operator(
+                KITSU_OT_prefs_paths_include_remove.bl_idname,
+                text="",
+                icon="X",
+                emboss=False,
+            ).index = i
+        row = box.row()
+        row.alignment = "LEFT"
+        row.operator(
+            KITSU_OT_prefs_paths_include_add.bl_idname,
+            text="",
+            icon="ADD",
+            emboss=False,
+        )
 
     @property
     def playblast_root_path(self) -> Optional[Path]:
@@ -342,7 +414,13 @@ def session_auth(context: bpy.types.Context) -> bool:
 
 # ---------REGISTER ----------
 
-classes = [KITSU_task, KITSU_addon_preferences]
+classes = [
+    KITSU_OT_prefs_paths_include_remove,
+    KITSU_OT_prefs_paths_include_add,
+    KITSU_task,
+    KITSU_filepaths_include,
+    KITSU_addon_preferences,
+]
 
 
 def register():
