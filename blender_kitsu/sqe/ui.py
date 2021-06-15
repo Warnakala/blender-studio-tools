@@ -76,7 +76,9 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(prefs.session_auth(context) or context.selected_sequences)
+        return bool(
+            prefs.session_auth(context) or context.scene.sequence_editor.sequences_all
+        )
 
     def draw(self, context: bpy.types.Context) -> None:
 
@@ -270,6 +272,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                     text=f"Init {len(strips_to_init)} Shots",
                     icon="ADD",
                 )
+                row = box.row(align=True)
                 row.operator(
                     KITSU_OT_sqe_create_meta_strip.bl_idname,
                     text=f"Create {len(strips_to_init)} Metastrips",
