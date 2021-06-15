@@ -1963,11 +1963,13 @@ class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
         return bool(context.scene.sequence_editor.sequences_all)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        addon_prefs = prefs.addon_prefs_get(context)
         outdated: List[bpy.types.Sequence] = []
         invalid: List[bpy.types.Sequence] = []
         no_version: List[bpy.types.Sequence] = []
         up_to_date: List[bpy.types.Sequence] = []
         checked: List[bpy.types.Sequence] = []
+        excluded: List[bpy.types.Sequence] = []
 
         sequences = context.selected_sequences
         if not sequences:
@@ -1990,6 +1992,21 @@ class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
 
             media_path_old = Path(os.path.abspath(bpy.path.abspath(strip.filepath)))
             current_version = util.get_version(media_path_old.name)
+
+            # check if filepath is in include path
+            included = False
+            for item in addon_prefs.filepaths_include:
+                filepath = Path(os.path.abspath(bpy.path.abspath(item.filepath)))
+                if media_path_old.as_posix().startswith(filepath.as_posix()):
+                    included = True
+                    break
+
+            if not included:
+                logger.info(
+                    "Not included in outdatet media search paths: %s", strip.filepath
+                )
+                excluded.append(strip)
+                continue
 
             # check if source media path contains version string
             if not current_version:
@@ -2054,12 +2071,50 @@ class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
         # report
         self.report(
             {"INFO"},
-            f"Scanned {len(checked)} | Outdated: {len(outdated)} | Up-to-date: {len(up_to_date)} | No Version: {len(no_version)} | Invalid: {len(invalid)}",
+            f"Scanned {len(checked)} | Outdated: {len(outdated)} | Up-to-date: {len(up_to_date)} | Invalid: {len(invalid) + len(excluded) + len(no_version)}",
         )
 
         # log
         logger.info("-END- Scanning for outdated media")
         util.ui_redraw()
+        return {"FINISHED"}
+
+
+class KITSU_OT_sqe_reset_outdated_media(bpy.types.Operator):
+    """"""
+
+    bl_idname = "kitsu.sqe_reset_outdated_media"
+    bl_label = "Reset Outdated Media"
+    bl_description = (
+        "Reset outdated media state for all strips, which removes the color overlay."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(context.scene.sequence_editor.sequences_all)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        addon_prefs = prefs.addon_prefs_get(context)
+        reset: List[bpy.types.Sequence] = []
+
+        sequences = context.selected_sequences
+        if not sequences:
+            sequences = context.scene.sequence_editor.sequences_all
+
+        for strip in sequences:
+
+            if strip.kitsu.media_outdated:
+                strip.kitsu.media_outdated = False
+                reset.append(strip)
+        if not reset:
+            self.report({"INFO"}, "Already reset")
+            return {"FINISHED"}
+
+        self.report({"INFO"}, f"Reset {len(reset)} strips")
+
+        util.ui_redraw()
+
         return {"FINISHED"}
 
 
@@ -2128,31 +2183,36 @@ class KITSU_OT_sqe_change_strip_source(bpy.types.Operator):
 
         current_idx = valid_files.index(media_path_old)
         if self.direction == "UP":
-            if current_idx == 0:
-                strip.kitsu.media_outdated = False
+            new_index = current_idx - 1
+
+            if new_index <= 0:
                 self.report(
                     {"INFO"},
                     f"Reached latest version: {util.get_version(valid_files[0].name)}",
                 )
-                return {"FINISHED"}
-
-            new_index = current_idx - 1
-            strip.filepath = bpy.path.relpath(valid_files[new_index].as_posix())
-
-            if new_index == 0:
                 strip.kitsu.media_outdated = False
 
+            if current_idx == 0:
+                return {"FINISHED"}
+
+            if new_index >= 0:
+                strip.filepath = bpy.path.relpath(valid_files[new_index].as_posix())
+
         elif self.direction == "DOWN":
-            if current_idx == len(valid_files) - 1:
+            new_index = current_idx + 1
+
+            if new_index >= len(valid_files) - 1:
                 self.report(
                     {"INFO"},
                     f"Reached oldest version: {util.get_version(valid_files[-1].name)}",
                 )
+
+            if current_idx == len(valid_files) - 1:
                 return {"FINISHED"}
 
-            strip.kitsu.media_outdated = True
-            new_index = current_idx + 1
-            strip.filepath = bpy.path.relpath(valid_files[new_index].as_posix())
+            if new_index <= len(valid_files) - 1:
+                strip.filepath = bpy.path.relpath(valid_files[new_index].as_posix())
+                strip.kitsu.media_outdated = True
 
         # load latest media
         logger.info(
@@ -2193,6 +2253,7 @@ classes = [
     KITSU_OT_sqe_add_sequence_color,
     KITSU_OT_sqe_scan_for_outdated_media,
     KITSU_OT_sqe_change_strip_source,
+    KITSU_OT_sqe_reset_outdated_media,
 ]
 
 
