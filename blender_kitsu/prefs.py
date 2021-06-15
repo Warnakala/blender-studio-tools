@@ -299,25 +299,12 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
         # anim tools settings
         box = layout.box()
-        box.label(text="Anim Tools", icon="RENDER_ANIMATION")
+        box.label(text="Animation Tools", icon="RENDER_ANIMATION")
         box.row().prop(self, "playblast_root_dir")
         box.row().prop(self, "pb_open_webbrowser")
 
         # lookdev tools settings
         self.lookdev.draw(context, layout)
-
-        # misc settings
-        box = layout.box()
-        box.label(text="Misc", icon="MODIFIER")
-        box.row().prop(self, "thumbnail_dir")
-        box.row().prop(self, "sqe_render_dir")
-        box.row().prop(self, "enable_debug")
-        box.row().prop(self, "show_advanced")
-
-        if self.show_advanced:
-            box.row().prop(self, "shot_pattern")
-            box.row().prop(self, "shot_counter_digits")
-            box.row().prop(self, "shot_counter_increment")
 
         # sequence editor include paths
         box = layout.box()
@@ -340,6 +327,19 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             icon="ADD",
             emboss=False,
         )
+
+        # misc settings
+        box = layout.box()
+        box.label(text="Miscellaneous", icon="MODIFIER")
+        box.row().prop(self, "thumbnail_dir")
+        box.row().prop(self, "sqe_render_dir")
+        box.row().prop(self, "enable_debug")
+        box.row().prop(self, "show_advanced")
+
+        if self.show_advanced:
+            box.row().prop(self, "shot_pattern")
+            box.row().prop(self, "shot_counter_digits")
+            box.row().prop(self, "shot_counter_increment")
 
     @property
     def playblast_root_path(self) -> Optional[Path]:
