@@ -38,11 +38,11 @@ After installing you need to setup the addon preferences to fit your environment
 In order to be able to log in to Kitsu you need a server that runs the Kitsu production management suite.
 Information on how to set up Kitsu can be found [here](https://zou.cg-wire.com/).
 
-If Kitsu is up and running and you can succesfully log in via the web interface you have to setup the addon preferences.
+If Kitsu is up and running and you can succesfully log in via the web interface you have to setup the `addon preferences`.
 
 > **_NOTE:_**  If you want to get started quickly you only need to setup login data and active project
 
-##### **Setup Login Data**
+###### **Setup Login Data**
 
 ![image info](./docs/images/prefs_login.jpg)
 
@@ -52,14 +52,14 @@ If Kitsu is up and running and you can succesfully log in via the web interface 
 
 Press the login button. If the login was succesfull, the next step is..
 
-##### **Setup Project Settings**
+###### **Setup Project Settings**
 
 ![image info](./docs/images/prefs_project.jpg)
 
 >**Project Root Directory**: Path to the root of your project. Will later be used to configurate the addon on a per project basis<br/>
 
 
-##### **Setup Animation Tools**
+###### **Setup Animation Tools**
 
 
 ![image info](./docs/images/prefs_anim_tools.jpg)
@@ -68,19 +68,19 @@ Press the login button. If the login was succesfull, the next step is..
 >**Playblast Root Directory**: Path to a directory in which playblasts will be saved to<br/>
 **Open Webbrowser after Playblast**: Open default browser after playblast which points to shot on kitsu<br/>
 
-##### **Setup Lookdev Tools**
+###### **Setup Lookdev Tools**
 
 ![image info](./docs/images/prefs_lookdev.jpg)
 
 >**Render Presets Directory**: Path to a directory in which you can save .py files that will be displayed in render preset dropdown. More info in: How to use render presets.<br/>
 
-##### **Setup Media Search Paths**
+###### **Setup Media Search Paths**
 
 ![image info](./docs/images/prefs_outdated_media.jpg)
 
 >**Path List**: List of paths to top level directorys. Only media that is a child (recursive) of one of these directories will be scanned for outdated media.<br/>
 
-##### **Setup Miscellaneous**
+###### **Setup Miscellaneous**
 
 ![image info](./docs/images/prefs_misc.jpg)
 
