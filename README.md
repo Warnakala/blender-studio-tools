@@ -90,12 +90,12 @@ This will import a metastrip.mp4 (1000 frame black video) file which is saved in
 ###### Initialize/Link a shot
 1. Select a metastrip and open the `Kitsu` tab in the sidebar of the sequence editor. You will find multiple ways on how to initialize your strip.
 
-![image info](.docs/images/sqe_init_shot.jpg)
+![image info](./docs/images/sqe_init_shot.jpg)
 
 2. Case A: Shot does **already exists** on Kitsu
     2.1 Execute the `Link Shot` operator and a pop up will appear that lets you select the sequence and the shot to link to
     2.2 Alternatively you can also link a shot by pasting the URL. (e.G: https://kitsu.yourdomain.com/productions/fc77c0b9-bb76-41c3-b843-c9b156f9b3ec/shots/e7e6be02-5574-4764-9077-965d57b1ec12)
-![image info](.docs/images/sqe_link_shot.jpg)
+![image info](./docs/images/sqe_link_shot.jpg)
 
 3. Case B: Shot **does not exist** on Kitsu yet
     3.1 Execute the `Initialize Shot` Operator.
@@ -105,7 +105,7 @@ This will import a metastrip.mp4 (1000 frame black video) file which is saved in
 
 If you select a single linked strip you will see a `Metadata` panel that shows you the information that is related to the sequence and shot the strip is linking to.
 
-![image info](.docs/images/sqe_metadata.jpg)
+![image info](./docs/images/sqe_metadata.jpg)
 
 ## Troubleshoot
 blender-kitsu makes good use of logging and status reports. Most of the operators report information in the blender info bar. More detailed logs can be found in the blender system console. If you feel like anything went wrong, consider opening a console and check the logs.
