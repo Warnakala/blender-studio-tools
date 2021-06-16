@@ -172,6 +172,21 @@ You can adjust the number of counter digits, the incrementation size and also th
 **Custom Sequence Variable**: specify a custom string that should be used in the `<Sequence>` wildcard instaed of the sequence name. <br/>
 **Custom Project Variable**: specify a custom string that should be used in the `<Project>` wildcard instaed of the project name. <br/>
 
+##### General Sequence Editor Tools
+In the general tab you can find some tools that don't directly relate to Kitsu but are useful for editing.
+
+![image info](./docs/images/sqe_outdated_scan.jpg)
+
+`Scan for outdated media` will scan the selected / all sequence strips for their source media file. It searches for a later version in the same directory as the source media. If the current media file is outdated it will highlight that strip with a red line in the sequence editor:
+
+![image info](./docs/images/sqe_outdated_overlay.jpg)
+
+To update the outdated strips you can select them individually and by clicking the `Arrow Up` or `Arrow Down` you cycle through the available versions on disk. You will be prompted with an information if you reached the latest or oldest version.
+
+![image info](./docs/images/sqe_outdated_update.jpg)
+
+
+>**Note**: The operator searches for a version string e.G `v001` and checks files that are named the same but have a different version.
 ## Troubleshoot
 blender-kitsu makes good use of logging and status reports. Most of the operators report information in the blender info bar. More detailed logs can be found in the blender system console. If you feel like anything went wrong, consider opening a console and check the logs.
 
