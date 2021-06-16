@@ -89,7 +89,6 @@ This will import a metastrip.mp4 (1000 frame black video) file which is saved in
 
 ###### Initialize/Link a shot
 1. Select a metastrip and open the `Kitsu` tab in the sidebar of the sequence editor. You will find multiple ways on how to initialize your strip.
-
 ![image info](./docs/images/sqe_init_shot.jpg)
 
 2. Case A: Shot does **already exists** on Kitsu
