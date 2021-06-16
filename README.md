@@ -1,6 +1,58 @@
 # blender-kitsu
 blender-kitsu is a Blender addon to interact with Kitsu from within Blender. It also has features that are not directly realted to Kitsu but support certain aspects of the Blender Studio Pipeline.
 
+## Table of Contents
+- [Installation](#installation)
+
+- [How to get started](#how-to-get-started)
+
+    - [Setup login data](#setup-login-data)
+
+    - [Setup Project Settings](#setup-project-settings)
+
+    - [Setup Animation Tools](#setup-animation-tools)
+
+    - [Setup Lookdev Tools](#setup-lookdev-tools)
+
+    - [Setup Media Search Paths](#setup-media-search-paths)
+
+    - [Setup Miscellaneous](#setup-miscellaneous)
+
+- [Features](#features)
+
+    - [Sequence Editor](#sequence-editor)
+
+        - [Metastrips](#metastrip)
+
+        - [Create a Metastrip](#create-a-metastrip)
+
+        - [Initialize a Shot](#initialize-a-shot)
+
+        - [Metadata](#metadata)
+
+        - [Push](#push)
+
+        - [Pull](#pull)
+
+        - [Multi Edit](#multi-edit)
+
+            - [Advanced](#advanced-settings)
+        - [General Sequence Editor Tools](#general-sequence-editor-tools)
+
+    - [Context](#context)
+
+        - [Animation Tools](#animation-tools)
+
+        - [Lookdev Tools](#lookdev-tools)
+
+        - [Error System](#error-system)
+
+- [Troubleshoot](#troubleshoot)
+
+- [Plugins](#plugins)
+
+- [Development](#development)
+
 ## Installation
 Download or clone this repository.
 In the root project folder you will find the 'blender_kitsu' folder. Place this folder in your Blender addons directory or create a sym link to it.
@@ -14,7 +66,7 @@ If Kitsu is up and running and you can succesfully log in via the web interface 
 
 > **_NOTE:_**  If you want to get started quickly you only need to setup login data and active project
 
-##### **Setup login data**
+##### **Setup Login Data**
 
 ![image info](./docs/images/prefs_login.jpg)
 
@@ -24,14 +76,14 @@ If Kitsu is up and running and you can succesfully log in via the web interface 
 
 Press the login button. If the login was succesfull, the next step is..
 
-##### **Select active project from the dropdown menu and setup project settings**
+##### **Setup Project Settings**
 
 ![image info](./docs/images/prefs_project.jpg)
 
 >**Project Root Directory**: Path to the root of your project. Will later be used to configurate the addon on a per project basis<br/>
 
 
-##### **Setup animation tools**
+##### **Setup Animation Tools**
 
 
 ![image info](./docs/images/prefs_anim_tools.jpg)
@@ -40,19 +92,19 @@ Press the login button. If the login was succesfull, the next step is..
 >**Playblast Root Directory**: Path to a directory in which playblasts will be saved to<br/>
 **Open Webbrowser after Playblast**: Open default browser after playblast which points to shot on kitsu<br/>
 
-##### **Setup lookdev tools**
+##### **Setup Lookdev Tools**
 
 ![image info](./docs/images/prefs_lookdev.jpg)
 
 >**Render Presets Directory**: Path to a directory in which you can save .py files that will be displayed in render preset dropdown. More info in: How to use render presets.<br/>
 
-##### **Setup media search paths**
+##### **Setup Media Search Paths**
 
 ![image info](./docs/images/prefs_outdated_media.jpg)
 
 >**Path List**: List of paths to top level directorys. Only media that is a child (recursive) of one of these directories will be scanned for outdated media.<br/>
 
-##### **Setup Miscellaneous settings**
+##### **Setup Miscellaneous**
 
 ![image info](./docs/images/prefs_misc.jpg)
 
@@ -75,11 +127,11 @@ Metastrips are regular Movie Strips that can be linked to a shot in kitsu. It is
 
 ![image info](./docs/images/metastrip.001.jpg)
 
-###### Create a metastrip
+###### Create a Metastrip
 1. Select a sequence strip for which you want to create a metastrip and execute the `Create Metastrip` operator.
 This will import a metastrip.mp4 (1000 frame black video) file which is saved in the addons repository. The metastrip will be placed one channel above the selected strips. Make sure there is enough space otherwise the metastrip will not be created.
 
-###### Initialize/Link a shot
+###### Initialize a Shot
 1. Select a metastrip and open the `Kitsu` tab in the sidebar of the sequence editor. You will find multiple ways on how to initialize your strip.
 ![image info](./docs/images/sqe_init_shot.jpg)
 
@@ -130,7 +182,7 @@ In the `Push` panel you will find all the operators that push data to Kitsu. <br
 >>**Note**:  Global edit frame range will be saved in `"frame_in"` `"frame_out"` kitsu shot attribute <br/>
 The actual shot frame range (starting at 101) will be saved in `["data"]["3d_in"] and `["data"]["3d_out"] kitsu shot attribute <br/>
 
->**Thumbnail**: Renders a thumbnail of the selected shots (will be saved to the `Thumbnail Directory` -> see addon preferences) and uploads it to Kitsu. Thumbnails are linked to a task in Kitsu. So you can select the Task Type for which you want to upload the thumbnail with the `Set Thumbnail Task Type` operator. <br/>
+>**Thumbnails**: Renders a thumbnail of the selected shots (will be saved to the `Thumbnail Directory` -> see addon preferences) and uploads it to Kitsu. Thumbnails are linked to a task in Kitsu. So you can select the Task Type for which you want to upload the thumbnail with the `Set Thumbnail Task Type` operator. <br/>
 If you select multiple metastrips it will always use the middle frame to create the thumbnail. If you have only one selected it will use the frame which is under the cursor (it curser is inside shot range). <br/>
 **Render**: Renders the shot range out of the sequence editor, saves it to disk and uploads it to Kitsu. Works very similar to the `Push Thumbnail` operator.
 
