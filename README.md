@@ -16,7 +16,7 @@ If Kitsu is up and running and you can succesfully log in via the web interface 
 
 1. **Setup login data**
 
-![image info](./docs/images/prefs_login.jpg
+![image info](./docs/images/prefs_login.jpg)
 
 | Setting | Description |
 | ------ | ------ |
@@ -28,7 +28,7 @@ Press the login button. If the login was succesfull, the next step is..
 
 2. **Select active project from the dropdown menu and setup project settings**
 
-![image info](./docs/images/prefs_project.jpg
+![image info](./docs/images/prefs_project.jpg)
 
 | Setting | Description |
 | ------ | ------ |
@@ -36,7 +36,7 @@ Press the login button. If the login was succesfull, the next step is..
 
 3. **Setup animation tools**
 
-![image info](./docs/images/prefs_anim_tools.jpg
+![image info](./docs/images/prefs_anim_tools.jpg)
 
 | Setting | Description |
 | ------ | ------ |
@@ -45,7 +45,7 @@ Press the login button. If the login was succesfull, the next step is..
 
 4. **Setup lookdev tools**
 
-![image info](./docs/images/prefs_lookdev.jpg
+![image info](./docs/images/prefs_lookdev.jpg)
 
 | Setting | Description |
 | ------ | ------ |
@@ -53,7 +53,7 @@ Press the login button. If the login was succesfull, the next step is..
 
 5. **Setup media search paths**
 
-![image info](./docs/images/prefs_outdated_media.jpg
+![image info](./docs/images/prefs_outdated_media.jpg)
 
 | Setting | Description |
 | ------ | ------ |
@@ -61,7 +61,7 @@ Press the login button. If the login was succesfull, the next step is..
 
 6. **Setup Miscellaneous settings**
 
-![image info](./docs/images/prefs_misc.jpg
+![image info](./docs/images/prefs_misc.jpg)
 
 | Setting | Description |
 | ------ | ------ |
