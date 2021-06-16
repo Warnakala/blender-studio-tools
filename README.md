@@ -186,7 +186,49 @@ To update the outdated strips you can select them individually and by clicking t
 ![image info](./docs/images/sqe_outdated_update.jpg)
 
 
->**Note**: The operator searches for a version string e.G `v001` and checks files that are named the same but have a different version.
+>**Note**: The operator searches for a version string e.G `v001` and checks files that are named the same but have a different version. <br/>
+
+#### Context
+---
+blender-kitsu context features were constructed with the idea in mind to create a relationship between a certain task on Kitsu and a blend file. <br/>
+
+To create 'context' you can find the `Context Browser` in the `Kitsu` panel in the sidebar of the 3D Viewport. <br/>
+
+![image info](./docs/images/context_browser.jpg)
+
+By selecting the different drop down menus you can browse through the Kitsu file structure and set e.G the active sequence, active shot and task type you want to work on. <br/>
+
+The `Detect Context` operator tries to look at the filepath of the blend file and figure out the context automatically. <br/>
+
+Depending on which `Task Type` you select different tool sets will be available.
+
+##### Animation Tools
+
+The animation tools will show up when you selected a `Task Type` with the name `Animation`. <br/>
+
+
+![image info](./docs/images/context_animation_tools.jpg)
+
+>**Create Playblast**: Will create a openGL viewport render of the viewport from which the operator was executed and uploads it to Kitsu. The `+` button increments the version of the playblast. If you would override an older version you will see a warning before the filepath. The `directory` button will open a file browser in the playblast directory. The playblast will be uploaded to the `Animation` Task Type of the active shot that was set in the `Context Browser`. The webbrowser will be opened after the playblast and should point to the respective shot on Kitsu. <br/>
+**Update Frame Range**: Will pull the frame range of the active shot from Kitsu and apply it to the scene. It will use the `['data']['3d_in']` and `['data']['3d_out']` attribute of the Kitsu shot. <br/>
+**Update Output Collection**: Blender Studio Pipeline specific operator. <br/>
+**Duplicate Collection**: Blender Studio Pipeline specific operator. <br/>
+**Check Action Names**: Blender Studio Pipeline specific operator. <br/>
+
+##### Lookdev Tools
+The lookdev tools will show up when you selected a `Task Type` with the name `Lighting` | `Rendering` | `Compositing`. <br/>
+
+![image info](./docs/images/context_lookdev_tools.jpg)
+
+>**Apply Render Preset**: Consists of a dropdown menu that displays all `.py` files which are present in the `Render Presets Directory` (defined in the addon preferences). Select the `.py` file you want to execute. When you hit the `Play` button the `main()` function of the python file will be executed. Very useful to quickly switch between different render settings.
+
+##### Error System
+
+blender-kitsu has different checks that are performed during file load or during editing. If it detects an error that prevents other operators to run it will display an error in the ui. <br/>
+
+
+![image info](./docs/images/error_animation.jpg)
+
 ## Troubleshoot
 blender-kitsu makes good use of logging and status reports. Most of the operators report information in the blender info bar. More detailed logs can be found in the blender system console. If you feel like anything went wrong, consider opening a console and check the logs.
 
