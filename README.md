@@ -82,11 +82,12 @@ This will import a metastrip.mp4 (1000 frame black video) file which is saved in
 1. Select a metastrip and open the `Kitsu` tab in the sidebar of the sequence editor. You will find multiple ways on how to initialize your strip.
 ![image info](./docs/images/sqe_init_shot.jpg)
 
-2. Case A: Shot does **already exists** on Kitsu
+2. Case A: Shot does **already exist** on Kitsu
 
     2.1 Execute the `Link Shot` operator and a pop up will appear that lets you select the sequence and the shot to link to
 
-    2.2 Alternatively you can also link a shot by pasting the URL. (e.G: https://kitsu.yourdomain.com/productions/fc77c0b9-bb76-41c3-b843-c9b156f9b3ec/shots/e7e6be02-5574-4764-9077-965d57b1ec12)
+    2.2 Alternatively you can also link a shot by pasting the URL. (e.G: https://kitsu.yourdomain.com/productions/fc77c0b9-bb76-41c3-b843-c9b156f9b3ec/shots/e7e6be02-5574-4764-9077-965d57b1ec12) <br/>
+
     ![image info](./docs/images/sqe_link_shot.jpg)
 
 3. Case B: Shot **does not exist** on Kitsu yet
@@ -99,9 +100,58 @@ This will import a metastrip.mp4 (1000 frame black video) file which is saved in
 
     3.4 Execute the `Submit New Shot` operator in the `Push` Panel (Will warn you if the shot already exists on Kitsu)
 
+>**Note**: Most of the operatos are selection sensitive. So you can do these operations for a batch of seqeuence strips. If you have nothing selected it will usually try to operate on all strips in the sequence editor. <br/>
+![image info](./docs/images/sqe_init_selection.jpg)
+
+##### Metadata
 If you select a single linked strip you will see a `Metadata` panel that shows you the information that is related to the sequence and shot the strip is linking to.
 
 ![image info](./docs/images/sqe_metadata.jpg)
+
+The frame range will be updated by using the Blender editing tools on the strip. (trimming, sliding, etc.). <br/>
+If you execute the `Initialize Shot Start Frame` operator (refresh icon) the current in point of the strip will be remapped so the shot starts at 101 in the current editing state. <br/>
+You can reassing the shot to another seqeunce by exeucting the `Link Sequence` Operator, change the shot name or the seqeuence color. All this information and more can be `pushed` to kitsu which bring us to the next panel. <br/>
+
+##### Push
+
+In the `Push` panel you will find all the operators that push data to Kitsu. <br/>
+
+![image info](./docs/images/sqe_push.jpg)
+
+>**Metadata**: Pushes metadata of shot: sequence, shotname, frame range, sequence_color
+>>**Note**:  Global edit frame range will be saved in `"frame_in"` `"frame_out"` kitsu shot attribute <br/>
+The actual shot frame range (starting at 101) will be saved in `["data"]["3d_in"] and `["data"]["3d_out"] kitsu shot attribute <br/>
+
+>**Thumbnail**: Renders a thumbnail of the selected shots (will be saved to the `Thumbnail Directory` -> see addon preferences) and uploads it to Kitsu. Thumbnails are linked to a task in Kitsu. So you can select the Task Type for which you want to upload the thumbnail with the `Set Thumbnail Task Type` operator. <br/>
+If you select multiple metastrips it will always use the middle frame to create the thumbnail. If you have only one selected it will use the frame which is under the cursor (it curser is inside shot range). <br/>
+**Render**: Renders the shot range out of the sequence editor, saves it to disk and uploads it to Kitsu. Works very similar to the `Push Thumbnail` operator.
+
+##### Pull
+In the `Pull` panel you will find all the operators that pull data from Kitsu to a metastrip. <br/>
+
+![image info](./docs/images/sqe_pull.jpg)
+
+>**Metadata**: Pulls metadata of shot: sequence, shotname, shot description and updates the strip name to match the shotname.
+>>**Note**:  Frame ranges will **never** be updated when pulling data from Kitsu. They belong to the edit and will only be pushed to Kitsu.<br/>
+
+
+##### Multi Edit
+
+The `Multi Edit` panel only appears when you select multiple metastrips that are all `initialized` but not `linked` yet. </br>
+
+![image info](./docs/images/sqe_multi_edit.jpg)
+
+It is meant to be way to quickly setup lots of shots if they don't exist on Kitsu yet. You specify the sequence all shots should belong to and adjust the `Shot Counter Start` value. In the preview property you can see how all shots will be named when you execute the `Multi Edit Strip` operator. </b3>
+
+###### Advanced Settings
+If you check the `Advanced` checkbox next to the counter value, you have access to advance settings to customize the operator even more.
+
+![image info](./docs/images/sqe_multi_edit_advanced.jpg)
+
+You can adjust the number of counter digits, the incrementation size and also the `Pattern` it will use to generate the shot name. <br/>
+>**Pattern**: supports 3 wildcards. `<Sequence>`, `<Counter>`, `<Project>` that can be used multiple times in any order. <br/>
+**Custom Sequence Variable**: specify a custom string that should be used in the `<Sequence>` wildcard instaed of the sequence name. <br/>
+**Custom Project Variable**: specify a custom string that should be used in the `<Project>` wildcard instaed of the project name. <br/>
 
 ## Troubleshoot
 blender-kitsu makes good use of logging and status reports. Most of the operators report information in the blender info bar. More detailed logs can be found in the blender system console. If you feel like anything went wrong, consider opening a console and check the logs.
