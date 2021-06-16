@@ -14,64 +14,55 @@ If Kitsu is up and running and you can succesfully log in via the web interface 
 
 > **_NOTE:_**  If you want to get started quickly you only need to setup: step1, step2
 
-1. **Setup login data**
+##### **Setup login data**
 
 ![image info](./docs/images/prefs_login.jpg)
 
-| | |
-| ------ | ------ |
-| **Host** | The webadress of your kitsu server (e.G https://kitsu.mydomain.com) |
-| **Email** | The email you use to log in to kitsu |
-| **Password** | The password you use to log in to kitsu |
+>**Host**: The webadress of your kitsu server (e.G https://kitsu.mydomain.com)<br/>
+**Email**: The email you use to log in to kitsu<br/>
+**Password**: The password you use to log in to kitsu<br/>
 
 Press the login button. If the login was succesfull, the next step is..
 
-2. **Select active project from the dropdown menu and setup project settings**
+##### **Select active project from the dropdown menu and setup project settings**
 
 ![image info](./docs/images/prefs_project.jpg)
 
-| | |
-| ------ | ------  |
-| **Project Root Directory** | Path to the root of your project. Will later be used to configurate the addon on a per project basis. |
+>**Project Root Directory**: Path to the root of your project. Will later be used to configurate the addon on a per project basis<br/>
 
-3. **Setup animation tools**
+
+##### **Setup animation tools**
+
 
 ![image info](./docs/images/prefs_anim_tools.jpg)
 
-| | |
-| ------ | ------  |
-| **Project Root Directory** | Path to the root of your project. Will later be used to configurate the addon on a per project basis. |
-| **Playblast Root Directory** | Path to a directory in which playblasts will be saved to. |
-| **Open Webbrowser after Playblast** | Open default browser after playblast which points to shot on kitsu |
 
-4. **Setup lookdev tools**
+>**Playblast Root Directory**: Path to a directory in which playblasts will be saved to<br/>
+**Open Webbrowser after Playblast**: Open default browser after playblast which points to shot on kitsu<br/>
+
+##### **Setup lookdev tools**
 
 ![image info](./docs/images/prefs_lookdev.jpg)
 
-| | |
-| ------ | ------  |
-| **Render Presets Directory** | Path to a directory in which you can save .py files that will be displayed in render preset dropdown. More info in: How to use render presets.|
+>**Render Presets Directory**: Path to a directory in which you can save .py files that will be displayed in render preset dropdown. More info in: How to use render presets.<br/>
 
-5. **Setup media search paths**
+##### **Setup media search paths**
 
 ![image info](./docs/images/prefs_outdated_media.jpg)
 
-| | |
-| ------ | ------  |
-| **Path List**| List of paths to top level directorys. Only media that is a child (recursive) of one of these directories will be scanned for outdated media.|
+>**Path List**: List of paths to top level directorys. Only media that is a child (recursive) of one of these directories will be scanned for outdated media.<br/>
 
-6. **Setup Miscellaneous settings**
+##### **Setup Miscellaneous settings**
 
 ![image info](./docs/images/prefs_misc.jpg)
 
-| | |
-| ------ | ------  |
-| **Thumbnail Directory**| Directory where thumbnails will be saved before uploading them to kitsu. Cannot be edited.|
-| **Sequence Editor Render Directory** | Directory where sequence editor renderings will be saved before uploading them to kitsu. Cannot be edited.|
-| **Enable Debug Operators**| Enables extra debug operators in the sequence editors Kitsu tab.|
-| **Advanced Settings**| Advanced settings that changes how certain operators work. Will be discussed in detail here:|
+>**Thumbnail Directory**: Directory where thumbnails will be saved before uploading them to kitsu. Cannot be edited.<br/>
+**Sequence Editor Render Directory**: Directory where sequence editor renderings will be saved before uploading them to kitsu. Cannot be edited<br/>
+**Enable Debug Operators**: Enables extra debug operators in the sequence editors Kitsu tab.<br/>
+**Advanced Settings**: Advanced settings that changes how certain operators work.<br/>
 
 After setting up the addon preferences you can make use of all the features of blender-kitsu
+
 ## Features
 blender-kitsu has many feature and in this documentation they are divided in different sections.
 
@@ -92,14 +83,20 @@ This will import a metastrip.mp4 (1000 frame black video) file which is saved in
 ![image info](./docs/images/sqe_init_shot.jpg)
 
 2. Case A: Shot does **already exists** on Kitsu
+
     2.1 Execute the `Link Shot` operator and a pop up will appear that lets you select the sequence and the shot to link to
+
     2.2 Alternatively you can also link a shot by pasting the URL. (e.G: https://kitsu.yourdomain.com/productions/fc77c0b9-bb76-41c3-b843-c9b156f9b3ec/shots/e7e6be02-5574-4764-9077-965d57b1ec12)
-![image info](./docs/images/sqe_link_shot.jpg)
+    ![image info](./docs/images/sqe_link_shot.jpg)
 
 3. Case B: Shot **does not exist** on Kitsu yet
+
     3.1 Execute the `Initialize Shot` Operator.
+
     3.2 Link this strip to a sequence with the `Link Sequence` operator or create a new seuence with the `Submit New Sequence` operator.
+
     3.3 Type in the name of the new shot in the `Shot` field
+
     3.4 Execute the `Submit New Shot` operator in the `Push` Panel (Will warn you if the shot already exists on Kitsu)
 
 If you select a single linked strip you will see a `Metadata` panel that shows you the information that is related to the sequence and shot the strip is linking to.
