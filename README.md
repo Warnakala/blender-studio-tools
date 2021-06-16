@@ -18,8 +18,8 @@ If Kitsu is up and running and you can succesfully log in via the web interface 
 
 ![image info](./docs/images/prefs_login.jpg)
 
-| Setting | Description |
-|  |  |
+| | |
+| ------ | ------ |
 | **Host** | The webadress of your kitsu server (e.G https://kitsu.mydomain.com) |
 | **Email** | The email you use to log in to kitsu |
 | **Password** | The password you use to log in to kitsu |
@@ -30,16 +30,17 @@ Press the login button. If the login was succesfull, the next step is..
 
 ![image info](./docs/images/prefs_project.jpg)
 
-| Setting | Description |
-|  |  |
+| | |
+| ------ | ------  |
 | **Project Root Directory** | Path to the root of your project. Will later be used to configurate the addon on a per project basis. |
 
 3. **Setup animation tools**
 
 ![image info](./docs/images/prefs_anim_tools.jpg)
 
-| Setting | Description |
-|  |  |
+| | |
+| ------ | ------  |
+| **Project Root Directory** | Path to the root of your project. Will later be used to configurate the addon on a per project basis. |
 | **Playblast Root Directory** | Path to a directory in which playblasts will be saved to. |
 | **Open Webbrowser after Playblast** | Open default browser after playblast which points to shot on kitsu |
 
@@ -47,24 +48,23 @@ Press the login button. If the login was succesfull, the next step is..
 
 ![image info](./docs/images/prefs_lookdev.jpg)
 
-| Setting | Description |
-|  |  |
+|| |
+| ------ | ------  |
 | **Render Presets Directory** | Path to a directory in which you can save .py files that will be displayed in render preset dropdown. More info in: How to use render presets.|
 
 5. **Setup media search paths**
 
 ![image info](./docs/images/prefs_outdated_media.jpg)
 
-| Setting | Description |
-|  |  |
+| ------ | ------  |
 | **Path List**| List of paths to top level directorys. Only media that is a child (recursive) of one of these directories will be scanned for outdated media.|
 
 6. **Setup Miscellaneous settings**
 
 ![image info](./docs/images/prefs_misc.jpg)
 
-| Setting | Description |
-|  |  |
+| | |
+| ------ | ------  |
 | **Thumbnail Directory**| Directory where thumbnails will be saved before uploading them to kitsu. Cannot be edited.|
 | **Sequence Editor Render Directory** | Directory where sequence editor renderings will be saved before uploading them to kitsu. Cannot be edited.|
 | **Enable Debug Operators**| Enables extra debug operators in the sequence editors Kitsu tab.|
