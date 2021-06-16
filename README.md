@@ -12,7 +12,7 @@ Information on how to set up Kitsu can be found [here](https://zou.cg-wire.com/)
 
 If Kitsu is up and running and you can succesfully log in via the web interface you have to setup the addon preferences.
 
-> **_NOTE:_**  If you want to get started quickly you only need to setup: step1, step2
+> **_NOTE:_**  If you want to get started quickly you only need to setup login data and active project
 
 ##### **Setup login data**
 
@@ -67,6 +67,7 @@ After setting up the addon preferences you can make use of all the features of b
 blender-kitsu has many feature and in this documentation they are divided in different sections.
 
 #### Sequence Editor
+---
 blender-kitsu sequence editor tools were constructed with the idea in mind to have a relationship between sequence strips and shots on Kitsu. This connection enables the exchange of metadata between the edit and the shots on Kitsu. Some examples are frame ranges of shots can be directly updated from the edit or thumbnails can be rendered and uploaded to Kitsu with a click of a button and many more which you will find out in this section:
 
 ##### Metastrips
@@ -110,7 +111,14 @@ If you select a single linked strip you will see a `Metadata` panel that shows y
 
 The frame range will be updated by using the Blender editing tools on the strip. (trimming, sliding, etc.). <br/>
 If you execute the `Initialize Shot Start Frame` operator (refresh icon) the current in point of the strip will be remapped so the shot starts at 101 in the current editing state. <br/>
-You can reassing the shot to another seqeunce by exeucting the `Link Sequence` Operator, change the shot name or the seqeuence color. All this information and more can be `pushed` to kitsu which bring us to the next panel. <br/>
+You can reassign the shot to another seqeunce by exeucting the `Link Sequence` Operator, change the shot name or the seqeuence color. <br/>
+
+If you linked in a sequence that has no `["data"]["color"]` attribute on Kitsu yet the gpu overlay line will be white. In order to add a new sequence color execute the `Add Sequence Color` operator. <br/>
+
+![image info](./docs/images/sqe_sequence_color_init.jpg)
+
+
+All this information and more can be `pushed` to kitsu which bring us to the next panel. <br/>
 
 ##### Push
 
@@ -133,6 +141,17 @@ In the `Pull` panel you will find all the operators that pull data from Kitsu to
 
 >**Metadata**: Pulls metadata of shot: sequence, shotname, shot description and updates the strip name to match the shotname.
 >>**Note**:  Frame ranges will **never** be updated when pulling data from Kitsu. They belong to the edit and will only be pushed to Kitsu.<br/>
+
+If you have not sequence selected the `Pull Entire Edit` Operator will appear in the `Pull` panel.<br/>
+
+![image info](./docs/images/sqe_pull_entire_edit.jpg)
+
+After you selected the channel it will go through all shots on Kitsu, create a metastrip which will be linked to the respective shot and pulls all metadata. <br/>
+It will use te `frame_in` and `frame_out` attribute on Kitsu to determine the in and out points in the edit. So make sure these are up to date and don't overlap. <br/>
+
+As a result a bigger edit with nice sequence_colors can look pretty cool:
+
+![image info](./docs/images/sqe_sequence_colors.jpg)
 
 
 ##### Multi Edit
@@ -157,13 +176,11 @@ You can adjust the number of counter digits, the incrementation size and also th
 blender-kitsu makes good use of logging and status reports. Most of the operators report information in the blender info bar. More detailed logs can be found in the blender system console. If you feel like anything went wrong, consider opening a console and check the logs.
 
 ## Plugins
----
 This project uses gazu as a submodule to interact with the gazu data base.
 - gazu doc : https://gazu.cg-wire.com/
 - dazu repo: https://github.com/cgwire/gazu
 
 ## Development
----
 In the project root you will find a `pyproject.toml` and `peotry.lock` file.
 With `poetry` you can easily generate a virtual env for the project which should get you setup quickly.
 Basic Usage: https://python-poetry.org/docs/basic-usage/
