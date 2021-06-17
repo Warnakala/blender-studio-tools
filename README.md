@@ -12,7 +12,7 @@ blender-kitsu is a Blender addon to interact with Kitsu from within Blender. It 
     - [Setup Miscellaneous](#setup-miscellaneous)
 - [Features](#features)
     - [Sequence Editor](#sequence-editor)
-        - [Metastrips](#metastrip)
+        - [Metastrips](#metastrips)
         - [Create a Metastrip](#create-a-metastrip)
         - [Initialize a Shot](#initialize-a-shot)
         - [Metadata](#metadata)
@@ -102,6 +102,8 @@ blender-kitsu sequence editor tools were constructed with the idea in mind to ha
 Metastrips are regular Movie Strips that can be linked to a shot in kitsu. It is a good idea to create a seperate meta strip in a seperate channel that represents the shot. That gives you the freedom to assemble a shot out of multiple elements, like multiple storyboard pictures, and still have one metastrip that contains the full shot range.
 
 ![image info](./docs/images/metastrip.001.jpg)
+
+>**Good to know**: A metastrip can have 3 states. It can be **initialized** but **not** linked yet. That means the movie strips knows I am a metastrip but I don't have a relationship to a shot on Kitsu yet. It can be **linked**, which means the strip is already initialized and is linked to a sequence_id and shot_id on Kitsu. Only if a strip is linked you can exchange metadata, push thumbnails etc. The last state is **uninitialized** which basically means it's a regular movie strips and has nothing to do with kitsu.
 
 ###### Create a Metastrip
 1. Select a sequence strip for which you want to create a metastrip and execute the `Create Metastrip` operator.
