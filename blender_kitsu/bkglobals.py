@@ -48,3 +48,6 @@ ASSET_COLL_PREFIXES = ["CH-", "PR-", "SE-"]
 
 
 RES_DIR_PATH = Path(os.path.abspath(__file__)).parent.joinpath("res")
+
+SCENE_NAME_PLAYBLAST = "playblast_playback"
+PLAYBLAST_DEFAULT_STATUS = "Todo"

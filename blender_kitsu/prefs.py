@@ -250,6 +250,12 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         default=True,
     )
 
+    pb_open_vse: bpy.props.BoolProperty(  # type: ignore
+        name="Open Sequence Editor after Playblast",
+        description="Controls if the video should be loaded in the seqeuence editor in a seperate scene after playblast creation.",
+        default=True,
+    )
+
     filepaths_include: bpy.props.CollectionProperty(type=KITSU_filepaths_include)
 
     session: Session = Session()
@@ -302,6 +308,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         box.label(text="Animation Tools", icon="RENDER_ANIMATION")
         box.row().prop(self, "playblast_root_dir")
         box.row().prop(self, "pb_open_webbrowser")
+        box.row().prop(self, "pb_open_vse")
 
         # lookdev tools settings
         self.lookdev.draw(context, layout)

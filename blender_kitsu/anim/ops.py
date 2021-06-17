@@ -95,9 +95,78 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         # redraw ui
         util.ui_redraw()
 
+        # ---- POST PLAYBLAST -----
+
         # open webbrowser
         if addon_prefs.pb_open_webbrowser:
             self._open_webbrowser()
+
+        # open playblast in second scene video sequence editor
+        if addon_prefs.pb_open_vse:
+            # create new scene
+            scene_orig = bpy.context.scene
+            try:
+                scene_pb = bpy.data.scenes[bkglobals.SCENE_NAME_PLAYBLAST]
+            except KeyError:
+                # create scene
+                bpy.ops.scene.new(type="EMPTY")  # changes active scene
+                scene_pb = bpy.context.scene
+                scene_pb.name = bkglobals.SCENE_NAME_PLAYBLAST
+
+                logger.info(
+                    "Created new scene for playblast playback: %s", scene_pb.name
+                )
+            else:
+                logger.info(
+                    "Use existing scene for playblast playback: %s", scene_pb.name
+                )
+                # change scene
+                context.window.scene = scene_pb
+
+            # init video sequence editor
+            if not context.scene.sequence_editor:
+                context.scene.sequence_editor_create()  # what the hell
+
+            # setup video sequence editor space
+            if "Video Editing" not in [ws.name for ws in bpy.data.workspaces]:
+                blender_version = bpy.app.version  # gets (3, 0, 0)
+                blender_version_str = f"{blender_version[0]}.{blender_version[1]}"
+                ws_filepath = (
+                    Path(bpy.path.abspath(bpy.app.binary_path)).parent
+                    / blender_version_str
+                    / "scripts/startup/bl_app_templates_system/Video_Editing/startup.blend"
+                )
+                bpy.ops.workspace.append_activate(
+                    idname="Video Editing",
+                    filepath=ws_filepath.as_posix(),
+                )
+            else:
+                context.window.workspace = bpy.data.workspaces["Video Editing"]
+
+            # add movie strip
+            # load movie strip file in sequence editor
+            # in this case we make use of ops.sequencer.movie_strip_add because
+            # it provides handy auto placing,would be hard to achieve with
+            # context.scene.sequence_editor.sequences.new_movie()
+            override = context.copy()
+            for window in bpy.context.window_manager.windows:
+                screen = window.screen
+
+                for area in screen.areas:
+                    if area.type == "SEQUENCE_EDITOR":
+                        override["window"] = window
+                        override["screen"] = screen
+                        override["area"] = area
+
+            bpy.ops.sequencer.movie_strip_add(
+                override,
+                filepath=scene_orig.kitsu.playblast_file,
+                frame_start=context.scene.frame_start,
+            )
+
+            # playback
+            context.scene.frame_current = context.scene.frame_start
+            bpy.ops.screen.animation_play()
 
         return {"FINISHED"}
 
@@ -108,6 +177,11 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         prev_task_status_id = context.scene.kitsu.playblast_task_status_id
         if prev_task_status_id:
             self.task_status = prev_task_status_id
+        else:
+            # find todo
+            todo_status = TaskStatus.by_name(bkglobals.PLAYBLAST_DEFAULT_STATUS)
+            if todo_status:
+                self.task_status = todo_status.id
 
         return context.window_manager.invoke_props_dialog(self, width=500)
 
