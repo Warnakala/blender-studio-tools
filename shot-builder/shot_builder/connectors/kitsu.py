@@ -19,6 +19,7 @@
 # <pep8 compliant>
 import bpy
 from shot_builder.shot import Shot, ShotRef
+from shot_builder.sequence import Sequence, SequenceRef
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.task_type import TaskType
 from shot_builder.render_settings import RenderSettings
@@ -95,7 +96,7 @@ class KitsuProject(KitsuDataContainer):
         return (int(splitted[0]), int(splitted[1]))
 
 
-class KitsuSequenceRef(ShotRef):
+class KitsuSequenceRef(SequenceRef):
     def __init__(self, kitsu_id: str, name: str, code: str):
         super().__init__(name=name, code=code)
         self.kitsu_id = kitsu_id
@@ -198,6 +199,15 @@ class KitsuConnector(Connector):
             frames_per_second=24.0,
             frames=int(shot_data['nb_frames'] or 0),
             sequence=sequence_lookup[shot_data['parent_id']]) for shot_data in kitsu_shots]
+
+    def get_sequences(self) -> typing.List[SequenceRef]:
+        project_id = self._production.config['KITSU_PROJECT_ID']
+        kitsu_sequences = self.__api_get(f"data/projects/{project_id}/sequences")
+        return [KitsuSequenceRef(
+            kitsu_id=sequence_data['id'],
+            name=sequence_data['name'],
+            code=sequence_data['code'],
+        ) for sequence_data in kitsu_sequences]
 
     def get_assets_for_shot(self, shot: Shot) -> typing.List[AssetRef]:
         kitsu_assets = self.__api_get(
