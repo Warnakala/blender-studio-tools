@@ -18,7 +18,6 @@
 
 # <pep8 compliant>
 from shot_builder.shot import Shot, ShotRef
-from shot_builder.sequence import Sequence, SequenceRef
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.task_type import TaskType
 from shot_builder.render_settings import RenderSettings
@@ -35,9 +34,6 @@ class DefaultConnector(Connector):
         return "unnamed production"
 
     def get_shots(self) -> List[ShotRef]:
-        return []
-
-    def get_sequences(self) -> List[SequenceRef]:
         return []
 
     def get_assets_for_shot(self, shot: Shot) -> List[AssetRef]:

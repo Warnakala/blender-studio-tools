@@ -19,6 +19,7 @@
 # <pep8 compliant>
 from typing import *
 import bpy
+from shot_builder.shot import ShotRef
 from shot_builder.project import *
 from shot_builder.builder import ShotBuilder
 from shot_builder.task_type import TaskType
@@ -35,7 +36,7 @@ def production_seq_id_items(self: Any, context: bpy.types.Context) -> List[Tuple
     global _production_seq_id_items
     return _production_seq_id_items
 
-_production_shots: List[Tuple[str, str, str]] = []
+_production_shots: List[ShotRef] = []
 
 def production_shots(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
     global _production_shots
@@ -47,17 +48,13 @@ def production_shot_id_items_for_seq(self: Any, context: bpy.types.Context) -> L
     global _production_shot_id_items_for_seq
     global _production_shot_id_items
 
-    if not self.seq_id:
+    if not self.seq_id or not _production_shots:
         return []
 
-    if not _production_shots:
-        return []
-
-    shots_for_seq: List[Dict[str, Any]] = [
+    shots_for_seq: List[Tuple(str, str, str)] = [
         (s.name, s.name, "") for s in _production_shots
         if s.sequence.name == self.seq_id
         ]
-
 
     _production_shot_id_items_for_seq.clear()
     _production_shot_id_items_for_seq.extend(shots_for_seq)
@@ -69,8 +66,6 @@ def reset_shot_id_enum(self : Any, context: bpy.types.Context) -> None:
     global _production_shot_id_items_for_seq
     if _production_shot_id_items_for_seq:
         self.shot_id = _production_shot_id_items_for_seq[0][0]
-
-
 
 class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
     """Build a new shot file"""

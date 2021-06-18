@@ -27,7 +27,6 @@ import bpy
 
 from shot_builder.task_type import *
 from shot_builder.shot import Shot, ShotRef
-from shot_builder.sequence import Sequence, SequenceRef
 from shot_builder.render_settings import RenderSettings
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.sys_utils import *
@@ -178,24 +177,18 @@ class Production():
 
         return result
 
-    def get_sequences(self, context: bpy.types.Context) -> List[SequenceRef]:
-        connector = self.__create_connector(
-            self.shots_connector, context=context)
-        return connector.get_sequences()
-
 
     def get_seq_items(self, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         """
         Get the list of seq items to be used in an item function of a
         `bpy.props.EnumProperty` to select a shot.
         """
-        result = []
+        shots = self.get_shots(context)
+        sequences = list(set([s.sequence for s in shots]))
+        sequences.sort(key=lambda seq: seq.name)
 
-        #sorted_sequences = sorted(self.get_sequences(context), key=lambda seq: seq.name)
-        sorted_sequences = self.get_sequences(context)
-        result = [(seq.name, seq.name, "") for seq in sorted_sequences]
+        return [(seq.name, seq.name, "") for seq in sequences]
 
-        return result
 
     def get_name(self, context: bpy.types.Context) -> str:
         """

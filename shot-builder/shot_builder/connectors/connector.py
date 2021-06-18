@@ -22,7 +22,6 @@ This module contains the Connector class. It is an abstract base class for concr
 """
 
 from shot_builder.shot import Shot, ShotRef
-from shot_builder.sequence import Sequence, SequenceRef
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.task_type import TaskType
 from shot_builder.render_settings import RenderSettings
@@ -93,14 +92,6 @@ class Connector:
         """
         raise NotImplementedError(
             f"{self.__class__.__name__} does not support retrieval of shots")
-
-    def get_sequences(self) -> List[SequenceRef]:
-        """
-        Retrieve the sequences using the connector.
-        """
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not support retrieval of sequences")
-
 
     def get_assets_for_shot(self, shot: Shot) -> List[AssetRef]:
         """
