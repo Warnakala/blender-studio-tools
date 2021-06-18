@@ -67,6 +67,8 @@ Press the login button. If the login was succesfull, the next step is..
 
 >**Playblast Root Directory**: Path to a directory in which playblasts will be saved to<br/>
 **Open Webbrowser after Playblast**: Open default browser after playblast which points to shot on kitsu<br/>
+**Open Video Sequence Editor after Playblast**: Open a new scene with Sequence Editor and playback playblast after playblast creation<br/>
+
 
 ###### **Setup Lookdev Tools**
 
