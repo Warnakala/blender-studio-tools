@@ -42,11 +42,17 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
         failed = []
         logger.info("-START- Pushing Metadata")
 
-        # begin progress update
+        # get strips
         selected_sequences = context.selected_sequences
         if not selected_sequences:
             selected_sequences = context.scene.sequence_editor.sequences_all
 
+        # sort strips
+        selected_sequences = sorted(
+            selected_sequences, key=lambda strip: strip.frame_final_start
+        )
+
+        # begin progress update
         context.window_manager.progress_begin(0, len(selected_sequences))
 
         # clear cache
@@ -161,11 +167,17 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
         # clear cache
         Cache.clear_all()
 
-        # begin progress update
+        # get strips
         selected_sequences = context.selected_sequences
         if not selected_sequences:
             selected_sequences = context.scene.sequence_editor.sequences_all
 
+        # sort strips
+        selected_sequences = sorted(
+            selected_sequences, key=lambda strip: strip.frame_final_start
+        )
+
+        # begin progress update
         context.window_manager.progress_begin(0, len(selected_sequences))
 
         for idx, strip in enumerate(selected_sequences):
@@ -388,9 +400,15 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
         failed = []
         logger.info("-START- Initializing shots")
 
+        # get strips
         selected_sequences = context.selected_sequences
         if not selected_sequences:
             selected_sequences = context.scene.sequence_editor.sequences_all
+
+        # sort strips
+        selected_sequences = sorted(
+            selected_sequences, key=lambda strip: strip.frame_final_start
+        )
 
         for strip in selected_sequences:
 
@@ -710,11 +728,17 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
         failed = []
         logger.info("-START- Pulling shot metadata")
 
-        # begin progress update
+        # get sequences to process
         selected_sequences = context.selected_sequences
         if not selected_sequences:
             selected_sequences = context.scene.sequence_editor.sequences_all
 
+        # sort sequences
+        selected_sequences = sorted(
+            selected_sequences, key=lambda strip: strip.frame_final_start
+        )
+
+        # begin progress update
         context.window_manager.progress_begin(0, len(selected_sequences))
 
         # clear cache once
@@ -1118,6 +1142,11 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
                 if not selected_sequences:
                     selected_sequences = context.scene.sequence_editor.sequences_all
 
+                # sort sequences
+                selected_sequences = sorted(
+                    selected_sequences, key=lambda strip: strip.frame_final_start
+                )
+
                 context.window_manager.progress_begin(0, len(selected_sequences))
 
                 for idx, strip in enumerate(selected_sequences):
@@ -1291,11 +1320,17 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
 
             # ----RENDER AND SAVE SQE ------
 
-            # begin first progress update
+            # get strips
             selected_sequences = context.selected_sequences
             if not selected_sequences:
                 selected_sequences = context.scene.sequence_editor.sequences_all
 
+            # sort strips
+            selected_sequences = sorted(
+                selected_sequences, key=lambda strip: strip.frame_final_start
+            )
+
+            # begin first progress update
             context.window_manager.progress_begin(0, len(selected_sequences))
 
             for idx, strip in enumerate(selected_sequences):
