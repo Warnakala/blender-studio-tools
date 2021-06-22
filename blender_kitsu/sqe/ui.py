@@ -708,6 +708,9 @@ class KITSU_PT_sqe_general_tools(bpy.types.Panel):
             row.operator(
                 KITSU_OT_sqe_change_strip_source.bl_idname, text="", icon="TRIA_DOWN"
             ).direction = "DOWN"
+            row.operator(
+                KITSU_OT_sqe_change_strip_source.bl_idname, text="", icon="FILE_PARENT"
+            ).go_latest = True
 
 
 # ---------REGISTER ----------

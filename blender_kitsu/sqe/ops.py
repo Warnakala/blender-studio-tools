@@ -2163,6 +2163,7 @@ class KITSU_OT_sqe_change_strip_source(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     direction: bpy.props.EnumProperty(items=[("UP", "UP", ""), ("DOWN", "DOWN", "")])
+    go_latest: bpy.props.BoolProperty(name="Got to latest", default=False)
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -2218,7 +2219,26 @@ class KITSU_OT_sqe_change_strip_source(bpy.types.Operator):
             self.report({"WARNING"}, f"{strip.name} no other files available")
 
         current_idx = valid_files.index(media_path_old)
-        if self.direction == "UP":
+
+        if self.go_latest:
+            latest_index = 0
+            # check if alreay on latest version
+            if current_idx == latest_index:
+                self.report(
+                    {"INFO"},
+                    f"Already at latest version: {util.get_version(valid_files[0].name)}",
+                )
+            else:
+                self.report(
+                    {"INFO"},
+                    f"Reached latest version: {util.get_version(valid_files[0].name)}",
+                )
+                strip.filepath = bpy.path.relpath(valid_files[latest_index].as_posix())
+
+            strip.kitsu.media_outdated = False
+            self.go_latest = False  # needs to be reset otherwise other operator instances also do go_latest
+
+        elif self.direction == "UP":
             new_index = current_idx - 1
 
             if new_index <= 0:
