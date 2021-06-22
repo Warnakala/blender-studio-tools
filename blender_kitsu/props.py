@@ -369,6 +369,10 @@ def _get_frame_final_duration(self):
     return self.frame_final_duration
 
 
+def _get_strip_filepath(self):
+    return self.filepath
+
+
 @persistent
 def update_sequence_colors_coll_prop(dummy: Any) -> None:
     sequences = bpy.context.scene.sequence_editor.sequences_all
@@ -440,6 +444,11 @@ def register():
     bpy.types.Sequence.kitsu_frame_duration = bpy.props.IntProperty(
         name="Duration",
         get=_get_frame_final_duration,
+    )
+
+    # used in general tools panel next to sqe_change_strip_source operator
+    bpy.types.MovieSequence.filepath_display = bpy.props.StringProperty(
+        name="Filepath Display", get=_get_strip_filepath
     )
 
     # Sequence Properties

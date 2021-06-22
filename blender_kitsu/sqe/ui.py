@@ -701,7 +701,7 @@ class KITSU_PT_sqe_general_tools(bpy.types.Panel):
         # up down source operator
         if len(selshots) == 1 and active_strip and active_strip.type == "MOVIE":
             row = box.row(align=True)
-            row.prop(active_strip, "filepath", text="")
+            row.prop(active_strip, "filepath_display", text="")
             row.operator(
                 KITSU_OT_sqe_change_strip_source.bl_idname, text="", icon="TRIA_UP"
             ).direction = "UP"
