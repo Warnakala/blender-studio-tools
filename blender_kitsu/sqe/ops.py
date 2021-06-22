@@ -1985,12 +1985,12 @@ class KITSU_OT_sqe_add_sequence_color(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
+class KITSU_OT_sqe_scan_for_media_updates(bpy.types.Operator):
     """"""
 
-    bl_idname = "kitsu.sqe_scan_for_outdated_media"
-    bl_label = "Scan Outdated"
-    bl_description = "Scans sequence editor for movie strips and checks if there is a more recent version of their source media"
+    bl_idname = "kitsu.sqe_scan_for_media_updates"
+    bl_label = "Scan for media udpates"
+    bl_description = "Scans sequence editor for movie strips and highlights them if there is a more recent version of their source media."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -2010,7 +2010,7 @@ class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
         if not sequences:
             sequences = context.scene.sequence_editor.sequences_all
 
-        logger.info("-START- Scanning for outdated media")
+        logger.info("-START- Scanning for media updates")
 
         for strip in sequences:
 
@@ -2030,7 +2030,7 @@ class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
 
             # check if filepath is in include path
             included = False
-            for item in addon_prefs.filepaths_include:
+            for item in addon_prefs.media_update_search_paths:
                 filepath = Path(os.path.abspath(bpy.path.abspath(item.filepath)))
                 if media_path_old.as_posix().startswith(filepath.as_posix()):
                     included = True
@@ -2038,7 +2038,7 @@ class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
 
             if not included:
                 logger.info(
-                    "Not included in outdatet media search paths: %s", strip.filepath
+                    "Not included in media update search list: %s", strip.filepath
                 )
                 excluded.append(strip)
                 continue
@@ -2091,7 +2091,7 @@ class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
 
             # load latest media
             logger.info(
-                "%s media is out of date: %s > %s",
+                "%s newer version of source media available: %s > %s",
                 strip.name,
                 current_version,
                 util.get_version(valid_files[0].name),
@@ -2106,7 +2106,7 @@ class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
         # report
         self.report(
             {"INFO"},
-            f"Scanned {len(checked)} | Outdated: {len(outdated)} | Up-to-date: {len(up_to_date)} | Invalid: {len(invalid) + len(excluded) + len(no_version)}",
+            f"Scanned {len(checked)} | Outdatet: {len(outdated)} | Up-to-date: {len(up_to_date)} | Invalid: {len(invalid) + len(excluded) + len(no_version)}",
         )
 
         # log
@@ -2115,14 +2115,12 @@ class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class KITSU_OT_sqe_reset_outdated_media(bpy.types.Operator):
+class KITSU_OT_sqe_clear_update_indicators(bpy.types.Operator):
     """"""
 
-    bl_idname = "kitsu.sqe_reset_outdated_media"
-    bl_label = "Reset Outdated Media"
-    bl_description = (
-        "Reset outdated media state for all strips, which removes the color overlay."
-    )
+    bl_idname = "kitsu.sqe_clear_update_indicators"
+    bl_label = "Clear Update Indicators"
+    bl_description = "Removes the media update indicators from all strips"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -2146,7 +2144,10 @@ class KITSU_OT_sqe_reset_outdated_media(bpy.types.Operator):
             self.report({"INFO"}, "Already reset")
             return {"FINISHED"}
 
-        self.report({"INFO"}, f"Reset {len(reset)} strips")
+        self.report(
+            {"INFO"},
+            f"Cleared indicator of {len(reset)} {'strip' if len(reset) == 1 else 'strips'}",
+        )
 
         util.ui_redraw()
 
@@ -2286,9 +2287,9 @@ classes = [
     KITSU_OT_sqe_init_strip_start_frame,
     KITSU_OT_sqe_create_meta_strip,
     KITSU_OT_sqe_add_sequence_color,
-    KITSU_OT_sqe_scan_for_outdated_media,
+    KITSU_OT_sqe_scan_for_media_updates,
     KITSU_OT_sqe_change_strip_source,
-    KITSU_OT_sqe_reset_outdated_media,
+    KITSU_OT_sqe_clear_update_indicators,
 ]
 
 

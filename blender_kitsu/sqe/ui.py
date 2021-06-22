@@ -26,9 +26,9 @@ from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_init_strip_start_frame,
     KITSU_OT_sqe_create_meta_strip,
     KITSU_OT_sqe_add_sequence_color,
-    KITSU_OT_sqe_scan_for_outdated_media,
+    KITSU_OT_sqe_scan_for_media_updates,
     KITSU_OT_sqe_change_strip_source,
-    KITSU_OT_sqe_reset_outdated_media,
+    KITSU_OT_sqe_clear_update_indicators,
 )
 
 logger = LoggerFactory.getLogger(name=__name__)
@@ -156,10 +156,10 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         # scan for outdated media and reset operator
         row = box.row(align=True)
         row.operator(
-            KITSU_OT_sqe_scan_for_outdated_media.bl_idname,
-            text=f"Scan {len(strips_to_update_media)} strips for outdated media",
+            KITSU_OT_sqe_scan_for_media_updates.bl_idname,
+            text=f"Check media update for {len(strips_to_update_media)} {'strip' if len(strips_to_update_media) == 1 else 'strips'}",
         )
-        row.operator(KITSU_OT_sqe_reset_outdated_media.bl_idname, text="", icon="X")
+        row.operator(KITSU_OT_sqe_clear_update_indicators.bl_idname, text="", icon="X")
 
         # up down source operator
         if len(selshots) == 1 and active_strip and active_strip.type == "MOVIE":

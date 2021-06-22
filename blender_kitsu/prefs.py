@@ -32,39 +32,39 @@ class KITSU_task(bpy.types.PropertyGroup):
     task_type_name: bpy.props.StringProperty(name="Task Type Name", default="")
 
 
-class KITSU_filepaths_include(bpy.types.PropertyGroup):
+class KITSU_media_update_search_paths(bpy.types.PropertyGroup):
     # name: StringProperty() -> Instantiated by default
     filepath: bpy.props.StringProperty(
-        name="Filepath",
+        name="Media Update Search Path",
         default="",
         subtype="DIR_PATH",
-        description="Top level directory path to search for outdatet media in sequence editor",
+        description="Top level directory path in which to search for media updates",
     )
 
 
-class KITSU_OT_prefs_paths_include_add(bpy.types.Operator):
+class KITSU_OT_prefs_media_search_path_add(bpy.types.Operator):
     """"""
 
-    bl_idname = "kitsu.prefs_paths_include_add"
+    bl_idname = "kitsu.prefs_media_search_path_add"
     bl_label = "Add Path"
-    bl_description = ""
+    bl_description = "Adds new entry to media update search paths list"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = addon_prefs_get(context)
-        filepaths_include = addon_prefs.filepaths_include
+        media_update_search_paths = addon_prefs.media_update_search_paths
 
-        item = filepaths_include.add()
+        item = media_update_search_paths.add()
 
         return {"FINISHED"}
 
 
-class KITSU_OT_prefs_paths_include_remove(bpy.types.Operator):
+class KITSU_OT_prefs_media_search_path_remove(bpy.types.Operator):
     """"""
 
-    bl_idname = "kitsu.prefs_paths_include_remove"
-    bl_label = "Remove Path"
-    bl_description = ""
+    bl_idname = "kitsu.prefs_media_search_path_remove"
+    bl_label = "Removes Path"
+    bl_description = "Removes Path from media udpate search paths list"
     bl_options = {"REGISTER", "UNDO"}
 
     index: bpy.props.IntProperty(
@@ -74,17 +74,17 @@ class KITSU_OT_prefs_paths_include_remove(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = addon_prefs_get(context)
-        filepaths_include = addon_prefs.filepaths_include
+        media_update_search_paths = addon_prefs.media_update_search_paths
 
-        filepaths_include.remove(self.index)
+        media_update_search_paths.remove(self.index)
 
         return {"FINISHED"}
 
 
 class KITSU_addon_preferences(bpy.types.AddonPreferences):
     """
-    Addon preferences to kitsu. Holds variables that are important for authentification.
-    During runtime new attributes are created that get initialized in: bz_prefs_init_properties()
+    Addon preferences to kitsu. Holds variables that are important for authentification and configuring
+    how some of the operators work.
     """
 
     def get_datadir(self) -> Path:
@@ -256,7 +256,9 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         default=True,
     )
 
-    filepaths_include: bpy.props.CollectionProperty(type=KITSU_filepaths_include)
+    media_update_search_paths: bpy.props.CollectionProperty(
+        type=KITSU_media_update_search_paths
+    )
 
     session: Session = Session()
 
@@ -315,13 +317,16 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
         # sequence editor include paths
         box = layout.box()
-        box.label(text="Outdated Media Search Paths", icon="SEQUENCE")
+        box.label(text="Media Update Search Paths", icon="SEQUENCE")
+        box.label(
+            text="Only the movie strips that have their source media coming from one of these folders (recursive) will be checked for media updates"
+        )
 
-        for i, item in enumerate(self.filepaths_include):
+        for i, item in enumerate(self.media_update_search_paths):
             row = box.row()
             row.prop(item, "filepath", text="")
             row.operator(
-                KITSU_OT_prefs_paths_include_remove.bl_idname,
+                KITSU_OT_prefs_media_search_path_remove.bl_idname,
                 text="",
                 icon="X",
                 emboss=False,
@@ -329,7 +334,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         row = box.row()
         row.alignment = "LEFT"
         row.operator(
-            KITSU_OT_prefs_paths_include_add.bl_idname,
+            KITSU_OT_prefs_media_search_path_add.bl_idname,
             text="",
             icon="ADD",
             emboss=False,
@@ -422,10 +427,10 @@ def session_auth(context: bpy.types.Context) -> bool:
 # ---------REGISTER ----------
 
 classes = [
-    KITSU_OT_prefs_paths_include_remove,
-    KITSU_OT_prefs_paths_include_add,
+    KITSU_OT_prefs_media_search_path_remove,
+    KITSU_OT_prefs_media_search_path_add,
     KITSU_task,
-    KITSU_filepaths_include,
+    KITSU_media_update_search_paths,
     KITSU_addon_preferences,
 ]
 
