@@ -62,7 +62,7 @@ class KITSU_MT_sqe_advanced_delete(bpy.types.Menu):
 
 class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
     """
-    Panel in sequence editor that shows .kitsu properties of active strip. (shot, sequence)
+    Panel in sequence editor that shows all kinds of tools related to Kitsu and sequence strips
     """
 
     # TODO: Because each draw function was previously a seperate Panel there might be a lot of
@@ -103,9 +103,6 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         if self.poll_debug(context):
             self.draw_debug(context)
 
-        if self.poll_general(context):
-            self.draw_general(context)
-
     @classmethod
     def poll_error(cls, context: bpy.types.Context) -> bool:
         project_active = cache.project_active_get()
@@ -127,50 +124,6 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
         if not addon_prefs.is_project_root_valid:
             ui.draw_error_invalid_project_root_dir(box)
-
-    @classmethod
-    def poll_general(cls, context: bpy.types.Context) -> bool:
-        selshots = context.selected_sequences
-        if not selshots:
-            selshots = context.scene.sequence_editor.sequences_all
-        movie_strips = [s for s in selshots if s.type == "MOVIE"]
-        return bool(movie_strips)
-
-    def draw_general(self, context: bpy.types.Context) -> None:
-        active_strip = context.scene.sequence_editor.active_strip
-        selshots = context.selected_sequences
-        if not selshots:
-            selshots = context.scene.sequence_editor.sequences_all
-
-        strips_to_update_media = []
-
-        for s in selshots:
-            if s.type == "MOVIE":
-                strips_to_update_media.append(s)
-
-        # create box
-        layout = self.layout
-        box = layout.box()
-        box.label(text="General", icon="MODIFIER")
-
-        # scan for outdated media and reset operator
-        row = box.row(align=True)
-        row.operator(
-            KITSU_OT_sqe_scan_for_media_updates.bl_idname,
-            text=f"Check media update for {len(strips_to_update_media)} {'strip' if len(strips_to_update_media) == 1 else 'strips'}",
-        )
-        row.operator(KITSU_OT_sqe_clear_update_indicators.bl_idname, text="", icon="X")
-
-        # up down source operator
-        if len(selshots) == 1 and active_strip and active_strip.type == "MOVIE":
-            row = box.row(align=True)
-            row.prop(active_strip, "filepath", text="")
-            row.operator(
-                KITSU_OT_sqe_change_strip_source.bl_idname, text="", icon="TRIA_UP"
-            ).direction = "UP"
-            row.operator(
-                KITSU_OT_sqe_change_strip_source.bl_idname, text="", icon="TRIA_DOWN"
-            ).direction = "DOWN"
 
     @classmethod
     def poll_setup(cls, context: bpy.types.Context) -> bool:
@@ -699,11 +652,70 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         )
 
 
+class KITSU_PT_sqe_general_tools(bpy.types.Panel):
+    """
+    Panel in sequence editor that shows tools that don't relate directly to Kitsu
+    """
+
+    bl_category = "Kitsu"
+    bl_label = "General Tools"
+    bl_space_type = "SEQUENCE_EDITOR"
+    bl_region_type = "UI"
+    bl_order = 30
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        selshots = context.selected_sequences
+        if not selshots:
+            selshots = context.scene.sequence_editor.sequences_all
+        movie_strips = [s for s in selshots if s.type == "MOVIE"]
+        return bool(movie_strips)
+
+    def draw(self, context: bpy.types.Context) -> None:
+
+        active_strip = context.scene.sequence_editor.active_strip
+        selshots = context.selected_sequences
+        if not selshots:
+            selshots = context.scene.sequence_editor.sequences_all
+
+        strips_to_update_media = []
+
+        for s in selshots:
+            if s.type == "MOVIE":
+                strips_to_update_media.append(s)
+
+        # create box
+        layout = self.layout
+        box = layout.box()
+        box.label(text="General", icon="MODIFIER")
+
+        # scan for outdated media and reset operator
+        row = box.row(align=True)
+        row.operator(
+            KITSU_OT_sqe_scan_for_media_updates.bl_idname,
+            text=f"Check media update for {len(strips_to_update_media)} {'strip' if len(strips_to_update_media) == 1 else 'strips'}",
+        )
+        row.operator(KITSU_OT_sqe_clear_update_indicators.bl_idname, text="", icon="X")
+
+        # up down source operator
+        if len(selshots) == 1 and active_strip and active_strip.type == "MOVIE":
+            row = box.row(align=True)
+            row.prop(active_strip, "filepath", text="")
+            row.operator(
+                KITSU_OT_sqe_change_strip_source.bl_idname, text="", icon="TRIA_UP"
+            ).direction = "UP"
+            row.operator(
+                KITSU_OT_sqe_change_strip_source.bl_idname, text="", icon="TRIA_DOWN"
+            ).direction = "DOWN"
+
+
 # ---------REGISTER ----------
 
 classes = [
     KITSU_MT_sqe_advanced_delete,
     KITSU_PT_sqe_shot_tools,
+    KITSU_PT_sqe_general_tools,
 ]
 
 
