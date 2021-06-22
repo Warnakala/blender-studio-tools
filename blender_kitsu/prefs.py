@@ -171,7 +171,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     playblast_root_dir: bpy.props.StringProperty(  # type: ignore
         name="Playblasts Root Directory",
-        description="Directory path to playblast root folder.",
+        description="Directory path to playblast root folder",
         default="",
         subtype="DIR_PATH",
         update=init_playblast_file_model,
@@ -222,7 +222,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
     )
     show_advanced: bpy.props.BoolProperty(  # type: ignore
         name="Show Advanced Settings",
-        description="Show advanced settings that should already have good defaults.",
+        description="Show advanced settings that should already have good defaults",
     )
 
     shot_pattern: bpy.props.StringProperty(  # type: ignore
@@ -233,26 +233,26 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     shot_counter_digits: bpy.props.IntProperty(  # type: ignore
         name="Shot Counter Digits",
-        description="How many digits the counter should contain.",
+        description="How many digits the counter should contain",
         default=4,
         min=0,
     )
     shot_counter_increment: bpy.props.IntProperty(  # type: ignore
         name="Shot Counter Increment",
-        description="By which Increment counter should be increased.",
+        description="By which Increment counter should be increased",
         default=10,
         step=5,
         min=0,
     )
     pb_open_webbrowser: bpy.props.BoolProperty(  # type: ignore
         name="Open Webbrowser after Playblast",
-        description="Controls if the default webbrowser should be opened to kitsu after playblast creation.",
+        description="Toggle if the default webbrowser should be opened to kitsu after playblast creation",
         default=True,
     )
 
     pb_open_vse: bpy.props.BoolProperty(  # type: ignore
         name="Open Sequence Editor after Playblast",
-        description="Controls if the video should be loaded in the seqeuence editor in a seperate scene after playblast creation.",
+        description="Toggle if the movie clip should be loaded in the seqeuence editor in a seperate scene after playblast creation",
         default=True,
     )
 

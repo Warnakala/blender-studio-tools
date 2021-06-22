@@ -18,7 +18,7 @@ class LOOKDEV_preferences(bpy.types.PropertyGroup):
 
     presets_dir: bpy.props.StringProperty(  # type: ignore
         name="Render Presets Directory",
-        description="Directory path to folder in which render settings python files are stored.",
+        description="Directory path to folder in which render settings python files are stored",
         default="",
         subtype="DIR_PATH",
         update=update_rd_preset_file_model,

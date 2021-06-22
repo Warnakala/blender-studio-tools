@@ -209,7 +209,7 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
     # sequence editor tools
     pull_edit_channel: bpy.props.IntProperty(
         name="Channel",
-        description="On which channel the operator will create the color strips.",
+        description="On which channel the operator will create the color strips",
         default=1,
         min=1,
         max=32,
@@ -223,7 +223,7 @@ class KITSU_property_group_error(bpy.types.PropertyGroup):
 
     frame_range: bpy.props.BoolProperty(  # type: ignore
         name="Frame Range Error",
-        description="Indicates if the scene frame range does not match the one in kitsu",
+        description="Indicates if the scene frame range does not match the one in Kitsu",
         default=False,
     )
 
@@ -249,13 +249,13 @@ def _add_window_manager_props():
     # Multi Edit Properties
     bpy.types.WindowManager.show_advanced = bpy.props.BoolProperty(
         name="Show Advanced",
-        description="Shows advanced options to fine control shot pattern.",
+        description="Shows advanced options to fine control shot pattern",
         default=False,
     )
 
     bpy.types.WindowManager.var_use_custom_seq = bpy.props.BoolProperty(
         name="Use Custom",
-        description="Enables to type in custom sequence name for <Sequence> wildcard.",
+        description="Enables to type in custom sequence name for <Sequence> wildcard",
         default=False,
     )
 
@@ -267,13 +267,13 @@ def _add_window_manager_props():
 
     bpy.types.WindowManager.var_sequence_custom = bpy.props.StringProperty(  # type: ignore
         name="Custom Sequence Variable",
-        description="Value that will be used to insert in <Sequence> wildcard if custom sequence is enabled.",
+        description="Value that will be used to insert in <Sequence> wildcard if custom sequence is enabled",
         default="",
     )
 
     bpy.types.WindowManager.var_project_custom = bpy.props.StringProperty(  # type: ignore
         name="Custom Project Variable",
-        description="Value that will be used to insert in <Project> wildcard if custom project is enabled.",
+        description="Value that will be used to insert in <Project> wildcard if custom project is enabled",
         default="",
     )
 
@@ -285,26 +285,26 @@ def _add_window_manager_props():
 
     bpy.types.WindowManager.shot_preview = bpy.props.StringProperty(
         name="Shot Pattern",
-        description="Preview result of current settings on how a shot will be named.",
+        description="Preview result of current settings on how a shot will be named",
         get=propsdata._gen_shot_preview,
     )
 
     bpy.types.WindowManager.var_project_active = bpy.props.StringProperty(
         name="Active Project",
-        description="Value that will be inserted in <Project> wildcard.",
+        description="Value that will be inserted in <Project> wildcard",
         get=propsdata._get_project_active,
     )
 
     bpy.types.WindowManager.sequence_enum = bpy.props.EnumProperty(
         name="Sequences",
         items=propsdata._get_sequences,
-        description="Name of Sequence the generated Shots will be assinged to.",
+        description="Name of Sequence the generated Shots will be assinged to",
     )
 
     # advanced delete props
     bpy.types.WindowManager.advanced_delete = bpy.props.BoolProperty(
         name="Advanced Delete",
-        description="Checkbox to show advanced shot deletion operations.",
+        description="Checkbox to show advanced shot deletion operations",
         default=False,
     )
 

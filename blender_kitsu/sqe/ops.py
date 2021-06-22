@@ -156,7 +156,7 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         if not self.confirm:
-            self.report({"WARNING"}, "Submit new shots aborted.")
+            self.report({"WARNING"}, "Submit new shots aborted")
             return {"CANCELLED"}
 
         project_active = cache.project_active_get()
@@ -319,11 +319,11 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         if not self.confirm:
-            self.report({"WARNING"}, "Submit new sequence aborted.")
+            self.report({"WARNING"}, "Submit new sequence aborted")
             return {"CANCELLED"}
 
         if not self.sequence_name:
-            self.report({"WARNING"}, "Invalid sequence name.")
+            self.report({"WARNING"}, "Invalid sequence name")
             return {"CANCELLED"}
 
         project_active = cache.project_active_get()
@@ -333,7 +333,7 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
         if sequence:
             self.report(
                 {"WARNING"},
-                f"Sequence: {sequence.name} already exists on server.",
+                f"Sequence: {sequence.name} already exists on server",
             )
             return {"CANCELLED"}
 
@@ -505,7 +505,7 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
     bl_idname = "kitsu.sqe_link_shot"
     bl_label = "Link Shot"
     bl_description = (
-        "Adds required shot metadata to selecetd strip based on data from server."
+        "Adds required shot metadata to selecetd strip based on data from server"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -513,7 +513,7 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
     shots_enum: bpy.props.EnumProperty(items=opsdata.get_shots_enum_for_link_shot_op, name="Shot")  # type: ignore
     use_url: bpy.props.BoolProperty(
         name="Use URL",
-        description="Use URL of shot on server to initiate strip. Paste complete URL.",
+        description="Use URL of shot on server to initiate strip. Paste complete URL",
     )
     url: bpy.props.StringProperty(
         name="URL",
@@ -547,7 +547,7 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
         else:
             shot_id = self.shots_enum
             if not shot_id:
-                self.report({"WARNING"}, "Invalid selection. Please choose a shot.")
+                self.report({"WARNING"}, "Invalid selection. Please choose a shot")
                 return {"CANCELLED"}
 
         # check if id availalbe on server (mainly for url option)
@@ -945,7 +945,7 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if not self.confirm:
-            self.report({"WARNING"}, "Push delete aborted.")
+            self.report({"WARNING"}, "Push delete aborted")
             return {"CANCELLED"}
 
         succeeded = []
@@ -1878,7 +1878,7 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
         if not Path(addon_prefs.metastrip_file).exists():
             self.report(
                 {"ERROR"},
-                f"Failed to load metastrip file: {addon_prefs.metastrip_file}. Path does not exist.",
+                f"Failed to load metastrip file: {addon_prefs.metastrip_file}. Path does not exist",
             )
             return {"CANCELLED"}
 
@@ -1990,7 +1990,7 @@ class KITSU_OT_sqe_scan_for_outdated_media(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_scan_for_outdated_media"
     bl_label = "Scan Outdated"
-    bl_description = "Scans sequence editor for movie strips and checks if there is a more recent version of their source media."
+    bl_description = "Scans sequence editor for movie strips and checks if there is a more recent version of their source media"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod

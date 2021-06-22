@@ -27,7 +27,7 @@ class KITSU_OT_open_path(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         if not self.filepath:
-            self.report({"ERROR"}, "Can't open empty path in explorer.")
+            self.report({"ERROR"}, "Can't open empty path in explorer")
             return {"CANCELLED"}
 
         filepath = Path(self.filepath)

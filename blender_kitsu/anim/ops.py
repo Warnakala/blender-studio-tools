@@ -34,7 +34,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
 
     comment: bpy.props.StringProperty(
         name="Comment",
-        description="Comment that will be appended to this playblast on kitsu.",
+        description="Comment that will be appended to this playblast on Kitsu",
         default="",
     )
     confirm: bpy.props.BoolProperty(name="Confirm", default=False)
@@ -55,7 +55,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
 
         if not self.task_status:
-            self.report({"ERROR"}, "Failed to crate playblast. Missing task status.")
+            self.report({"ERROR"}, "Failed to crate playblast. Missing task status")
             return {"CANCELLED"}
 
         shot_active = cache.shot_active_get()
@@ -482,7 +482,7 @@ class KITSU_OT_anim_pull_frame_range(bpy.types.Operator):
         if "3d_in" not in active_shot.data or "3d_out" not in active_shot.data:
             self.report(
                 {"ERROR"},
-                f"Failed to pull frame range. Shot {active_shot.name} missing '3d_in', '3d_out' attribute on server.",
+                f"Failed to pull frame range. Shot {active_shot.name} missing '3d_in', '3d_out' attribute on server",
             )
             return {"CANCELLED"}
 
