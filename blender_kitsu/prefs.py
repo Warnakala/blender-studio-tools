@@ -247,13 +247,13 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
     pb_open_webbrowser: bpy.props.BoolProperty(  # type: ignore
         name="Open Webbrowser after Playblast",
         description="Toggle if the default webbrowser should be opened to kitsu after playblast creation",
-        default=True,
+        default=False,
     )
 
     pb_open_vse: bpy.props.BoolProperty(  # type: ignore
         name="Open Sequence Editor after Playblast",
         description="Toggle if the movie clip should be loaded in the seqeuence editor in a seperate scene after playblast creation",
-        default=True,
+        default=False,
     )
 
     media_update_search_paths: bpy.props.CollectionProperty(
