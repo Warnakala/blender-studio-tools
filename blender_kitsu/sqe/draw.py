@@ -33,7 +33,7 @@ strip_status_colour = {
     "review": (0.8941176470588236, 0.9607843137254902, 0.9764705882352941),
     "todo": (1.0, 0.5019607843137255, 0.5019607843137255),
     "linked": (0.247, 0.992, 0.474),
-    "media_outdated": (1, 0.00, 0.00),
+    "media_outdated": (1, 0.05, 0.145),
 }
 
 CONFLICT_COLOUR = (0.576, 0.118, 0.035, 1.0)  # RGBA tuple
@@ -67,6 +67,7 @@ void main()
 Float2 = typing.Tuple[float, float]
 Float3 = typing.Tuple[float, float, float]
 Float4 = typing.Tuple[float, float, float, float]
+LINE_WIDTH = 6
 
 
 class LineDrawer:
@@ -82,11 +83,13 @@ class LineDrawer:
         self.shader = gpu.types.GPUShader(gpu_vertex_shader, gpu_fragment_shader)
 
     def draw(self, coords: typing.List[Float2], colors: typing.List[Float4]):
+        global LINE_WIDTH
+
         if not coords:
             return
 
         bgl.glEnable(bgl.GL_BLEND)
-        bgl.glLineWidth(2.0)
+        bgl.glLineWidth(LINE_WIDTH)
 
         vbo = gpu.types.GPUVertBuf(len=len(coords), format=self._format)
         vbo.attr_fill(id=self._pos_id, data=coords)
@@ -101,48 +104,18 @@ def get_strip_rectf(strip) -> Float4:
     # Get x and y in terms of the grid's frames and channels
     x1 = strip.frame_final_start
     x2 = strip.frame_final_end
-    y1 = strip.channel + 0.2
-    y2 = strip.channel - 0.2 + 1
+    # seems to be a 5 % offset from channel top start of strip
+    y1 = strip.channel + 0.05
+    y2 = strip.channel - 0.05 + 1
 
     return x1, y1, x2, y2
 
 
-def underline_in_strip(
-    strip_coords: Float4,
-    pixel_size_x: float,
-    color: Float4,
-    out_coords: typing.List[Float2],
-    out_colors: typing.List[Float4],
-):
-    # Strip coords
-    s_x1, s_y1, s_x2, s_y2 = strip_coords
-
-    # be careful not to draw over the current frame line
-    cf_x = bpy.context.scene.frame_current_final
-
-    # TODO(Sybren): figure out how to pass one colour per line,
-    # instead of one colour per vertex.
-    out_coords.append((s_x1, s_y1))
-    out_colors.append(color)
-
-    if s_x1 < cf_x < s_x2:
-        # Bad luck, the line passes our strip, so draw two lines.
-        out_coords.append((cf_x - pixel_size_x, s_y1))
-        out_colors.append(color)
-
-        out_coords.append((cf_x + pixel_size_x, s_y1))
-        out_colors.append(color)
-
-    out_coords.append((s_x2, s_y1))
-    out_colors.append(color)
-
-
-def topline_in_strip(
+def line_in_strip(
     strip_coords: Float4,
     pixel_size_x: float,
     color: Float4,
     line_height_factor: float,
-    line_width: float,
     out_coords: typing.List[Float2],
     out_colors: typing.List[Float4],
 ):
@@ -200,6 +173,8 @@ def strip_conflict(
 
 
 def draw_callback_px(line_drawer: LineDrawer):
+    global LINE_WIDTH
+
     context = bpy.context
 
     if not context.scene.sequence_editor:
@@ -242,27 +217,22 @@ def draw_callback_px(line_drawer: LineDrawer):
             except KeyError:
                 color = (1, 1, 1)
 
-            alpha = 1.0 if strip.kitsu.linked else 0.25
+            alpha = 0.75 if strip.kitsu.linked else 0.25
 
-            underline_in_strip(
-                strip_coords, pixel_size_x, color + (alpha,), coords, colors
+            line_in_strip(
+                strip_coords, pixel_size_x, color + (alpha,), 0.05, coords, colors
             )
 
         if strip.kitsu.media_outdated:
-            topline_in_strip(
+            line_in_strip(
                 strip_coords,
                 pixel_size_x,
-                strip_status_colour["media_outdated"] + (1,),
+                strip_status_colour["media_outdated"] + (0.75,),
                 0.95,
-                10,
                 coords,
                 colors,
             )
 
-        """
-        if strip.atc_is_synced and strip.atc_object_id_conflict:
-            strip_conflict(strip_coords, coords, colors)
-        """
     line_drawer.draw(coords, colors)
 
 
