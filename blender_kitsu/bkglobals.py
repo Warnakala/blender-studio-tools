@@ -42,6 +42,17 @@ MULTI_ASSETS = [
     "sprite",
     "snail",
     "spider",
+    "peanut",
+    "peanut_box",
+    "pretzel",
+    "corn_dart",
+    "corn_darts_bag",
+    "meat_stick",
+    "salty_twists_bag",
+    "salt_stick",
+    "salt_stix_package",
+    "briny_bear",
+    "briny_bears_bag",
 ]  # list of assets that gets duplicated and therefore follows another naming sheme
 
 ASSET_COLL_PREFIXES = ["CH-", "PR-", "SE-"]

@@ -263,6 +263,9 @@ def is_multi_asset(asset_name: str) -> bool:
     if asset_name.startswith("thorn"):
         return True
 
+    if asset_name.startswith("pine_cone"):
+        return True
+
     if asset_name.lower() in bkglobals.MULTI_ASSETS:
         return True
 
