@@ -40,7 +40,7 @@ class DefaultConnector(Connector):
         return []
 
     def get_task_types(self) -> List[TaskType]:
-        return [TaskType("anim"), TaskType("lighting")]
+        return [TaskType("anim"), TaskType("lighting"), TaskType("comp")]
 
     def get_render_settings(self, shot: Shot) -> RenderSettings:
         """
