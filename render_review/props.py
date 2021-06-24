@@ -37,11 +37,17 @@ class RR_property_group_scene(bpy.types.PropertyGroup):
         return True
 
 
+class RR_property_group_sequence(bpy.types.PropertyGroup):
+    """
+    Property group that will be registered on sequence strips.
+    """
+
+    is_render: bpy.props.BoolProperty(name="Is Render")
+
+
 # ----------------REGISTER--------------
 
-classes = [
-    RR_property_group_scene,
-]
+classes = [RR_property_group_scene, RR_property_group_sequence]
 
 
 def register():
@@ -53,6 +59,13 @@ def register():
     bpy.types.Scene.rr = bpy.props.PointerProperty(
         name="Render Review",
         type=RR_property_group_scene,
+        description="Metadata that is required for render_review",
+    )
+
+    # Sequence Properties
+    bpy.types.Sequence.rr = bpy.props.PointerProperty(
+        name="Render Review",
+        type=RR_property_group_sequence,
         description="Metadata that is required for render_review",
     )
 

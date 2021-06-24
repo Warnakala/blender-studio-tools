@@ -3,8 +3,9 @@ from typing import Set, Union, Optional, List, Dict
 
 import bpy
 
-
+from render_review import vars
 from render_review.log import LoggerFactory
+
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -22,6 +23,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         return bool(context.scene.rr.is_render_dir_valid)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        imported_valid_sequence: bpy.types.ImageSequence = []
+        imported_invalid_sequence: bpy.types.ImageSequence = []
+        image_data_blocks: bpy.types.Image = []
 
         # find existing output dirs
         render_dir = Path(context.scene.rr.render_dir_path)
@@ -44,22 +49,8 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
             context.scene.sequence_editor_create()
 
         # load preview seqeunces in vse
-        # in this case we make use of ops.sequencer.movie_strip_add because
-        # it provides handy auto placing,would be hard to achieve with
-        # context.scene.sequence_editor.sequences.new_movie()
-        override = context.copy()
-        for window in bpy.context.window_manager.windows:
-            screen = window.screen
-
-            for area in screen.areas:
-                if area.type == "SEQUENCE_EDITOR":
-                    override["window"] = window
-                    override["screen"] = screen
-                    override["area"] = area
-
         for idx, dir in enumerate(output_dirs):
             # check if previe sequence exists
-            print(dir.as_posix())
             jpg_files = []
             png_files = []
 
@@ -80,6 +71,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             if preview_files:
                 # load image seqeunce if found
+                """
                 op_file_list = [{"name": f.name} for f in preview_files]
                 bpy.ops.sequencer.image_strip_add(
                     directory=dir.as_posix() + "/",
@@ -89,22 +81,162 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                     relative_path=False,
                     channel=idx,
                 )
+                """
+                strip = context.scene.sequence_editor.sequences.new_image(
+                    dir.name,
+                    preview_files[0].as_posix(),
+                    idx + 1,
+                    int(preview_files[0].stem),
+                )
+                # extend strip elements with all the frames
+                for f in preview_files[1:]:
+                    strip.elements.append(f.name)
+
+                # create image datablock to read metadata like resolution
+                img = bpy.data.images.load(
+                    preview_files[0].as_posix(), check_existing=True
+                )
+                img.name = preview_files[0].parent.name + "_PREVIEW"
+                img.source = "SEQUENCE"
+                image_data_blocks.append(img)
+
+                imported_valid_sequence.append(strip)
+
             else:
-                # add empty movie sequence
-                pass
+                # add empty image sequence
+                strip = context.scene.sequence_editor.sequences.new_image(
+                    dir.name,
+                    "",
+                    idx + 1,
+                    101,
+                )
+                strip.directory = dir.as_posix() + "/"
+                imported_invalid_sequence.append(strip)
+
+            # set strip properties
+            strip.rr.is_render = True
+
+        # set scene resolution to resolution of laoded image
+        context.scene.render.resolution_x = vars.RESOLUTION[0]
+        context.scene.render.resolution_y = vars.RESOLUTION[1]
 
         self.report(
             {"INFO"},
-            f"",
+            f"Imported {len(imported_invalid_sequence) + len(imported_valid_sequence)} Render Sequences",
         )
 
         return {"FINISHED"}
+
+
+class RR_OT_setup_review_workspace(bpy.types.Operator):
+    """"""
+
+    bl_idname = "rr.setup_review_workspace"
+    bl_label = "Setup Review Workspace"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        # remove non video editing workspaces
+        for ws in bpy.data.workspaces:
+            if ws.name != "Video Editing":
+                bpy.ops.workspace.delete({"workspace": ws})
+
+        # add / load video editing workspace
+        if "Video Editing" not in [ws.name for ws in bpy.data.workspaces]:
+            blender_version = bpy.app.version  # gets (3, 0, 0)
+            blender_version_str = f"{blender_version[0]}.{blender_version[1]}"
+            ws_filepath = (
+                Path(bpy.path.abspath(bpy.app.binary_path)).parent
+                / blender_version_str
+                / "scripts/startup/bl_app_templates_system/Video_Editing/startup.blend"
+            )
+            bpy.ops.workspace.append_activate(
+                idname="Video Editing",
+                filepath=ws_filepath.as_posix(),
+            )
+        else:
+            context.window.workspace = bpy.data.workspaces["Video Editing"]
+
+        # change video editing workspace media browser to image editor
+        for window in bpy.context.window_manager.windows:
+            screen = window.screen
+
+            for area in screen.areas:
+                if area.type == "FILE_BROWSER":
+                    area.type = "IMAGE_EDITOR"
+
+        self.report({"INFO"}, "Setup Render Review Workspace")
+
+        return {"FINISHED"}
+
+
+class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
+    """"""
+
+    bl_idname = "rr.sqe_inspect_exr_sequence"
+    bl_label = "Inspect EXR"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        active_strip = context.scene.sequence_editor.active_strip
+        image_editor = cls._get_image_editor(context)
+        return bool(active_strip.rr.is_render and image_editor)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        active_strip = context.scene.sequence_editor.active_strip
+        image_editor = self._get_image_editor(context)
+        output_dir = Path(bpy.path.abspath(active_strip.directory))
+
+        # find exr sequence
+        exr_seq = [
+            f for f in output_dir.iterdir() if f.is_file() and f.suffix == ".exr"
+        ]
+        if not exr_seq:
+            self.report({"ERROR"}, f"Found no exr sequence in: {output_dir.as_posix()}")
+            return {"CANCELLED"}
+
+        # remove all images with same filepath that are already laoded
+        img_to_rm: bpy.types.Image = []
+        for img in bpy.data.images:
+            if Path(bpy.path.abspath(img.filepath)) == exr_seq[0]:
+                img_to_rm.append(img)
+
+        for img in img_to_rm:
+            bpy.data.images.remove(img)
+
+        # create new image datablock
+        image = bpy.data.images.load(exr_seq[0].as_posix(), check_existing=True)
+        image.name = exr_seq[0].parent.name + "_RENDER"
+        image.source = "SEQUENCE"
+        image.colorspace_settings.name = "Linear"
+
+        # set active image
+        image_editor.spaces.active.image = image
+        image_editor.spaces.active.image_user.frame_duration = 5000
+
+        return {"FINISHED"}
+
+    @classmethod
+    def _get_image_editor(self, context: bpy.types.Context) -> Optional[bpy.types.Area]:
+
+        image_editor = None
+
+        for area in bpy.context.screen.areas:
+            if area.type == "IMAGE_EDITOR":
+                image_editor = area
+
+        return image_editor
 
 
 # ----------------REGISTER--------------
 
 classes = [
     RR_OT_sqe_create_review_session,
+    RR_OT_setup_review_workspace,
+    RR_OT_sqe_inspect_exr_sequence,
 ]
 
 
