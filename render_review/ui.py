@@ -6,6 +6,7 @@ from render_review.ops import (
     RR_OT_sqe_create_review_session,
     RR_OT_setup_review_workspace,
     RR_OT_sqe_inspect_exr_sequence,
+    RR_OT_sqe_clear_exr_inspect,
 )
 
 
@@ -53,6 +54,7 @@ class RR_PT_render_review(bpy.types.Panel):
             # inspect exr
             row = box.row(align=True)
             row.operator(RR_OT_sqe_inspect_exr_sequence.bl_idname, icon="VIEWZOOM")
+            row.operator(RR_OT_sqe_clear_exr_inspect.bl_idname, text="", icon="X")
 
 
 # ----------------REGISTER--------------

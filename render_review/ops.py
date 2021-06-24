@@ -231,12 +231,43 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         return image_editor
 
 
+class RR_OT_sqe_clear_exr_inspect(bpy.types.Operator):
+    """"""
+
+    bl_idname = "rr.sqe_clear_exr_inspect"
+    bl_label = "Clear EXR Inspect"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        image_editor = cls._get_image_editor(context)
+        return bool(image_editor and image_editor.spaces.active.image)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        image_editor = self._get_image_editor(context)
+        image_editor.spaces.active.image = None
+        return {"FINISHED"}
+
+    @classmethod
+    def _get_image_editor(self, context: bpy.types.Context) -> Optional[bpy.types.Area]:
+
+        image_editor = None
+
+        for area in bpy.context.screen.areas:
+            if area.type == "IMAGE_EDITOR":
+                image_editor = area
+
+        return image_editor
+
+
 # ----------------REGISTER--------------
 
 classes = [
     RR_OT_sqe_create_review_session,
     RR_OT_setup_review_workspace,
     RR_OT_sqe_inspect_exr_sequence,
+    RR_OT_sqe_clear_exr_inspect,
 ]
 
 
