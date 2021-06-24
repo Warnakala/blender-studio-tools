@@ -7,6 +7,7 @@ from blender_kitsu.lookdev.ops import (
     KITSU_OT_lookdev_set_preset,
     KITSU_OT_lookdev_apply_preset,
 )
+from blender_kitsu.lookdev import opsdata
 
 
 class KITSU_PT_vi3d_lookdev_tools(bpy.types.Panel):
@@ -60,7 +61,13 @@ class KITSU_PT_vi3d_lookdev_tools(bpy.types.Panel):
         row = box.row(align=True)
         rdpreset_text = "Select Render Preset"
         if context.scene.lookdev.preset_file:
-            rdpreset_text = Path(context.scene.lookdev.preset_file).name
+            try:
+                rdpreset_text = opsdata._rd_preset_data_dict[
+                    Path(context.scene.lookdev.preset_file).name
+                ]
+            except KeyError:
+                pass
+
         row.operator(
             KITSU_OT_lookdev_set_preset.bl_idname,
             text=rdpreset_text,

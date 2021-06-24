@@ -1,3 +1,4 @@
+import importlib
 from typing import Any, Dict, List, Tuple, Union
 from pathlib import Path
 
@@ -11,6 +12,11 @@ logger = LoggerFactory.getLogger(name=__name__)
 RD_PRESET_FILE_MODEL = FileListModel()
 _rd_preset_enum_list: List[Tuple[str, str, str]] = []
 _rd_preset_file_model_init: bool = False
+# we need a second data dict because we want the enum propeties data value to be the filepath
+# but the ui (not only in enum dropdown mode) should display the label defined in the .py
+# file with 'bl_label'. This dict is basically a mapping from filepath > label
+
+_rd_preset_data_dict: Dict[str, str] = {}
 
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
@@ -62,6 +68,7 @@ def get_rd_settings_enum_list(
     global RD_PRESET_FILE_MODEL
     global init_rd_preset_file_model
     global _rd_preset_file_model_init
+    global _rd_preset_data_dict
 
     # init model if it did not happen
     if not _rd_preset_file_model_init:
@@ -70,13 +77,35 @@ def get_rd_settings_enum_list(
     # reload model to update
     RD_PRESET_FILE_MODEL.reload()
 
-    valid_items = [
-        (file, name, descr)
-        for file, name, descr in RD_PRESET_FILE_MODEL.items_as_path_enum_list
-        if file.endswith(".py")
-    ]
-    # clear all versions in enum list
-    _rd_preset_enum_list.clear()
-    _rd_preset_enum_list.extend(valid_items)
+    # get all python files
+    py_files = [f for f in RD_PRESET_FILE_MODEL.items_as_paths if f.suffix == ".py"]
+    py_labels: List[Tuple[Path, str]] = []
 
+    # get bl_label of each python file, if not use file name as label
+    for file in py_files:
+        spec = importlib.util.spec_from_file_location(file.name, file.as_posix())
+
+        # load module
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        if "bl_label" not in dir(module):
+            py_labels.append((file, file.name))
+            continue
+        py_labels.append((file, module.bl_label))
+
+    # generate final enum list and dict from py_labels
+    enum_list = []
+    data_dict = {}
+    for file, label in py_labels:
+        data_dict[file.name] = label
+        enum_list.append((file.as_posix(), label, ""))
+
+    # udpate global variables
+    _rd_preset_data_dict.clear()
+    _rd_preset_data_dict.update(data_dict)
+    _rd_preset_enum_list.clear()
+    _rd_preset_enum_list.extend(enum_list)
+
+    print(data_dict)
     return _rd_preset_enum_list
