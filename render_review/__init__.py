@@ -1,5 +1,6 @@
 import bpy
 
+from render_review import props, ops, ui
 from render_review.log import LoggerFactory
 
 logger = LoggerFactory.getLogger(__name__)
@@ -25,17 +26,29 @@ if _need_reload:
 
     logger.info("-START- Reloading render-review")
 
+    props = importlib.reload(props)
+    ops = importlib.reload(ops)
+    ui = importlib.reload(ui)
+
     logger.info("-END- Reloading render-review")
 
 
 def register():
     logger.info("-START- Registering render-review")
 
+    props.register()
+    ops.register()
+    ui.register()
+
     logger.info("-END- Registering render-review")
 
 
 def unregister():
     logger.info("-START- Unregistering render-review")
+
+    ui.register()
+    ops.register()
+    props.register()
 
     logger.info("-END- Unregistering render-review")
 
