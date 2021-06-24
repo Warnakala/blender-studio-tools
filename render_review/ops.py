@@ -261,13 +261,34 @@ class RR_OT_sqe_clear_exr_inspect(bpy.types.Operator):
         return image_editor
 
 
+class RR_OT_sqe_approve_render(bpy.types.Operator):
+    """"""
+
+    bl_idname = "rr.sqe_approve_render"
+    bl_label = "Approve Render"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        active_strip = context.scene.sequence_editor.active_strip
+        return bool(active_strip.rr.is_render)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        active_strip = context.scene.sequence_editor.active_strip
+
+        return {"FINISHED"}
+
+
 # ----------------REGISTER--------------
+
 
 classes = [
     RR_OT_sqe_create_review_session,
     RR_OT_setup_review_workspace,
     RR_OT_sqe_inspect_exr_sequence,
     RR_OT_sqe_clear_exr_inspect,
+    RR_OT_sqe_approve_render,
 ]
 
 
