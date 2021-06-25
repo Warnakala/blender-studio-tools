@@ -35,11 +35,14 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         output_dirs = [
             d
             for d in render_dir.iterdir()
-            if d.is_dir()
-            and "__intermediate" not in d.name
-            and d.name != f"{shot_name}.lighting"
+            if d.is_dir() and "__intermediate" not in d.name
         ]
         output_dirs = sorted(output_dirs, key=lambda d: d.name)
+
+        # 070_0010_A.lighting is the latest render > with current structure
+        # this folder is [0] in output dirs > needs to be moved to [-1]
+        output_dirs.append(output_dirs[0])
+        output_dirs.pop(0)
 
         output_dirs_str = "\n".join([d.name for d in output_dirs])
         logger.info(f"Found {len(output_dirs)} output dirs:\n{output_dirs_str}")
