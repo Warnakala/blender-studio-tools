@@ -5,7 +5,7 @@ from typing import Set, Union, Optional, List, Dict, Any
 
 import bpy
 
-from render_review import vars, prefs
+from render_review import vars, prefs, opsdata
 from render_review.log import LoggerFactory
 
 
@@ -291,9 +291,9 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
 
         active_strip = context.scene.sequence_editor.active_strip
         strip_dir = Path(bpy.path.abspath(active_strip.directory))
-        frame_storage_path = self._get_frame_storage_path(active_strip)
-        frame_storage_backup_path = self._get_frame_storage_backup_path(active_strip)
-        metadata_path = self._get_frame_storage_metadata_path(active_strip)
+        frame_storage_path = opsdata.get_frame_storage_path(active_strip)
+        frame_storage_backup_path = opsdata.get_frame_storage_backup_path(active_strip)
+        metadata_path = opsdata.get_frame_storage_metadata_path(active_strip)
 
         # create frame storage path if not exists yet
         if frame_storage_path.exists():
@@ -320,34 +320,36 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
         # udpate metadata json
         if not metadata_path.exists():
             metadata_path.touch()
-            self.save_to_json(
+            opsdata.save_to_json(
                 {"source_current": strip_dir.as_posix(), "source_backup": ""},
                 metadata_path,
             )
         else:
-            json_dict = self.load_json(metadata_path)
+            json_dict = opsdata.load_json(metadata_path)
             # soure backup will get value from old source current
             json_dict["source_backup"] = json_dict["source_current"]
             # source current will get value from strip dir
             json_dict["source_current"] = strip_dir.as_posix()
 
-            self.save_to_json(json_dict, metadata_path)
+            opsdata.save_to_json(json_dict, metadata_path)
 
+        # set strip to approved
+        active_strip.rr.is_approved = True
+
+        # log
         self.report({"INFO"}, f"Updated {frame_storage_path.name} in frame storage")
-
         logger.info("Updated metadata in: %s", metadata_path.as_posix())
 
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        self.confirm = False
         return context.window_manager.invoke_props_dialog(self, width=600)
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         active_strip = context.scene.sequence_editor.active_strip
         strip_dir = Path(bpy.path.abspath(active_strip.directory))
-        frame_storage_path = self._get_frame_storage_path(active_strip)
+        frame_storage_path = opsdata.get_frame_storage_path(active_strip)
 
         layout.separator()
         layout.row(align=True).label(text="From Farm Output:", icon="RENDER_ANIMATION")
@@ -359,36 +361,6 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
 
         layout.separator()
         layout.row(align=True).label(text="Update Frame Storage?")
-
-    def _get_frame_storage_path(self, strip: bpy.types.ImageSequence) -> Path:
-        # fs > frame_storage | fo > farm_output
-        addon_prefs = prefs.addon_prefs_get(bpy.context)
-        fo_dir = Path(strip.directory)
-        fs_dir_name = fo_dir.parent.name + ".lighting"
-        fs_dir = (
-            addon_prefs.frame_storage_path
-            / fo_dir.parent.relative_to(fo_dir.parents[3])
-            / fs_dir_name
-        )
-
-        return fs_dir
-
-    def _get_frame_storage_backup_path(self, strip: bpy.types.ImageSequence) -> Path:
-        fs_dir = self._get_frame_storage_path(strip)
-        return fs_dir.parent / f"_backup.{fs_dir.name}"
-
-    def _get_frame_storage_metadata_path(self, strip: bpy.types.ImageSequence) -> Path:
-        fs_dir = self._get_frame_storage_path(strip)
-        return fs_dir.parent / "metadata.json"
-
-    def load_json(self, path: Path) -> Any:
-        with open(path.as_posix(), "r") as file:
-            obj = json.load(file)
-        return obj
-
-    def save_to_json(self, obj: Any, path: Path) -> None:
-        with open(path.as_posix(), "w") as file:
-            json.dump(obj, file)
 
 
 # ----------------REGISTER--------------
