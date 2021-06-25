@@ -5,7 +5,7 @@ from typing import Set, Union, Optional, List, Dict, Any
 
 import bpy
 
-from render_review import vars, prefs, opsdata
+from render_review import vars, prefs, opsdata, util
 from render_review.log import LoggerFactory
 
 
@@ -124,6 +124,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         # set scene resolution to resolution of laoded image
         context.scene.render.resolution_x = vars.RESOLUTION[0]
         context.scene.render.resolution_y = vars.RESOLUTION[1]
+
+        # scan for approved renders
+        opsdata.update_is_approved(context)
+        util.redraw_ui()
 
         self.report(
             {"INFO"},
@@ -333,8 +337,9 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
 
             opsdata.save_to_json(json_dict, metadata_path)
 
-        # set strip to approved
-        active_strip.rr.is_approved = True
+        # scan for approved renders
+        opsdata.update_is_approved(context)
+        util.redraw_ui()
 
         # log
         self.report({"INFO"}, f"Updated {frame_storage_path.name} in frame storage")

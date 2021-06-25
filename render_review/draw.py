@@ -179,7 +179,7 @@ def draw_callback_px(line_drawer: LineDrawer):
                 strip_coords,
                 pixel_size_x,
                 APPROVED_COLOR,
-                0.95,
+                0.05,
                 coords,
                 colors,
             )

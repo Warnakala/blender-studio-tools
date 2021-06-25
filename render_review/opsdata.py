@@ -43,3 +43,32 @@ def load_json(path: Path) -> Any:
 def save_to_json(obj: Any, path: Path) -> None:
     with open(path.as_posix(), "w") as file:
         json.dump(obj, file)
+
+
+def update_is_approved(
+    context: bpy.types.Context,
+) -> List[bpy.types.ImageSequence]:
+    sequences = [
+        s
+        for s in context.scene.sequence_editor.sequences_all
+        if s.type == "IMAGE" and s.rr.is_render and s.directory
+    ]
+
+    approved_strips = []
+
+    for s in sequences:
+        metadata_path = get_frame_storage_metadata_path(s)
+        if not metadata_path.exists():
+            continue
+        json_obj = load_json(
+            metadata_path
+        )  # TODO: prevent opening same json multi times
+
+        if Path(json_obj["source_current"]) == Path(bpy.path.abspath(s.directory)):
+            s.rr.is_approved = True
+            approved_strips.append(s)
+            logger.info("Detected aprooved strip: %s", s.name)
+        else:
+            s.rr.is_approved = False
+
+    return approved_strips

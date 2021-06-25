@@ -1,6 +1,6 @@
 import bpy
 
-from render_review import props, ops, ui, prefs, draw
+from render_review import util, props, opsdata, ops, ui, prefs, draw
 from render_review.log import LoggerFactory
 
 logger = LoggerFactory.getLogger(__name__)
@@ -26,8 +26,10 @@ if _need_reload:
 
     logger.info("-START- Reloading render-review")
 
+    util = importlib.reload(util)
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)
+    opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
     draw = importlib.reload(draw)
