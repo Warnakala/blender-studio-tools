@@ -314,11 +314,12 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
         logger.info(
             "Copied: %s \nTo: %s", strip_dir.as_posix(), frame_storage_path.as_posix()
         )
+
+        self.report({"INFO"}, f"Updated {frame_storage_path.name} in frame storage")
         return {"FINISHED"}
 
     def invoke(self, context, event):
         self.confirm = False
-
         return context.window_manager.invoke_props_dialog(self, width=600)
 
     def draw(self, context: bpy.types.Context) -> None:
