@@ -368,6 +368,23 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
         layout.row(align=True).label(text="Update Frame Storage?")
 
 
+class RR_OT_sqe_update_is_approved(bpy.types.Operator):
+    """"""
+
+    bl_idname = "rr.update_is_approved"
+    bl_label = "Update is Approved"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(context.scene.sequence_editor.sequences_all)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        opsdata.update_is_approved(context)
+        return {"FINISHED"}
+
+
 # ----------------REGISTER--------------
 
 
@@ -377,6 +394,7 @@ classes = [
     RR_OT_sqe_inspect_exr_sequence,
     RR_OT_sqe_clear_exr_inspect,
     RR_OT_sqe_approve_render,
+    RR_OT_sqe_update_is_approved
 ]
 
 
