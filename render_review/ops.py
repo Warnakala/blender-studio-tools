@@ -183,7 +183,9 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         active_strip = context.scene.sequence_editor.active_strip
         image_editor = cls._get_image_editor(context)
-        return bool(active_strip.rr.is_render and image_editor)
+        return bool(
+            active_strip.type == "IMAGE" and active_strip.rr.is_render and image_editor
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         active_strip = context.scene.sequence_editor.active_strip
@@ -272,12 +274,51 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         active_strip = context.scene.sequence_editor.active_strip
-        return bool(active_strip.rr.is_render)
+        return bool(active_strip.type == "IMAGE" and active_strip.rr.is_render)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        if not self.confirm:
+            self.report({"WARNING"}, "Approvin render aborted")
+            return {"CANCELLED"}
+
         active_strip = context.scene.sequence_editor.active_strip
+        symlink_path = self._gen_symlink_path(active_strip)
+        target_path = Path(bpy.path.abspath(active_strip.directory))
 
         return {"FINISHED"}
+
+    def invoke(self, context, event):
+        active_strip = context.scene.sequence_editor.active_strip
+        self.confirm = False
+        symlink_path = self._gen_symlink_path(active_strip)
+
+        if not symlink_path.exists():
+            self.report({"ERROR"}, f"Symlink not found: {symlink_path.as_posix()}")
+            return {"CANCELLED"}
+
+        return context.window_manager.invoke_props_dialog(self, width=700)
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout = self.layout
+        active_strip = context.scene.sequence_editor.active_strip
+        strip_dir = Path(bpy.path.abspath(active_strip.directory))
+        symlink_path = self._gen_symlink_path(active_strip)
+
+        layout.row(align=True).label(text=f"Symlink at   : {symlink_path.as_posix()}")
+        layout.row(align=True).label(
+            text=f"Points to      : {symlink_path.readlink().as_posix()}"
+        )
+        layout.row(align=True).label(text=f"New Target: {strip_dir.as_posix()}")
+
+        col = layout.column()
+        col.prop(self, "confirm", text=f"Approve {active_strip.name} ?")
+
+    def _gen_symlink_path(self, strip: bpy.types.ImageSequence) -> Path:
+        output_dir = Path(strip.directory)
+        symlink_dir_name = "tmp." + output_dir.parent.name + ".lighting"
+        symlink_path = output_dir.parent / symlink_dir_name
+        return symlink_path
 
 
 # ----------------REGISTER--------------
