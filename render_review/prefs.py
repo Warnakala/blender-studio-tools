@@ -93,9 +93,9 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """
-    shortcut to get cache_manager addon preferences
+    shortcut to get addon preferences
     """
-    return context.preferences.addons["cache_manager"].preferences
+    return context.preferences.addons["render_review"].preferences
 
 
 # ---------REGISTER ----------

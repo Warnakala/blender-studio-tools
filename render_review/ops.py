@@ -1,9 +1,10 @@
+import shutil
 from pathlib import Path
 from typing import Set, Union, Optional, List, Dict
 
 import bpy
 
-from render_review import vars
+from render_review import vars, prefs
 from render_review.log import LoggerFactory
 
 
@@ -277,51 +278,82 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         active_strip = context.scene.sequence_editor.active_strip
-        return bool(active_strip.type == "IMAGE" and active_strip.rr.is_render)
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
+
+        return bool(
+            addon_prefs.is_frame_storage_valid
+            and active_strip.type == "IMAGE"
+            and active_strip.rr.is_render
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
-        if not self.confirm:
-            self.report({"WARNING"}, "Approvin render aborted")
-            return {"CANCELLED"}
-
         active_strip = context.scene.sequence_editor.active_strip
-        symlink_path = self._gen_symlink_path(active_strip)
-        target_path = Path(bpy.path.abspath(active_strip.directory))
+        strip_dir = Path(bpy.path.abspath(active_strip.directory))
+        frame_storage_path = self._get_frame_storage_path(active_strip)
+        frame_storage_backup_path = self._get_frame_storage_backup_path(active_strip)
 
+        # create frame storage path if not exists yet
+        if frame_storage_path.exists():
+            # delete backup if exists
+            if frame_storage_backup_path.exists():
+                shutil.rmtree(frame_storage_backup_path)
+
+            # rename current to backup
+            frame_storage_path.rename(frame_storage_backup_path)
+
+        else:
+            frame_storage_path.mkdir(parents=True)
+
+        # copy dir
+        shutil.copytree(
+            strip_dir,
+            frame_storage_path,
+            dirs_exist_ok=True,
+        )
+        logger.info(
+            "Copied: %s \nTo: %s", strip_dir.as_posix(), frame_storage_path.as_posix()
+        )
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        active_strip = context.scene.sequence_editor.active_strip
         self.confirm = False
-        symlink_path = self._gen_symlink_path(active_strip)
 
-        if not symlink_path.exists():
-            self.report({"ERROR"}, f"Symlink not found: {symlink_path.as_posix()}")
-            return {"CANCELLED"}
-
-        return context.window_manager.invoke_props_dialog(self, width=700)
+        return context.window_manager.invoke_props_dialog(self, width=600)
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         active_strip = context.scene.sequence_editor.active_strip
         strip_dir = Path(bpy.path.abspath(active_strip.directory))
-        symlink_path = self._gen_symlink_path(active_strip)
+        frame_storage_path = self._get_frame_storage_path(active_strip)
 
-        layout.row(align=True).label(text=f"Symlink at   : {symlink_path.as_posix()}")
-        layout.row(align=True).label(
-            text=f"Points to      : {symlink_path.readlink().as_posix()}"
+        layout.separator()
+        layout.row(align=True).label(text="From Farm Output:", icon="RENDER_ANIMATION")
+        layout.row(align=True).label(text=strip_dir.as_posix())
+
+        layout.separator()
+        layout.row(align=True).label(text="To Frame Storage:", icon="FILE_TICK")
+        layout.row(align=True).label(text=frame_storage_path.as_posix())
+
+        layout.separator()
+        layout.row(align=True).label(text="Update Frame Storage?")
+
+    def _get_frame_storage_path(self, strip: bpy.types.ImageSequence) -> Path:
+        # fs > frame_storage | fo > farm_output
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
+        fo_dir = Path(strip.directory)
+        fs_dir_name = fo_dir.parent.name + ".lighting"
+        fs_dir = (
+            addon_prefs.frame_storage_path
+            / fo_dir.parent.relative_to(fo_dir.parents[3])
+            / fs_dir_name
         )
-        layout.row(align=True).label(text=f"New Target: {strip_dir.as_posix()}")
 
-        col = layout.column()
-        col.prop(self, "confirm", text=f"Approve {active_strip.name} ?")
+        return fs_dir
 
-    def _gen_symlink_path(self, strip: bpy.types.ImageSequence) -> Path:
-        output_dir = Path(strip.directory)
-        symlink_dir_name = "tmp." + output_dir.parent.name + ".lighting"
-        symlink_path = output_dir.parent / symlink_dir_name
-        return symlink_path
+    def _get_frame_storage_backup_path(self, strip: bpy.types.ImageSequence) -> Path:
+        fs_dir = self._get_frame_storage_path(strip)
+        return fs_dir.parent / f"_backup.{fs_dir.name}"
 
 
 # ----------------REGISTER--------------
