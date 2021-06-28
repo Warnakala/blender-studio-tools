@@ -1,4 +1,4 @@
-from typing import Set, Union, Optional, List, Dict
+from typing import Set, Union, Optional, List, Dict, Any
 
 import bpy
 
@@ -66,6 +66,11 @@ class RR_PT_render_review(bpy.types.Panel):
             )
 
 
+def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:
+    layout = self.layout
+    op = layout.operator(RR_OT_setup_review_workspace.bl_idname, text="Render Review")
+
+
 # ----------------REGISTER--------------
 
 classes = [
@@ -78,7 +83,14 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
+    # append to topbar file new
+    # bpy.types.TOPBAR_MT_file_new.append(RR_topbar_file_new_draw_handler)
+
 
 def unregister():
+
+    # remove to topbar file new
+    # bpy.types.TOPBAR_MT_file_new.remove(RR_topbar_file_new_draw_handler)
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

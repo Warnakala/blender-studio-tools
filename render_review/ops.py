@@ -167,11 +167,17 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
         else:
             context.window.workspace = bpy.data.workspaces["Video Editing"]
 
+        # util.redraw_ui() #TODO: has problems context seems to have old reference to window
+        # context.window_manager.update_tag()
+        # dp = context.evaluated_depsgraph_get()
+        # dp.update()
+
         # change video editing workspace media browser to image editor
-        for window in bpy.context.window_manager.windows:
+        for window in context.window_manager.windows:
             screen = window.screen
 
             for area in screen.areas:
+                print(area.type)
                 if area.type == "FILE_BROWSER":
                     area.type = "IMAGE_EDITOR"
 
