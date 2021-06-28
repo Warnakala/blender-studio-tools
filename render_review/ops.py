@@ -313,9 +313,16 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
 
             # rename current to backup
             frame_storage_path.rename(frame_storage_backup_path)
-
+            logger.info(
+                "Created backup: %s > %s",
+                frame_storage_path.name,
+                frame_storage_backup_path.name,
+            )
         else:
             frame_storage_path.mkdir(parents=True)
+            logger.info(
+                "Created dir in frame storage: %s", frame_storage_path.as_posix()
+            )
 
         # copy dir
         shutil.copytree(
@@ -334,6 +341,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
                 {"source_current": strip_dir.as_posix(), "source_backup": ""},
                 metadata_path,
             )
+            logger.info("Created metadata.json: %s", metadata_path.as_posix())
         else:
             json_dict = opsdata.load_json(metadata_path)
             # soure backup will get value from old source current
