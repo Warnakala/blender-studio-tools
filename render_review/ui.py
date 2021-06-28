@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from typing import Set, Union, Optional, List, Dict, Any
 
 import bpy
@@ -9,6 +11,7 @@ from render_review.ops import (
     RR_OT_sqe_clear_exr_inspect,
     RR_OT_sqe_approve_render,
     RR_OT_sqe_update_is_approved,
+    RR_OT_open_path,
 )
 
 
@@ -47,12 +50,19 @@ class RR_PT_render_review(bpy.types.Panel):
         row = box.row(align=True)
         row.operator(RR_OT_sqe_create_review_session.bl_idname, icon="PLAY")
 
-        if active_strip:
+        if active_strip and active_strip.rr.is_render:
             # create box
             layout = self.layout
             box = layout.box()
             box.label(text="Render", icon="RESTRICT_RENDER_OFF")
 
+            # render dir name label and open file op
+
+            row = box.row(align=True)
+            row.label(text=Path(active_strip.directory).name)
+            row.operator(
+                RR_OT_open_path.bl_idname, icon="FILEBROWSER", text=""
+            ).filepath = bpy.path.abspath(active_strip.directory)
             # inspect exr
             row = box.row(align=True)
             row.operator(RR_OT_sqe_inspect_exr_sequence.bl_idname, icon="VIEWZOOM")
