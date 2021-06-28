@@ -120,33 +120,28 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         name="Active Sequence ID",
         description="ID that refers to the active sequence on server",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
     )
     shot_active_id: bpy.props.StringProperty(  # type: ignore
         name="Active Shot ID",
         description="IDthat refers to the active shot on server",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
         update=propsdata.on_shot_change,
     )
     asset_active_id: bpy.props.StringProperty(  # type: ignore
         name="Active Asset ID",
         description="ID that refers to the active asset on server",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
     )
     asset_type_active_id: bpy.props.StringProperty(  # type: ignore
         name="Active Asset Type ID",
         description="ID that refers to the active asset type on server",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
     )
 
     task_type_active_id: bpy.props.StringProperty(  # type: ignore
         name="Active Task Type ID",
         description="ID that refers to the active task type on server",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
     )
 
     # thubnail props
@@ -154,14 +149,12 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         name="Thubmnail Task Type ID",
         description="ID that refers to the task type on server for which thumbnails will be uploaded",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
     )
 
     task_type_thumbnail_name: bpy.props.StringProperty(  # type: ignore
         name="Thubmnail Task Type Name",
         description="Name that refers to the task type on server for which thumbnails will be uploaded",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
     )
 
     # sqe render props
@@ -169,14 +162,12 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         name="Sqe Render Task Type ID",
         description="ID that refers to the task type on server for which the sqe render will be uploaded",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
     )
 
     task_type_sqe_render_name: bpy.props.StringProperty(  # type: ignore
         name="Sqe Render Task Type Name",
         description="Name that refers to the task type on server for which the sqe render will be uploaded",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
     )
 
     # playblast props
@@ -203,7 +194,6 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         name="Plablast Task Status ID",
         description="ID that refers to the task status on server which the playblast will set",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
     )
 
     # sequence editor tools

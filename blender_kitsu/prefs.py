@@ -136,11 +136,13 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     host: bpy.props.StringProperty(  # type: ignore
-        name="Host", default="", options={"HIDDEN", "SKIP_SAVE"}
+        name="Host",
+        default="",
     )
 
     email: bpy.props.StringProperty(  # type: ignore
-        name="Email", default="", options={"HIDDEN", "SKIP_SAVE"}
+        name="Email",
+        default="",
     )
 
     passwd: bpy.props.StringProperty(  # type: ignore
@@ -213,7 +215,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         name="Project Active ID",
         description="Server Id that refers to the last active project",
         default="",
-        options={"HIDDEN", "SKIP_SAVE"},
     )
 
     enable_debug: bpy.props.BoolProperty(  # type: ignore
