@@ -190,7 +190,10 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         active_strip = context.scene.sequence_editor.active_strip
         image_editor = cls._get_image_editor(context)
         return bool(
-            active_strip.type == "IMAGE" and active_strip.rr.is_render and image_editor
+            active_strip
+            and active_strip.type == "IMAGE"
+            and active_strip.rr.is_render
+            and image_editor
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -284,6 +287,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
 
         return bool(
             addon_prefs.is_frame_storage_valid
+            and active_strip
             and active_strip.type == "IMAGE"
             and active_strip.rr.is_render
         )
@@ -447,6 +451,51 @@ class RR_OT_open_path(bpy.types.Operator):
             return self._find_latest_existing_folder(path.parent)
 
 
+class RR_OT_sqe_unmute_all_strips(bpy.types.Operator):
+    """"""
+
+    bl_idname = "rr.sqe_unmute_all_strips"
+    bl_label = "Unmute all strips"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        sequences = context.scene.sequence_editor.sequences_all
+
+        for s in sequences:
+            s.mute = False
+
+        return {"FINISHED"}
+
+
+class RR_OT_sqe_isolate_strip(bpy.types.Operator):
+    """"""
+
+    bl_idname = "rr.sqe_isolate_strip"
+    bl_label = "Isolate Strip"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        active_strip = context.scene.sequence_editor.active_strip
+        return bool(active_strip)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        active_strip = context.scene.sequence_editor.active_strip
+        active_strip.mute = False
+
+        sequences = list(context.scene.sequence_editor.sequences_all)
+
+        # remove active strip from sequences
+        sequences.remove(active_strip)
+
+        for s in sequences:
+            s.mute = True
+
+        return {"FINISHED"}
+
+
 # ----------------REGISTER--------------
 
 
@@ -458,15 +507,50 @@ classes = [
     RR_OT_sqe_approve_render,
     RR_OT_sqe_update_is_approved,
     RR_OT_open_path,
+    RR_OT_sqe_isolate_strip,
+    RR_OT_sqe_unmute_all_strips,
 ]
+
+addon_keymap_items = []
 
 
 def register():
+    global addon_keymap_items
 
     for cls in classes:
         bpy.utils.register_class(cls)
 
+    # register hotkeys
+    keymap = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name="Window")
+
+    # isolate strip
+    addon_keymap_items.append(
+        keymap.keymap_items.new("rr.sqe_isolate_strip", value="PRESS", type="ONE")
+    )
+
+    # umute all
+    addon_keymap_items.append(
+        keymap.keymap_items.new(
+            "rr.sqe_unmute_all_strips", value="PRESS", type="ONE", alt=True
+        )
+    )
+    for kmi in addon_keymap_items:
+        logger.info(
+            "Registered new hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name
+        )
+
 
 def unregister():
+    global addon_keymap_items
+    print("\n" * 2)
+    print(addon_keymap_items)
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+
+    # remove hotkeys
+    keymap = bpy.context.window_manager.keyconfigs.addon.keymaps["Window"]
+    for kmi in addon_keymap_items:
+        logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
+        keymap.keymap_items.remove(kmi)
+
+    addon_keymap_items.clear()
