@@ -1,13 +1,58 @@
 import os
 import bpy
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Set
 
 import bpy
 
 
+def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
+    """
+    shortcut to get addon preferences
+    """
+    return context.preferences.addons["render_review"].preferences
+
+
+def is_blender_kitsu_enabled() -> bool:
+    return "blender_kitsu" in bpy.context.preferences.addons
+
+
+def is_blender_kitsu_auth() -> bool:
+    return bpy.context.preferences.addons["blender_kitsu"].session.is_auth()
+
+
+class RR_OT_enable_blender_kitsu(bpy.types.Operator):
+    """"""
+
+    bl_idname = "rr.enable_blender_kitsu"
+    bl_label = "Enable Blender Kitsu"
+    bl_description = ""
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        addon_prefs = addon_prefs_get(context)
+
+        # enable_blender_kitsu checkbox is off -> user wants to enable it
+        if not addon_prefs.enable_blender_kitsu:
+            if not is_blender_kitsu_enabled():
+                self.report({"ERROR"}, "blender_kitsu is not enabled or installed")
+                return {"CANCELLED"}
+
+            addon_prefs.enable_blender_kitsu = True
+            return {"FINISHED"}
+
+        # disable blender_kitsu, checkbox is on
+        else:
+            addon_prefs.enable_blender_kitsu = False
+            return {"FINISHED"}
+
+
 class RR_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
+
+    def _check_blender_kitsu_installed(self, value):
+        if not is_blender_kitsu_enabled():
+            raise RuntimeError("blender_kitsu addon ist not enabled")
 
     farm_output_dir: bpy.props.StringProperty(  # type: ignore
         name="Farm Output Directory",
@@ -19,6 +64,13 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         name="Frame Storage Directory",
         default="/render/sprites/frame_storage",
         subtype="DIR_PATH",
+    )
+
+    enable_blender_kitsu: bpy.props.BoolProperty(
+        name="Enable Blender Kitsu",
+        description="This checkbox controls if render_review should try to use the blender_kitsu addon to extend its feature sets.",
+        # set=_check_blender_kitsu_installed,
+        default=False,
     )
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -53,6 +105,21 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
                 text="In order to use a relative path the current file needs to be saved.",
                 icon="ERROR",
             )
+
+        # enable blender kitsu
+        icon = "CHECKBOX_DEHLT"
+        label_text = "Enable Blender Kitsu"
+
+        if self.enable_blender_kitsu:
+            icon = "CHECKBOX_HLT"
+
+        row = box.row(align=True)
+        row.operator(
+            RR_OT_enable_blender_kitsu.bl_idname, icon=icon, text="", emboss=False
+        )
+        row.label(text=label_text)
+
+        # box.row().prop(self, "enable_blender_kitsu")
 
     @property
     def frame_storage_path(self) -> Optional[Path]:
@@ -91,16 +158,9 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         return True
 
 
-def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
-    """
-    shortcut to get addon preferences
-    """
-    return context.preferences.addons["render_review"].preferences
-
-
 # ---------REGISTER ----------
 
-classes = [RR_AddonPreferences]
+classes = [RR_OT_enable_blender_kitsu, RR_AddonPreferences]
 
 
 def register():
