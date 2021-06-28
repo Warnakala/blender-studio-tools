@@ -141,6 +141,7 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+
         # remove non video editing workspaces
         for ws in bpy.data.workspaces:
             if ws.name != "Video Editing":
@@ -161,11 +162,6 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
             )
         else:
             context.window.workspace = bpy.data.workspaces["Video Editing"]
-
-        # util.redraw_ui() #TODO: has problems context seems to have old reference to window
-        # context.window_manager.update_tag()
-        # dp = context.evaluated_depsgraph_get()
-        # dp.update()
 
         # change video editing workspace media browser to image editor
         for window in context.window_manager.windows:

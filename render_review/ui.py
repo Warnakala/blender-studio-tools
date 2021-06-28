@@ -98,13 +98,13 @@ def register():
         bpy.utils.register_class(cls)
 
     # append to topbar file new
-    # bpy.types.TOPBAR_MT_file_new.append(RR_topbar_file_new_draw_handler)
+    bpy.types.TOPBAR_MT_file_new.append(RR_topbar_file_new_draw_handler)
 
 
 def unregister():
 
     # remove to topbar file new
-    # bpy.types.TOPBAR_MT_file_new.remove(RR_topbar_file_new_draw_handler)
+    bpy.types.TOPBAR_MT_file_new.remove(RR_topbar_file_new_draw_handler)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
