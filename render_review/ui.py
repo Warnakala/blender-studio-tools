@@ -57,12 +57,16 @@ class RR_PT_render_review(bpy.types.Panel):
             box.label(text="Render", icon="RESTRICT_RENDER_OFF")
 
             # render dir name label and open file op
-
             row = box.row(align=True)
-            row.label(text=Path(active_strip.directory).name)
+
+            # gen text for label
+            label_text = f"{Path(active_strip.directory).name} | {active_strip.rr.frames_found_text}"
+            row.label(text=label_text)
+
             row.operator(
                 RR_OT_open_path.bl_idname, icon="FILEBROWSER", text=""
             ).filepath = bpy.path.abspath(active_strip.directory)
+
             # inspect exr
             row = box.row(align=True)
             row.operator(RR_OT_sqe_inspect_exr_sequence.bl_idname, icon="VIEWZOOM")

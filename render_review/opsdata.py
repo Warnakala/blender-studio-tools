@@ -72,3 +72,53 @@ def update_is_approved(
             s.rr.is_approved = False
 
     return approved_strips
+
+
+def gather_files_by_suffix(
+    dir: Path, output=str, search_suffixes: List[str] = [".jpg", ".png", ".exr"]
+) -> Union[str, List, Dict]:
+    """
+    Gathers files in dir that end with an extension in search_suffixes.
+    Supported values for output: str, list, dict
+    """
+
+    files: Dict[str, List[Path]] = {}
+
+    # gather files
+    for f in dir.iterdir():
+        if not f.is_file():
+            continue
+
+        for suffix in search_suffixes:
+            if f.suffix == suffix:
+                files.setdefault(suffix, [])
+                files[suffix].append(f)
+
+    # sort
+    for suffix, file_list in files.items():
+        files[suffix] = sorted(file_list, key=lambda f: f.name)
+
+    # return
+    if output == str:
+        return_str = ""
+        for suffix, file_list in files.items():
+            return_str += f" | {suffix}: {len(file_list)}"
+
+        # replace first occurence, we dont want that at the beginning
+        return_str = return_str.replace(" | ", "", 1)
+
+        return return_str
+
+    elif output == dict:
+        return files
+
+    elif output == list:
+        output_list = []
+        for suffix, file_list in files.items():
+            output_list.append(file_list)
+
+        return output_list
+    else:
+        raise ValueError(
+            f"Supported output types are: str, dict, list. {str(output)} not implemented yet."
+        )

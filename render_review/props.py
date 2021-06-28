@@ -1,3 +1,4 @@
+from typing import Set, Union, Optional, List, Dict, Any
 from pathlib import Path
 
 import bpy
@@ -44,6 +45,7 @@ class RR_property_group_sequence(bpy.types.PropertyGroup):
 
     is_render: bpy.props.BoolProperty(name="Is Render")
     is_approved: bpy.props.BoolProperty(name="Is Approved")
+    frames_found_text: bpy.props.StringProperty(name="Frames Found")
 
 
 # ----------------REGISTER--------------

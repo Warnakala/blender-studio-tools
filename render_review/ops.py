@@ -57,38 +57,30 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
         # load preview seqeunces in vse
         for idx, dir in enumerate(output_dirs):
-            # check if previe sequence exists
-            jpg_files = []
-            png_files = []
+            # gather all preview files that eiher end with .jpg or .png
+            files_dict = opsdata.gather_files_by_suffix(
+                dir, output=dict, search_suffixes=[".jpg", ".png", ".exr"]
+            )
+            files_list = []
+            frames_found_text = ""
+            for suffix, file_list in files_dict.items():
+                if suffix in [".jpg", ".png"]:
+                    files_list.append(file_list)
+                frames_found_text += f" | {suffix}: {len(file_list)}"
 
-            for f in dir.iterdir():
-                if not f.is_file():
-                    continue
+            # replace first occurence, we dont want that at the beginning
+            frames_found_text = frames_found_text.replace(
+                " | ",
+                "",
+            )
 
-                if f.suffix == ".jpg":
-                    jpg_files.append(f)
+            if files_list:
+                # if preview files were found (could be either jpg or png) takt the one with
+                # more frame
+                preview_files = sorted(files_list, key=lambda l: len(l))[-1]
+                logger.info("%s found %i frames", dir.name, len(preview_files))
 
-                elif f.suffix == ".png":
-                    png_files.append(f)
-
-            preview_files = sorted([jpg_files, png_files], key=lambda l: len(l))[-1]
-            preview_files = sorted(preview_files, key=lambda f: f.name)
-
-            logger.info("%s found %i frames", dir.name, len(preview_files))
-
-            if preview_files:
                 # load image seqeunce if found
-                """
-                op_file_list = [{"name": f.name} for f in preview_files]
-                bpy.ops.sequencer.image_strip_add(
-                    directory=dir.as_posix() + "/",
-                    files=op_file_list,
-                    frame_start=int(preview_files[0].stem),
-                    frame_end=context.scene.frame_start + len(preview_files) - 1,
-                    relative_path=False,
-                    channel=idx,
-                )
-                """
                 strip = context.scene.sequence_editor.sequences.new_image(
                     dir.name,
                     preview_files[0].as_posix(),
@@ -122,6 +114,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             # set strip properties
             strip.rr.is_render = True
+            strip.rr.frames_found_text = frames_found_text
 
         # set scene resolution to resolution of laoded image
         context.scene.render.resolution_x = vars.RESOLUTION[0]
