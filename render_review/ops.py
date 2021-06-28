@@ -381,7 +381,15 @@ class RR_OT_sqe_update_is_approved(bpy.types.Operator):
         return bool(context.scene.sequence_editor.sequences_all)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        opsdata.update_is_approved(context)
+        approved_strips = opsdata.update_is_approved(context)
+
+        if approved_strips:
+            self.report(
+                {"INFO"},
+                f"Found approved {'render' if len(approved_strips) == 1 else 'renders'}: {', '.join(s.name for s in approved_strips)}",
+            )
+        else:
+            self.report({"INFO"}, "Found no approved renders")
         return {"FINISHED"}
 
 
@@ -394,7 +402,7 @@ classes = [
     RR_OT_sqe_inspect_exr_sequence,
     RR_OT_sqe_clear_exr_inspect,
     RR_OT_sqe_approve_render,
-    RR_OT_sqe_update_is_approved
+    RR_OT_sqe_update_is_approved,
 ]
 
 
