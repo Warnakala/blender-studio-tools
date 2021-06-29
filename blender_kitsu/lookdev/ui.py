@@ -80,9 +80,14 @@ class KITSU_PT_vi3d_lookdev_tools(bpy.types.Panel):
         )
 
 
-# ---------REGISTER ----------
+class KITSU_PT_comp_lookdev_tools(KITSU_PT_vi3d_lookdev_tools):
 
-classes = [KITSU_PT_vi3d_lookdev_tools]
+    bl_space_type = "NODE_EDITOR"
+
+
+# ---------REGISTER ----------
+# classes that inherit from another need to be registered first for some reason
+classes = [KITSU_PT_comp_lookdev_tools, KITSU_PT_vi3d_lookdev_tools]
 
 
 def register():

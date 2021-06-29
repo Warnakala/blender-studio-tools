@@ -125,9 +125,14 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         )
 
 
+class KITSU_PT_comp_context(KITSU_PT_vi3d_context):
+    bl_space_type = "NODE_EDITOR"
+
+
 # ---------REGISTER ----------
 
-classes = [KITSU_PT_vi3d_context]
+# classes that inherit from another need to be registered first for some reason
+classes = [KITSU_PT_comp_context, KITSU_PT_vi3d_context]
 
 
 def register():
