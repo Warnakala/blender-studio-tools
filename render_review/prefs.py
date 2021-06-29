@@ -17,10 +17,6 @@ def is_blender_kitsu_enabled() -> bool:
     return "blender_kitsu" in bpy.context.preferences.addons
 
 
-def is_blender_kitsu_auth() -> bool:
-    return bpy.context.preferences.addons["blender_kitsu"].session.is_auth()
-
-
 class RR_OT_enable_blender_kitsu(bpy.types.Operator):
     """"""
 
@@ -66,6 +62,12 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         subtype="DIR_PATH",
     )
 
+    edit_storage_dir: bpy.props.StringProperty(  # type: ignore
+        name="Edit Storage Directory",
+        default="/home/guest/Blender Dropbox/render/sprites",
+        subtype="DIR_PATH",
+    )
+
     enable_blender_kitsu: bpy.props.BoolProperty(
         name="Enable Blender Kitsu",
         description="This checkbox controls if render_review should try to use the blender_kitsu addon to extend its feature sets.",
@@ -100,6 +102,20 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
             row.label(text="Please specify the Frame Storage Directory", icon="ERROR")
 
         if not bpy.data.filepath and self.frame_storage_dir.startswith("//"):
+            row = box.row()
+            row.label(
+                text="In order to use a relative path the current file needs to be saved.",
+                icon="ERROR",
+            )
+
+        # edit storage dir
+        box.row().prop(self, "edit_storage_dir")
+
+        if not self.edit_storage_dir:
+            row = box.row()
+            row.label(text="Please specify the Edit Storage Directory", icon="ERROR")
+
+        if not bpy.data.filepath and self.edit_storage_dir.startswith("//"):
             row = box.row()
             row.label(
                 text="In order to use a relative path the current file needs to be saved.",
@@ -153,6 +169,24 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
             return False
 
         if not bpy.data.filepath and self.farm_output_dir.startswith("//"):
+            return False
+
+        return True
+
+    @property
+    def edit_storage_path(self) -> Optional[Path]:
+        if not self.is_edit_storage_valid:
+            return None
+        return Path(os.path.abspath(bpy.path.abspath(self.edit_storage_dir)))
+
+    @property
+    def is_edit_storage_valid(self) -> bool:
+
+        # check if file is saved
+        if not self.edit_storage_dir:
+            return False
+
+        if not bpy.data.filepath and self.edit_storage_dir.startswith("//"):
             return False
 
         return True
