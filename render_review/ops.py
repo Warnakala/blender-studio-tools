@@ -7,7 +7,7 @@ from typing import Set, Union, Optional, List, Dict, Any
 
 import bpy
 
-from render_review import vars, prefs, opsdata, util
+from render_review import vars, prefs, opsdata, util, kitsu
 from render_review.log import LoggerFactory
 
 
@@ -27,9 +27,9 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         return bool(context.scene.rr.is_render_dir_valid)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
-        imported_valid_sequence: bpy.types.ImageSequence = []
-        imported_invalid_sequence: bpy.types.ImageSequence = []
+        addon_prefs = prefs.addon_prefs_get(context)
+        imported_valid_sequences: bpy.types.ImageSequence = []
+        imported_invalid_sequences: bpy.types.ImageSequence = []
         image_data_blocks: bpy.types.Image = []
 
         # find existing output dirs
@@ -99,7 +99,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 img.source = "SEQUENCE"
                 image_data_blocks.append(img)
 
-                imported_valid_sequence.append(strip)
+                imported_valid_sequences.append(strip)
 
             else:
                 # add empty image sequence
@@ -110,11 +110,31 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                     101,
                 )
                 strip.directory = dir.as_posix() + "/"
-                imported_invalid_sequence.append(strip)
+                imported_invalid_sequences.append(strip)
 
             # set strip properties
             strip.rr.is_render = True
             strip.rr.frames_found_text = frames_found_text
+
+        # perform kitsu operations if enabled
+        if addon_prefs.enable_blender_kitsu and imported_valid_sequences:
+
+            if kitsu.is_auth_and_project():
+
+                # take the strip that is the longest to create metastrip
+                imported_valid_sequences.sort(key=lambda s: s.frame_final_duration)
+                strip = imported_valid_sequences[-1]
+                shot_name = render_dir.name
+                sequence_name = render_dir.parent.name
+
+                # create metastrip
+                metastrip = kitsu.create_meta_strip(context, strip)
+
+                # link metastrip
+                kitsu.link_strip_by_name(context, metastrip, shot_name, sequence_name)
+
+            else:
+                logger.error("Unable to perform kitsu operations. No active project")
 
         # set scene resolution to resolution of laoded image
         context.scene.render.resolution_x = vars.RESOLUTION[0]
@@ -126,7 +146,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
         self.report(
             {"INFO"},
-            f"Imported {len(imported_invalid_sequence) + len(imported_valid_sequence)} Render Sequences",
+            f"Imported {len(imported_invalid_sequences) + len(imported_valid_sequences)} Render Sequences",
         )
 
         return {"FINISHED"}
