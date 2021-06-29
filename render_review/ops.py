@@ -8,6 +8,7 @@ from typing import Set, Union, Optional, List, Dict, Any
 import bpy
 
 from render_review import vars, prefs, opsdata, util, kitsu
+from render_review.exception import NoImageSequenceAvailableException
 from render_review.log import LoggerFactory
 
 
@@ -516,6 +517,113 @@ class RR_OT_sqe_isolate_strip(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RR_OT_sqe_push_to_edit(bpy.types.Operator):
+    """"""
+
+    bl_idname = "rr.sqe_push_to_edit"
+    bl_label = "Push to edit"
+    bl_description = ""
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        active_strip = context.scene.sequence_editor.active_strip
+        return bool(
+            active_strip and active_strip.type == "IMAGE" and active_strip.rr.is_render
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        active_strip = context.scene.sequence_editor.active_strip
+
+        render_dir = Path(bpy.path.abspath(active_strip.directory))
+        edit_storage_dir = Path(opsdata.get_edit_storage_path(active_strip))
+
+        shot_name = edit_storage_dir.parent.name
+        edit_filepath = edit_storage_dir / f"{shot_name}.lighting.mp4"
+        metadata_path = edit_storage_dir / "metadata.json"
+
+        # get existing .mp4 if not create one with ffmpeg
+        try:
+            mp4_path = opsdata.get_render_mp4_path(active_strip)
+        except NoImageSequenceAvailableException:
+            # no jpeg files available
+            self.report(
+                {"ERROR"}, f"No preview files available in {render_dir.as_posix()}"
+            )
+            return {"CANCELLED"}
+
+        # if mp4 path does not exists use ffmpeg to create preview file
+        if not mp4_path.exists():
+            jpeg_files = opsdata.gather_files_by_suffix(
+                render_dir, output=list, search_suffixes=[".jpg"]
+            )
+            fffmpeg_command = f"ffmpeg -start_number {int(jpeg_files[0][0].stem)} -framerate {vars.FPS} -i {render_dir.as_posix()}/%06d.jpg -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p {mp4_path.as_posix()}"
+            logger.info(
+                "Creating .mp4 from image sequence in: %s", render_dir.as_posix()
+            )
+            subprocess.call(fffmpeg_command, shell=True)
+            logger.info("Create .mp4: %s", mp4_path.as_posix())
+
+        # create edit path if not exists yet
+        if not edit_storage_dir.exists():
+            edit_storage_dir.mkdir(parents=True)
+            logger.info("Created dir in edit storage: %s", edit_storage_dir.as_posix())
+
+        # find latest edit version
+        existing_files: List[Path] = []
+        for file in edit_storage_dir.iterdir():
+            if not file.is_file():
+                continue
+            if not file.name.startswith(f"{shot_name}.lighting"):
+                continue
+
+            version = util.get_version(file.name)
+            if not version:
+                continue
+
+            if file.name.replace(version, "") == f"{shot_name}.lighting..mp4":
+                existing_files.append(file)
+
+        existing_files.sort(key=lambda f: f.name)
+
+        if len(existing_files) > 0:
+            latest_version = util.get_version(existing_files[-1].name)
+            increment = "v{:03}".format(int(latest_version.replace("v", "")) + 1)
+        else:
+            increment = "v001"
+
+        # compose edit filepath of new mp4 file
+        edit_filepath = edit_storage_dir / f"{shot_name}.lighting.{increment}.mp4"
+
+        # copy mp4 to edit filepath
+        shutil.copy2(mp4_path.as_posix(), edit_filepath.as_posix())
+        logger.info(
+            "Copied: %s \nTo: %s", mp4_path.as_posix(), edit_filepath.as_posix()
+        )
+
+        # create metadata json
+        if not metadata_path.exists():
+            metadata_path.touch()
+            logger.info("Created metadata.json: %s", metadata_path.as_posix())
+            opsdata.save_to_json({}, metadata_path)
+
+        # udpate metadata json
+        json_obj = opsdata.load_json(metadata_path)
+        json_obj[edit_filepath.name] = mp4_path.as_posix()
+        opsdata.save_to_json(
+            json_obj,
+            metadata_path,
+        )
+        logger.info("Updated metadata in: %s", metadata_path.as_posix())
+
+        # log
+        self.report(
+            {"INFO"},
+            f"Pushed to edit: {edit_filepath.as_posix()}",
+        )
+
+        return {"FINISHED"}
+
+
 # ----------------REGISTER--------------
 
 
@@ -529,6 +637,7 @@ classes = [
     RR_OT_open_path,
     RR_OT_sqe_isolate_strip,
     RR_OT_sqe_unmute_all_strips,
+    RR_OT_sqe_push_to_edit,
 ]
 
 addon_keymap_items = []

@@ -6,6 +6,7 @@ import bpy
 
 from render_review import vars, prefs
 from render_review.log import LoggerFactory
+from render_review.exception import NoImageSequenceAvailableException
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -22,6 +23,41 @@ def get_frame_storage_path(strip: bpy.types.ImageSequence) -> Path:
     )
 
     return fs_dir
+
+
+def get_edit_storage_path(strip: bpy.types.ImageSequence) -> Path:
+    # fs > frame_storage | fo > farm_output
+    addon_prefs = prefs.addon_prefs_get(bpy.context)
+    fo_dir = Path(bpy.path.abspath(strip.directory))
+    edit_storage_dir_name = fo_dir.parent.name + ".lighting"
+
+    edit_storage_dir = (
+        addon_prefs.edit_storage_path
+        / fo_dir.parent.relative_to(fo_dir.parents[3])
+        / edit_storage_dir_name
+    )
+
+    return edit_storage_dir
+
+
+def get_render_mp4_path(strip: bpy.types.ImageSequence) -> Path:
+    render_dir = Path(bpy.path.abspath(strip.directory))
+    shot_name = render_dir.parent.name
+
+    # count 070_0040_A.lighting-101-136.mp4
+    files: List[List[Path]] = gather_files_by_suffix(
+        render_dir, output=list, search_suffixes=[".jpg"]
+    )
+    if not files:
+        raise NoImageSequenceAvailableException(
+            f"No jpg files found in: {render_dir.as_posix()}"
+        )
+
+    mp4_filename = (
+        f"{shot_name}.lighting-{int(files[0][0].stem)}-{int(files[0][-1].stem)}.mp4"
+    )
+
+    return render_dir / mp4_filename
 
 
 def get_frame_storage_backup_path(strip: bpy.types.ImageSequence) -> Path:

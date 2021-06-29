@@ -12,6 +12,7 @@ from render_review.ops import (
     RR_OT_sqe_approve_render,
     RR_OT_sqe_update_is_approved,
     RR_OT_open_path,
+    RR_OT_sqe_push_to_edit,
 )
 
 
@@ -78,6 +79,10 @@ class RR_PT_render_review(bpy.types.Panel):
             row.operator(
                 RR_OT_sqe_update_is_approved.bl_idname, text="", icon="FILE_REFRESH"
             )
+
+            # push to edit
+            row = box.row(align=True)
+            row.operator(RR_OT_sqe_push_to_edit.bl_idname, icon="EXPORT")
 
 
 def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:

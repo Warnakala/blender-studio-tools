@@ -1,1 +1,3 @@
 RESOLUTION = (2048, 858)
+VERSION_PATTERN = r"v\d\d\d"
+FPS = 24
