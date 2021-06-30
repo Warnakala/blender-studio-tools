@@ -40,11 +40,13 @@ def get_edit_storage_path(strip: bpy.types.ImageSequence) -> Path:
     return edit_storage_dir
 
 
-def get_render_mp4_path(strip: bpy.types.ImageSequence) -> Path:
+def get_farm_output_mp4_path(strip: bpy.types.ImageSequence) -> Path:
     render_dir = Path(bpy.path.abspath(strip.directory))
     shot_name = render_dir.parent.name
 
-    # count 070_0040_A.lighting-101-136.mp4
+    # 070_0040_A.lighting-101-136.mp4
+    # because flamenco writes in and out frame in filename we need check the first and
+    # last frame in the folder
     files: List[List[Path]] = gather_files_by_suffix(
         render_dir, output=list, search_suffixes=[".jpg"]
     )
@@ -78,7 +80,7 @@ def load_json(path: Path) -> Any:
 
 def save_to_json(obj: Any, path: Path) -> None:
     with open(path.as_posix(), "w") as file:
-        json.dump(obj, file)
+        json.dump(obj, file, indent=4)
 
 
 def update_is_approved(

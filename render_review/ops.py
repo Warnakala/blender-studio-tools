@@ -1,7 +1,6 @@
 import sys
 import subprocess
 import shutil
-import json
 from pathlib import Path
 from typing import Set, Union, Optional, List, Dict, Any
 
@@ -16,7 +15,12 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 
 class RR_OT_sqe_create_review_session(bpy.types.Operator):
-    """"""
+    """
+    Look in tomain render folder of shot defined by context.scene.rr.render_dir_path.
+    It will search all available folder for preview sequences (.jpg / .png). Each found image
+    sequence will be loaded in the sequence editor. Has enable blender_kitsu option that will
+    create a linked metastrip for the loaded shot on the top most channel.
+    """
 
     bl_idname = "rr.sqe_create_review_session"
     bl_label = "Create Review Session"
@@ -36,7 +40,6 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         # find existing output dirs
         render_dir = Path(context.scene.rr.render_dir_path)
         shot_name = context.scene.rr.shot_name
-
         output_dirs = [
             d
             for d in render_dir.iterdir()
@@ -49,6 +52,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         output_dirs.append(output_dirs[0])
         output_dirs.pop(0)
 
+        # log found folders
         output_dirs_str = "\n".join([d.name for d in output_dirs])
         logger.info(f"Found {len(output_dirs)} output dirs:\n{output_dirs_str}")
 
@@ -58,15 +62,17 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
         # load preview seqeunces in vse
         for idx, dir in enumerate(output_dirs):
-            # gather all preview files that eiher end with .jpg or .png
+            # gather all available frames that eiher end with .jpg / .png /.exr
             files_dict = opsdata.gather_files_by_suffix(
                 dir, output=dict, search_suffixes=[".jpg", ".png", ".exr"]
             )
-            files_list = []
-            frames_found_text = ""
+
+            # create seperate list that only consists of .jpg / .png
+            preview_files_list: List[Path] = []
+            frames_found_text = ""  # frames found text will be used in ui
             for suffix, file_list in files_dict.items():
                 if suffix in [".jpg", ".png"]:
-                    files_list.append(file_list)
+                    preview_files_list.append(file_list)
                 frames_found_text += f" | {suffix}: {len(file_list)}"
 
             # replace first occurence, we dont want that at the beginning
@@ -75,10 +81,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 "",
             )
 
-            if files_list:
+            if preview_files_list:
                 # if preview files were found (could be either jpg or png) takt the one with
                 # more frame
-                preview_files = sorted(files_list, key=lambda l: len(l))[-1]
+                preview_files = sorted(preview_files_list, key=lambda l: len(l))[-1]
                 logger.info("%s found %i frames", dir.name, len(preview_files))
 
                 # load image seqeunce if found
@@ -103,7 +109,9 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 imported_valid_sequences.append(strip)
 
             else:
-                # add empty image sequence
+                # if no preview files available create an empty image strip
+                # because there are most likely some exr files available which can stil
+                # be inspected
                 strip = context.scene.sequence_editor.sequences.new_image(
                     dir.name,
                     "",
@@ -135,13 +143,16 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 kitsu.link_strip_by_name(context, metastrip, shot_name, sequence_name)
 
             else:
-                logger.error("Unable to perform kitsu operations. No active project")
+                logger.error(
+                    "Unable to perform kitsu operations. No active project or no authorized"
+                )
 
         # set scene resolution to resolution of laoded image
         context.scene.render.resolution_x = vars.RESOLUTION[0]
         context.scene.render.resolution_y = vars.RESOLUTION[1]
 
-        # scan for approved renders
+        # scan for approved renders, will modify strip.rr.is_approved prop
+        # which controls the custom gpu overlay
         opsdata.update_is_approved(context)
         util.redraw_ui()
 
@@ -154,7 +165,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
 
 class RR_OT_setup_review_workspace(bpy.types.Operator):
-    """"""
+    """
+    Deletes all non Video Editing Workspaces. Appends Video Editing workspace
+    Replaces File Browser area with Image Editor.
+    """
 
     bl_idname = "rr.setup_review_workspace"
     bl_label = "Setup Review Workspace"
@@ -189,7 +203,6 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
             screen = window.screen
 
             for area in screen.areas:
-                print(area.type)
                 if area.type == "FILE_BROWSER":
                     area.type = "IMAGE_EDITOR"
 
@@ -294,7 +307,10 @@ class RR_OT_sqe_clear_exr_inspect(bpy.types.Operator):
 
 
 class RR_OT_sqe_approve_render(bpy.types.Operator):
-    """"""
+    """
+    Copies the selected strip render from the farm_output to the frame_storage.
+    Existing render in frame_storage will be renamed for extra backup.
+    """
 
     bl_idname = "rr.sqe_approve_render"
     bl_label = "Approve Render"
@@ -323,6 +339,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
 
         # create frame storage path if not exists yet
         if frame_storage_path.exists():
+
             # delete backup if exists
             if frame_storage_backup_path.exists():
                 shutil.rmtree(frame_storage_backup_path)
@@ -399,7 +416,10 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
 
 
 class RR_OT_sqe_update_is_approved(bpy.types.Operator):
-    """"""
+    """
+    Scans sequence editor and checks for each render strip if it is approved
+    by reading the metadata.json file.
+    """
 
     bl_idname = "rr.update_is_approved"
     bl_label = "Update is Approved"
@@ -424,7 +444,9 @@ class RR_OT_sqe_update_is_approved(bpy.types.Operator):
 
 
 class RR_OT_open_path(bpy.types.Operator):
-    """"""
+    """
+    Opens cls.filepath in explorer. Supported for win / mac / linux.
+    """
 
     bl_idname = "rr.open_path"
     bl_label = "Open Path"
@@ -473,7 +495,9 @@ class RR_OT_open_path(bpy.types.Operator):
 
 
 class RR_OT_sqe_unmute_all_strips(bpy.types.Operator):
-    """"""
+    """
+    Unmutes all strips in sequence editor.
+    """
 
     bl_idname = "rr.sqe_unmute_all_strips"
     bl_label = "Unmute all strips"
@@ -490,7 +514,9 @@ class RR_OT_sqe_unmute_all_strips(bpy.types.Operator):
 
 
 class RR_OT_sqe_isolate_strip(bpy.types.Operator):
-    """"""
+    """
+    Hides all other strips except for the selected strip in sequence editor.
+    """
 
     bl_idname = "rr.sqe_isolate_strip"
     bl_label = "Isolate Strip"
@@ -518,7 +544,13 @@ class RR_OT_sqe_isolate_strip(bpy.types.Operator):
 
 
 class RR_OT_sqe_push_to_edit(bpy.types.Operator):
-    """"""
+    """
+    This operator pushes the active render strip to the edit. Only .mp4 files will be pushed to edit.
+    If the .mp4 file is not existent but the preview .jpg sequence is in the render folder. This operator
+    creates an .mp4 with ffmpeg. The .mp4 file will be named after the flamenco naming convention, but when
+    copied over to the edit storage it will be renamed and gets a version string.
+
+    """
 
     bl_idname = "rr.sqe_push_to_edit"
     bl_label = "Push to edit"
@@ -536,14 +568,13 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
 
         render_dir = Path(bpy.path.abspath(active_strip.directory))
         edit_storage_dir = Path(opsdata.get_edit_storage_path(active_strip))
-
         shot_name = edit_storage_dir.parent.name
-        edit_filepath = edit_storage_dir / f"{shot_name}.lighting.mp4"
         metadata_path = edit_storage_dir / "metadata.json"
 
-        # get existing .mp4 if not create one with ffmpeg
+        # -------------GET MP4 OR CREATE WITH FFMPEG ---------------
+        # try to get render_mp4_path will throw error if no jpg files are available
         try:
-            mp4_path = opsdata.get_render_mp4_path(active_strip)
+            mp4_path = Path(opsdata.get_farm_output_mp4_path(active_strip))
         except NoImageSequenceAvailableException:
             # no jpeg files available
             self.report(
@@ -557,12 +588,13 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
                 render_dir, output=list, search_suffixes=[".jpg"]
             )
             fffmpeg_command = f"ffmpeg -start_number {int(jpeg_files[0][0].stem)} -framerate {vars.FPS} -i {render_dir.as_posix()}/%06d.jpg -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p {mp4_path.as_posix()}"
-            logger.info(
-                "Creating .mp4 from image sequence in: %s", render_dir.as_posix()
-            )
+            logger.info("Creating .mp4 with ffmpeg")
             subprocess.call(fffmpeg_command, shell=True)
-            logger.info("Create .mp4: %s", mp4_path.as_posix())
+            logger.info("Created .mp4: %s", mp4_path.as_posix())
+        else:
+            logger.info("Found existing .mp4 file: %s", mp4_path.as_posix())
 
+        # --------------COPY MP4 TO EDIT STORAGE ----------------
         # create edit path if not exists yet
         if not edit_storage_dir.exists():
             edit_storage_dir.mkdir(parents=True)
@@ -585,6 +617,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
 
         existing_files.sort(key=lambda f: f.name)
 
+        # get version string
         if len(existing_files) > 0:
             latest_version = util.get_version(existing_files[-1].name)
             increment = "v{:03}".format(int(latest_version.replace("v", "")) + 1)
@@ -600,6 +633,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
             "Copied: %s \nTo: %s", mp4_path.as_posix(), edit_filepath.as_posix()
         )
 
+        # ----------------UPDATE METADATA.JSON ------------------
         # create metadata json
         if not metadata_path.exists():
             metadata_path.touch()
@@ -620,7 +654,6 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
             {"INFO"},
             f"Pushed to edit: {edit_filepath.as_posix()}",
         )
-
         return {"FINISHED"}
 
 
