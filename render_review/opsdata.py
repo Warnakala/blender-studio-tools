@@ -168,3 +168,12 @@ def is_sequence_dir(dir: Path) -> bool:
 
 def get_shot_name_from_dir(dir: Path) -> str:
     return dir.stem  # 060_0010_A.lighting > 060_0010_A
+
+def get_image_editor(context: bpy.types.Context) -> Optional[bpy.types.Area]:
+    image_editor = None
+
+    for area in context.screen.areas:
+        if area.type == "IMAGE_EDITOR":
+            image_editor = area
+
+    return image_editor

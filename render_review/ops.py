@@ -247,7 +247,7 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         active_strip = context.scene.sequence_editor.active_strip
-        image_editor = cls._get_image_editor(context)
+        image_editor = opsdata.get_image_editor(context)
         return bool(
             active_strip
             and active_strip.type == "IMAGE"
@@ -257,7 +257,7 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         active_strip = context.scene.sequence_editor.active_strip
-        image_editor = self._get_image_editor(context)
+        image_editor = opsdata.get_image_editor(context)
         output_dir = Path(bpy.path.abspath(active_strip.directory))
 
         # find exr sequence
@@ -288,18 +288,6 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         image_editor.spaces.active.image_user.frame_duration = 5000
 
         return {"FINISHED"}
-
-    @classmethod
-    def _get_image_editor(self, context: bpy.types.Context) -> Optional[bpy.types.Area]:
-
-        image_editor = None
-
-        for area in bpy.context.screen.areas:
-            if area.type == "IMAGE_EDITOR":
-                image_editor = area
-
-        return image_editor
-
 
 class RR_OT_sqe_clear_exr_inspect(bpy.types.Operator):
     """"""
