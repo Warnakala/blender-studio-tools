@@ -768,13 +768,24 @@ class KITSU_OT_anim_update_output_coll(bpy.types.Operator):
                 continue
             missing.append(coll)
 
-        for coll in missing:
+        # only take parent colls
+        childs = []
+        for i in range(len(missing)):
+            coll = missing[i]
+            coll_childs = list(opsdata.traverse_collection_tree(coll))
+            for j in range(i + 1, len(missing)):
+                coll_comp = missing[j]
+                if coll_comp in coll_childs:
+                    childs.append(coll_comp)
+
+        parents = [coll for coll in missing if coll not in childs]
+        for coll in parents:
             output_coll.children.link(coll)
             logger.info("%s linked in %s", coll.name, output_coll.name)
 
         self.report(
             {"INFO"},
-            f"Found Asset Collections: {len(asset_colls)} | Added to output collection: {len(missing)}",
+            f"Found Asset Collections: {len(asset_colls)} | Added to output collection: {len(parents)}",
         )
         return {"FINISHED"}
 
