@@ -11,15 +11,7 @@ logger = LoggerFactory.getLogger(name=__name__)
 class RR_property_group_scene(bpy.types.PropertyGroup):
     """"""
 
-    def _get_shot_name_from_render_dir(self):
-        if not self.is_render_dir_valid:
-            return ""
-        return self.render_dir_path.stem  # 060_0010_A.lighting > 060_0010_A
-
     render_dir: bpy.props.StringProperty(name="Render Directory", subtype="DIR_PATH")
-    shot_name: bpy.props.StringProperty(
-        name="Shot Name", get=_get_shot_name_from_render_dir
-    )
 
     @property
     def render_dir_path(self):
@@ -46,6 +38,7 @@ class RR_property_group_sequence(bpy.types.PropertyGroup):
     is_render: bpy.props.BoolProperty(name="Is Render")
     is_approved: bpy.props.BoolProperty(name="Is Approved")
     frames_found_text: bpy.props.StringProperty(name="Frames Found")
+    shot_name: bpy.props.StringProperty(name="Shot")
 
 
 # ----------------REGISTER--------------

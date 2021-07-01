@@ -160,3 +160,11 @@ def gather_files_by_suffix(
         raise ValueError(
             f"Supported output types are: str, dict, list. {str(output)} not implemented yet."
         )
+
+
+def is_sequence_dir(dir: Path) -> bool:
+    return dir.parent.name == "shots"
+
+
+def get_shot_name_from_dir(dir: Path) -> str:
+    return dir.stem  # 060_0010_A.lighting > 060_0010_A

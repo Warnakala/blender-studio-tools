@@ -33,119 +33,144 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
-        imported_valid_sequences: bpy.types.ImageSequence = []
-        imported_invalid_sequences: bpy.types.ImageSequence = []
         image_data_blocks: bpy.types.Image = []
-
-        # find existing output dirs
         render_dir = Path(context.scene.rr.render_dir_path)
-        shot_name = context.scene.rr.shot_name
-        output_dirs = [
-            d
-            for d in render_dir.iterdir()
-            if d.is_dir() and "__intermediate" not in d.name
-        ]
-        output_dirs = sorted(output_dirs, key=lambda d: d.name)
 
-        # 070_0010_A.lighting is the latest render > with current structure
-        # this folder is [0] in output dirs > needs to be moved to [-1]
-        output_dirs.append(output_dirs[0])
-        output_dirs.pop(0)
+        shot_folders: List[Path] = []
 
-        # log found folders
-        output_dirs_str = "\n".join([d.name for d in output_dirs])
-        logger.info(f"Found {len(output_dirs)} output dirs:\n{output_dirs_str}")
+        # if render is sequence folder user wants to review whole seqeuence
+        if opsdata.is_sequence_dir(render_dir):
+            shot_folders.extend(list(render_dir.iterdir()))
+        else:
+            shot_folders.append(render_dir)
 
-        # init sqe
-        if not context.scene.sequence_editor:
-            context.scene.sequence_editor_create()
+        shot_folders.sort(key=lambda d: d.name)
+        prev_frame_end: int = 0
 
-        # load preview seqeunces in vse
-        for idx, dir in enumerate(output_dirs):
-            # gather all available frames that eiher end with .jpg / .png /.exr
-            files_dict = opsdata.gather_files_by_suffix(
-                dir, output=dict, search_suffixes=[".jpg", ".png", ".exr"]
-            )
+        for shot_folder in shot_folders:
 
-            # create seperate list that only consists of .jpg / .png
-            preview_files_list: List[Path] = []
-            frames_found_text = ""  # frames found text will be used in ui
-            for suffix, file_list in files_dict.items():
-                if suffix in [".jpg", ".png"]:
-                    preview_files_list.append(file_list)
-                frames_found_text += f" | {suffix}: {len(file_list)}"
+            logger.info("Processing %s", shot_folder.name)
 
-            # replace first occurence, we dont want that at the beginning
-            frames_found_text = frames_found_text.replace(
-                " | ",
-                "",
-            )
+            imported_valid_sequences: bpy.types.ImageSequence = []
+            imported_invalid_sequences: bpy.types.ImageSequence = []
 
-            if preview_files_list:
-                # if preview files were found (could be either jpg or png) takt the one with
-                # more frame
-                preview_files = sorted(preview_files_list, key=lambda l: len(l))[-1]
-                logger.info("%s found %i frames", dir.name, len(preview_files))
+            # find existing output dirs
+            shot_name = opsdata.get_shot_name_from_dir(shot_folder)
+            output_dirs = [
+                d
+                for d in shot_folder.iterdir()
+                if d.is_dir() and "__intermediate" not in d.name
+            ]
+            output_dirs = sorted(output_dirs, key=lambda d: d.name)
 
-                # load image seqeunce if found
-                strip = context.scene.sequence_editor.sequences.new_image(
-                    dir.name,
-                    preview_files[0].as_posix(),
-                    idx + 1,
-                    int(preview_files[0].stem),
+            # 070_0010_A.lighting is the latest render > with current structure
+            # this folder is [0] in output dirs > needs to be moved to [-1]
+            output_dirs.append(output_dirs[0])
+            output_dirs.pop(0)
+
+            # init sqe
+            if not context.scene.sequence_editor:
+                context.scene.sequence_editor_create()
+
+            # load preview seqeunces in vse
+            for idx, dir in enumerate(output_dirs):
+                # gather all available frames that eiher end with .jpg / .png /.exr
+                files_dict = opsdata.gather_files_by_suffix(
+                    dir, output=dict, search_suffixes=[".jpg", ".png", ".exr"]
                 )
-                # extend strip elements with all the frames
-                for f in preview_files[1:]:
-                    strip.elements.append(f.name)
 
-                # create image datablock to read metadata like resolution
-                img = bpy.data.images.load(
-                    preview_files[0].as_posix(), check_existing=True
-                )
-                img.name = preview_files[0].parent.name + "_PREVIEW"
-                img.source = "SEQUENCE"
-                image_data_blocks.append(img)
+                # create seperate list that only consists of .jpg / .png
+                preview_files_list: List[Path] = []
+                frames_found_text = ""  # frames found text will be used in ui
+                for suffix, file_list in files_dict.items():
+                    if suffix in [".jpg", ".png"]:
+                        preview_files_list.append(file_list)
+                    frames_found_text += f" | {suffix}: {len(file_list)}"
 
-                imported_valid_sequences.append(strip)
-
-            else:
-                # if no preview files available create an empty image strip
-                # because there are most likely some exr files available which can stil
-                # be inspected
-                strip = context.scene.sequence_editor.sequences.new_image(
-                    dir.name,
+                # replace first occurence, we dont want that at the beginning
+                frames_found_text = frames_found_text.replace(
+                    " | ",
                     "",
-                    idx + 1,
-                    101,
+                    1,
                 )
-                strip.directory = dir.as_posix() + "/"
-                imported_invalid_sequences.append(strip)
 
-            # set strip properties
-            strip.rr.is_render = True
-            strip.rr.frames_found_text = frames_found_text
+                if preview_files_list:
+                    # if preview files were found (could be either jpg or png) takt the one with
+                    # more frame
+                    preview_files = sorted(preview_files_list, key=lambda l: len(l))[-1]
+                    logger.info("%s found %i frames", dir.name, len(preview_files))
 
-        # perform kitsu operations if enabled
-        if addon_prefs.enable_blender_kitsu and imported_valid_sequences:
+                    # load image seqeunce if found
+                    frame_start = (
+                        int(preview_files[0].stem)
+                        if not prev_frame_end
+                        else prev_frame_end
+                    )
+                    strip = context.scene.sequence_editor.sequences.new_image(
+                        dir.name,
+                        preview_files[0].as_posix(),
+                        idx + 1,
+                        frame_start,
+                    )
 
-            if kitsu.is_auth_and_project():
+                    # extend strip elements with all the frames
+                    for f in preview_files[1:]:
+                        strip.elements.append(f.name)
 
-                # take the strip that is the longest to create metastrip
-                imported_valid_sequences.sort(key=lambda s: s.frame_final_duration)
-                strip = imported_valid_sequences[-1]
-                shot_name = render_dir.name
-                sequence_name = render_dir.parent.name
+                    # create image datablock to read metadata like resolution
+                    img = bpy.data.images.load(
+                        preview_files[0].as_posix(), check_existing=True
+                    )
+                    img.name = preview_files[0].parent.name + "_PREVIEW"
+                    img.source = "SEQUENCE"
+                    image_data_blocks.append(img)
 
-                # create metastrip
-                metastrip = kitsu.create_meta_strip(context, strip)
+                    imported_valid_sequences.append(strip)
 
-                # link metastrip
-                kitsu.link_strip_by_name(context, metastrip, shot_name, sequence_name)
+                else:
+                    # if no preview files available create an empty image strip
+                    # because there are most likely some exr files available which can stil
+                    # be inspected
+                    strip = context.scene.sequence_editor.sequences.new_image(
+                        dir.name,
+                        "",
+                        idx + 1,
+                        101,
+                    )
+                    strip.directory = dir.as_posix() + "/"
+                    imported_invalid_sequences.append(strip)
 
-            else:
-                logger.error(
-                    "Unable to perform kitsu operations. No active project or no authorized"
-                )
+                # set strip properties
+                strip.rr.shot_name = shot_folder.name
+                strip.rr.is_render = True
+                strip.rr.frames_found_text = frames_found_text
+
+            # query the strip that is the longest for metastrip and prev_frame_end
+            imported_valid_sequences.sort(key=lambda s: s.frame_final_duration)
+            strip_longest = imported_valid_sequences[-1]
+
+            # perform kitsu operations if enabled
+            if addon_prefs.enable_blender_kitsu and imported_valid_sequences:
+
+                if kitsu.is_auth_and_project():
+
+                    shot_name = shot_folder.name
+                    sequence_name = shot_folder.parent.name
+
+                    # create metastrip
+                    metastrip = kitsu.create_meta_strip(context, strip_longest)
+
+                    # link metastrip
+                    kitsu.link_strip_by_name(
+                        context, metastrip, shot_name, sequence_name
+                    )
+
+                else:
+                    logger.error(
+                        "Unable to perform kitsu operations. No active project or no authorized"
+                    )
+
+            prev_frame_end = strip_longest.frame_final_end
 
         # set scene resolution to resolution of laoded image
         context.scene.render.resolution_x = vars.RESOLUTION[0]

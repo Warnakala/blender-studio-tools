@@ -14,6 +14,7 @@ from render_review.ops import (
     RR_OT_open_path,
     RR_OT_sqe_push_to_edit,
 )
+from render_review import opsdata
 
 
 class RR_PT_render_review(bpy.types.Panel):
@@ -42,14 +43,18 @@ class RR_PT_render_review(bpy.types.Panel):
         row = box.row(align=True)
         row.prop(context.scene.rr, "render_dir")
 
-        # shot_name label
-        if context.scene.rr.is_render_dir_valid:
-            row = box.row(align=True)
-            row.label(text=f"Shot: {context.scene.rr.shot_name}")
-
         # create session
+        render_dir = context.scene.rr.render_dir_path
+        if render_dir:
+            if opsdata.is_sequence_dir(render_dir):
+                text = f"Review Sequence: {render_dir.name}"
+            else:
+                text = f"Review Shot: {render_dir.stem}"
+        else:
+            text = f"Invalid Render Directory"
+
         row = box.row(align=True)
-        row.operator(RR_OT_sqe_create_review_session.bl_idname, icon="PLAY")
+        row.operator(RR_OT_sqe_create_review_session.bl_idname, text=text, icon="PLAY")
 
         if active_strip and active_strip.rr.is_render:
             # create box
@@ -57,13 +62,16 @@ class RR_PT_render_review(bpy.types.Panel):
             box = layout.box()
             box.label(text="Render", icon="RESTRICT_RENDER_OFF")
 
+            row = box.row(align=True)
+            # shot name
+            row.label(text=f"Shot: {active_strip.rr.shot_name}")
+
+            # nr of frames
+            row.label(text=f"Frames: {active_strip.rr.frames_found_text}")
+
             # render dir name label and open file op
             row = box.row(align=True)
-
-            # gen text for label
-            label_text = f"{Path(active_strip.directory).name} | {active_strip.rr.frames_found_text}"
-            row.label(text=label_text)
-
+            row.label(text=f"Folder: {Path(active_strip.directory).name}")
             row.operator(
                 RR_OT_open_path.bl_idname, icon="FILEBROWSER", text=""
             ).filepath = bpy.path.abspath(active_strip.directory)
