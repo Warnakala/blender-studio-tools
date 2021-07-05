@@ -64,7 +64,7 @@ class AS_OT_create_actions(bpy.types.Operator):
             else:
                 logger.info("Action %s already exists. Will take that.", action.name)
 
-            #create animation data if not existent
+            # create animation data if not existent
             if not rig.animation_data:
                 rig.animation_data_create()
                 logger.info("%s created animation data", rig.name)
@@ -301,7 +301,9 @@ class AS_OT_import_camera_action(bpy.types.Operator):
             return {"CANCELLED"}
 
         # check if cam action name exists in previs library
-        cam_action_name_new = opsdata.get_cam_action_name_from_lib(shotname, previs_path)
+        cam_action_name_new = opsdata.get_cam_action_name_from_lib(
+            shotname, previs_path
+        )
         if not cam_action_name_new:
             self.report(
                 {"ERROR"},
@@ -369,59 +371,68 @@ class AS_OT_import_asset_actions(bpy.types.Operator):
         action_candidates: Dict[str, List[str]] = {}
         asset_colls = []
 
-        with bpy.data.libraries.load(previs_path.as_posix(), relative=True, link=False) as (
+        with bpy.data.libraries.load(
+            previs_path.as_posix(), relative=True, link=False
+        ) as (
             data_from,
             data_to,
         ):
 
             for asset in asglobals.ACTION_ASSETS:
 
-                #check if asset is in current scene
+                # check if asset is in current scene
                 try:
                     coll = bpy.data.collections[asset]
                 except KeyError:
-                    #can continue here if not in scene we
-                    #cant load action anyway
+                    # can continue here if not in scene we
+                    # cant load action anyway
                     continue
                 else:
                     logger.info("Found asset in scene: %s", coll.name)
                     asset_colls.append(coll)
 
-
-                #find if actions exists for that asset in previs file
+                # find if actions exists for that asset in previs file
                 asset_name = opsdata.find_asset_name(asset)
                 for action in data_from.actions:
                     if action.startswith(f"ANI-{asset_name}."):
 
-                        #create key if not existent yet
+                        # create key if not existent yet
                         if asset not in action_candidates:
                             action_candidates[asset] = []
 
-                        #append action to that asset
+                        # append action to that asset
                         action_candidates[asset].append(action)
 
-        #load and assign actions for asset colls
+        # load and assign actions for asset colls
         for coll in asset_colls:
 
-            #find rig
+            # find rig
             rig = opsdata.find_rig(coll)
             if not rig:
                 logger.warning("%s contains no rig.", coll.name)
                 continue
 
-            #check if action was found in previs file for that asset
+            # check if action was found in previs file for that asset
             if not coll.name in action_candidates:
-                logger.warning("%s no action found in previs file". coll.name)
+                logger.warning("%s no action found in previs file", coll.name)
                 continue
             else:
-                logger.info("%s found actions in previs file: %s", asset, str(action_candidates[coll.name]))
+                logger.info(
+                    "%s found actions in previs file: %s",
+                    asset,
+                    str(action_candidates[coll.name]),
+                )
 
-            #check if multiple actions are in the prvis file for that asset
+            # check if multiple actions are in the prvis file for that asset
             if len(action_candidates[coll.name]) > 1:
-                logger.warning("%s Multiple actions found in previs file: %s", coll.name, str(action_candidates[coll.name]))
+                logger.warning(
+                    "%s Multiple actions found in previs file: %s",
+                    coll.name,
+                    str(action_candidates[coll.name]),
+                )
                 continue
 
-            #import action from previs file
+            # import action from previs file
             actions = action_candidates[coll.name]
 
             """
@@ -433,14 +444,14 @@ class AS_OT_import_asset_actions(bpy.types.Operator):
                 logger.warning("%s failed to import action")
             """
             action = opsdata.import_data_from_lib(
-                    "actions", actions[0], previs_path, link=False
-                )
+                "actions", actions[0], previs_path, link=False
+            )
             if not action:
                 continue
 
             actions_imported.append(action)
 
-            #create animation data if not existent
+            # create animation data if not existent
             if not rig.animation_data:
                 rig.animation_data_create()
                 logger.info("%s created animation data", rig.name)
@@ -452,22 +463,29 @@ class AS_OT_import_asset_actions(bpy.types.Operator):
             # add fake user
             action.use_fake_user = True
 
-            #rename actions
+            # rename actions
             action_name_new = opsdata.gen_action_name(coll)
             try:
                 action_existing = bpy.data.actions[action_name_new]
             except KeyError:
-                #action does not exists can rename
+                # action does not exists can rename
                 old_name = action.name
                 action.name = action_name_new
                 logger.info("Renamed action: %s to %s", old_name, action.name)
                 renamed_actions.append(action)
             else:
-                #action name already exists in this scene
-                logger.info("Failed to rename action action %s to %s. Already exists", action.name, action_name_new)
+                # action name already exists in this scene
+                logger.info(
+                    "Failed to rename action action %s to %s. Already exists",
+                    action.name,
+                    action_name_new,
+                )
                 continue
 
-        self.report({"INFO"}, f"Found Assets: {len(asset_colls)} | Imported Actions: {len(actions_imported)} | Renamed Actions: {len(renamed_actions)}")
+        self.report(
+            {"INFO"},
+            f"Found Assets: {len(asset_colls)} | Imported Actions: {len(actions_imported)} | Renamed Actions: {len(renamed_actions)}",
+        )
         return {"FINISHED"}
 
 
@@ -503,82 +521,88 @@ class AS_OT_import_multi_assets(bpy.types.Operator):
         action_candidates: Dict[str, List[str]] = {}
         asset_colls: List[bpy.types.Collection] = []
 
-        with bpy.data.libraries.load(previs_path.as_posix(), relative=True, link=False) as (
+        with bpy.data.libraries.load(
+            previs_path.as_posix(), relative=True, link=False
+        ) as (
             data_from,
             data_to,
         ):
             data_from_actions: List[str] = data_from.actions
             data_from_actions.sort()
 
-            #find all sprites actions
+            # find all sprites actions
             for asset in asglobals.MULTI_ASSETS:
-                #check if asset is in current scene
+                # check if asset is in current scene
                 try:
                     coll = bpy.data.collections[asset]
                 except KeyError:
-                    #can continue here if not in scene we
-                    #cant load action anyway
+                    # can continue here if not in scene we
+                    # cant load action anyway
                     continue
                 else:
                     logger.info("Found asset in scene: %s", coll.name)
                     asset_colls.append(coll)
 
-
-                #find if actions exists for that asset in previs file
+                # find if actions exists for that asset in previs file
                 asset_name = opsdata.find_asset_name(asset)
                 for action in data_from_actions:
                     if action.startswith(f"ANI-{asset_name}"):
 
-                        #create key if not existent yet
+                        # create key if not existent yet
                         if asset not in action_candidates:
                             action_candidates[asset] = []
 
-                        #append action to that asset
+                        # append action to that asset
                         action_candidates[asset].append(action)
 
-        #load and assign actions for asset colls
+        # load and assign actions for asset colls
         color_tag: str = ""
         for coll in asset_colls:
 
-            #check if action was found in previs file for that asset
+            # check if action was found in previs file for that asset
             if not coll.name in action_candidates:
                 logger.warning("%s no action found in previs file", coll.name)
                 continue
             else:
-                logger.info("%s found actions in previs file: %s", asset, str(action_candidates[coll.name]))
+                logger.info(
+                    "%s found actions in previs file: %s",
+                    asset,
+                    str(action_candidates[coll.name]),
+                )
 
-
-            #create duplicate for each action
+            # create duplicate for each action
             for idx, action_candidate in enumerate(action_candidates[coll.name]):
 
-                #first index use existing collection that was already created by shot builder
+                # first index use existing collection that was already created by shot builder
                 if idx == 0:
                     new_coll = bpy.data.collections[asset, None]
                     logger.info("First index will use existing coll: %s", new_coll.name)
-                    color_tag = new_coll.color_tag #take color from first collection
+                    color_tag = new_coll.color_tag  # take color from first collection
                 else:
                     ref_coll = opsdata.get_ref_coll(coll)
-                    new_coll = ref_coll.override_hierarchy_create(context.scene, context.view_layer, reference=coll)
+                    new_coll = ref_coll.override_hierarchy_create(
+                        context.scene, context.view_layer, reference=coll
+                    )
                     new_coll.color_tag = color_tag
                     logger.info("Created new override collection: %s", new_coll.name)
                     new_colls.append(new_coll)
 
-                #find rig of new coll
+                # find rig of new coll
                 rig = opsdata.find_rig(new_coll)
                 if not rig:
                     logger.warning("%s contains no rig.", coll.name)
                     continue
 
-                #import action
+                # import action
                 action = opsdata.import_data_from_lib(
-                        "actions", action_candidate, previs_path, link=False
-                    )
+                    "actions", action_candidate, previs_path, link=False
+                )
                 if not action:
                     continue
 
                 actions_imported.append(action)
 
-                #create animation data if not existent
+                # create animation data if not existent
                 if not rig.animation_data:
                     rig.animation_data_create()
                     logger.info("%s created animation data", rig.name)
@@ -588,10 +612,15 @@ class AS_OT_import_multi_assets(bpy.types.Operator):
                 logger.info("%s assigned action %s", rig.name, action.name)
 
                 # add fake user
-                #action.use_fake_user = True
+                # action.use_fake_user = True
 
-        self.report({"INFO"}, f"Found Assets: {len(asset_colls)} | Imported Actions: {len(actions_imported)} | New collections: {len(new_colls)}")
+        self.report(
+            {"INFO"},
+            f"Found Assets: {len(asset_colls)} | Imported Actions: {len(actions_imported)} | New collections: {len(new_colls)}",
+        )
         return {"FINISHED"}
+
+
 class AS_OT_shift_anim(bpy.types.Operator):
     """
     Shifts the animation as well as anim modifier values of the camera by number of frames
@@ -599,11 +628,11 @@ class AS_OT_shift_anim(bpy.types.Operator):
 
     bl_idname = "as.shift_anim"
     bl_label = "Shift Anim"
-    multi_assets:  bpy.props.BoolProperty(name="Do Multi Assets")
+    multi_assets: bpy.props.BoolProperty(name="Do Multi Assets")
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         nr_of_frames = context.scene.anim_setup.shift_frames
-        rigs : List[bpy.types.Armature] = []
+        rigs: List[bpy.types.Armature] = []
 
         if not self.multi_assets:
             # get cam coll
@@ -614,19 +643,19 @@ class AS_OT_shift_anim(bpy.types.Operator):
             else:
                 rigs.append(rig)
 
-            #find assets
+            # find assets
             for asset in asglobals.ACTION_ASSETS:
 
-                #check if asset is in current scene
+                # check if asset is in current scene
                 try:
                     coll = bpy.data.collections[asset]
                 except KeyError:
-                    #can continue here if not in scene we
-                    #cant load action anyway
+                    # can continue here if not in scene we
+                    # cant load action anyway
                     continue
                 else:
                     logger.info("Found asset in scene: %s", coll.name)
-                    #find rig
+                    # find rig
                     rig = opsdata.find_rig(coll)
                     if not rig:
                         logger.warning("%s contains no rig.", coll.name)
@@ -643,7 +672,7 @@ class AS_OT_shift_anim(bpy.types.Operator):
                         continue
 
                     logger.info("Found asset in scene: %s", coll.name)
-                    #find rig
+                    # find rig
                     rig = opsdata.find_rig(coll)
                     if not rig:
                         logger.warning("%s contains no rig.", coll.name)
@@ -651,7 +680,9 @@ class AS_OT_shift_anim(bpy.types.Operator):
                     rigs.append(rig)
 
         if not rigs:
-            self.report({"ERROR"}, "Failed to find any assets or cameras to shift animation.")
+            self.report(
+                {"ERROR"}, "Failed to find any assets or cameras to shift animation."
+            )
             return {"CANCELLED"}
 
         for rig in rigs:
@@ -694,13 +725,15 @@ class AS_OT_shift_anim(bpy.types.Operator):
                         nr_of_frames,
                     )
             logger.info(
-                    "%s: %s shifted all keyframes by %i frames",
-                    rig.name,
-                    rig.animation_data.action.name,
-                    nr_of_frames,
-                )
+                "%s: %s shifted all keyframes by %i frames",
+                rig.name,
+                rig.animation_data.action.name,
+                nr_of_frames,
+            )
 
-        self.report({"INFO"}, f"Shifted animation of {len(rigs)} actions by {nr_of_frames}")
+        self.report(
+            {"INFO"}, f"Shifted animation of {len(rigs)} actions by {nr_of_frames}"
+        )
         return {"FINISHED"}
 
 
@@ -720,6 +753,7 @@ class AS_OT_get_frame_shift(bpy.types.Operator):
         self.report({"WARNING"}, "Not implemente yet")
         return {"FINISHED"}
 
+
 class AS_OT_apply_additional_settings(bpy.types.Operator):
 
     bl_idname = "as.apply_additional_settings"
@@ -730,13 +764,12 @@ class AS_OT_apply_additional_settings(bpy.types.Operator):
         sqe_area = cls._get_sqe_area(context)
         return bool(sqe_area)
 
-
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         sqe_area = self._get_sqe_area(context)
 
         sqe_area.spaces.active.use_proxies = False
-        sqe_area.spaces.active.proxy_render_size = 'PROXY_100'
+        sqe_area.spaces.active.proxy_render_size = "PROXY_100"
 
         self.report({"INFO"}, "Set: use_proxies | proxy_render_size")
         return {"FINISHED"}
@@ -747,7 +780,7 @@ class AS_OT_apply_additional_settings(bpy.types.Operator):
             screen = window.screen
 
             for area in screen.areas:
-                if area.type == 'SEQUENCE_EDITOR':
+                if area.type == "SEQUENCE_EDITOR":
                     return area
 
         return None
@@ -766,9 +799,11 @@ class AS_OT_exclude_colls(bpy.types.Operator):
 
         excluded = []
         for coll_name in asglobals.HIDE_COLLS:
-            #find view layer collection, if same collection is linked in in 2 different colls in same scene, these
-            #are 2 different view layer colls, we need to grab all
-            valid_view_layer_colls = [vc for vc in view_layer_colls if vc.name == coll_name]
+            # find view layer collection, if same collection is linked in in 2 different colls in same scene, these
+            # are 2 different view layer colls, we need to grab all
+            valid_view_layer_colls = [
+                vc for vc in view_layer_colls if vc.name == coll_name
+            ]
 
             if not valid_view_layer_colls:
                 logger.info("No view layer collections named: %s", coll_name)
@@ -779,7 +814,9 @@ class AS_OT_exclude_colls(bpy.types.Operator):
                 logger.info("Excluded view layer collection: %s", view_layer_coll.name)
                 excluded.append(view_layer_coll)
 
-        self.report({"INFO"}, f"Exluded Collections: {list([v.name for v in excluded])}")
+        self.report(
+            {"INFO"}, f"Exluded Collections: {list([v.name for v in excluded])}"
+        )
         return {"FINISHED"}
 
 
@@ -796,7 +833,7 @@ classes = [
     AS_OT_apply_additional_settings,
     AS_OT_import_asset_actions,
     AS_OT_exclude_colls,
-    AS_OT_import_multi_assets
+    AS_OT_import_multi_assets,
 ]
 
 
