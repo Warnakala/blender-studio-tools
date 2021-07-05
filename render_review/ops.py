@@ -74,6 +74,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             # load preview seqeunces in vse
             for idx, dir in enumerate(output_dirs):
+                # TODO: use get_best_preview_sequence here
                 # gather all available frames that eiher end with .jpg / .png /.exr
                 files_dict = opsdata.gather_files_by_suffix(
                     dir, output=dict, search_suffixes=[".jpg", ".png", ".exr"]
@@ -597,10 +598,8 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
 
         # if mp4 path does not exists use ffmpeg to create preview file
         if not mp4_path.exists():
-            jpeg_files = opsdata.gather_files_by_suffix(
-                render_dir, output=list, search_suffixes=[".jpg"]
-            )
-            fffmpeg_command = f"ffmpeg -start_number {int(jpeg_files[0][0].stem)} -framerate {vars.FPS} -i {render_dir.as_posix()}/%06d.jpg -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p {mp4_path.as_posix()}"
+            preview_files = opsdata.get_best_preview_sequence(render_dir)
+            fffmpeg_command = f"ffmpeg -start_number {int(preview_files[0].stem)} -framerate {vars.FPS} -i {render_dir.as_posix()}/%06d{preview_files[0].suffix} -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p {mp4_path.as_posix()}"
             logger.info("Creating .mp4 with ffmpeg")
             subprocess.call(fffmpeg_command, shell=True)
             logger.info("Created .mp4: %s", mp4_path.as_posix())

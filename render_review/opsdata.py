@@ -47,19 +47,38 @@ def get_farm_output_mp4_path(strip: bpy.types.ImageSequence) -> Path:
     # 070_0040_A.lighting-101-136.mp4
     # because flamenco writes in and out frame in filename we need check the first and
     # last frame in the folder
+    preview_seq = get_best_preview_sequence(render_dir)
+
+    mp4_filename = f"{shot_name}.lighting-{int(preview_seq[0].stem)}-{int(preview_seq[-1].stem)}.mp4"
+
+    return render_dir / mp4_filename
+
+
+def get_best_preview_sequence(dir: Path) -> List[Path]:
+
     files: List[List[Path]] = gather_files_by_suffix(
-        render_dir, output=list, search_suffixes=[".jpg"]
+        dir, output=dict, search_suffixes=[".jpg", ".png"]
     )
     if not files:
         raise NoImageSequenceAvailableException(
-            f"No jpg files found in: {render_dir.as_posix()}"
+            f"No peview files found in: {dir.as_posix()}"
         )
 
-    mp4_filename = (
-        f"{shot_name}.lighting-{int(files[0][0].stem)}-{int(files[0][-1].stem)}.mp4"
-    )
+    # select the right images sequence
+    if len(files) == 1:
+        # if only one image sequence available take that
+        preview_seq = files[list(files.keys())[0]]
 
-    return render_dir / mp4_filename
+    # both jpg and png available
+    else:
+        # if same amount of frames take png
+        if len(files[".jpg"]) == len(files[".png"]):
+            preview_seq = files[".png"]
+        else:
+            # if not take whichever is longest
+            preview_seq = [files[".jpg"], files[".png"]].sort(key=lambda x: len(x))[-1]
+
+    return preview_seq
 
 
 def get_frame_storage_backup_path(strip: bpy.types.ImageSequence) -> Path:
@@ -168,6 +187,7 @@ def is_sequence_dir(dir: Path) -> bool:
 
 def get_shot_name_from_dir(dir: Path) -> str:
     return dir.stem  # 060_0010_A.lighting > 060_0010_A
+
 
 def get_image_editor(context: bpy.types.Context) -> Optional[bpy.types.Area]:
     image_editor = None
