@@ -234,6 +234,10 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
                 if area.type == "FILE_BROWSER":
                     area.type = "IMAGE_EDITOR"
 
+        # init sqe
+        if not context.scene.sequence_editor:
+            context.scene.sequence_editor_create()
+
         self.report({"INFO"}, "Setup Render Review Workspace")
 
         return {"FINISHED"}
