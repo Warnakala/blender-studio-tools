@@ -36,7 +36,6 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
         image_data_blocks: bpy.types.Image = []
         render_dir = Path(context.scene.rr.render_dir_path)
-
         shot_folders: List[Path] = []
 
         # if render is sequence folder user wants to review whole seqeuence
@@ -52,8 +51,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             logger.info("Processing %s", shot_folder.name)
 
-            imported_valid_sequences: bpy.types.ImageSequence = []
-            imported_invalid_sequences: bpy.types.ImageSequence = []
+            imported_sequences: bpy.types.ImageSequence = []
 
             # find existing output dirs
             shot_name = opsdata.get_shot_name_from_dir(shot_folder)
@@ -75,76 +73,74 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             # load preview seqeunces in vse
             for idx, dir in enumerate(output_dirs):
-
                 # compose frames found text
                 frames_found_text = opsdata.gen_frames_found_text(dir)
 
                 try:
                     # get best preview files sequence
-                    preview_files = opsdata.get_best_preview_sequence(dir)
+                    image_sequence = opsdata.get_best_preview_sequence(dir)
+
                 except NoImageSequenceAvailableException:
                     # if no preview files available create an empty image strip
                     # this assumes that when a folder is there exr sequences are available to inspect
+                    logger.warning("%s found no preview sequence", dir.name)
                     exr_files = opsdata.gather_files_by_suffix(
                         dir, output=list, search_suffixes=[".exr"]
                     )
-                    frame_start = (
-                        int(exr_files[0][0].stem)
-                        if not prev_frame_end
-                        else prev_frame_end
-                    )
-                    strip = context.scene.sequence_editor.sequences.new_image(
-                        dir.name,
-                        "",
-                        idx + 1,
-                        frame_start,
-                    )
-                    strip.directory = dir.as_posix() + "/"
-                    imported_invalid_sequences.append(strip)
+
+                    if not exr_files:
+                        logger.error("%s found no exr or preview sequence", dir.name)
+                        continue
+
+                    logger.info("%s found %i exr frames", dir.name, len(image_sequence))
+                    image_sequence = exr_files[0]
+
                 else:
-                    logger.info("%s found %i frames", dir.name, len(preview_files))
-
-                    frame_start = (
-                        int(preview_files[0].stem)
-                        if not prev_frame_end
-                        else prev_frame_end
+                    logger.info(
+                        "%s found %i preview frames", dir.name, len(image_sequence)
                     )
 
-                    # load image seqeunce if found
+                finally:
+
+                    # get frame start
+                    frame_start = prev_frame_end or int(image_sequence[0].stem)
+
+                    # create new image strip
                     strip = context.scene.sequence_editor.sequences.new_image(
                         dir.name,
-                        preview_files[0].as_posix(),
+                        image_sequence[0].as_posix(),
                         idx + 1,
                         frame_start,
                     )
 
-                    # extend strip elements with all the frames
-                    for f in preview_files[1:]:
+                    # extend strip elements with all the available frames
+                    for f in image_sequence[1:]:
                         strip.elements.append(f.name)
 
                     """
                     # create image datablock to read metadata like resolution
                     img = bpy.data.images.load(
-                        preview_files[0].as_posix(), check_existing=True
+                        image_sequence[0].as_posix(), check_existing=True
                     )
-                    img.name = preview_files[0].parent.name + "_PREVIEW"
+                    img.name = image_sequence[0].parent.name + "_PREVIEW"
                     img.source = "SEQUENCE"
                     image_data_blocks.append(img)
                     """
-                    imported_valid_sequences.append(strip)
 
-                finally:
                     # set strip properties
+                    strip.mute = True if image_sequence[0].suffix == ".exr" else False
                     strip.rr.shot_name = shot_folder.name
                     strip.rr.is_render = True
                     strip.rr.frames_found_text = frames_found_text
 
+                    imported_sequences.append(strip)
+
             # query the strip that is the longest for metastrip and prev_frame_end
-            imported_valid_sequences.sort(key=lambda s: s.frame_final_duration)
-            strip_longest = imported_valid_sequences[-1]
+            imported_sequences.sort(key=lambda s: s.frame_final_duration)
+            strip_longest = imported_sequences[-1]
 
             # perform kitsu operations if enabled
-            if addon_prefs.enable_blender_kitsu and imported_valid_sequences:
+            if addon_prefs.enable_blender_kitsu and imported_sequences:
 
                 if kitsu.is_auth_and_project():
 
@@ -178,7 +174,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
         self.report(
             {"INFO"},
-            f"Imported {len(imported_invalid_sequences) + len(imported_valid_sequences)} Render Sequences",
+            f"Imported {len(imported_sequences)} Render Sequences",
         )
 
         return {"FINISHED"}
