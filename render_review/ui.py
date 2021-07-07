@@ -97,8 +97,12 @@ class RR_PT_render_review(bpy.types.Panel):
             )
 
             # push to edit
+            edit_storage_dir = Path(opsdata.get_edit_storage_path(active_strip))
             row = box.row(align=True)
             row.operator(RR_OT_sqe_push_to_edit.bl_idname, icon="EXPORT")
+            row.operator(
+                RR_OT_open_path.bl_idname, icon="FILEBROWSER", text=""
+            ).filepath = edit_storage_dir.as_posix()
 
             # make contact sheet
             # row = box.row(align=True)
