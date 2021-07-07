@@ -181,6 +181,26 @@ def gather_files_by_suffix(
         )
 
 
+def gen_frames_found_text(
+    dir: Path, search_suffixes: List[str] = [".jpg", ".png", ".exr"]
+) -> str:
+    files_dict = gather_files_by_suffix(
+        dir, output=dict, search_suffixes=search_suffixes
+    )
+
+    frames_found_text = ""  # frames found text will be used in ui
+    for suffix, file_list in files_dict.items():
+        frames_found_text += f" | {suffix}: {len(file_list)}"
+
+    # replace first occurence, we dont want that at the beginning
+    frames_found_text = frames_found_text.replace(
+        " | ",
+        "",
+        1,
+    )
+    return frames_found_text
+
+
 def is_sequence_dir(dir: Path) -> bool:
     return dir.parent.name == "shots"
 
