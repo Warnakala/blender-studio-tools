@@ -267,6 +267,10 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
             self.report({"ERROR"}, f"Found no exr sequence in: {output_dir.as_posix()}")
             return {"CANCELLED"}
 
+        exr_seq.sort(key=lambda p: p.name)
+        exr_seq_frame_start = int(exr_seq[0].stem)
+        offset = exr_seq_frame_start - active_strip.frame_final_start
+
         # remove all images with same filepath that are already laoded
         img_to_rm: bpy.types.Image = []
         for img in bpy.data.images:
@@ -285,6 +289,7 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         # set active image
         image_editor.spaces.active.image = image
         image_editor.spaces.active.image_user.frame_duration = 5000
+        image_editor.spaces.active.image_user.frame_offset = offset
 
         return {"FINISHED"}
 
