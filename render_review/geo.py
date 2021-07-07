@@ -4,9 +4,10 @@ from enum import Enum
 
 
 class Align(Enum):
-    CENTER = (1,)
-    TOP = 2
-    BOTTOM = 3
+    NO = 1
+    CENTER = 2
+    TOP = 3
+    BOTTOM = 4
 
 
 class Point:
@@ -93,48 +94,79 @@ class Rectangle:
         self._orig_x = self._x
         self._orig_y = self._y
 
+    # X
     @property
     def x(self) -> int:
+        return self._get_x()
+
+    def _get_x(self) -> int:
         return self._x
 
     @x.setter
     def x(self, value: int) -> None:
+        return self._set_x(value)
+
+    def _set_x(self, value: int) -> None:
         self._x = int(value)
 
+    # Y
     @property
     def y(self) -> int:
+        return self._get_y()
+
+    def _get_y(self) -> int:
         return self._y
 
     @y.setter
     def y(self, value: int) -> None:
+        return self._set_y(value)
+
+    def _set_y(self, value: int) -> None:
         self._y = int(value)
 
+    # WIDTH
     @property
     def width(self) -> int:
+        return self._get_width()
+
+    def _get_width(self) -> int:
         return self._width
 
     @width.setter
     def width(self, value: int) -> None:
+        return self._set_width(value)
+
+    def _set_width(self, value: int) -> None:
         self._width = int(value)
 
+    # HEIGHT
     @property
     def height(self) -> int:
+        return self._get_height()
+
+    def _get_height(self) -> int:
         return self._height
 
     @height.setter
     def height(self, value: int) -> None:
+        return self._set_height(value)
+
+    def _set_height(self, value: int) -> None:
         self._height = int(value)
 
+    # AREA
     @property
     def area(self) -> int:
         return self.width * self.height
 
+    # CENTER
     @property
     def center(self) -> Point:
         center_x = int(self.x + (0.5 * self.width))
         center_y = int(self.y + (0.5 * self.height))
         return Point(center_x, center_y)
 
+    # POSITION
     @property
     def position(self) -> Point:
         return Point(self.x, self.y)
@@ -144,6 +176,7 @@ class Rectangle:
         self.x = pos.x
         self.y = pos.y
 
+    # COORDS
     @property
     def coords(self) -> RectCoords:
         top_left = self.position
@@ -152,24 +185,36 @@ class Rectangle:
         bot_right = Point(self.x + self.width, self.y + self.height)
         return RectCoords(top_left, top_right, bot_left, bot_right)
 
-    def resize_to_rect(
+    # FUNCTIONS
+    def fit_to_rect(
         self,
         rect: Rectangle,
         keep_aspect: bool = True,
         align: Align = Align.CENTER,
+        keep_offset: bool = False,
     ):
+        # width height
         if keep_aspect:
-            # fit width
-            # width height
             scale_fac = rect.width / self.width
             self.width = rect.width
             self.height = int(self.height * scale_fac)
 
-            # pos
+        else:
+            # copy width and height
+            self.width = rect.width
+            self.height = rect.height
+
+        # position
+        if keep_offset:
+            self.position += self.position - rect.position
+
+        else:
             self.position = rect.position
 
+            if align == Align.NO:
+                pass
+
             if align == Align.CENTER:
-                # y offset to center it
                 height_diff = rect.height - self.height
                 self.y += int(height_diff / 2)
 
@@ -179,12 +224,6 @@ class Rectangle:
             elif align == Align.BOTTOM:
                 height_diff = rect.height - self.height
                 self.y = rect.y + height_diff
-
-        else:
-            # copy all transforms
-            self.width = rect.width
-            self.height = rect.height
-            self.position = rect.position
 
     def reset_transform(self):
         self.x = self._orig_x
@@ -198,43 +237,113 @@ class Rectangle:
     def __repr__(self) -> str:
         return f"Rectangle(x: {self.x}, y: {self.y}, width: {self.width}, height: {self.height})"
 
+    @property
+    def valid(self) -> bool:
+        return bool(self.width and self.height)
 
-class Cell(Rectangle):
+
+class NestedRectangle(Rectangle):
+    """
+    A Class that inherits from Rectangle and holds a child inside.
+    """
+
     def __init__(
         self,
         x: int,
         y: int,
         width: int,
         height: int,
-        rect: Rectangle = None,
+        child: Optional[Union[Rectangle, NestedRectangle]] = None,
         keep_aspect: bool = True,
         align: Align = Align.CENTER,
     ):
-        Rectangle.__init__(self, x, y, width, height)
+        super().__init__(x, y, width, height)
+
+        # if child was not supplied on init make child same dimensions as parent
+        if child == None:
+            child = Rectangle(0, 0, self.width, self.height)
+
+        self._child = child
         self._keep_aspect = keep_aspect
         self._align = align
+        self._child.fit_to_rect(self.get_rect(), keep_aspect=keep_aspect, align=align)
 
-        if rect:
-            self.place_rect(rect, keep_ascpect=keep_aspect, align=align)
-        else:
-            self._rect = Rectangle(x, y, width, height)
+    def fit_to_rect(
+        self,
+        rect: Rectangle,
+        keep_aspect: bool = True,
+        align: Align = Align.CENTER,
+        keep_offset: bool = False,
+    ):
+        super().fit_to_rect(
+            rect, keep_aspect=keep_aspect, align=align, keep_offset=keep_offset
+        )
+        self.child.fit_to_rect(self.get_rect(), keep_aspect=keep_aspect, align=align)
 
-    def get_cell_rect(self) -> Rectangle:
+    def get_rect(self) -> Rectangle:
         return Rectangle(self.x, self.y, self.width, self.height)
 
     @property
-    def rect(self) -> Rectangle:
-        return self._rect
+    def child(self) -> Rectangle:
+        return self._child
 
-    def place_rect(
-        self, rect: Rectangle, keep_ascpect: bool = True, align: Align = Align.CENTER
-    ):
-        self._rect = rect
-        self._rect.resize_to_rect(
-            self.get_cell_rect(), keep_aspect=keep_ascpect, align=align
+    def copy(self) -> NestedRectangle:
+        return NestedRectangle(
+            self.x,
+            self.y,
+            self.width,
+            self.height,
+            self.child.copy(),
+            keep_aspect=self._keep_aspect,
+            align=self._align,
         )
-        self._keep_aspect = keep_ascpect
-        self._align = align
+
+    def _set_x(self, value: int) -> None:
+        offset = self.child.x - self._x
+        self._x = int(value)
+        self.child.x = int(value + offset)
+
+    def _set_y(self, value: int) -> None:
+        offset = self.child.y - self._y
+        self._y = int(value)
+        self.child.y = int(value + offset)
+
+    def _set_width(self, value: int) -> None:
+        self._width = int(value)
+        self.child.fit_to_rect(
+            self.get_rect(), self._keep_aspect, self._align, keep_offset=True
+        )
+
+    def _set_height(self, value: int) -> None:
+        self._height = int(value)
+        self.child.fit_to_rect(
+            self.get_rect(), self._keep_aspect, self._align, keep_offset=True
+        )
+
+
+class Cell(NestedRectangle):
+    """
+    A Class that inherits from NestedRectangle and holds another NestedRectangle inside.
+    """
+
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        child: Optional[NestedRectangle] = None,
+        keep_aspect: bool = True,
+        align: Align = Align.CENTER,
+    ):
+        # if child was not supplied on init make child same dimensions as parent
+        if child == None:
+            child = NestedRectangle(0, 0, width, height)
+
+        # init self
+        super().__init__(
+            x, y, width, height, child, keep_aspect=keep_aspect, align=align
+        )
 
     def copy(self) -> Cell:
         return Cell(
@@ -242,7 +351,7 @@ class Cell(Rectangle):
             self.y,
             self.width,
             self.height,
-            self.rect,
+            self.child.copy(),
             keep_aspect=self._keep_aspect,
             align=self._align,
         )
@@ -257,19 +366,31 @@ class Grid(Rectangle):
         height: int,
         row_count: int,
         coll_count: int,
-        cell_rect: Rectangle = Rectangle(0, 0, 0, 0),
+        cell: Optional[Cell] = None,
+        keep_aspect: bool = True,
         align: Align = Align.CENTER,
     ) -> None:
 
-        Rectangle.__init__(self, x, y, width, height)
+        super().__init__(x, y, width, height)
+        self._cell = cell
+        self._keep_aspect = keep_aspect
+        self._align = align
+
+        # if cell was not supplied on init make cell that has same dimensions as row / coll
+        if self._cell == None:
+            self._cell = Cell(
+                0, 0, int(self.height / row_count), int(self.width / coll_count)
+            )
+
+        # init rows, colls, cells
         self.rows: List[Rectangle] = []
         self.colls: List[Rectangle] = []
         self.cells: List[List[Cell]] = []
-
         self._init_grid(
             row_count,
             coll_count,
-            cell_rect,
+            cell,
+            keep_aspect,
             align,
         )
 
@@ -277,30 +398,30 @@ class Grid(Rectangle):
         self,
         row_count: int,
         coll_count: int,
-        cell_rect: Rectangle,
+        cell: Cell,
+        keep_aspect: bool,
         align: Align,
     ) -> None:
 
+        self._init_rows(row_count)
+        self._init_colls(coll_count)
+        self._init_cells(cell, keep_aspect, align)
+
+    def _init_rows(self, row_count: int) -> None:
         row_height: int = int(self.height / row_count)
-        coll_width: int = int(self.width / coll_count)
-
-        self._init_rows(row_height, row_count)
-        self._init_colls(coll_width, coll_count)
-        self._init_cells(cell_rect, align)
-
-    def _init_rows(self, row_height: int, row_count: int) -> None:
         self.rows = [
             Rectangle(self.x, self.y + (row_height * row_idx), self.width, row_height)
             for row_idx in range(row_count)
         ]
 
-    def _init_colls(self, coll_width: int, coll_count: int) -> None:
+    def _init_colls(self, coll_count: int) -> None:
+        coll_width: int = int(self.width / coll_count)
         self.colls = [
             Rectangle(self.x + (coll_width * coll_idx), self.y, coll_width, self.height)
             for coll_idx in range(coll_count)
         ]
 
-    def _init_cells(self, cell_rect: Rectangle, align: Align) -> None:
+    def _init_cells(self, cell: Cell, keep_aspect: bool, align: Align) -> None:
         self.cells.clear()
         for row_index, row in enumerate(self.rows):
             cell_y = row.y
@@ -309,13 +430,9 @@ class Grid(Rectangle):
             for coll in self.colls:
                 cell_x = coll.x
 
-                # if cell_rect was not specified use dimensions of cell
-                if cell_rect.width == 0 and cell_rect.height == 0:
-                    cell_rect.width = coll.width
-                    cell_rect.height = row.height
-
                 # make copy to have each cell individual instance
-                cell_rect_instance = cell_rect.copy()
+                cell_instance = self._cell.copy()
+                cell_instance.position = Point(cell_x, cell_y)
 
                 self.cells[row_index].append(
                     Cell(
@@ -323,7 +440,8 @@ class Grid(Rectangle):
                         cell_y,
                         coll.width,
                         row.height,
-                        cell_rect_instance,
+                        cell_instance,
+                        keep_aspect=keep_aspect,
                         align=align,
                     )
                 )
@@ -335,12 +453,12 @@ class Grid(Rectangle):
         return self.cells[row_index][coll_index]
 
     @property
-    def row_height(self) -> float:
-        return self.height / self.row_count()
+    def row_height(self) -> int:
+        return int(self.height / self.row_count())
 
     @property
-    def coll_width(self) -> float:
-        return self.width / self.coll_count()
+    def coll_width(self) -> int:
+        return int(self.width / self.coll_count())
 
     def row_count(self) -> int:
         return len(self.rows)
