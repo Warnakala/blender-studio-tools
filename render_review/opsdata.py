@@ -15,7 +15,7 @@ def get_frame_storage_path(strip: bpy.types.ImageSequence) -> Path:
     # fs > frame_storage | fo > farm_output
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     fo_dir = Path(strip.directory)
-    fs_dir_name = fo_dir.parent.name + ".lighting"
+    fs_dir_name = get_shot_dot_task_type(fo_dir)
     fs_dir = (
         addon_prefs.frame_storage_path
         / fo_dir.parent.relative_to(fo_dir.parents[3])
@@ -29,7 +29,8 @@ def get_edit_storage_path(strip: bpy.types.ImageSequence) -> Path:
     # fs > frame_storage | fo > farm_output
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     fo_dir = Path(bpy.path.abspath(strip.directory))
-    edit_storage_dir_name = fo_dir.parent.name + ".lighting"
+    # 110_0150_A.lighting-2021-04-09_134706 -> 110_0150_A.lighting
+    edit_storage_dir_name = get_shot_dot_task_type(fo_dir)
 
     edit_storage_dir = (
         addon_prefs.edit_storage_path
@@ -40,11 +41,15 @@ def get_edit_storage_path(strip: bpy.types.ImageSequence) -> Path:
     return edit_storage_dir
 
 
+def get_shot_dot_task_type(path: Path):
+    return path.name.split("-")[0]
+
+
 def get_farm_output_mp4_path(strip: bpy.types.ImageSequence) -> Path:
     render_dir = Path(bpy.path.abspath(strip.directory))
     shot_name = render_dir.parent.name
 
-    # 070_0040_A.lighting-101-136.mp4
+    # 070_0040_A.lighting-101-136.mp4 #farm always does .lighting not .comp
     # because flamenco writes in and out frame in filename we need check the first and
     # last frame in the folder
     preview_seq = get_best_preview_sequence(render_dir)

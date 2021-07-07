@@ -409,7 +409,10 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=600)
+        active_strip = context.scene.sequence_editor.active_strip
+        frame_storage_path = opsdata.get_frame_storage_path(active_strip)
+        width = 200 + len(frame_storage_path.as_posix()) * 5
+        return context.window_manager.invoke_props_dialog(self, width=width)
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -607,37 +610,14 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
             logger.info("Found existing .mp4 file: %s", mp4_path.as_posix())
 
         # --------------COPY MP4 TO EDIT STORAGE ----------------
+
         # create edit path if not exists yet
         if not edit_storage_dir.exists():
             edit_storage_dir.mkdir(parents=True)
             logger.info("Created dir in edit storage: %s", edit_storage_dir.as_posix())
 
-        # find latest edit version
-        existing_files: List[Path] = []
-        for file in edit_storage_dir.iterdir():
-            if not file.is_file():
-                continue
-            if not file.name.startswith(f"{shot_name}.lighting"):
-                continue
-
-            version = util.get_version(file.name)
-            if not version:
-                continue
-
-            if file.name.replace(version, "") == f"{shot_name}.lighting..mp4":
-                existing_files.append(file)
-
-        existing_files.sort(key=lambda f: f.name)
-
-        # get version string
-        if len(existing_files) > 0:
-            latest_version = util.get_version(existing_files[-1].name)
-            increment = "v{:03}".format(int(latest_version.replace("v", "")) + 1)
-        else:
-            increment = "v001"
-
-        # compose edit filepath of new mp4 file
-        edit_filepath = edit_storage_dir / f"{shot_name}.lighting.{increment}.mp4"
+        # get edit_filepath
+        edit_filepath = self.get_edit_filepath(active_strip)
 
         # copy mp4 to edit filepath
         shutil.copy2(mp4_path.as_posix(), edit_filepath.as_posix())
@@ -646,6 +626,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         )
 
         # ----------------UPDATE METADATA.JSON ------------------
+
         # create metadata json
         if not metadata_path.exists():
             metadata_path.touch()
@@ -667,6 +648,84 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
             f"Pushed to edit: {edit_filepath.as_posix()}",
         )
         return {"FINISHED"}
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout = self.layout
+        active_strip = context.scene.sequence_editor.active_strip
+        edit_filepath = self.get_edit_filepath(active_strip)
+
+        try:
+            mp4_path = Path(opsdata.get_farm_output_mp4_path(active_strip))
+        except NoImageSequenceAvailableException:
+            layout.separator()
+            layout.row(align=True).label(
+                text="No preview files available", icon="ERROR"
+            )
+            return
+
+        text = "From Farm Output:"
+        if not mp4_path.exists():
+            text = "From Farm Output (will be created with ffmpeg):"
+
+        layout.separator()
+        layout.row(align=True).label(text=text, icon="RENDER_ANIMATION")
+        layout.row(align=True).label(text=mp4_path.as_posix())
+
+        layout.separator()
+        layout.row(align=True).label(text="To Edit Storage:", icon="FILE_TICK")
+        layout.row(align=True).label(text=edit_filepath.as_posix())
+
+        layout.separator()
+        layout.row(align=True).label(text="Copy to Edit Storage?")
+
+    def invoke(self, context, event):
+        active_strip = context.scene.sequence_editor.active_strip
+        try:
+            mp4_path = Path(opsdata.get_farm_output_mp4_path(active_strip))
+        except NoImageSequenceAvailableException:
+            width = 200
+        else:
+            width = 200 + len(mp4_path.as_posix()) * 5
+        return context.window_manager.invoke_props_dialog(self, width=width)
+
+    def get_edit_filepath(self, strip: bpy.types.ImageSequence) -> Path:
+        render_dir = Path(bpy.path.abspath(strip.directory))
+        edit_storage_dir = Path(opsdata.get_edit_storage_path(strip))
+
+        # find latest edit version
+        existing_files: List[Path] = []
+        increment = "v001"
+        if edit_storage_dir.exists():
+            for file in edit_storage_dir.iterdir():
+                if not file.is_file():
+                    continue
+
+                if not file.name.startswith(opsdata.get_shot_dot_task_type(render_dir)):
+                    continue
+
+                version = util.get_version(file.name)
+                if not version:
+                    continue
+
+                if (
+                    file.name.replace(version, "")
+                    == f"{opsdata.get_shot_dot_task_type(render_dir)}..mp4"
+                ):
+                    existing_files.append(file)
+
+            existing_files.sort(key=lambda f: f.name)
+
+            # get version string
+            if len(existing_files) > 0:
+                latest_version = util.get_version(existing_files[-1].name)
+                increment = "v{:03}".format(int(latest_version.replace("v", "")) + 1)
+
+        # compose edit filepath of new mp4 file
+        edit_filepath = (
+            edit_storage_dir
+            / f"{opsdata.get_shot_dot_task_type(render_dir)}.{increment}.mp4"
+        )
+        return edit_filepath
 
 
 class RR_OT_make_contact_sheet(bpy.types.Operator):
