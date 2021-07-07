@@ -13,6 +13,7 @@ from render_review.ops import (
     RR_OT_sqe_update_is_approved,
     RR_OT_open_path,
     RR_OT_sqe_push_to_edit,
+    RR_OT_make_contact_sheet,
 )
 from render_review import opsdata
 
@@ -60,7 +61,9 @@ class RR_PT_render_review(bpy.types.Panel):
             # create box
             layout = self.layout
             box = layout.box()
-            box.label(text=f"Render: {active_strip.rr.shot_name}", icon="RESTRICT_RENDER_OFF")
+            box.label(
+                text=f"Render: {active_strip.rr.shot_name}", icon="RESTRICT_RENDER_OFF"
+            )
             box.separator()
 
             # render dir name label and open file op
@@ -71,11 +74,13 @@ class RR_PT_render_review(bpy.types.Panel):
             ).filepath = bpy.path.abspath(active_strip.directory)
 
             # nr of frames
-            box.row(align=True).label(text=f"Frames: {active_strip.rr.frames_found_text}")
+            box.row(align=True).label(
+                text=f"Frames: {active_strip.rr.frames_found_text}"
+            )
 
             # inspect exr
             text = "Inspect EXR"
-            icon="VIEWZOOM"
+            icon = "VIEWZOOM"
             if not opsdata.get_image_editor(context):
                 text = "Inspect EXR: Needs Image Editor"
                 icon = "ERROR"
@@ -94,6 +99,10 @@ class RR_PT_render_review(bpy.types.Panel):
             # push to edit
             row = box.row(align=True)
             row.operator(RR_OT_sqe_push_to_edit.bl_idname, icon="EXPORT")
+
+            # make contact sheet
+            # row = box.row(align=True)
+            # row.operator(RR_OT_make_contact_sheet.bl_idname, icon="MESH_GRID")
 
 
 def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:

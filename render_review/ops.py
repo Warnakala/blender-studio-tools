@@ -1,15 +1,16 @@
 import sys
+import math
 import subprocess
 import shutil
 from pathlib import Path
-from typing import Set, Union, Optional, List, Dict, Any
+from typing import Set, Union, Optional, List, Dict, Any, Tuple
 
 import bpy
 
-from render_review import vars, prefs, opsdata, util, kitsu
+from render_review import vars, prefs, opsdata, util, kitsu, contactsheet
 from render_review.exception import NoImageSequenceAvailableException
 from render_review.log import LoggerFactory
-
+from render_review.contactsheet import SequenceGrid
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -176,6 +177,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         # set scene resolution to resolution of laoded image
         context.scene.render.resolution_x = vars.RESOLUTION[0]
         context.scene.render.resolution_y = vars.RESOLUTION[1]
+        # TODO: set resolution with strip.elements[0].orig_width / orig_height
 
         # scan for approved renders, will modify strip.rr.is_approved prop
         # which controls the custom gpu overlay
@@ -289,6 +291,7 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         image_editor.spaces.active.image_user.frame_duration = 5000
 
         return {"FINISHED"}
+
 
 class RR_OT_sqe_clear_exr_inspect(bpy.types.Operator):
     """"""
@@ -669,6 +672,57 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RR_OT_make_contact_sheet(bpy.types.Operator):
+    """ """
+
+    bl_idname = "rr.make_contact_sheet"
+    bl_label = "Make Contact Sheet"
+    bl_description = ""
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(
+            context.scene.sequence_editor.sequences_all and context.selected_sequeneces
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        sequences: List[bpy.types.Sequence] = context.selected_sequences
+
+        # calculate rows colls and imgs left
+        nr_imgs = len(sequences)  # 13
+        row_count = 3
+        coll_count = math.floor(nr_imgs / row_count)  # 13 / 3 = 4.3 -> 4
+        imgs_left = nr_imgs % coll_count  # 13 % 3 = 1
+
+        # for now prototype remove imgs left
+        for i in range(imgs_left):
+            sequences.pop(-1)
+
+        # calculate coordinate of each cell center in grid
+        scene_x = context.scene.render.resolution_x  # 1920
+        scene_y = context.scene.render.resolution_y  # 1080
+
+        grid = SequenceGrid(0, 0, scene_x, scene_y, row_count, coll_count)
+        grid.load_sequences(sequences)
+
+        #####################################
+        #           #           #           #
+        #     X     #      X    #     X     #
+        #           #           #           #
+        #####################################
+        #           #           #           #
+        #     X     #      X    #     X     #
+        #           #           #           #
+        #####################################
+        #           #           #           #
+        #     X     #      X    #     X     #
+        #           #           #           #
+        #####################################
+
+        return {"FINISHED"}
+
+
 # ----------------REGISTER--------------
 
 
@@ -683,6 +737,7 @@ classes = [
     RR_OT_sqe_isolate_strip,
     RR_OT_sqe_unmute_all_strips,
     RR_OT_sqe_push_to_edit,
+    # RR_OT_make_contact_sheet,
 ]
 
 addon_keymap_items = []

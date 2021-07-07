@@ -1,6 +1,16 @@
 import bpy
 
-from render_review import util, props, kitsu, opsdata, ops, ui, prefs, draw
+from render_review import (
+    util,
+    props,
+    kitsu,
+    opsdata,
+    ops,
+    ui,
+    prefs,
+    draw,
+    contactsheet,
+)
 from render_review.log import LoggerFactory
 
 logger = LoggerFactory.getLogger(__name__)
@@ -27,6 +37,7 @@ if _need_reload:
     logger.info("-START- Reloading render-review")
 
     util = importlib.reload(util)
+    contactsheet = importlib.reload(contactsheet)
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)
     kitsu = importlib.reload(kitsu)
