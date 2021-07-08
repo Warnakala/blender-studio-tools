@@ -81,11 +81,12 @@ cell = Cell(
     0,
     500,
     500,
-    child=nested_rect
+    child=nested_rect,
+    align=Align.CENTER
     # child=NestedRectangle(100, 100, 400, 400, child=Rectangle(0, 0, 1920, 1080)),
 )
-grid = Grid(0, 0, RES_X, RES_Y, 4, 6, cell)
-
+grid = Grid(0, 0, RES_X, RES_Y, 4, 6, cell, align=Align.CENTER)
+grid.cell_scale = 1
 # draw_rows(grid)
 # draw_colls(grid)
 
