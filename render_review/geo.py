@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
 from enum import Enum
 
@@ -571,17 +572,53 @@ class Grid(Rectangle):
                 cell_instance.position = Point(cell_x, cell_y)
                 self.cells[row_index].append(cell_instance)
 
-                self.cells[row_index].append(
-                    Cell(
-                        cell_x,
-                        cell_y,
-                        coll.width,
-                        row.height,
-                        cell_instance,
-                        keep_aspect=keep_aspect,
-                        align=align,
-                    )
-                )
+    @classmethod
+    def from_content(
+        csl,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        content: List[NestedRectangle],
+        row_count: int,
+        keep_aspect: bool = True,
+        align: Align = Align.CENTER,
+    ) -> Grid:
+        """
+        Creates a grid based of a content list. Calculates optimal amount of rows and colls.
+        """
+
+        # row count should not be bigger as nr of cells
+        row_count = min(row_count, len(content))
+        coll_count = math.ceil(len(content) / row_count)  # 13 / 3 = 4.3 -> 4
+
+        """
+        imgs_left = len(content) % coll_count  # 13 % 3 = 1
+        coll_leftover = coll_count - imgs_left
+        row_leftover = row_count - imgs_left
+
+        if coll_leftover < row_leftover and coll_leftover >= 0:
+            coll_count += 1
+
+        elif row_leftover < coll_leftover and row_leftover >= 0:
+            row_count += 1
+
+        elif row_leftover == coll_leftover:
+            coll_count += 1
+        """
+
+        grid = Grid(
+            x,
+            y,
+            width,
+            height,
+            row_count,
+            coll_count,
+            keep_aspect=keep_aspect,
+            align=align,
+        )
+        grid.place_content(content, keep_aspect=keep_aspect, align=align)
+        return grid
 
     def get_cells_for_row(self, row_index: int) -> List[Cell]:
         return self.cells[row_index]
@@ -611,7 +648,7 @@ class Grid(Rectangle):
 
     def place_content(
         self,
-        content_list: List[Union[NestedRectangle, Rectangle]],
+        content_list: List[NestedRectangle],
         keep_aspect: bool = True,
         align: Align = Align.CENTER,
         keep_offset: bool = False,
@@ -629,14 +666,14 @@ class Grid(Rectangle):
                 except IndexError:
                     if clear_cells:
                         cell.clear_content()
-
-                # switch child of cell
-                cell.set_child(
-                    content,
-                    keep_aspect=keep_aspect,
-                    align=align,
-                    keep_offset=keep_offset,
-                )
+                else:
+                    # switch child of cell
+                    cell.set_child(
+                        content,
+                        keep_aspect=keep_aspect,
+                        align=align,
+                        keep_offset=keep_offset,
+                    )
 
                 counter += 1
 
@@ -644,7 +681,7 @@ class Grid(Rectangle):
         self,
         row_index: int,
         coll_index: int,
-        content: Union[NestedRectangle, Rectangle],
+        content: NestedRectangle,
         keep_aspect: bool = True,
         align: Align = Align.CENTER,
         keep_offset: bool = False,
