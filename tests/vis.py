@@ -74,8 +74,8 @@ from geo import Grid, Rectangle, NestedRectangle, Align, Cell
 # Initializing Pygame
 pygame.init()
 surface = pygame.display.set_mode((RES_X, RES_Y))
-
-nested_rect = NestedRectangle(600, 300, 1920, 1080, child=Rectangle(0, 0, 600, 120))
+rect = Rectangle(0, 0, 600, 400)
+nested_rect = NestedRectangle(600, 300, 1920, 1080, child=rect)
 cell = Cell(
     0,
     0,
@@ -85,15 +85,21 @@ cell = Cell(
     align=Align.CENTER
     # child=NestedRectangle(100, 100, 400, 400, child=Rectangle(0, 0, 1920, 1080)),
 )
-grid = Grid(0, 0, RES_X, RES_Y, 4, 6, cell, align=Align.CENTER)
-grid.cell_scale = 1
+grid1 = Grid(0, 0, RES_X, RES_Y, 4, 6, cell_templ=cell, align=Align.CENTER)
+grid1.content_scale = 0.9
+grid1.content_scale_x = 1
+
+content = [NestedRectangle(0, 0, 1920, 1080, child=rect.copy()) for r in range(28)]
+grid2 = Grid.from_content(0, 0, RES_X, RES_Y, content, 3)
+grid2.content_scale = 0.9
 # draw_rows(grid)
 # draw_colls(grid)
 
 # run
 clock = pygame.time.Clock()
 run = True
-draw_cells(grid)
+draw_cells(grid1)
+
 # draw_single_cell(grid.cells[0][1])
 while run:
     for event in pygame.event.get():

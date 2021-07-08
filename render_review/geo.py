@@ -86,15 +86,17 @@ class RectCoords:
 
 class Rectangle:
     def __init__(self, x: int, y: int, width: int, height: int):
-        self._width = int(width)
-        self._height = int(height)
-        self._x = int(x)
-        self._y = int(y)
-        self._orig_width = self._width
-        self._orig_height = self._height
-        self._orig_x = self._x
-        self._orig_y = self._y
-        self._scale = 1
+        self._width: int = int(width)
+        self._height: int = int(height)
+        self._x: int = int(x)
+        self._y: int = int(y)
+        self._orig_width: int = self._width
+        self._orig_height: int = self._height
+        self._orig_x: int = self._x
+        self._orig_y: int = self._y
+        self._scale: float = 1.0
+        self._scale_x: float = 1.0
+        self._scale_y: float = 1.0
 
     # X
     @property
@@ -198,12 +200,51 @@ class Rectangle:
         return self._set_scale(factor)
 
     def _set_scale(self, factor: float) -> None:
+        self.scale_x *= factor
+        self.scale_y *= factor
+        """
         new_width = self.width * factor
         new_height = self.height * factor
         self.x += self.width / 2 - new_width / 2
         self.y += self.height / 2 - new_height / 2
         self.width = new_width
         self.height = new_height
+        """
+
+    # """
+    @property
+    def scale_x(self):
+        return self._get_scale_x()
+
+    def _get_scale_x(self):
+        return self._scale_x
+
+    @scale_x.setter
+    def scale_x(self, factor: float) -> None:
+        return self._set_scale_x(factor)
+
+    def _set_scale_x(self, factor: float) -> None:
+        new_width = self.width * factor
+        self.x += self.width / 2 - new_width / 2
+        self.width = new_width
+
+    @property
+    def scale_y(self):
+        return self._get_scale_y()
+
+    def _get_scale_y(self):
+        return self._scale_y
+
+    @scale_y.setter
+    def scale_y(self, factor: float) -> None:
+        return self._set_scale_y(factor)
+
+    def _set_scale_y(self, factor: float) -> None:
+        new_height = self.height * factor
+        self.y += self.height / 2 - new_height / 2
+        self.height = new_height
+
+    # """
 
     # ASPECT
     @property
@@ -314,6 +355,8 @@ class Rectangle:
 
     def reset_transform(self):
         self.scale = 1
+        self.scale_x = 1
+        self.scale_y = 1
         self.x = self.orig_x
         self.y = self.orig_y
         self.width = self.orig_width
@@ -448,6 +491,24 @@ class NestedRectangle(Rectangle):
             keep_offset=self._keep_offset,
         )
 
+    def _set_scale_x(self, factor: float) -> None:
+        super()._set_scale_x(factor)
+        self.child.fit_to_rect(
+            self.get_rect(),
+            keep_aspect=self._keep_aspect,
+            align=self._align,
+            keep_offset=self._keep_offset,
+        )
+
+    def _set_scale_y(self, factor: float) -> None:
+        super()._set_scale_y(factor)
+        self.child.fit_to_rect(
+            self.get_rect(),
+            keep_aspect=self._keep_aspect,
+            align=self._align,
+            keep_offset=self._keep_offset,
+        )
+
 
 class Cell(NestedRectangle):
     """
@@ -505,7 +566,9 @@ class Grid(Rectangle):
         super().__init__(x, y, width, height)
         self._keep_aspect: bool = keep_aspect
         self._align: Align = align
-        self._content_scale: float = 1
+        self._content_scale: float = 1.0
+        self._content_scale_x: float = 1.0
+        self._content_scale_y: float = 1.0
 
         # if cell_templ was not supplied on init make cell that has same dimensions as row / coll
         if cell_templ == None:
@@ -704,3 +767,23 @@ class Grid(Rectangle):
         for cell in self.get_cells_all():
             cell.child.scale = factor
         self._content_scale = factor
+
+    @property
+    def content_scale_x(self) -> float:
+        return self._content_scale_x
+
+    @content_scale_x.setter
+    def content_scale_x(self, factor: float):
+        for cell in self.get_cells_all():
+            cell.child.scale_x = factor
+        self._content_scale_x = factor
+
+    @property
+    def content_scale_y(self) -> float:
+        return self._content_scale_y
+
+    @content_scale_y.setter
+    def content_scale_y(self, factor: float):
+        for cell in self.get_cells_all():
+            cell.child.scale_y = factor
+        self._content_scale_y = factor
