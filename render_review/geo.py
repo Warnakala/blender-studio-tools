@@ -386,6 +386,25 @@ class NestedRectangle(Rectangle):
     def child(self) -> Rectangle:
         return self._child
 
+    def set_child(
+        self,
+        child: Union[Rectangle, NestedRectangle],
+        keep_aspect: bool = True,
+        align: Align = Align.CENTER,
+        keep_offset: bool = False,
+    ) -> None:
+
+        self._child = child
+        self._child.fit_to_rect(
+            self.get_rect(),
+            keep_aspect=keep_aspect,
+            align=align,
+            keep_offset=keep_offset,
+        )
+        self._keep_aspect = keep_aspect
+        self._align = align
+        self._keep_offset = keep_offset
+
     def copy(self) -> NestedRectangle:
         return NestedRectangle(
             self.x,
@@ -464,6 +483,9 @@ class Cell(NestedRectangle):
             align=self._align,
         )
 
+    def clear_content(self) -> None:
+        self.set_child(NestedRectangle(0, 0, self.width, self.height))
+
 
 class Grid(Rectangle):
     def __init__(
@@ -474,7 +496,7 @@ class Grid(Rectangle):
         height: int,
         row_count: int,
         coll_count: int,
-        cell: Optional[Cell] = None,
+        cell_templ: Optional[Cell] = None,
         keep_aspect: bool = True,
         align: Align = Align.CENTER,
     ) -> None:
@@ -482,15 +504,13 @@ class Grid(Rectangle):
         super().__init__(x, y, width, height)
         self._keep_aspect: bool = keep_aspect
         self._align: Align = align
-        self._cell_scale: float = 1
+        self._content_scale: float = 1
 
-        # if cell was not supplied on init make cell that has same dimensions as row / coll
-        if cell == None:
-            self._cell: Cell = Cell(
+        # if cell_templ was not supplied on init make cell that has same dimensions as row / coll
+        if cell_templ == None:
+            cell_templ: Cell = Cell(
                 0, 0, int(self.height / row_count), int(self.width / coll_count)
             )
-        else:
-            self._cell: Cell = cell
 
         # init rows, colls, cells
         self.rows: List[Rectangle] = []
@@ -499,7 +519,7 @@ class Grid(Rectangle):
         self._init_grid(
             row_count,
             coll_count,
-            cell,
+            cell_templ,
             keep_aspect,
             align,
         )
@@ -508,14 +528,14 @@ class Grid(Rectangle):
         self,
         row_count: int,
         coll_count: int,
-        cell: Cell,
+        cell_templ: Cell,
         keep_aspect: bool,
         align: Align,
     ) -> None:
 
         self._init_rows(row_count)
         self._init_colls(coll_count)
-        self._init_cells(cell, keep_aspect, align)
+        self._init_cells(cell_templ, keep_aspect, align)
 
     def _init_rows(self, row_count: int) -> None:
         row_height: int = int(self.height / row_count)
@@ -531,8 +551,14 @@ class Grid(Rectangle):
             for coll_idx in range(coll_count)
         ]
 
-    def _init_cells(self, cell: Cell, keep_aspect: bool, align: Align) -> None:
+    def _init_cells(self, cell_templ: Cell, keep_aspect: bool, align: Align) -> None:
+        # TODO: cell.child.keep_aspect = keep_aspect
+
         self.cells.clear()
+        # if cell_templ was supplied make sure it has the right dimension to fit in grid
+        cell_templ.width = self.coll_width
+        cell_templ.height = self.row_height
+
         for row_index, row in enumerate(self.rows):
             cell_y = row.y
             self.cells.append([])
@@ -541,8 +567,9 @@ class Grid(Rectangle):
                 cell_x = coll.x
 
                 # make copy to have each cell individual instance
-                cell_instance = self._cell.copy()
+                cell_instance = cell_templ.copy()
                 cell_instance.position = Point(cell_x, cell_y)
+                self.cells[row_index].append(cell_instance)
 
                 self.cells[row_index].append(
                     Cell(
@@ -582,28 +609,61 @@ class Grid(Rectangle):
     def coll_count(self) -> int:
         return len(self.colls)
 
-    def place_rects(
+    def place_content(
         self,
-        rects: List[Rectangle],
+        content_list: List[Union[NestedRectangle, Rectangle]],
         keep_aspect: bool = True,
         align: Align = Align.CENTER,
+        keep_offset: bool = False,
+        clear_cells: bool = True,
     ):
+        """
+        Fills up all available cells with the content from given list.
+        Will clear remaining empty cells.
+        """
         counter: int = 0
         for row_idx in range(self.row_count()):
             for cell in self.get_cells_for_row(row_idx):
                 try:
-                    rect = [counter]
+                    content = content_list[counter]
                 except IndexError:
-                    break
-                cell.place_rect()
+                    if clear_cells:
+                        cell.clear_content()
+
+                # switch child of cell
+                cell.set_child(
+                    content,
+                    keep_aspect=keep_aspect,
+                    align=align,
+                    keep_offset=keep_offset,
+                )
+
                 counter += 1
 
-    @property
-    def cell_scale(self) -> float:
-        return self._cell_scale
+    def place_content_in_cell(
+        self,
+        row_index: int,
+        coll_index: int,
+        content: Union[NestedRectangle, Rectangle],
+        keep_aspect: bool = True,
+        align: Align = Align.CENTER,
+        keep_offset: bool = False,
+    ):
+        cell = self.get_cell(row_index, coll_index)
+        # switch child of cell
+        cell.set_child(
+            content,
+            keep_aspect=keep_aspect,
+            align=align,
+            keep_offset=keep_offset,
+        )
 
-    @cell_scale.setter
-    def cell_scale(self, factor: float):
+    @property
+    def content_scale(self) -> float:
+        return self._content_scale
+
+    @content_scale.setter
+    def content_scale(self, factor: float):
         for cell in self.get_cells_all():
             cell.child.scale = factor
-        self._cell_scale = factor
+        self._content_scale = factor
