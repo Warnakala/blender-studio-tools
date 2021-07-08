@@ -154,6 +154,12 @@ class Rectangle:
     def _set_height(self, value: int) -> None:
         self._height = int(value)
 
+
+    # ASPECT
+    @property
+    def aspect_ratio(self) -> float:
+        return self.width / self.height
+
     # AREA
     @property
     def area(self) -> int:
@@ -193,11 +199,24 @@ class Rectangle:
         align: Align = Align.CENTER,
         keep_offset: bool = False,
     ):
+        # if self.aspect_ratio > rect.aspect_ratio:
+        # -> fit self by width
+        # else fit bei height
+
         # width height
         if keep_aspect:
+
+            # fit by width
+            if self.aspect_ratio > rect.aspect_ratio:
             scale_fac = rect.width / self.width
             self.width = rect.width
             self.height = int(self.height * scale_fac)
+
+            # fit by height
+            elif self.aspect_ratio < rect.aspect_ratio:
+                scale_fac = rect.height / self.height
+                self.height = rect.height
+                self.width = int(self.width * scale_fac)
 
         else:
             # copy width and height
@@ -211,12 +230,14 @@ class Rectangle:
         else:
             self.position = rect.position
 
+            # fit by width
+            if self.aspect_ratio > rect.aspect_ratio:
             if align == Align.NO:
                 pass
 
             if align == Align.CENTER:
-                height_diff = rect.height - self.height
-                self.y += int(height_diff / 2)
+                    height_diff = rect.height - self.height
+                    self.y += int(height_diff / 2)
 
             elif align == Align.TOP:
                 self.y == rect.y
@@ -225,6 +246,21 @@ class Rectangle:
                 height_diff = rect.height - self.height
                 self.y = rect.y + height_diff
 
+            # fit by height
+            elif self.aspect_ratio < rect.aspect_ratio:
+                width_diff = rect.width - self.width
+
+                if align == Align.NO:
+                    pass
+
+                if align == Align.CENTER:
+                    self.x += int(width_diff / 2)
+
+                elif align == Align.TOP:
+                    self.x == rect.x
+
+                elif align == Align.BOTTOM:
+                    self.x = rect.x + width_diff
     def reset_transform(self):
         self.x = self._orig_x
         self.y = self._orig_y
@@ -256,6 +292,7 @@ class NestedRectangle(Rectangle):
         child: Optional[Union[Rectangle, NestedRectangle]] = None,
         keep_aspect: bool = True,
         align: Align = Align.CENTER,
+        keep_offset: bool = False,
     ):
         super().__init__(x, y, width, height)
 
@@ -266,7 +303,13 @@ class NestedRectangle(Rectangle):
         self._child = child
         self._keep_aspect = keep_aspect
         self._align = align
-        self._child.fit_to_rect(self.get_rect(), keep_aspect=keep_aspect, align=align)
+        self._keep_offset = keep_offset
+        self._child.fit_to_rect(
+            self.get_rect(),
+            keep_aspect=keep_aspect,
+            align=align,
+            keep_offset=keep_offset,
+        )
 
     def fit_to_rect(
         self,
@@ -278,7 +321,12 @@ class NestedRectangle(Rectangle):
         super().fit_to_rect(
             rect, keep_aspect=keep_aspect, align=align, keep_offset=keep_offset
         )
-        self.child.fit_to_rect(self.get_rect(), keep_aspect=keep_aspect, align=align)
+        self.child.fit_to_rect(
+            self.get_rect(),
+            keep_aspect=keep_aspect,
+            align=align,
+            keep_offset=keep_offset,
+        )
 
     def get_rect(self) -> Rectangle:
         return Rectangle(self.x, self.y, self.width, self.height)
