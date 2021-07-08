@@ -110,6 +110,13 @@ class Rectangle:
     def _set_x(self, value: int) -> None:
         self._x = int(value)
 
+    @property
+    def orig_x(self) -> int:
+        return self._get_orig_x()
+
+    def _get_orig_x(self) -> int:
+        return self._orig_x
+
     # Y
     @property
     def y(self) -> int:
@@ -124,6 +131,13 @@ class Rectangle:
 
     def _set_y(self, value: int) -> None:
         self._y = int(value)
+
+    @property
+    def orig_x(self) -> int:
+        return self._get_orig_x()
+
+    def _get_orig_y(self) -> int:
+        return self._orig_y
 
     # WIDTH
     @property
@@ -140,6 +154,13 @@ class Rectangle:
     def _set_width(self, value: int) -> None:
         self._width = int(value)
 
+    @property
+    def orig_width(self) -> int:
+        return self._get_orig_width()
+
+    def _get_orig_width(self) -> int:
+        return self._orig_width
+
     # HEIGHT
     @property
     def height(self) -> int:
@@ -154,6 +175,13 @@ class Rectangle:
 
     def _set_height(self, value: int) -> None:
         self._height = int(value)
+
+    @property
+    def orig_height(self) -> int:
+        return self._get_orig_width()
+
+    def _get_orig_height(self) -> int:
+        return self._orig_height
 
     # SCALE
 
@@ -285,10 +313,10 @@ class Rectangle:
 
     def reset_transform(self):
         self.scale = 1
-        self.x = self._orig_x
-        self.y = self._orig_y
-        self.width = self._orig_width
-        self.height = self._orig_height
+        self.x = self.orig_x
+        self.y = self.orig_y
+        self.width = self.orig_width
+        self.height = self.orig_height
 
     def copy(self) -> Rectangle:
         return Rectangle(self.x, self.y, self.width, self.height)
