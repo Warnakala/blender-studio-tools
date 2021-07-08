@@ -93,6 +93,7 @@ class Rectangle:
         self._orig_height = self._height
         self._orig_x = self._x
         self._orig_y = self._y
+        self._scale = 1
 
     # X
     @property
@@ -154,6 +155,26 @@ class Rectangle:
     def _set_height(self, value: int) -> None:
         self._height = int(value)
 
+    # SCALE
+
+    @property
+    def scale(self):
+        return self._get_scale()
+
+    def _get_scale(self):
+        return self._scale
+
+    @scale.setter
+    def scale(self, factor: float) -> None:
+        return self._set_scale(factor)
+
+    def _set_scale(self, factor: float) -> None:
+        new_width = self.width * factor
+        new_height = self.height * factor
+        self.x += self.width / 2 - new_width / 2
+        self.y += self.height / 2 - new_height / 2
+        self.width = new_width
+        self.height = new_height
 
     # ASPECT
     @property
@@ -208,9 +229,9 @@ class Rectangle:
 
             # fit by width
             if self.aspect_ratio > rect.aspect_ratio:
-            scale_fac = rect.width / self.width
-            self.width = rect.width
-            self.height = int(self.height * scale_fac)
+                scale_fac = rect.width / self.width
+                self.width = rect.width
+                self.height = int(self.height * scale_fac)
 
             # fit by height
             elif self.aspect_ratio < rect.aspect_ratio:
@@ -232,19 +253,19 @@ class Rectangle:
 
             # fit by width
             if self.aspect_ratio > rect.aspect_ratio:
-            if align == Align.NO:
-                pass
+                if align == Align.NO:
+                    pass
 
-            if align == Align.CENTER:
+                if align == Align.CENTER:
                     height_diff = rect.height - self.height
                     self.y += int(height_diff / 2)
 
-            elif align == Align.TOP:
-                self.y == rect.y
+                elif align == Align.TOP:
+                    self.y == rect.y
 
-            elif align == Align.BOTTOM:
-                height_diff = rect.height - self.height
-                self.y = rect.y + height_diff
+                elif align == Align.BOTTOM:
+                    height_diff = rect.height - self.height
+                    self.y = rect.y + height_diff
 
             # fit by height
             elif self.aspect_ratio < rect.aspect_ratio:
@@ -261,7 +282,9 @@ class Rectangle:
 
                 elif align == Align.BOTTOM:
                     self.x = rect.x + width_diff
+
     def reset_transform(self):
+        self.scale = 1
         self.x = self._orig_x
         self.y = self._orig_y
         self.width = self._orig_width
@@ -368,6 +391,15 @@ class NestedRectangle(Rectangle):
             self.get_rect(), self._keep_aspect, self._align, keep_offset=True
         )
 
+    def _set_scale(self, factor: float) -> None:
+        super()._set_scale(factor)
+        self.child.fit_to_rect(
+            self.get_rect(),
+            keep_aspect=self._keep_aspect,
+            align=self._align,
+            keep_offset=self._keep_offset,
+        )
+
 
 class Cell(NestedRectangle):
     """
@@ -420,15 +452,17 @@ class Grid(Rectangle):
     ) -> None:
 
         super().__init__(x, y, width, height)
-        self._cell = cell
-        self._keep_aspect = keep_aspect
-        self._align = align
+        self._keep_aspect: bool = keep_aspect
+        self._align: Align = align
+        self._cell_scale: float = 1
 
         # if cell was not supplied on init make cell that has same dimensions as row / coll
-        if self._cell == None:
-            self._cell = Cell(
+        if cell == None:
+            self._cell: Cell = Cell(
                 0, 0, int(self.height / row_count), int(self.width / coll_count)
             )
+        else:
+            self._cell: Cell = cell
 
         # init rows, colls, cells
         self.rows: List[Rectangle] = []
@@ -500,6 +534,12 @@ class Grid(Rectangle):
     def get_cell(self, row_index: int, coll_index: int) -> Cell:
         return self.cells[row_index][coll_index]
 
+    def get_cells_all(self) -> List[Cell]:
+        cells: List[Cell] = []
+        for row_idx in range(self.row_count()):
+            cells.extend(self.get_cells_for_row(row_idx))
+        return cells
+
     @property
     def row_height(self) -> int:
         return int(self.height / self.row_count())
@@ -529,3 +569,13 @@ class Grid(Rectangle):
                     break
                 cell.place_rect()
                 counter += 1
+
+    @property
+    def cell_scale(self) -> float:
+        return self._cell_scale
+
+    @cell_scale.setter
+    def cell_scale(self, factor: float):
+        for cell in self.get_cells_all():
+            cell.child.scale = factor
+        self._cell_scale = factor
