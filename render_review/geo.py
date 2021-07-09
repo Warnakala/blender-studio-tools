@@ -219,9 +219,9 @@ class Rectangle:
         self.y += self.height / 2 - new_height / 2
         self.height = new_height
 
-    def set_scale(self, value: float) -> None:
-        self.scale_x = value
-        self.scale_y = value
+    def scale(self, factor: float) -> None:
+        self.scale_x *= factor
+        self.scale_y *= factor
 
     # ASPECT
     @property
@@ -533,8 +533,6 @@ class Grid(Rectangle):
         super().__init__(x, y, width, height)
         self._keep_aspect: bool = keep_aspect
         self._align: Align = align
-        self._content_scale_x: float = 1.0
-        self._content_scale_y: float = 1.0
 
         # if cell_templ was not supplied on init make cell that has same dimensions as row / coll
         if cell_templ == None:
@@ -724,27 +722,19 @@ class Grid(Rectangle):
             keep_offset=keep_offset,
         )
 
-    def set_content_scale(self, factor: float):
+    def scale_content(self, factor: float):
         for cell in self.get_cells_all():
-            cell.child.scale_x = factor
-            cell.child.scale_y = factor
+            cell.child.scale_x *= factor
+            cell.child.scale_y *= factor
 
-    @property
-    def content_scale_x(self) -> float:
-        return self._content_scale_x
-
-    @content_scale_x.setter
-    def content_scale_x(self, factor: float):
+    def scale_content_x(self, factor: float):
         for cell in self.get_cells_all():
-            cell.child.scale_x = factor
-        self._content_scale_x = factor
+            cell.child.scale_x *= factor
 
-    @property
-    def content_scale_y(self) -> float:
-        return self._content_scale_y
-
-    @content_scale_y.setter
-    def content_scale_y(self, factor: float):
+    def scale_content_y(self, factor: float):
         for cell in self.get_cells_all():
-            cell.child.scale_y = factor
-        self._content_scale_y = factor
+            cell.child.scale_y *= factor
+
+    def reset_content_transforms(self):
+        for cell in self.get_cells_all():
+            cell.reset_transform()
