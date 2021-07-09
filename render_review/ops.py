@@ -7,10 +7,11 @@ from typing import Set, Union, Optional, List, Dict, Any, Tuple
 
 import bpy
 
-from render_review import vars, prefs, opsdata, util, kitsu, contactsheet
+from render_review import vars, prefs, opsdata, util, kitsu
 from render_review.exception import NoImageSequenceAvailableException
 from render_review.log import LoggerFactory
-from render_review.contactsheet import SequenceGrid
+from render_review.geo_seq import SequenceRect
+from render_review.geo import Grid
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -738,45 +739,41 @@ class RR_OT_make_contact_sheet(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(
-            context.scene.sequence_editor.sequences_all and context.selected_sequeneces
+            context.scene.sequence_editor.sequences_all and context.selected_sequences
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         sequences: List[bpy.types.Sequence] = context.selected_sequences
-
-        # calculate rows colls and imgs left
-        nr_imgs = len(sequences)  # 13
-        row_count = 3
-        coll_count = math.floor(nr_imgs / row_count)  # 13 / 3 = 4.3 -> 4
-        imgs_left = nr_imgs % coll_count  # 13 % 3 = 1
-
-        # for now prototype remove imgs left
-        for i in range(imgs_left):
-            sequences.pop(-1)
-
-        # calculate coordinate of each cell center in grid
+        sequences.sort(key=self.get_sorting_tuple)
+        content: List[SequenceRect] = [SequenceRect(seq) for seq in sequences]
         scene_x = context.scene.render.resolution_x  # 1920
         scene_y = context.scene.render.resolution_y  # 1080
+        row_count = 3
+        start_frame = 101
 
-        grid = SequenceGrid(0, 0, scene_x, scene_y, row_count, coll_count)
-        grid.load_sequences(sequences)
+        if len(sequences) > 32:
+            self.report(
+                {"ERROR"},
+                f"Sequencer only has 32 channels available. Selected Sequences: {len(sequences)}",
+            )
+            return {"CANCELLED"}
 
-        #####################################
-        #           #           #           #
-        #     X     #      X    #     X     #
-        #           #           #           #
-        #####################################
-        #           #           #           #
-        #     X     #      X    #     X     #
-        #           #           #           #
-        #####################################
-        #           #           #           #
-        #     X     #      X    #     X     #
-        #           #           #           #
-        #####################################
+        # Place all sequences on top of each other and make them start at the same frame.
+        for idx, seq in enumerate(sequences):
+            prev_duration = seq.frame_final_duration
+            seq.frame_final_start = start_frame
+            seq.frame_final_end = seq.frame_final_start + prev_duration
+            seq.channel = idx + 1
+            seq.blend_type = "ALPHA_OVER"
+
+        grid = Grid.from_content(0, 0, scene_x, scene_y, content, row_count)
+        # grid.set_content_scale(1)
 
         return {"FINISHED"}
+
+    def get_sorting_tuple(self, strip: bpy.types.Sequence) -> Tuple[int, int]:
+        return (strip.frame_final_start, strip.channel)
 
 
 # ----------------REGISTER--------------
@@ -793,7 +790,7 @@ classes = [
     RR_OT_sqe_isolate_strip,
     RR_OT_sqe_unmute_all_strips,
     RR_OT_sqe_push_to_edit,
-    # RR_OT_make_contact_sheet,
+    RR_OT_make_contact_sheet,
 ]
 
 addon_keymap_items = []
@@ -827,8 +824,6 @@ def register():
 
 def unregister():
     global addon_keymap_items
-    print("\n" * 2)
-    print(addon_keymap_items)
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 

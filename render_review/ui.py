@@ -57,6 +57,10 @@ class RR_PT_render_review(bpy.types.Panel):
         row = box.row(align=True)
         row.operator(RR_OT_sqe_create_review_session.bl_idname, text=text, icon="PLAY")
 
+        # make contact sheet
+        row = box.row(align=True)
+        row.operator(RR_OT_make_contact_sheet.bl_idname, icon="MESH_GRID")
+
         if active_strip and active_strip.rr.is_render:
             # create box
             layout = self.layout
@@ -103,10 +107,6 @@ class RR_PT_render_review(bpy.types.Panel):
             row.operator(
                 RR_OT_open_path.bl_idname, icon="FILEBROWSER", text=""
             ).filepath = edit_storage_dir.as_posix()
-
-            # make contact sheet
-            # row = box.row(align=True)
-            # row.operator(RR_OT_make_contact_sheet.bl_idname, icon="MESH_GRID")
 
 
 def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:

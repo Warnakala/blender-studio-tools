@@ -86,12 +86,13 @@ cell = Cell(
     # child=NestedRectangle(100, 100, 400, 400, child=Rectangle(0, 0, 1920, 1080)),
 )
 grid1 = Grid(0, 0, RES_X, RES_Y, 4, 6, cell_templ=cell, align=Align.CENTER)
-grid1.content_scale = 0.9
-grid1.content_scale_x = 1
+grid1.set_content_scale(0.5)
+grid1.content_scale_y = 1
+# grid1.content_scale_x = 1
 
 content = [NestedRectangle(0, 0, 1920, 1080, child=rect.copy()) for r in range(28)]
 grid2 = Grid.from_content(0, 0, RES_X, RES_Y, content, 3)
-grid2.content_scale = 0.9
+grid2.set_content_scale(0.9)
 # draw_rows(grid)
 # draw_colls(grid)
 
