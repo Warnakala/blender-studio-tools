@@ -476,6 +476,37 @@ class NestedRectangle(Rectangle):
             keep_offset=self._keep_offset,
         )
 
+    @property
+    def keep_aspect(self) -> bool:
+        return self._keep_aspect
+
+    @keep_aspect.setter
+    def keep_aspect(self, value: bool):
+        self._keep_aspect = value
+
+    @property
+    def align(self) -> Align:
+        return self._align
+
+    @align.setter
+    def align(self, value: Align) -> None:
+        self._align = value
+
+        self.child.fit_to_rect(
+            self.get_rect(),
+            keep_aspect=self._keep_aspect,
+            align=self._align,
+            keep_offset=self._keep_offset,
+        )
+
+    @property
+    def keep_offset(self) -> bool:
+        return self._keep_offset
+
+    @keep_offset.setter
+    def keep_offset(self, value: bool):
+        self._keep_offset = value
+
 
 class Cell(NestedRectangle):
     """
