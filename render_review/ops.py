@@ -749,7 +749,7 @@ class RR_OT_make_contact_sheet(bpy.types.Operator):
         content: List[SequenceRect] = [SequenceRect(seq) for seq in sequences]
         scene_x = context.scene.render.resolution_x  # 1920
         scene_y = context.scene.render.resolution_y  # 1080
-        row_count = 3
+        row_count = 4
         start_frame = 101
 
         if len(sequences) > 32:
@@ -778,12 +778,11 @@ class RR_OT_make_contact_sheet(bpy.types.Operator):
 
         # Place all sequences on top of each other and make them start at the same frame.
         for idx, seq in enumerate(sequences):
-            prev_duration = seq.frame_final_duration
-            seq.frame_final_start = start_frame
-            seq.frame_final_end = seq.frame_final_start + prev_duration
+            seq.frame_start = start_frame
             seq.channel = idx + 1
             seq.blend_type = "ALPHA_OVER"
 
+        context.scene.frame_current = start_frame
         grid = Grid.from_content(0, 0, scene_x, scene_y, content, row_count)
         grid.scale_content(0.8)
 
