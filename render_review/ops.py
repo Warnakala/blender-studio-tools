@@ -759,6 +759,23 @@ class RR_OT_make_contact_sheet(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
+        """
+        # create new scene
+        scene_orig = bpy.context.scene
+        bpy.ops.scene.new(type="EMPTY")  # changes active scene
+        scene_tmp = bpy.context.scene
+        scene_tmp.name = "contactsheet"
+        logger.info("Create tmp scene for contactsheet: %s", scene_tmp.name)
+
+        # new_sequences: List[bpy.types.Sequence] = [context.scene.sequence_editor.sequences[seq_name] for seq_name in ]
+
+        seq_rem = list(
+            set(context.scene.sequence_editor.sequences_all) - set(sequences)
+        )
+        for s in seq_rem:
+            context.scene.sequence_editor.sequences.remove(s)
+        """
+
         # Place all sequences on top of each other and make them start at the same frame.
         for idx, seq in enumerate(sequences):
             prev_duration = seq.frame_final_duration
@@ -768,7 +785,7 @@ class RR_OT_make_contact_sheet(bpy.types.Operator):
             seq.blend_type = "ALPHA_OVER"
 
         grid = Grid.from_content(0, 0, scene_x, scene_y, content, row_count)
-        # grid.set_content_scale(1)
+        grid.scale_content(0.8)
 
         return {"FINISHED"}
 
