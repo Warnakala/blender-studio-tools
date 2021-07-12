@@ -166,7 +166,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         # set scene resolution to resolution of laoded image
         context.scene.render.resolution_x = vars.RESOLUTION[0]
         context.scene.render.resolution_y = vars.RESOLUTION[1]
-        # TODO: set resolution with strip.elements[0].orig_width / orig_height
+
+        # change frame range and frame start
+        opsdata.fit_frame_range_to_strips(context)
+        context.scene.frame_current = context.scene.frame_start
 
         # scan for approved renders, will modify strip.rr.is_approved prop
         # which controls the custom gpu overlay
@@ -815,8 +818,10 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
             seq.blend_type = "ALPHA_OVER"
 
         # scene settings
-        # change frame current to start frame
-        context.scene.frame_current = start_frame
+        # change frame range and frame start
+        opsdata.fit_frame_range_to_strips(context)
+        context.scene.frame_current = context.scene.frame_start
+
         sqe_editor = opsdata.get_sqe_editor(context)
         sqe_editor.spaces.active.proxy_render_size = "PROXY_25"
         sqe_editor.spaces.active.use_proxies = True

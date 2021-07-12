@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Set, Union, Optional, List, Dict, Any
+from typing import Set, Union, Optional, List, Dict, Any, Tuple
 
 import bpy
 
@@ -232,3 +232,24 @@ def get_sqe_editor(context: bpy.types.Context) -> Optional[bpy.types.Area]:
             sqe_editor = area
 
     return sqe_editor
+
+
+def fit_frame_range_to_strips(
+    context: bpy.types.Context, strips: Optional[List[bpy.types.Sequence]] = None
+) -> Tuple[int, int]:
+    def get_sort_tuple(strip: bpy.types.Sequence) -> Tuple[int, int]:
+        return (strip.frame_final_start, strip.frame_final_duration)
+
+    if not strips:
+        strips = context.scene.sequence_editor.sequences_all
+
+    if not strips:
+        return (0, 0)
+
+    strips = list(strips)
+    strips.sort(key=get_sort_tuple)
+
+    context.scene.frame_start = strips[0].frame_final_start
+    context.scene.frame_end = strips[-1].frame_final_end
+
+    return (context.scene.frame_start, context.scene.frame_end)
