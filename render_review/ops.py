@@ -512,31 +512,39 @@ class RR_OT_open_path(bpy.types.Operator):
             return self._find_latest_existing_folder(path.parent)
 
 
-class RR_OT_sqe_unmute_all_strips(bpy.types.Operator):
+class RR_OT_sqe_isolate_strip_exit(bpy.types.Operator):
     """
-    Unmutes all strips in sequence editor.
+    Exits isolat strip view.
     """
 
-    bl_idname = "rr.sqe_unmute_all_strips"
+    bl_idname = "rr.sqe_isolate_strip_exit"
     bl_label = "Unmute all strips"
     bl_description = ""
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        sequences = context.scene.sequence_editor.sequences_all
 
-        for s in sequences:
-            s.mute = False
+        for i in context.scene.rr.isolate_view:
+            try:
+                strip = context.scene.sequence_editor.sequences[i.name]
+            except KeyError:
+                logger.error("Exit isolate view: Strip does not exist %s", i.name)
+                continue
+
+            strip.mute = i.mute
+
+        # clear all items
+        context.scene.rr.isolate_view.clear()
 
         return {"FINISHED"}
 
 
-class RR_OT_sqe_isolate_strip(bpy.types.Operator):
+class RR_OT_sqe_isolate_strip_enter(bpy.types.Operator):
     """
-    Hides all other strips except for the selected strip in sequence editor.
+    Hides all other strips except for the selected strips in sequence editor.
     """
 
-    bl_idname = "rr.sqe_isolate_strip"
+    bl_idname = "rr.sqe_isolate_strip_enter"
     bl_label = "Isolate Strip"
     bl_description = ""
     bl_options = {"REGISTER", "UNDO"}
@@ -547,16 +555,23 @@ class RR_OT_sqe_isolate_strip(bpy.types.Operator):
         return bool(active_strip)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        active_strip = context.scene.sequence_editor.active_strip
-        active_strip.mute = False
 
         sequences = list(context.scene.sequence_editor.sequences_all)
 
-        # remove active strip from sequences
-        sequences.remove(active_strip)
+        if context.scene.rr.isolate_view.items():
+            bpy.ops.rr.sqe_isolate_strip_exit()
 
+        # mute all and save state to restore later
         for s in sequences:
+            # save this state to restore it later
+            item = context.scene.rr.isolate_view.add()
+            item.name = s.name
+            item.mute = s.mute
             s.mute = True
+
+        # unmute selected
+        for s in context.selected_sequences:
+            s.mute = False
 
         return {"FINISHED"}
 
@@ -803,8 +818,8 @@ classes = [
     RR_OT_sqe_approve_render,
     RR_OT_sqe_update_is_approved,
     RR_OT_open_path,
-    RR_OT_sqe_isolate_strip,
-    RR_OT_sqe_unmute_all_strips,
+    RR_OT_sqe_isolate_strip_enter,
+    RR_OT_sqe_isolate_strip_exit,
     RR_OT_sqe_push_to_edit,
     RR_OT_make_contact_sheet,
 ]
@@ -823,13 +838,13 @@ def register():
 
     # isolate strip
     addon_keymap_items.append(
-        keymap.keymap_items.new("rr.sqe_isolate_strip", value="PRESS", type="ONE")
+        keymap.keymap_items.new("rr.sqe_isolate_strip_enter", value="PRESS", type="ONE")
     )
 
     # umute all
     addon_keymap_items.append(
         keymap.keymap_items.new(
-            "rr.sqe_unmute_all_strips", value="PRESS", type="ONE", alt=True
+            "rr.sqe_isolate_strip_exit", value="PRESS", type="ONE", alt=True
         )
     )
     for kmi in addon_keymap_items:

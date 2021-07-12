@@ -8,10 +8,15 @@ from render_review.log import LoggerFactory
 logger = LoggerFactory.getLogger(name=__name__)
 
 
+class RR_isolate_collection_prop(bpy.types.PropertyGroup):
+    mute: bpy.props.BoolProperty()
+
+
 class RR_property_group_scene(bpy.types.PropertyGroup):
     """"""
 
     render_dir: bpy.props.StringProperty(name="Render Directory", subtype="DIR_PATH")
+    isolate_view: bpy.props.CollectionProperty(type=RR_isolate_collection_prop)
 
     @property
     def render_dir_path(self):
@@ -43,7 +48,11 @@ class RR_property_group_sequence(bpy.types.PropertyGroup):
 
 # ----------------REGISTER--------------
 
-classes = [RR_property_group_scene, RR_property_group_sequence]
+classes = [
+    RR_isolate_collection_prop,
+    RR_property_group_scene,
+    RR_property_group_sequence,
+]
 
 
 def register():
