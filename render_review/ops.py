@@ -818,9 +818,12 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         sqe_editor.spaces.active.use_proxies = True
 
         # create content list for grid
+        if context.scene.rr.use_custom_rows:
+            row_count = context.scene.rr.rows
+
         content: List[SequenceRect] = [SequenceRect(seq) for seq in sequences]
         grid = Grid.from_content(0, 0, scene_x, scene_y, content, row_count)
-        grid.scale_content(0.8)
+        grid.scale_content(0.9)
 
         return {"FINISHED"}
 

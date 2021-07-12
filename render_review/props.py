@@ -25,6 +25,13 @@ class RR_property_group_scene(bpy.types.PropertyGroup):
     isolate_view: bpy.props.CollectionProperty(type=RR_isolate_collection_prop)
     is_contactsheet: bpy.props.BoolProperty()
     contactsheet_meta: bpy.props.PointerProperty(type=RR_contactsheet_meta)
+    rows: bpy.props.IntProperty(
+        name="Rows",
+        description="Controls how many rows should be used for the contactsheet",
+        min=1,
+        default=4,
+    )
+    use_custom_rows: bpy.props.BoolProperty(name="Use Custom Amount of Rows")
 
     @property
     def render_dir_path(self):

@@ -125,6 +125,11 @@ class RR_PT_render_review(bpy.types.Panel):
         # make contact sheet
         row = box.row(align=True)
         row.operator(RR_OT_make_contactsheet.bl_idname, icon="MESH_GRID")
+        icon = "UNLOCKED" if context.scene.rr.use_custom_rows else "LOCKED"
+        row.prop(context.scene.rr, "use_custom_rows", text="", icon=icon)
+
+        if context.scene.rr.use_custom_rows:
+            box.row(align=True).prop(context.scene.rr, "rows")
 
 
 def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:
