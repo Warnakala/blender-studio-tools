@@ -13,7 +13,8 @@ from render_review.ops import (
     RR_OT_sqe_update_is_approved,
     RR_OT_open_path,
     RR_OT_sqe_push_to_edit,
-    RR_OT_make_contact_sheet,
+    RR_OT_make_contactsheet,
+    RR_OT_exit_contactsheet,
 )
 from render_review import opsdata
 
@@ -28,6 +29,17 @@ class RR_PT_render_review(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
+
+        # handle special case if scene is contactsheet
+        if context.scene.rr.is_contactsheet:
+            layout = self.layout
+            box = layout.box()
+            box.label(text="Contactsheet", icon="MESH_GRID")
+
+            # exti contact sheet
+            row = box.row(align=True)
+            row.operator(RR_OT_exit_contactsheet.bl_idname, icon="X")
+            return
 
         active_strip = context.scene.sequence_editor.active_strip
 
@@ -56,10 +68,6 @@ class RR_PT_render_review(bpy.types.Panel):
 
         row = box.row(align=True)
         row.operator(RR_OT_sqe_create_review_session.bl_idname, text=text, icon="PLAY")
-
-        # make contact sheet
-        row = box.row(align=True)
-        row.operator(RR_OT_make_contact_sheet.bl_idname, icon="MESH_GRID")
 
         if active_strip and active_strip.rr.is_render:
             # create box
@@ -107,6 +115,16 @@ class RR_PT_render_review(bpy.types.Panel):
             row.operator(
                 RR_OT_open_path.bl_idname, icon="FILEBROWSER", text=""
             ).filepath = edit_storage_dir.as_posix()
+
+        # contactsheet tools
+        # create box
+        layout = self.layout
+        box = layout.box()
+        box.label(text="Contactsheet", icon="MESH_GRID")
+
+        # make contact sheet
+        row = box.row(align=True)
+        row.operator(RR_OT_make_contactsheet.bl_idname, icon="MESH_GRID")
 
 
 def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:

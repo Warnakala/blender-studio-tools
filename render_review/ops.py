@@ -744,10 +744,10 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         return edit_filepath
 
 
-class RR_OT_make_contact_sheet(bpy.types.Operator):
+class RR_OT_make_contactsheet(bpy.types.Operator):
     """ """
 
-    bl_idname = "rr.make_contact_sheet"
+    bl_idname = "rr.make_contactsheet"
     bl_label = "Make Contact Sheet"
     bl_description = ""
 
@@ -772,12 +772,26 @@ class RR_OT_make_contact_sheet(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
+        # get contactsheet metadata
+        sqe_editor = opsdata.get_sqe_editor(context)
+        orig_proxy_render_size = sqe_editor.spaces.active.proxy_render_size
+        orig_use_proxies = sqe_editor.spaces.active.use_proxies
+
         # create new scene
         scene_orig = bpy.context.scene
         bpy.ops.scene.new(type="FULL_COPY")  # changes active scene, makes copy
         scene_tmp = bpy.context.scene
         scene_tmp.name = "contactsheet"
         logger.info("Create tmp scene for contactsheet: %s", scene_tmp.name)
+
+        # save contactsheet metadata
+        sqe_editor = opsdata.get_sqe_editor(context)
+        sqe_editor.spaces.active.proxy_render_size = "PROXY_25"
+        sqe_editor.spaces.active.use_proxies = True
+        scene_tmp.rr.is_contactsheet = True
+        scene_tmp.rr.contactsheet_meta.scene = scene_orig
+        scene_tmp.rr.contactsheet_meta.use_proxies = orig_use_proxies
+        scene_tmp.rr.contactsheet_meta.proxy_render_size = orig_proxy_render_size
 
         # get sequences in new scene
         seq_rm: List[bpy.types.Sequence] = [
@@ -814,6 +828,39 @@ class RR_OT_make_contact_sheet(bpy.types.Operator):
         return (strip.frame_final_start, strip.channel)
 
 
+class RR_OT_exit_contactsheet(bpy.types.Operator):
+    """ """
+
+    bl_idname = "rr.exit_contactsheet"
+    bl_label = "Exit Contact Sheet"
+    bl_description = ""
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(context.scene.rr.is_contactsheet)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        cs_scene = context.scene
+        cs_scene_name = cs_scene.name
+
+        # change active scene to orig scene before cs
+        context.window.scene = context.scene.rr.contactsheet_meta.scene
+
+        # restore proxy settings from rr.contactsheet_meta
+        sqe_editor = opsdata.get_sqe_editor(context)
+        sqe_editor.spaces.active.proxy_render_size = (
+            cs_scene.rr.contactsheet_meta.proxy_render_size
+        )
+        sqe_editor.spaces.active.use_proxies = cs_scene.rr.contactsheet_meta.use_proxies
+
+        # remove cs scene
+        bpy.data.scenes.remove(cs_scene)
+
+        self.report({"INFO"}, f"Exited and deleted scene: {cs_scene_name}")
+
+        return {"FINISHED"}
+
+
 # ----------------REGISTER--------------
 
 
@@ -828,7 +875,8 @@ classes = [
     RR_OT_sqe_isolate_strip_enter,
     RR_OT_sqe_isolate_strip_exit,
     RR_OT_sqe_push_to_edit,
-    RR_OT_make_contact_sheet,
+    RR_OT_make_contactsheet,
+    RR_OT_exit_contactsheet,
 ]
 
 addon_keymap_items = []
