@@ -11,7 +11,7 @@ from render_review import vars, prefs, opsdata, util, kitsu
 from render_review.exception import NoImageSequenceAvailableException
 from render_review.log import LoggerFactory
 from render_review.geo_seq import SequenceRect
-from render_review.geo import Grid
+from render_review.geo import Grid, NestedRectangle
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -762,7 +762,7 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         sequences: List[bpy.types.Sequence] = context.selected_sequences
         scene_x = context.scene.render.resolution_x
         scene_y = context.scene.render.resolution_y
-        row_count = 4  # TODO: calucalte this programmatically
+        row_count = None
         start_frame = 1
 
         if len(sequences) > 32:
@@ -825,8 +825,12 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         if context.scene.rr.use_custom_rows:
             row_count = context.scene.rr.rows
 
-        content: List[SequenceRect] = [SequenceRect(seq) for seq in sequences]
-        grid = Grid.from_content(0, 0, scene_x, scene_y, content, row_count)
+        sqe_rects: List[SequenceRect] = [SequenceRect(seq) for seq in sequences]
+        content: List[NestedRectangle] = [
+            NestedRectangle(0, 0, srect.width, srect.height, child=srect)
+            for srect in sqe_rects
+        ]
+        grid = Grid.from_content(0, 0, scene_x, scene_y, content, row_count=row_count)
         grid.scale_content(0.9)
 
         return {"FINISHED"}
