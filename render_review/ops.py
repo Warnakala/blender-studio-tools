@@ -810,8 +810,8 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
 
         # Place all sequences on top of each other and make them start at the same frame.
         for idx, seq in enumerate(sequences):
-            seq.frame_start = start_frame
             seq.channel = idx + 1
+            seq.frame_start = start_frame
             seq.blend_type = "ALPHA_OVER"
 
         # scene settings
