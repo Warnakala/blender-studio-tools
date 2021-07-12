@@ -222,3 +222,13 @@ def get_image_editor(context: bpy.types.Context) -> Optional[bpy.types.Area]:
             image_editor = area
 
     return image_editor
+
+
+def get_sqe_editor(context: bpy.types.Context) -> Optional[bpy.types.Area]:
+    sqe_editor = None
+
+    for area in context.screen.areas:
+        if area.type == "SEQUENCE_EDITOR":
+            sqe_editor = area
+
+    return sqe_editor

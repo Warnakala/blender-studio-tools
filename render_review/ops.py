@@ -760,12 +760,10 @@ class RR_OT_make_contact_sheet(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         sequences: List[bpy.types.Sequence] = context.selected_sequences
-        sequences.sort(key=self.get_sorting_tuple)
-        content: List[SequenceRect] = [SequenceRect(seq) for seq in sequences]
-        scene_x = context.scene.render.resolution_x  # 1920
-        scene_y = context.scene.render.resolution_y  # 1080
-        row_count = 4
-        start_frame = 101
+        scene_x = context.scene.render.resolution_x
+        scene_y = context.scene.render.resolution_y
+        row_count = 4  # TODO: calucalte this programmatically
+        start_frame = 1
 
         if len(sequences) > 32:
             self.report(
@@ -774,22 +772,23 @@ class RR_OT_make_contact_sheet(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
-        """
         # create new scene
         scene_orig = bpy.context.scene
-        bpy.ops.scene.new(type="EMPTY")  # changes active scene
+        bpy.ops.scene.new(type="FULL_COPY")  # changes active scene, makes copy
         scene_tmp = bpy.context.scene
         scene_tmp.name = "contactsheet"
         logger.info("Create tmp scene for contactsheet: %s", scene_tmp.name)
 
-        # new_sequences: List[bpy.types.Sequence] = [context.scene.sequence_editor.sequences[seq_name] for seq_name in ]
+        # get sequences in new scene
+        seq_rm: List[bpy.types.Sequence] = [
+            s for s in scene_tmp.sequence_editor.sequences_all if not s.select
+        ]
 
-        seq_rem = list(
-            set(context.scene.sequence_editor.sequences_all) - set(sequences)
-        )
-        for s in seq_rem:
-            context.scene.sequence_editor.sequences.remove(s)
-        """
+        for s in seq_rm:
+            scene_tmp.sequence_editor.sequences.remove(s)
+
+        sequences = list(scene_tmp.sequence_editor.sequences_all)
+        sequences.sort(key=self.get_sorting_tuple)
 
         # Place all sequences on top of each other and make them start at the same frame.
         for idx, seq in enumerate(sequences):
@@ -797,7 +796,15 @@ class RR_OT_make_contact_sheet(bpy.types.Operator):
             seq.channel = idx + 1
             seq.blend_type = "ALPHA_OVER"
 
+        # scene settings
+        # change frame current to start frame
         context.scene.frame_current = start_frame
+        sqe_editor = opsdata.get_sqe_editor(context)
+        sqe_editor.spaces.active.proxy_render_size = "PROXY_25"
+        sqe_editor.spaces.active.use_proxies = True
+
+        # create content list for grid
+        content: List[SequenceRect] = [SequenceRect(seq) for seq in sequences]
         grid = Grid.from_content(0, 0, scene_x, scene_y, content, row_count)
         grid.scale_content(0.8)
 
