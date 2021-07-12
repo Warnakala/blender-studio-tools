@@ -763,8 +763,6 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         sequences: List[bpy.types.Sequence] = context.selected_sequences
-        scene_x = context.scene.render.resolution_x
-        scene_y = context.scene.render.resolution_y
         row_count = None
         start_frame = 1
 
@@ -835,7 +833,14 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
             NestedRectangle(0, 0, srect.width, srect.height, child=srect)
             for srect in sqe_rects
         ]
-        grid = Grid.from_content(0, 0, scene_x, scene_y, content, row_count=row_count)
+        grid = Grid.from_content(
+            0,
+            0,
+            context.scene.rr.contactsheet_x,
+            context.scene.rr.contactsheet_y,
+            content,
+            row_count=row_count,
+        )
         grid.scale_content(0.9)
 
         return {"FINISHED"}

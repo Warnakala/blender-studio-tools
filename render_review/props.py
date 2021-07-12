@@ -32,6 +32,8 @@ class RR_property_group_scene(bpy.types.PropertyGroup):
         default=4,
     )
     use_custom_rows: bpy.props.BoolProperty(name="Use Custom Amount of Rows")
+    contactsheet_x: bpy.props.IntProperty(name="Resolution X", default=1920, min=100)
+    contactsheet_y: bpy.props.IntProperty(name="Resolution Y", default=1080, min=100)
 
     @property
     def render_dir_path(self):

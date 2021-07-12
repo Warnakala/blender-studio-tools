@@ -131,6 +131,11 @@ class RR_PT_render_review(bpy.types.Panel):
         if context.scene.rr.use_custom_rows:
             box.row(align=True).prop(context.scene.rr, "rows")
 
+        # contact sheet resolution
+        row = box.row(align=True)
+        row.prop(context.scene.rr, "contactsheet_x", text="X")
+        row.prop(context.scene.rr, "contactsheet_y", text="Y")
+
 
 def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:
     layout = self.layout
