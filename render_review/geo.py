@@ -638,32 +638,33 @@ class Grid(Rectangle):
         width: int,
         height: int,
         content: List[NestedRectangle],
-        row_count: int,
+        row_count: Optional[int] = None,
         keep_aspect: bool = True,
         align: Align = Align.CENTER,
     ) -> Grid:
         """
         Creates a grid based of a content list. Calculates optimal amount of rows and colls.
         """
+        if not row_count:
 
-        # row count should not be bigger as nr of cells
-        row_count = min(row_count, len(content))
-        coll_count = math.ceil(len(content) / row_count)  # 13 / 3 = 4.3 -> 4
+            # Calculate by how much images need to be scaled in order to fit. (won't be perfect)
+            available_area = width * height
+            content_area_orig = content[0].child.area
+            content_area = available_area / len(content)
+            scale_factor = math.sqrt(content_area / content_area_orig)
 
-        """
-        imgs_left = len(content) % coll_count  # 13 % 3 = 1
-        coll_leftover = coll_count - imgs_left
-        row_leftover = row_count - imgs_left
+            content_size = (
+                content[0].child.width * scale_factor,
+                content[0].child.height * scale_factor,
+            )
 
-        if coll_leftover < row_leftover and coll_leftover >= 0:
-            coll_count += 1
+            row_count = math.ceil(width / content_size[0])
+            coll_count = math.ceil(len(content) / row_count)
 
-        elif row_leftover < coll_leftover and row_leftover >= 0:
-            row_count += 1
-
-        elif row_leftover == coll_leftover:
-            coll_count += 1
-        """
+        else:
+            # row count should not be bigger as nr of cells
+            row_count = min(row_count, len(content))
+            coll_count = math.ceil(len(content) / row_count)  # 13 / 3 = 4.3 -> 4
 
         grid = Grid(
             x,
