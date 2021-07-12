@@ -795,7 +795,11 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
 
         # get sequences in new scene
         seq_rm: List[bpy.types.Sequence] = [
-            s for s in scene_tmp.sequence_editor.sequences_all if not s.select
+            s
+            for s in scene_tmp.sequence_editor.sequences_all
+            if not s.select
+            or s.type not in ["IMAGE", "MOVIE"]
+            or (s.type == "IMAGE" and s.elements[0].filename.endswith(".exr"))
         ]
 
         for s in seq_rm:
