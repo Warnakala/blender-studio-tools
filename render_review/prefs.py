@@ -46,17 +46,6 @@ class RR_OT_enable_blender_kitsu(bpy.types.Operator):
 class RR_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    def _get_contachseet_dir(self: Any) -> str:
-        # get it based on edit_storage_path
-        # edit_storage_path: /home/guest/Blender Dropbox/render/sprites
-        if not self.edit_storage_path:
-            return ""
-        return (
-            self.edit_storage_path.parents[2]
-            .joinpath("shared/sprites/contactsheets")
-            .as_posix()
-        )
-
     def _check_blender_kitsu_installed(self, value):
         if not is_blender_kitsu_enabled():
             raise RuntimeError("blender_kitsu addon ist not enabled")
@@ -78,15 +67,15 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
     edit_storage_dir: bpy.props.StringProperty(  # type: ignore
         name="Edit Storage Directory",
         description="Should point to: /home/guest/Blender Dropbox/render/sprites",
-        default="/home/guest/Blender Dropbox/render/sprites",
+        default="",
         subtype="DIR_PATH",
     )
 
     contactsheet_dir: bpy.props.StringProperty(  # type: ignore
         name="Contactsheet Directory",
         description="Should point to: /home/guest/Blender Dropbox/shared/sprites/contactsheet",
+        default="",
         subtype="DIR_PATH",
-        get=_get_contachseet_dir,
     )
     enable_blender_kitsu: bpy.props.BoolProperty(
         name="Enable Blender Kitsu",
@@ -209,6 +198,24 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
             return False
 
         if not bpy.data.filepath and self.edit_storage_dir.startswith("//"):
+            return False
+
+        return True
+
+    @property
+    def contactsheet_dir_path(self) -> Optional[Path]:
+        if not self.is_contactsheet_dir_valid:
+            return None
+        return Path(os.path.abspath(bpy.path.abspath(self.contactsheet_dir)))
+
+    @property
+    def is_contactsheet_dir_valid(self) -> bool:
+
+        # check if file is saved
+        if not self.contactsheet_dir:
+            return False
+
+        if not bpy.data.filepath and self.contactsheet_dir.startswith("//"):
             return False
 
         return True
