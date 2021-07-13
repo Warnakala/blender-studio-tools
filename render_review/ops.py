@@ -824,6 +824,13 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
             seq.frame_start = start_frame
             seq.blend_type = "ALPHA_OVER"
 
+        # elongate all strips to the strip with the longest duration
+        tmp_sequences = sorted(sequences, key=lambda s: s.frame_final_end)
+        max_end: int = tmp_sequences[-1].frame_final_end
+        for strip in tmp_sequences:
+            if strip.frame_final_end < max_end:
+                strip.frame_final_end = max_end
+
         # scene settings
         # change frame range and frame start
         self.set_render_settings(context)
