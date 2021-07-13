@@ -210,6 +210,10 @@ def is_sequence_dir(dir: Path) -> bool:
     return dir.parent.name == "shots"
 
 
+def is_shot_dir(dir: Path) -> bool:
+    return dir.parent.parent.name == "shots"
+
+
 def get_shot_name_from_dir(dir: Path) -> str:
     return dir.stem  # 060_0010_A.lighting > 060_0010_A
 
@@ -273,7 +277,6 @@ def get_top_level_strips_continious(
         occ_ranges = checksqe.get_occupied_ranges_for_strips(sequences)
         s_range = range(strip.frame_final_start, strip.frame_final_end + 1)
         if not checksqe.is_range_occupied(s_range, occ_ranges):
-            print(f"Range {str(s_range)} not in occ_ranges: {str(occ_ranges)}")
             sequences.append(strip)
 
     return sequences

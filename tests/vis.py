@@ -63,7 +63,6 @@ def draw_cells(grid):
 def draw_rows(grid):
     for idx, cell in enumerate(grid.rows):
         color = get_random_pastel_color_rgb()
-        print(cell)
         pygame.draw.rect(
             surface, color, pygame.Rect(cell.x, cell.y, cell.width, cell.height)
         )
@@ -72,7 +71,6 @@ def draw_rows(grid):
 def draw_colls(grid):
     for cell in grid.colls:
         color = get_random_pastel_color_rgb()
-        print(cell)
         pygame.draw.rect(
             surface, color, pygame.Rect(cell.x, cell.y, cell.width, cell.height)
         )

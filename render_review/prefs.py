@@ -1,7 +1,7 @@
 import os
 import bpy
 from pathlib import Path
-from typing import Optional, Dict, List, Set
+from typing import Optional, Dict, List, Set, Any
 
 import bpy
 
@@ -46,28 +46,48 @@ class RR_OT_enable_blender_kitsu(bpy.types.Operator):
 class RR_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
+    def _get_contachseet_dir(self: Any) -> str:
+        # get it based on edit_storage_path
+        # edit_storage_path: /home/guest/Blender Dropbox/render/sprites
+        if not self.edit_storage_path:
+            return ""
+        return (
+            self.edit_storage_path.parents[2]
+            .joinpath("shared/sprites/contactsheets")
+            .as_posix()
+        )
+
     def _check_blender_kitsu_installed(self, value):
         if not is_blender_kitsu_enabled():
             raise RuntimeError("blender_kitsu addon ist not enabled")
 
     farm_output_dir: bpy.props.StringProperty(  # type: ignore
         name="Farm Output Directory",
+        description="Should point to: /render/sprites/farm_output",
         default="/render/sprites/farm_output",
         subtype="DIR_PATH",
     )
 
     frame_storage_dir: bpy.props.StringProperty(  # type: ignore
         name="Frame Storage Directory",
+        description="Should point to: /render/sprites/frame_storage",
         default="/render/sprites/frame_storage",
         subtype="DIR_PATH",
     )
 
     edit_storage_dir: bpy.props.StringProperty(  # type: ignore
         name="Edit Storage Directory",
+        description="Should point to: /home/guest/Blender Dropbox/render/sprites",
         default="/home/guest/Blender Dropbox/render/sprites",
         subtype="DIR_PATH",
     )
 
+    contactsheet_dir: bpy.props.StringProperty(  # type: ignore
+        name="Contactsheet Directory",
+        description="Should point to: /home/guest/Blender Dropbox/shared/sprites/contactsheet",
+        subtype="DIR_PATH",
+        get=_get_contachseet_dir,
+    )
     enable_blender_kitsu: bpy.props.BoolProperty(
         name="Enable Blender Kitsu",
         description="This checkbox controls if render_review should try to use the blender_kitsu addon to extend its feature sets.",
@@ -121,6 +141,8 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
                 text="In order to use a relative path the current file needs to be saved.",
                 icon="ERROR",
             )
+        # contactsheet dir
+        box.row().prop(self, "contactsheet_dir")
 
         # enable blender kitsu
         icon = "CHECKBOX_DEHLT"

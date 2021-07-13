@@ -826,13 +826,9 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
 
         # scene settings
         # change frame range and frame start
-        opsdata.fit_frame_range_to_strips(context)
-        context.scene.frame_current = context.scene.frame_start
-        context.scene.render.resolution_x = context.scene.rr.contactsheet_x
-        context.scene.render.resolution_y = context.scene.rr.contactsheet_y
-        sqe_editor = opsdata.get_sqe_editor(context)
-        sqe_editor.spaces.active.proxy_render_size = "PROXY_25"
-        sqe_editor.spaces.active.use_proxies = True
+        self.set_render_settings(context)
+        self.set_output_path(context)
+        self.set_sqe_area_settings(context)
 
         # create content list for grid
         if context.scene.rr.use_custom_rows:
@@ -857,6 +853,49 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
 
     def get_sorting_tuple(self, strip: bpy.types.Sequence) -> Tuple[int, int]:
         return (strip.frame_final_start, strip.channel)
+
+    def set_sqe_area_settings(self, context: bpy.types.Context) -> None:
+        sqe_editor = opsdata.get_sqe_editor(context)
+        sqe_editor.spaces.active.proxy_render_size = "PROXY_25"
+        sqe_editor.spaces.active.use_proxies = True
+
+    def set_render_settings(self, context: bpy.types.Context) -> None:
+        opsdata.fit_frame_range_to_strips(context)
+        context.scene.frame_current = context.scene.frame_start
+        context.scene.render.resolution_x = context.scene.rr.contactsheet_x
+        context.scene.render.resolution_y = context.scene.rr.contactsheet_y
+        context.scene.render.image_settings.file_format = "PNG"
+        context.scene.render.image_settings.color_mode = "RGB"
+        context.scene.render.image_settings.color_depth = "8"
+        context.scene.render.image_settings.compression = 15
+
+    def set_output_path(self, context: bpy.types.Context) -> None:
+        addon_prefs = prefs.addon_prefs_get(context)
+        cs_dir = Path(addon_prefs.contactsheet_dir)
+        render_dir = Path(context.scene.rr.render_dir_path)
+
+        if not render_dir:
+            logger.warning(
+                "Failed to set output settings. Invalid context.scene.rr.render_dir"
+            )
+            return
+
+        if not cs_dir:
+            logger.warning(
+                "Failed to set output settings. Invalid addon_prefs.contactsheet_dir"
+            )
+            return
+
+        if opsdata.is_shot_dir(render_dir):
+            seqeunce_name = render_dir.parent.name
+
+        elif opsdata.is_sequence_dir(render_dir):
+            seqeunce_name = render_dir.name
+
+        # set output path
+        context.scene.render.filepath = cs_dir.joinpath(
+            f"{seqeunce_name}_contactsheet.png"
+        ).as_posix()
 
 
 class RR_OT_exit_contactsheet(bpy.types.Operator):
