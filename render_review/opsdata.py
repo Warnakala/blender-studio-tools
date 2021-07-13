@@ -11,6 +11,27 @@ from render_review.exception import NoImageSequenceAvailableException
 logger = LoggerFactory.getLogger(name=__name__)
 
 
+def get_valid_cs_sequences(
+    context: bpy.types.Context, sequence_list: List[bpy.types.Sequence] = []
+) -> List[bpy.types.Sequence]:
+
+    sequences: List[bpy.types.Sequence] = []
+
+    if sequence_list:
+        sequences = sequence_list
+    else:
+        sequences = (
+            context.selected_sequences or context.scene.sequence_editor.sequences_all
+        )
+
+    valid_sequences = [
+        s
+        for s in sequences
+        if s.type in ["MOVIE", "IMAGE"] and not s.mute and not s.kitsu.initialized
+    ]
+    return valid_sequences
+
+
 def get_frame_storage_path(strip: bpy.types.ImageSequence) -> Path:
     # fs > frame_storage | fo > farm_output
     addon_prefs = prefs.addon_prefs_get(bpy.context)
@@ -259,23 +280,22 @@ def fit_frame_range_to_strips(
     return (context.scene.frame_start, context.scene.frame_end)
 
 
-def get_top_level_strips_continious(
+def get_top_level_valid_strips_continious(
     context: bpy.types.Context,
 ) -> List[bpy.types.Sequence]:
 
-    sequences_tmp = list(context.scene.sequence_editor.sequences_all)
+    sequences_tmp = get_valid_cs_sequences(
+        context, sequence_list=list(context.scene.sequence_editor.sequences_all)
+    )
+
     sequences_tmp.sort(key=lambda s: (s.channel, s.frame_final_start), reverse=True)
     sequences: List[bpy.types.Sequence] = []
 
     for strip in sequences_tmp:
-        if strip.type not in ["IMAGE", "MOVIE"]:
-            continue
-
-        if strip.mute == True:
-            continue
 
         occ_ranges = checksqe.get_occupied_ranges_for_strips(sequences)
         s_range = range(strip.frame_final_start, strip.frame_final_end + 1)
+
         if not checksqe.is_range_occupied(s_range, occ_ranges):
             sequences.append(strip)
 

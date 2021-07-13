@@ -42,16 +42,6 @@ class RR_PT_render_review(bpy.types.Panel):
             return
 
         active_strip = context.scene.sequence_editor.active_strip
-        selected_sequences = context.selected_sequences
-        valid_selected = [
-            s for s in selected_sequences if s.type in ["MOVIE", "IMAGE"] and not s.mute
-        ]
-
-        valid_sequences = [
-            s
-            for s in context.scene.sequence_editor.sequences_all
-            if s.type in ["MOVIE", "IMAGE"] and not s.mute
-        ]
 
         # create box
         layout = self.layout
@@ -127,31 +117,34 @@ class RR_PT_render_review(bpy.types.Panel):
             ).filepath = edit_storage_dir.as_posix()
 
         # contactsheet tools
-        if valid_sequences:
-            # create box
-            layout = self.layout
-            box = layout.box()
-            box.label(text="Contactsheet", icon="MESH_GRID")
+        valid_sequences = opsdata.get_valid_cs_sequences(context)
+        if not context.selected_sequences and not valid_sequences:
+            return
 
-            # make contact sheet
-            row = box.row(align=True)
+        # create box
+        layout = self.layout
+        box = layout.box()
+        box.label(text="Contactsheet", icon="MESH_GRID")
 
-            if not selected_sequences:
-                selected_sequences = opsdata.get_top_level_strips_continious(context)
+        # make contact sheet
+        row = box.row(align=True)
 
-            text = f"Make Contactsheet with {len(valid_selected)} strips"
+        if not context.selected_sequences:
+            valid_sequences = opsdata.get_top_level_valid_strips_continious(context)
 
-            row.operator(RR_OT_make_contactsheet.bl_idname, icon="MESH_GRID", text=text)
-            icon = "UNLOCKED" if context.scene.rr.use_custom_rows else "LOCKED"
-            row.prop(context.scene.rr, "use_custom_rows", text="", icon=icon)
+        text = f"Make Contactsheet with {len(valid_sequences)} strips"
 
-            if context.scene.rr.use_custom_rows:
-                box.row(align=True).prop(context.scene.rr, "rows")
+        row.operator(RR_OT_make_contactsheet.bl_idname, icon="MESH_GRID", text=text)
+        icon = "UNLOCKED" if context.scene.rr.use_custom_rows else "LOCKED"
+        row.prop(context.scene.rr, "use_custom_rows", text="", icon=icon)
 
-            # contact sheet resolution
-            row = box.row(align=True)
-            row.prop(context.scene.rr, "contactsheet_x", text="X")
-            row.prop(context.scene.rr, "contactsheet_y", text="Y")
+        if context.scene.rr.use_custom_rows:
+            box.row(align=True).prop(context.scene.rr, "rows")
+
+        # contact sheet resolution
+        row = box.row(align=True)
+        row.prop(context.scene.rr, "contactsheet_x", text="X")
+        row.prop(context.scene.rr, "contactsheet_y", text="Y")
 
 
 def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:

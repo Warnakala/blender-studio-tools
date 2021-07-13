@@ -757,20 +757,23 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.scene.sequence_editor.sequences_all)
+        return bool(opsdata.get_valid_cs_sequences(context))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
-        sequences: List[bpy.types.Sequence] = context.selected_sequences
+        # gather sequences to process
+        sequences: List[bpy.types.Sequence] = opsdata.get_valid_cs_sequences(
+            context, sequence_list=context.selected_sequences
+        )
 
         if not sequences:
             # if nothing selected take a continious row of the top most sequences
-            sequences = opsdata.get_top_level_strips_continious(context)
+            sequences = opsdata.get_top_level_valid_strips_continious(context)
 
-            # select sequences
-            bpy.ops.sequencer.select_all(action="DESELECT")
-            for s in sequences:
-                s.select = True
+        # select sequences, will remove seqs later that are not selected
+        bpy.ops.sequencer.select_all(action="DESELECT")
+        for s in sequences:
+            s.select = True
 
         row_count = None
         start_frame = 1
@@ -796,20 +799,16 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         scene_tmp.rr.contactsheet_meta.use_proxies = orig_use_proxies
         scene_tmp.rr.contactsheet_meta.proxy_render_size = orig_proxy_render_size
 
-        # get sequences in new scene
+        # remove sequences in new scene that are not selected
         seq_rm: List[bpy.types.Sequence] = [
-            s
-            for s in scene_tmp.sequence_editor.sequences_all
-            if not s.select
-            or s.type not in ["IMAGE", "MOVIE"]
-            or (s.type == "IMAGE" and s.elements[0].filename.endswith(".exr"))
+            s for s in scene_tmp.sequence_editor.sequences_all if not s.select
         ]
-
         for s in seq_rm:
             scene_tmp.sequence_editor.sequences.remove(s)
 
+        # get all sequeneces in new scene and sort them
         sequences = list(scene_tmp.sequence_editor.sequences_all)
-        sequences.sort(key=self.get_sorting_tuple)
+        sequences.sort(key=lambda strip: (strip.frame_final_start, strip.channel))
 
         # Place black color strip in channel 1
         color_strip = context.scene.sequence_editor.sequences.new_effect(
@@ -861,14 +860,16 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         self.set_sqe_area_settings(context)
 
         # create content list for grid
-        if context.scene.rr.use_custom_rows:
-            row_count = context.scene.rr.rows
-
         sqe_rects: List[SequenceRect] = [SequenceRect(seq) for seq in sequences]
         content: List[NestedRectangle] = [
             NestedRectangle(0, 0, srect.width, srect.height, child=srect)
             for srect in sqe_rects
         ]
+
+        # create grid
+        if context.scene.rr.use_custom_rows:
+            row_count = context.scene.rr.rows
+
         grid = Grid.from_content(
             0,
             0,
@@ -880,9 +881,6 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         grid.scale_content(0.9)
 
         return {"FINISHED"}
-
-    def get_sorting_tuple(self, strip: bpy.types.Sequence) -> Tuple[int, int]:
-        return (strip.frame_final_start, strip.channel)
 
     def set_sqe_area_settings(self, context: bpy.types.Context) -> None:
         sqe_editor = opsdata.get_sqe_editor(context)
