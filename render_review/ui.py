@@ -43,10 +43,14 @@ class RR_PT_render_review(bpy.types.Panel):
 
         active_strip = context.scene.sequence_editor.active_strip
         selected_sequences = context.selected_sequences
+        valid_selected = [
+            s for s in selected_sequences if s.type in ["MOVIE", "IMAGE"] and not s.mute
+        ]
+
         valid_sequences = [
             s
             for s in context.scene.sequence_editor.sequences_all
-            if s.type in ["MOVIE", "IMAGE"]
+            if s.type in ["MOVIE", "IMAGE"] and not s.mute
         ]
 
         # create box
@@ -135,7 +139,7 @@ class RR_PT_render_review(bpy.types.Panel):
             if not selected_sequences:
                 selected_sequences = opsdata.get_top_level_strips_continious(context)
 
-            text = f"Make Contactsheet with {len(selected_sequences)} strips"
+            text = f"Make Contactsheet with {len(valid_selected)} strips"
 
             row.operator(RR_OT_make_contactsheet.bl_idname, icon="MESH_GRID", text=text)
             icon = "UNLOCKED" if context.scene.rr.use_custom_rows else "LOCKED"
