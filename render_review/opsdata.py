@@ -1,10 +1,10 @@
+from typing import Set, Union, Optional, List, Dict, Any, Tuple
 import json
 from pathlib import Path
-from typing import Set, Union, Optional, List, Dict, Any, Tuple
 
 import bpy
 
-from render_review import vars, prefs
+from render_review import vars, prefs, checksqe
 from render_review.log import LoggerFactory
 from render_review.exception import NoImageSequenceAvailableException
 
@@ -253,3 +253,27 @@ def fit_frame_range_to_strips(
     context.scene.frame_end = strips[-1].frame_final_end
 
     return (context.scene.frame_start, context.scene.frame_end)
+
+
+def get_top_level_strips_continious(
+    context: bpy.types.Context,
+) -> List[bpy.types.Sequence]:
+
+    sequences_tmp = list(context.scene.sequence_editor.sequences_all)
+    sequences_tmp.sort(key=lambda s: (s.channel, s.frame_final_start), reverse=True)
+    sequences: List[bpy.types.Sequence] = []
+
+    for strip in sequences_tmp:
+        if strip.type not in ["IMAGE", "MOVIE"]:
+            continue
+
+        if strip.mute == True:
+            continue
+
+        occ_ranges = checksqe.get_occupied_ranges_for_strips(sequences)
+        s_range = range(strip.frame_final_start, strip.frame_final_end + 1)
+        if not checksqe.is_range_occupied(s_range, occ_ranges):
+            print(f"Range {str(s_range)} not in occ_ranges: {str(occ_ranges)}")
+            sequences.append(strip)
+
+    return sequences

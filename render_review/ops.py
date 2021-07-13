@@ -8,6 +8,7 @@ from typing import Set, Union, Optional, List, Dict, Any, Tuple
 import bpy
 
 from render_review import vars, prefs, opsdata, util, kitsu
+
 from render_review.exception import NoImageSequenceAvailableException
 from render_review.log import LoggerFactory
 from render_review.geo_seq import SequenceRect
@@ -756,13 +757,21 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(
-            context.scene.sequence_editor.sequences_all and context.selected_sequences
-        )
+        return bool(context.scene.sequence_editor.sequences_all)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         sequences: List[bpy.types.Sequence] = context.selected_sequences
+
+        if not sequences:
+            # if nothing selected take a continious row of the top most sequences
+            sequences = opsdata.get_top_level_strips_continious(context)
+
+            # select sequences
+            bpy.ops.sequencer.select_all(action="DESELECT")
+            for s in sequences:
+                s.select = True
+
         row_count = None
         start_frame = 1
 
@@ -819,7 +828,8 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         # change frame range and frame start
         opsdata.fit_frame_range_to_strips(context)
         context.scene.frame_current = context.scene.frame_start
-
+        context.scene.render.resolution_x = context.scene.rr.contactsheet_x
+        context.scene.render.resolution_y = context.scene.rr.contactsheet_y
         sqe_editor = opsdata.get_sqe_editor(context)
         sqe_editor.spaces.active.proxy_render_size = "PROXY_25"
         sqe_editor.spaces.active.use_proxies = True

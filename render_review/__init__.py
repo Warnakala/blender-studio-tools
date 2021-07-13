@@ -5,6 +5,7 @@ from render_review import (
     props,
     kitsu,
     opsdata,
+    checksqe,
     ops,
     ui,
     prefs,
@@ -44,6 +45,7 @@ if _need_reload:
     prefs = importlib.reload(prefs)
     kitsu = importlib.reload(kitsu)
     opsdata = importlib.reload(opsdata)
+    checksqe = importlib.reload(checksqe)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
     draw = importlib.reload(draw)
