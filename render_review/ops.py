@@ -775,13 +775,6 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         row_count = None
         start_frame = 1
 
-        if len(sequences) > 31:  # one color strip will be added later as background
-            self.report(
-                {"ERROR"},
-                f"Can only process max 31 strips. Selected Sequences: {len(sequences)}",
-            )
-            return {"CANCELLED"}
-
         # get contactsheet metadata
         sqe_editor = opsdata.get_sqe_editor(context)
         orig_proxy_render_size = sqe_editor.spaces.active.proxy_render_size
@@ -824,9 +817,26 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         )
         color_strip.color = (0, 0, 0)
 
-        # Place all sequences on top of each other and make them start at the same frame.
+        # create required number of metastrips to workaround the limit of 32 channels
+        nr_of_metastrips = math.ceil(len(sequences) / 32)
+        metastrips: List[bpy.types.MetaSequence] = []
+        for i in range(nr_of_metastrips):
+            channel = i + 2
+            meta_strip = context.scene.sequence_editor.sequences.new_meta(
+                f"contactsheet_meta_{channel-1}", channel, start_frame
+            )
+            metastrips.append(meta_strip)
+            logger.info("Created metastrip: %s", meta_strip.name)
+
+        # Move sequences in to metastrips, place them on top of each other, make them start at the same frame.
         for idx, seq in enumerate(sequences):
-            seq.channel = (idx + 1) + 1
+            # Move to metastrip.
+            channel = idx + 1
+            meta_index = math.floor(idx / 32)
+            seq.move_to_meta(metastrips[meta_index])
+
+            # set seq properties inside metastrip
+            seq.channel = channel - ((meta_index) * 32)
             seq.frame_start = start_frame
             seq.blend_type = "ALPHA_OVER"
 
@@ -837,6 +847,12 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         for strip in tmp_sequences:
             if strip.frame_final_end < max_end:
                 strip.frame_final_end = max_end
+
+        # clip the metastrip frame end at max end and set alpha over
+        for strip in metastrips:
+            strip.frame_start = start_frame
+            strip.frame_final_end = max_end
+            strip.blend_type = "ALPHA_OVER"
 
         # scene settings
         # change frame range and frame start
