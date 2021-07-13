@@ -775,10 +775,10 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         row_count = None
         start_frame = 1
 
-        if len(sequences) > 32:
+        if len(sequences) > 31:  # one color strip will be added later as background
             self.report(
                 {"ERROR"},
-                f"Sequencer only has 32 channels available. Selected Sequences: {len(sequences)}",
+                f"Can only process max 31 strips. Selected Sequences: {len(sequences)}",
             )
             return {"CANCELLED"}
 
@@ -818,14 +818,21 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         sequences = list(scene_tmp.sequence_editor.sequences_all)
         sequences.sort(key=self.get_sorting_tuple)
 
+        # Place black color strip in channel 1
+        color_strip = context.scene.sequence_editor.sequences.new_effect(
+            "background", "COLOR", 1, start_frame, frame_end=start_frame + 1
+        )
+        color_strip.color = (0, 0, 0)
+
         # Place all sequences on top of each other and make them start at the same frame.
         for idx, seq in enumerate(sequences):
-            seq.channel = idx + 1
+            seq.channel = (idx + 1) + 1
             seq.frame_start = start_frame
             seq.blend_type = "ALPHA_OVER"
 
         # elongate all strips to the strip with the longest duration
         tmp_sequences = sorted(sequences, key=lambda s: s.frame_final_end)
+        tmp_sequences.insert(0, color_strip)
         max_end: int = tmp_sequences[-1].frame_final_end
         for strip in tmp_sequences:
             if strip.frame_final_end < max_end:
