@@ -762,11 +762,9 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # gather sequences to process
-        sequences: List[bpy.types.Sequence] = opsdata.get_valid_cs_sequences(
-            context, sequence_list=context.selected_sequences
-        )
+        sequences: List[bpy.types.Sequence] = opsdata.get_valid_cs_sequences(context)
 
-        if not sequences:
+        if not context.selected_sequences:
             # if nothing selected take a continious row of the top most sequences
             sequences = opsdata.get_top_level_valid_strips_continious(context)
 
@@ -899,7 +897,7 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
 
     def set_output_path(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
-        cs_dir = Path(addon_prefs.contactsheet_dir)
+        cs_dir = addon_prefs.contactsheet_dir_path
         render_dir = Path(context.scene.rr.render_dir_path)
 
         if not render_dir:
