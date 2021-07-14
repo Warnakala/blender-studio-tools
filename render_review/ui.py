@@ -16,7 +16,7 @@ from render_review.ops import (
     RR_OT_make_contactsheet,
     RR_OT_exit_contactsheet,
 )
-from render_review import opsdata
+from render_review import opsdata, prefs, kitsu
 
 
 class RR_PT_render_review(bpy.types.Panel):
@@ -29,6 +29,8 @@ class RR_PT_render_review(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
+
+        addon_prefs = prefs.addon_prefs_get(context)
 
         # handle special case if scene is contactsheet
         if context.scene.rr.is_contactsheet:
@@ -67,6 +69,17 @@ class RR_PT_render_review(bpy.types.Panel):
 
         row = box.row(align=True)
         row.operator(RR_OT_sqe_create_review_session.bl_idname, text=text, icon="PLAY")
+
+        # warning if kitsu on but not logged in
+        if addon_prefs.enable_blender_kitsu:
+            if not kitsu.is_auth():
+                row = box.split(align=True, factor=0.7)
+                row.label(text="Kitsu enabled but not logged in", icon="ERROR")
+                row.operator("kitsu.session_start", text="Login")
+
+            elif not kitsu.is_active_project():
+                row = box.row(align=True)
+                row.label(text="Kitsu enabled but no active project", icon="ERROR")
 
         if active_strip and active_strip.rr.is_render:
             # create box
