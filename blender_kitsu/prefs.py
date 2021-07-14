@@ -111,7 +111,9 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         "blender_kitsu" and a hashed version of the filepath.
         """
         hashed_filepath = hashlib.md5(bpy.data.filepath.encode()).hexdigest()
-        storage_dir = self.get_datadir() / "blender_kitsu" / hashed_filepath
+        storage_dir = (
+            self.get_datadir() / "blender_kitsu" / "thumbnails" / hashed_filepath
+        )
         return storage_dir.as_posix()
 
     def get_sqe_render_dir(self) -> str:
@@ -159,7 +161,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     sqe_render_dir: bpy.props.StringProperty(  # type: ignore
         name="Sequence Editor Render Directory",
-        description="Directory in which thumbnails will be saved",
+        description="Directory in which sequence renders will be saved",
         default="",
         subtype="DIR_PATH",
         get=get_sqe_render_dir,
@@ -173,7 +175,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     playblast_root_dir: bpy.props.StringProperty(  # type: ignore
         name="Playblasts Root Directory",
-        description="Directory path to playblast root folder",
+        description="Directory path to playblast root folder. Should point to: ./Blender Dropbox/render/sprites/shots/",
         default="",
         subtype="DIR_PATH",
         update=init_playblast_file_model,
@@ -182,7 +184,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
     project_root_dir: bpy.props.StringProperty(  # type: ignore
         name="Project Root Directory",
         description=(
-            "Directory path to the root of the project."
+            "Directory path to the root of the project"
             "In this directory blender kitsu searches for ./pipeline/blender_kitsu"
             "folder to configure the addon per project"
         ),
@@ -193,7 +195,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
     config_dir: bpy.props.StringProperty(  # type: ignore
         name="Config Directory",
         description=(
-            "Configuration directory of blender_kitsu."
+            "Configuration directory of blender_kitsu"
             "See readme.md how you can configurate the addon on a per project basis"
         ),
         default="",
@@ -204,7 +206,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
     metastrip_file: bpy.props.StringProperty(  # type: ignore
         name="Meta Strip File",
         description=(
-            "Filepath to black .mp4 file that will be used as metastrip for shots in the sequence editor."
+            "Filepath to black .mp4 file that will be used as metastrip for shots in the sequence editor"
         ),
         default="",
         subtype="FILE_PATH",
@@ -219,7 +221,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     enable_debug: bpy.props.BoolProperty(  # type: ignore
         name="Enable Debug Operators",
-        description="Enables Operatots that provide debug functionality.",
+        description="Enables Operatots that provide debug functionality",
     )
     show_advanced: bpy.props.BoolProperty(  # type: ignore
         name="Show Advanced Settings",
