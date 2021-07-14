@@ -34,7 +34,7 @@ def init_playblast_file_model(
     # is None if invalid
     if not context.scene.kitsu.playblast_dir:
         logger.error(
-            "Failed to initialize playblast file model. Invalid path. Check addon preferences."
+            "Failed to initialize playblast file model. Invalid path. Check addon preferences"
         )
         return
 

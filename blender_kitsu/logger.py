@@ -42,10 +42,10 @@ class LoggerLevelManager:
                 cls.logger_levels.append((logger, logger.level))
 
                 logger.setLevel(logging.CRITICAL)
-        logger.info("Configured logging Levels.")
+        logger.info("Configured logging Levels")
 
     @classmethod
     def restore_levels(cls):
         for logger, level in cls.logger_levels:
             logger.setLevel(level)
-        logger.info("Restored logging Levels.")
+        logger.info("Restored logging Levels")

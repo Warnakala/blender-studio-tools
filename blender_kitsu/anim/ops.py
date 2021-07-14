@@ -202,7 +202,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
 
         if not task_type:
             raise RuntimeError(
-                "Failed to upload playblast. Task type: 'Animation' is missing."
+                "Failed to upload playblast. Task type: 'Animation' is missing"
             )
 
         # find / get latest task
@@ -811,7 +811,7 @@ def load_post_handler_check_frame_range(dummy: Any) -> None:
 
     if "3d_in" not in active_shot.data or "3d_out" not in active_shot.data:
         logger.warning(
-            "Failed to check frame range. Shot %s missing '3d_in', '3d_out' attribute on server.",
+            "Failed to check frame range. Shot %s missing '3d_in', '3d_out' attribute on server",
             active_shot.name,
         )
         return

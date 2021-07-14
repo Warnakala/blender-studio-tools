@@ -343,7 +343,7 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
                 (
                     f"Expected '{bkglobals.SHOT_DIR_NAME}' or '{bkglobals.ASSET_DIR_NAME}' 3 folders up. "
                     f"Got: '{filepath.parents[2].as_posix()}' instead. "
-                    "Blend file might not be saved in project structure."
+                    "Blend file might not be saved in project structure"
                 ),
             )
             return {"CANCELLED"}

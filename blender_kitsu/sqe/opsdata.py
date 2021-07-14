@@ -193,10 +193,10 @@ def append_sequence_color(
     # pull sequencee color property
 
     if not seq.data:
-        logger.info("%s failed to load sequence color. Missing 'data' key.")
+        logger.info("%s failed to load sequence color. Missing 'data' key")
         return None
     if not "color" in seq.data:
-        logger.info("%s failed to load sequence color. Missing data['color'] key.")
+        logger.info("%s failed to load sequence color. Missing data['color'] key")
         return None
 
     try:

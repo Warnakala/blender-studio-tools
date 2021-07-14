@@ -14,7 +14,7 @@ VALID_STRIP_TYPES = {"MOVIE", "COLOR"}
 def is_valid_type(strip: bpy.types.Sequence, log: bool = True) -> bool:
     if not strip.type in VALID_STRIP_TYPES:
         if log:
-            logger.info("Strip: %s. Invalid type.", strip.type)
+            logger.info("Strip: %s. Invalid type", strip.type)
         return False
     return True
 
@@ -22,10 +22,10 @@ def is_valid_type(strip: bpy.types.Sequence, log: bool = True) -> bool:
 def is_initialized(strip: bpy.types.Sequence) -> bool:
     """Returns True if strip.kitsu.initialized is True else False"""
     if not strip.kitsu.initialized:
-        logger.info("Strip: %s. Not initialized.", strip.name)
+        logger.info("Strip: %s. Not initialized", strip.name)
         return False
 
-    logger.info("Strip: %s. Is initialized.", strip.name)
+    logger.info("Strip: %s. Is initialized", strip.name)
     return True
 
 
@@ -33,10 +33,10 @@ def is_linked(strip: bpy.types.Sequence, log: bool = True) -> bool:
     """Returns True if strip.kitsu.linked is True else False"""
     if not strip.kitsu.linked:
         if log:
-            logger.info("Strip: %s. Not linked yet.", strip.name)
+            logger.info("Strip: %s. Not linked yet", strip.name)
         return False
     if log:
-        logger.info("Strip: %s. Is linked to ID: %s.", strip.name, strip.kitsu.shot_id)
+        logger.info("Strip: %s. Is linked to ID: %s", strip.name, strip.kitsu.shot_id)
     return True
 
 
@@ -46,11 +46,11 @@ def has_meta(strip: bpy.types.Sequence) -> bool:
     shot = strip.kitsu.shot_name
 
     if not bool(seq and shot):
-        logger.info("Strip: %s. Missing metadata.", strip.name)
+        logger.info("Strip: %s. Missing metadata", strip.name)
         return False
 
     logger.info(
-        "Strip: %s. Has metadata (Sequence: %s, Shot: %s).", strip.name, seq, shot
+        "Strip: %s. Has metadata (Sequence: %s, Shot: %s)", strip.name, seq, shot
     )
     return True
 
@@ -74,7 +74,7 @@ def shot_exists_by_id(
         return None
 
     logger.info(
-        "Strip: %s Shot %s exists on server (ID: %s).", strip.name, shot.name, shot.id
+        "Strip: %s Shot %s exists on server (ID: %s)", strip.name, shot.name, shot.id
     )
     return shot
 
@@ -90,14 +90,14 @@ def seq_exists_by_name(
     zseq = project.get_sequence_by_name(strip.kitsu.sequence_name)
     if not zseq:
         logger.info(
-            "Strip: %s Sequence %s does not exist on server.",
+            "Strip: %s Sequence %s does not exist on server",
             strip.name,
             strip.kitsu.sequence_name,
         )
         return None
 
     logger.info(
-        "Strip: %s Sequence %s exists in on server (ID: %s).",
+        "Strip: %s Sequence %s exists in on server (ID: %s)",
         strip.name,
         zseq.name,
         zseq.id,
@@ -111,7 +111,7 @@ def shot_exists_by_name(
     sequence: Sequence,
     clear_cache: bool = True,
 ) -> Optional[Shot]:
-    """Returns Shot instance if strip.kitsu.shot_name exists on server, else None."""
+    """Returns Shot instance if strip.kitsu.shot_name exists on server, else None"""
 
     if clear_cache:
         Cache.clear_all()
@@ -119,14 +119,14 @@ def shot_exists_by_name(
     shot = project.get_shot_by_name(sequence, strip.kitsu.shot_name)
     if not shot:
         logger.info(
-            "Strip: %s Shot %s does not exist on server.",
+            "Strip: %s Shot %s does not exist on server",
             strip.name,
             strip.kitsu.shot_name,
         )
         return None
 
     logger.info(
-        "Strip: %s Shot already existent on server (ID: %s).", strip.name, shot.id
+        "Strip: %s Shot already existent on server (ID: %s)", strip.name, shot.id
     )
     return shot
 

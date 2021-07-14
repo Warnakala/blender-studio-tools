@@ -37,7 +37,7 @@ def init_rd_preset_file_model(
     # is None if invalid
     if not addon_prefs.lookdev.is_presets_dir_valid:
         logger.error(
-            "Failed to initialize render settings file model. Invalid path. Check addon preferences."
+            "Failed to initialize render settings file model. Invalid path. Check addon preferences"
         )
         return
 

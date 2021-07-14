@@ -184,7 +184,7 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
 
     playblast_file: bpy.props.StringProperty(  # type: ignore
         name="Playblast Filepath",
-        description="Output filepath of playblast.",
+        description="Output filepath of playblast",
         default="",
         subtype="FILE_PATH",
         get=propsdata.get_playblast_file,
@@ -268,7 +268,7 @@ def _add_window_manager_props():
     )
 
     bpy.types.WindowManager.shot_counter_start = bpy.props.IntProperty(
-        description="Value that defines where the shot counter starts.",
+        description="Value that defines where the shot counter starts",
         step=10,
         min=0,
     )

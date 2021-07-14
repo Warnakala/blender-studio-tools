@@ -9,7 +9,7 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 
 def _is_range_in(range1: range, range2: range) -> bool:
-    """Whether range1 is a subset of range2."""
+    """Whether range1 is a subset of range2"""
     # usual strip setup strip1(101, 120)|strip2(120, 130)|strip3(130, 140)
     # first and last frame can be the same for each strip
     range2 = range(range2.start + 1, range2.stop - 1)
@@ -24,6 +24,10 @@ def _is_range_in(range1: range, range2: range) -> bool:
 
 
 def get_occupied_ranges(context: bpy.types.Context) -> Dict[str, List[range]]:
+    """
+    Scans sequence editor and returns a dictionary. It contains a key for each channel
+    and a list of ranges with the occupied frame ranges as values.
+    """
     # {'1': [(101, 213), (300, 320)]}
     ranges: Dict[str, List[range]] = {}
 

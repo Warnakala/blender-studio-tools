@@ -289,7 +289,7 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text="Submit %s to server. Will skip shots if they already exist."
+            text="Submit %s to server. Will skip shots if they already exist"
             % (noun.lower()),
         )
 
@@ -303,7 +303,7 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
     bl_idname = "kitsu.sqe_push_new_sequence"
     bl_label = "Submit New Sequence"
     bl_description = (
-        "Creates new sequence on server. Will skip if sequence already exists."
+        "Creates new sequence on server. Will skip if sequence already exists"
     )
 
     sequence_name: bpy.props.StringProperty(
@@ -375,7 +375,7 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text="Submit sequence to server. Will skip if already exists.",
+            text="Submit sequence to server. Will skip if already exists",
         )
 
 
@@ -417,7 +417,7 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
                 continue
 
             if strip.kitsu.initialized:
-                logger.info("%s already initialized.", strip.name)
+                logger.info("%s already initialized", strip.name)
                 # failed.append(strip)
                 continue
 
@@ -427,7 +427,7 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
             opsdata.init_start_frame_offset(strip)
 
             succeeded.append(strip)
-            logger.info("Initiated strip: %s as shot.", strip.name)
+            logger.info("Initiated strip: %s as shot", strip.name)
 
         # report
         report_str = f"Initiated {len(succeeded)} shots"
@@ -876,7 +876,7 @@ class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
     bl_idname = "kitsu.sqe_unlink_shot"
     bl_label = "Unlink"
     bl_description = (
-        "Deletes link to the server of selecetd shots. Only affects Sequence Editor."
+        "Deletes link to the server of selecetd shots. Only affects Sequence Editor"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -935,7 +935,7 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_push_del_shot"
     bl_label = "Delete Shot"
-    bl_description = "Deletes shot on server and clears metadata of selected strips."
+    bl_description = "Deletes shot on server and clears metadata of selected strips"
 
     confirm: bpy.props.BoolProperty(name="Confirm")
 
@@ -1022,7 +1022,7 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
         col.prop(
             self,
             "confirm",
-            text="Delete %s on server." % noun,
+            text="Delete %s on server" % noun,
         )
 
 
@@ -1242,7 +1242,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
 
     @contextlib.contextmanager
     def override_render_settings(self, context, thumbnail_width=512):
-        """Overrides the render settings for thumbnail size in a 'with' block scope."""
+        """Overrides the render settings for thumbnail size in a 'with' block scope"""
 
         rd = context.scene.render
 
@@ -1285,7 +1285,7 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
         context: bpy.types.Context,
         strip: bpy.types.Sequence,
     ) -> int:
-        """Sets the current frame to the middle frame of the strip."""
+        """Sets the current frame to the middle frame of the strip"""
 
         middle = round((strip.frame_final_start + strip.frame_final_end) / 2)
         context.scene.frame_set(middle)
@@ -1412,7 +1412,7 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
 
     @contextlib.contextmanager
     def override_render_settings(self, context, thumbnail_width=256):
-        """Overrides the render settings for thumbnail size in a 'with' block scope."""
+        """Overrides the render settings for thumbnail size in a 'with' block scope"""
 
         rd = context.scene.render
 
@@ -1638,7 +1638,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                 if not frame_start or not frame_end:
                     failed.append(shot)
                     logger.error(
-                        "Failed to create shot %s. Missing frame range information.",
+                        "Failed to create shot %s. Missing frame range information",
                         shot.name,
                     )
                     continue
@@ -1658,7 +1658,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                     ):
                         failed.append(shot)
                         logger.error(
-                            "Failed to create shot %s. Channel: %i Range: %i - %i is occupied.",
+                            "Failed to create shot %s. Channel: %i Range: %i - %i is occupied",
                             shot.name,
                             channel,
                             frame_start,
@@ -1735,7 +1735,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         layout = self.layout
 
         row = layout.row()
-        row.label(text="Set channel in which the entire edit should be created.")
+        row.label(text="Set channel in which the entire edit should be created")
         row = layout.row()
         row.prop(context.scene.kitsu, "pull_edit_channel")
 
@@ -1749,7 +1749,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         return None
 
     def _get_random_pastel_color_rgb(self) -> Tuple[float, float, float]:
-        """Returns a randomly generated color with high brightness and low saturation."""
+        """Returns a randomly generated color with high brightness and low saturation"""
 
         hue = random.random()
         saturation = random.uniform(0.25, 0.33)
@@ -1819,7 +1819,7 @@ class KITSU_OT_sqe_init_strip_start_frame(bpy.types.Operator):
                 continue
 
             if not strip.kitsu.initialized:
-                logger.info("%s not initialized.", strip.name)
+                logger.info("%s not initialized", strip.name)
                 # failed.append(strip)
                 continue
 
@@ -1895,7 +1895,7 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
                 ):
                     failed.append(strip)
                     logger.error(
-                        "Failed to create metastrip for %s. Channel: %i Range: %i - %i is occupied.",
+                        "Failed to create metastrip for %s. Channel: %i Range: %i - %i is occupied",
                         strip.name,
                         channel,
                         strip.frame_final_start,
@@ -1990,7 +1990,7 @@ class KITSU_OT_sqe_scan_for_media_updates(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_scan_for_media_updates"
     bl_label = "Scan for media udpates"
-    bl_description = "Scans sequence editor for movie strips and highlights them if there is a more recent version of their source media."
+    bl_description = "Scans sequence editor for movie strips and highlights them if there is a more recent version of their source media"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod

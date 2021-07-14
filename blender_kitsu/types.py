@@ -45,12 +45,12 @@ class Session:
 
     def end(self) -> bool:
         if not self._data.login:
-            logger.info("Failed to log out. Session not started yet.")
+            logger.info("Failed to log out. Session not started yet")
             return False
 
         self._data = SessionData(gazu.log_out())  # returns empty dict
         gazu.cache.clear_all()
-        logger.info("Session ended.")
+        logger.info("Session ended")
         return True
 
     def _is_host_up(self) -> bool:
