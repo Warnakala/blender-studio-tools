@@ -39,6 +39,7 @@ class AS_OT_create_actions(bpy.types.Operator):
         created: List[bpy.types.Action] = []
         failed: List[bpy.types.Collection] = []
         collections = opsdata.get_valid_collections(context)
+        exists: List[bpy.types.Collection] = []
 
         if not collections:
             self.report({"WARNING"}, "No valid collections available")
@@ -53,6 +54,21 @@ class AS_OT_create_actions(bpy.types.Operator):
                 failed.append(coll)
                 continue
 
+            # create animation data if not existent
+            if not rig.animation_data:
+                rig.animation_data_create()
+                logger.info("%s created animation data", rig.name)
+
+            # if action already exists check for fake user and then continue
+            if rig.animation_data.action:
+                logger.info("%s already has an action assigned", rig.name)
+
+                if not rig.animation_data.action.use_fake_user:
+                    rig.animation_data.action.use_fake_user = True
+                    logger.info("%s assigned existing action fake user", rig.name)
+                exists.append(coll)
+                continue
+
             # create new action
             action_name_new = opsdata.gen_action_name(coll)
             try:
@@ -64,11 +80,6 @@ class AS_OT_create_actions(bpy.types.Operator):
             else:
                 logger.info("Action %s already exists. Will take that.", action.name)
 
-            # create animation data if not existent
-            if not rig.animation_data:
-                rig.animation_data_create()
-                logger.info("%s created animation data", rig.name)
-
             # assign action
             rig.animation_data.action = action
             logger.info("%s assigned action %s", rig.name, action.name)
@@ -79,8 +90,8 @@ class AS_OT_create_actions(bpy.types.Operator):
 
         self.report(
             {"INFO"},
-            "Actions: Created %s | Assigned %s | Failed %s"
-            % (len(created), len(assigned), len(failed)),
+            "Actions: Created %s | Assigned %s | Exists %s | Failed %s"
+            % (len(created), len(assigned), len(exists), len(failed)),
         )
         return {"FINISHED"}
 
