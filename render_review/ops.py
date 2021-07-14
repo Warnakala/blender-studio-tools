@@ -32,7 +32,12 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.scene.rr.is_render_dir_valid)
+        render_dir = context.scene.rr.render_dir_path
+        return bool(
+            context.scene.rr.is_render_dir_valid
+            and opsdata.is_shot_dir(render_dir)
+            or opsdata.is_sequence_dir(render_dir)
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)

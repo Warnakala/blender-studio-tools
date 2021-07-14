@@ -58,13 +58,12 @@ class RR_PT_render_review(bpy.types.Panel):
 
         # create session
         render_dir = context.scene.rr.render_dir_path
+        text = f"Invalid Render Directory"
         if render_dir:
             if opsdata.is_sequence_dir(render_dir):
                 text = f"Review Sequence: {render_dir.name}"
-            else:
+            elif opsdata.is_shot_dir(render_dir):
                 text = f"Review Shot: {render_dir.stem}"
-        else:
-            text = f"Invalid Render Directory"
 
         row = box.row(align=True)
         row.operator(RR_OT_sqe_create_review_session.bl_idname, text=text, icon="PLAY")
