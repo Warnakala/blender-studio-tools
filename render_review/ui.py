@@ -71,7 +71,7 @@ class RR_PT_render_review(bpy.types.Panel):
         row.operator(RR_OT_sqe_create_review_session.bl_idname, text=text, icon="PLAY")
 
         # warning if kitsu on but not logged in
-        if addon_prefs.enable_blender_kitsu:
+        if addon_prefs.enable_blender_kitsu and prefs.is_blender_kitsu_enabled():
             if not kitsu.is_auth():
                 row = box.split(align=True, factor=0.7)
                 row.label(text="Kitsu enabled but not logged in", icon="ERROR")

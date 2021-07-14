@@ -33,6 +33,8 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         render_dir = context.scene.rr.render_dir_path
+        if not render_dir:
+            return False
         return bool(
             context.scene.rr.is_render_dir_valid
             and opsdata.is_shot_dir(render_dir)
@@ -147,7 +149,11 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
             strip_longest = imported_sequences[-1]
 
             # perform kitsu operations if enabled
-            if addon_prefs.enable_blender_kitsu and imported_sequences:
+            if (
+                addon_prefs.enable_blender_kitsu
+                and prefs.is_blender_kitsu_enabled()
+                and imported_sequences
+            ):
 
                 if kitsu.is_auth_and_project():
 

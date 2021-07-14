@@ -4,7 +4,7 @@ from pathlib import Path
 
 import bpy
 
-from render_review import vars, prefs, checksqe
+from render_review import vars, prefs, checksqe, prefs
 from render_review.log import LoggerFactory
 from render_review.exception import NoImageSequenceAvailableException
 
@@ -24,11 +24,18 @@ def get_valid_cs_sequences(
             context.selected_sequences or context.scene.sequence_editor.sequences_all
         )
 
-    valid_sequences = [
-        s
-        for s in sequences
-        if s.type in ["MOVIE", "IMAGE"] and not s.mute and not s.kitsu.initialized
-    ]
+    if prefs.is_blender_kitsu_enabled():
+
+        valid_sequences = [
+            s
+            for s in sequences
+            if s.type in ["MOVIE", "IMAGE"] and not s.mute and not s.kitsu.initialized
+        ]
+    else:
+        valid_sequences = [
+            s for s in sequences if s.type in ["MOVIE", "IMAGE"] and not s.mute
+        ]
+
     return valid_sequences
 
 
