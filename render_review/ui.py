@@ -121,12 +121,18 @@ class RR_PT_render_review(bpy.types.Panel):
             )
 
             # push to edit
-            edit_storage_dir = Path(opsdata.get_edit_storage_path(active_strip))
+            if not addon_prefs.edit_storage_path:
+                edit_storage_dir = ""  # ops handle invalid path
+            else:
+                edit_storage_dir = Path(
+                    opsdata.get_edit_storage_path(active_strip)
+                ).as_posix()
+
             row = box.row(align=True)
             row.operator(RR_OT_sqe_push_to_edit.bl_idname, icon="EXPORT")
             row.operator(
                 RR_OT_open_path.bl_idname, icon="FILEBROWSER", text=""
-            ).filepath = edit_storage_dir.as_posix()
+            ).filepath = edit_storage_dir
 
         # contactsheet tools
         valid_sequences = opsdata.get_valid_cs_sequences(context)

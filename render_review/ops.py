@@ -606,6 +606,10 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = prefs.addon_prefs_get(context)
+        if not addon_prefs.edit_storage_path:
+            return False
+
         active_strip = context.scene.sequence_editor.active_strip
         return bool(
             active_strip and active_strip.type == "IMAGE" and active_strip.rr.is_render
