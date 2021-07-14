@@ -84,6 +84,15 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         default=False,
     )
 
+    contactsheet_scale_factor: bpy.props.FloatProperty(
+        name="Contactsheet Scale Factor",
+        description="This value controls how much space there is between the individual cells of the contactsheet",
+        min=0.1,
+        max=1.0,
+        step=5,
+        default=0.9,
+    )
+
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         box = layout.box()
@@ -130,8 +139,9 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
                 text="In order to use a relative path the current file needs to be saved.",
                 icon="ERROR",
             )
-        # contactsheet dir
+        # contactsheet settings
         box.row().prop(self, "contactsheet_dir")
+        box.row().prop(self, "contactsheet_scale_factor")
 
         # enable blender kitsu
         icon = "CHECKBOX_DEHLT"

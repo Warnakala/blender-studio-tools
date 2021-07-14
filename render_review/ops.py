@@ -776,6 +776,8 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
+        addon_prefs = prefs.addon_prefs_get(context)
+
         # gather sequences to process
         sequences: List[bpy.types.Sequence] = opsdata.get_valid_cs_sequences(context)
 
@@ -891,7 +893,8 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
             content,
             row_count=row_count,
         )
-        grid.scale_content(0.9)
+
+        grid.scale_content(addon_prefs.contactsheet_scale_factor)
 
         return {"FINISHED"}
 
