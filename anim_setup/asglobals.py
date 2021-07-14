@@ -8,5 +8,5 @@ ACTION_ASSETS = [
     "CH-elder_sprite",
     "CH-victoria",
 ]
-MULTI_ASSETS = ["CH-sprite", "CH-snail"]
+MULTI_ASSETS = ["CH-sprite"]
 HIDE_COLLS = ["mushrooms_center", "treetop_leaves"]
