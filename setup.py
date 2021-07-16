@@ -5,10 +5,10 @@ import sys
 
 from setuptools import setup, find_packages
 
-with open('README.rst') as readme_file:
+with open('README.md') as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
+with open('HISTORY.md') as history_file:
     history = history_file.read()
 
 requirements = []
@@ -19,7 +19,7 @@ test_requirements = []
 
 setup(
     author="Paul Golter",
-    author_email='paulgolter.de@gmail.com',
+    author_email='paul@blender.org',
     python_requires='>=3.7',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
@@ -41,7 +41,7 @@ setup(
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    version='0.6.3',
+    version='0.1.0',
     zip_safe=False,
     entry_points={
         "console_scripts": ["bpurge=blender_purge.cli:main"]
