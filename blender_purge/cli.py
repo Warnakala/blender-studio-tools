@@ -14,7 +14,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("path", help="Path to a file or folder on which to perform purge")
 parser.add_argument(
     "-R",
+    "--recursive",
     help="If -R is provided in combination with a folder path will perform recursive purge",
+    action="store_true",
 )
 parser.add_argument(
     "-c", "--confirm", help="Ask for confirmation before purging", action="store_true"
@@ -22,14 +24,7 @@ parser.add_argument(
 
 
 def main():
-    # Parse arguments
     args = parser.parse_args()
-    path = args.path
-    print(type(args))
-    if not path:
-        logger.error("Please provide a path as first argument")
-        app.cancel_program()
-
     app.purge(args)
 
 

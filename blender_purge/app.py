@@ -65,9 +65,12 @@ def validate_user_input(user_input, options):
         return False
 
 
-def prompt_confirm(path: Path):
+def prompt_confirm(path_list: List[Path]):
     options = ["yes", "no", "y", "n"]
-    input_str = f"\n# Do you want to purge this file {path.as_posix()}? ([y]es/[n]o)"
+    list_str = "\n".join([p.as_posix() for p in path_list])
+    noun = "files" if len(path_list) > 1 else "file"
+    confirm_str = f"# Do you want to purge {len(path_list)} {noun}? ([y]es/[n]o)"
+    input_str = "# Files to purge:" + "\n" + list_str + "\n\n" + confirm_str
     while True:
         user_input = input(input_str)
         if validate_user_input(user_input, options):
@@ -95,9 +98,6 @@ def purge_file(path: Path) -> int:
 
 
 def is_filepath_valid(path: Path) -> None:
-    # check if path exists
-    if not path.exists():
-        raise ValueError(f"Path does not exist: {path.as_posix()}")
 
     # check if path is file
     if not path.is_file():
@@ -111,14 +111,46 @@ def is_filepath_valid(path: Path) -> None:
 @exception_handler
 def purge(args: argparse.Namespace) -> int:
 
+    # parse arguments
     path = Path(args.path).absolute()
     confirm = args.confirm
+    recursive = args.recursive
 
-    is_filepath_valid(path)
+    if not path:
+        raise ValueError("Please provide a path as first argument")
+
+    if not path.exists():
+        raise ValueError(f"Path does not exist: {path.as_posix()}")
+
+    # vars
+    files = []
+
+    # collect files to purge
+    if path.is_dir():
+        if recursive:
+            blend_files = [
+                f for f in path.glob("**/*") if f.is_file() and f.suffix == ".blend"
+            ]
+        else:
+            blend_files = [
+                f for f in path.iterdir() if f.is_file() and f.suffix == ".blend"
+            ]
+        files.extend(blend_files)
+    else:
+        is_filepath_valid(path)
+        files.append(path)
+
+    # can only happen on folder here
+    if not files:
+        logger.info("# Found no .blend files to purge")
+        cancel_program()
+
+    # sort
+    files.sort(key=lambda f: f.name)
 
     # promp confirm
-    if confirm:
-        if not prompt_confirm(path):
+    if bool(confirm) or path.is_dir():
+        if not prompt_confirm(files):
             cancel_program()
 
     # perform check of correct preference settings
