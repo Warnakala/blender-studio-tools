@@ -111,6 +111,11 @@ def is_filepath_valid(path: Path) -> None:
 @exception_handler
 def purge(args: argparse.Namespace) -> int:
 
+    try:
+        import pysvn
+    except ModuleNotFoundError:
+        raise RuntimeError("Pysvn not installed. Run: sudo apt-get install python3-svn")
+
     # parse arguments
     path = Path(args.path).absolute()
     confirm = args.confirm
@@ -126,6 +131,7 @@ def purge(args: argparse.Namespace) -> int:
     files = []
 
     # collect files to purge
+    # if dir
     if path.is_dir():
         if recursive:
             blend_files = [
@@ -136,6 +142,7 @@ def purge(args: argparse.Namespace) -> int:
                 f for f in path.iterdir() if f.is_file() and f.suffix == ".blend"
             ]
         files.extend(blend_files)
+    # if just one file
     else:
         is_filepath_valid(path)
         files.append(path)
