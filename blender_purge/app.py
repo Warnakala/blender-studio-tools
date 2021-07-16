@@ -1,6 +1,7 @@
 import sys
-from pathlib import Path
 import subprocess
+import argparse
+from pathlib import Path
 from typing import Tuple, List, Dict, Any, Union, Optional
 
 from . import vars
@@ -108,7 +109,10 @@ def is_filepath_valid(path: Path) -> None:
 
 
 @exception_handler
-def purge(path: Path, confirm: bool = True) -> int:
+def purge(args: argparse.Namespace) -> int:
+
+    path = Path(args.path).absolute()
+    confirm = args.confirm
 
     is_filepath_valid(path)
 
