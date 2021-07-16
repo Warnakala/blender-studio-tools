@@ -44,7 +44,7 @@ def get_cmd_list(path: Path) -> Tuple[str]:
         path.as_posix(),
         "-b",
         "-P",
-        f"{vars.SCRIPT_PATH}",
+        f"{vars.PURGE_PATH}",
     )
     return cmd_list
 
@@ -79,6 +79,12 @@ def prompt_confirm(path: Path):
         continue
 
 
+def run_check():
+    cmd_list: Tuple[str] = (vars.BLENDER_PATH, "-b", "-P", f"{vars.CHECK_PATH}")
+    p = subprocess.Popen(cmd_list)
+    return p.wait()
+
+
 @exception_handler
 def purge_file(path: Path) -> int:
 
@@ -98,6 +104,13 @@ def purge_file(path: Path) -> int:
     if not prompt_confirm(path):
         cancel_program()
 
+    # perform check of correct preference settings
+    return_code = run_check()
+    if return_code == 1:
+        raise RuntimeError(
+            "Override auto resync is turned off. Turn it on in the preferences and try again."
+        )
+
     # get cmd list
     cmd_list = get_cmd_list(path)
 
@@ -109,9 +122,6 @@ def purge_file(path: Path) -> int:
         return_code = p.wait()
 
         if return_code != 0:
-            if return_code == 1:
-                raise RuntimeError(
-                    "Override auto resync is turned off. Turn it on in the preferences and try again."
-                )
+            raise RuntimeError("Blender Crashed on file: %s", path.as_posix())
 
     return 0
