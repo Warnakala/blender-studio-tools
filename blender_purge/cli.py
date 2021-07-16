@@ -11,21 +11,23 @@ logger = LoggerFactory.getLogger()
 
 # Command line arguments
 parser = argparse.ArgumentParser()
+parser.add_argument("path", help="Path to a file or folder on which to perform purge")
 parser.add_argument(
-    "-f", "--file", help="Path to a file on which to perform recursive purge"
+    "-R",
+    help="If -R is provided in combination with a folder path will perform recursive purge",
 )
 
 
 def main():
-    # Collect arguments
+    # Parse arguments
     args = parser.parse_args()
-    file = args.file
+    path = args.path
 
-    if not file:
-        logger.error("Please provide a file to be purged with -f/--file")
+    if not path:
+        logger.error("Please provide a path as first argument")
         app.cancel_program()
 
-    app.purge_file(Path(file))
+    app.purge(Path(path).absolute())
 
 
 if __name__ == "__main__":

@@ -85,14 +85,20 @@ def run_check():
     return p.wait()
 
 
-@exception_handler
 def purge_file(path: Path) -> int:
+    # get cmd list
+    cmd_list = get_cmd_list(path)
+    p = subprocess.Popen(cmd_list, shell=False)
+    # stdout, stderr = p.communicate()
+    return p.wait()
 
+
+def is_filepath_valid(path: Path) -> None:
     # check if path exists
     if not path.exists():
         raise ValueError(f"Path does not exist: {path.as_posix()}")
 
-    # check if path is blend file
+    # check if path is file
     if not path.is_file():
         raise ValueError(f"Not a file: {path.suffix}")
 
@@ -100,9 +106,16 @@ def purge_file(path: Path) -> int:
     if path.suffix != ".blend":
         raise ValueError(f"Not a blend file: {path.suffix}")
 
+
+@exception_handler
+def purge(path: Path, confirm: bool = True) -> int:
+
+    is_filepath_valid(path)
+
     # promp confirm
-    if not prompt_confirm(path):
-        cancel_program()
+    if confirm:
+        if not prompt_confirm(path):
+            cancel_program()
 
     # perform check of correct preference settings
     return_code = run_check()
@@ -111,16 +124,9 @@ def purge_file(path: Path) -> int:
             "Override auto resync is turned off. Turn it on in the preferences and try again."
         )
 
-    # get cmd list
-    cmd_list = get_cmd_list(path)
-
     # purge each file two times
     for i in range(vars.PURGE_AMOUNT):
-        p = subprocess.Popen(cmd_list, shell=False)
-
-        # stdout, stderr = p.communicate()
-        return_code = p.wait()
-
+        return_code = purge_file(path)
         if return_code != 0:
             raise RuntimeError("Blender Crashed on file: %s", path.as_posix())
 
