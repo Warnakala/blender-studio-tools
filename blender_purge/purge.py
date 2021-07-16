@@ -1,14 +1,18 @@
-import sys
-from pathlib import Path
-
-from blender_purge.log import LoggerFactory
-
-logger = LoggerFactory.getLogger()
+import logging
 
 
-def cancel_program():
-    logger.info("# Exiting blender-purge")
-    sys.exit(0)
+logger = logging.getLogger(__name__)
 
-def purge_file(path: Path) -> None:
-    print(f"Purging path: {path.as_posix()}")
+import bpy
+
+# purge
+logger.info("Starting Recursive Purge")
+bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+
+# save
+bpy.ops.wm.save_as_mainfile(filepath="/tmp/test.blend")
+logger.info("Saved file: %s", bpy.data.filepath)
+
+# quit
+logger.info("Closing File")
+bpy.ops.wm.quit_blender()
