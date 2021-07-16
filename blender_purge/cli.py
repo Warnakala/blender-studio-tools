@@ -4,7 +4,7 @@ import os
 
 from pathlib import Path
 
-from blender_purge.main import purge_file, cancel_program
+from blender_purge import app
 from blender_purge.log import LoggerFactory
 
 logger = LoggerFactory.getLogger()
@@ -23,9 +23,9 @@ def main():
 
     if not file:
         logger.error("Please provide a file to be purged with -f/--file")
-        cancel_program()
+        app.cancel_program()
 
-    sys.exit(purge_file(Path(args.file)))
+    app.purge_file(Path(file))
 
 
 if __name__ == "__main__":
