@@ -997,40 +997,44 @@ addon_keymap_items = []
 
 
 def register():
-    global addon_keymap_items
 
     for cls in classes:
         bpy.utils.register_class(cls)
 
     # register hotkeys
-    keymap = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name="Window")
+    #does not work if blender runs in background
+    if not bpy.app.background:
+        global addon_keymap_items
+        keymap = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name="Window")
 
-    # isolate strip
-    addon_keymap_items.append(
-        keymap.keymap_items.new("rr.sqe_isolate_strip_enter", value="PRESS", type="ONE")
-    )
+        # isolate strip
+        addon_keymap_items.append(
+            keymap.keymap_items.new("rr.sqe_isolate_strip_enter", value="PRESS", type="ONE")
+        )
 
-    # umute all
-    addon_keymap_items.append(
-        keymap.keymap_items.new(
-            "rr.sqe_isolate_strip_exit", value="PRESS", type="ONE", alt=True
+        # umute all
+        addon_keymap_items.append(
+            keymap.keymap_items.new(
+                "rr.sqe_isolate_strip_exit", value="PRESS", type="ONE", alt=True
+            )
         )
-    )
-    for kmi in addon_keymap_items:
-        logger.info(
-            "Registered new hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name
-        )
+        for kmi in addon_keymap_items:
+            logger.info(
+                "Registered new hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name
+            )
 
 
 def unregister():
-    global addon_keymap_items
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
-    # remove hotkeys
-    keymap = bpy.context.window_manager.keyconfigs.addon.keymaps["Window"]
-    for kmi in addon_keymap_items:
-        logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
-        keymap.keymap_items.remove(kmi)
+    #does not work if blender runs in background
+    if not bpy.app.background:
+        global addon_keymap_items
+        # remove hotkeys
+        keymap = bpy.context.window_manager.keyconfigs.addon.keymaps["Window"]
+        for kmi in addon_keymap_items:
+            logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
+            keymap.keymap_items.remove(kmi)
 
-    addon_keymap_items.clear()
+        addon_keymap_items.clear()
