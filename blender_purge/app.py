@@ -1,11 +1,13 @@
 import sys
 import subprocess
 import argparse
+import json
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Union, Optional
 
 from . import vars
 from .log import LoggerFactory
+from .exception import SomethingWentWrongException, WrongInputException
 
 logger = LoggerFactory.getLogger()
 
@@ -15,7 +17,7 @@ def exception_handler(func):
         try:
             return func(*args, **kwargs)
 
-        except ValueError as error:
+        except WrongInputException as error:
             logger.info(
                 "# Oops. Seems like you gave some wrong input!"
                 f"\n# Error: {error}"
@@ -23,7 +25,7 @@ def exception_handler(func):
             )
             cancel_program()
 
-        except RuntimeError as error:
+        except SomethingWentWrongException as error:
             logger.info(
                 "# Oops. Something went wrong during the execution of the Program!"
                 f"\n# Error: {error}"
@@ -39,9 +41,15 @@ def cancel_program() -> None:
     sys.exit(0)
 
 
+def get_blender_path() -> Path:
+    config_path = get_config_path()
+    json_obj = load_json(config_path)
+    return Path(json_obj["blender_path"])
+
+
 def get_cmd_list(path: Path) -> Tuple[str]:
     cmd_list: Tuple[str] = (
-        vars.BLENDER_PATH,
+        get_blender_path().as_posix(),
         path.as_posix(),
         "-b",
         "-P",
@@ -84,7 +92,12 @@ def prompt_confirm(path_list: List[Path]):
 
 
 def run_check():
-    cmd_list: Tuple[str] = (vars.BLENDER_PATH, "-b", "-P", f"{vars.CHECK_PATH}")
+    cmd_list: Tuple[str] = (
+        get_blender_path().as_posix(),
+        "-b",
+        "-P",
+        f"{vars.CHECK_PATH}",
+    )
     p = subprocess.Popen(cmd_list)
     return p.wait()
 
@@ -101,31 +114,129 @@ def is_filepath_valid(path: Path) -> None:
 
     # check if path is file
     if not path.is_file():
-        raise ValueError(f"Not a file: {path.suffix}")
+        raise WrongInputException(f"Not a file: {path.suffix}")
 
     # check if path is blend file
     if path.suffix != ".blend":
-        raise ValueError(f"Not a blend file: {path.suffix}")
+        raise WrongInputException(f"Not a blend file: {path.suffix}")
+
+
+def get_config_path() -> Path:
+    home = Path.home()
+
+    if sys.platform == "win32":
+        return home / "blender-purge/config.json"
+    elif sys.platform == "linux":
+        return home / ".config/blender-purge/config.json"
+    elif sys.platform == "darwin":
+        return home / ".config/blender-purge/config.json"
+
+
+def create_config_file(config_path: Path) -> None:
+    if config_path.exists():
+        return
+    try:
+        with open(config_path.as_posix(), "w") as file:
+            json.dump({}, file)
+    except:
+        raise SomethingWentWrongException(
+            f"# Something went wrong creating config file at: {config_path.as_posix()}"
+        )
+
+    logger.info(f"# Created config file at: {config_path.as_posix()}")
+
+
+def load_json(path: Path) -> Any:
+    with open(path.as_posix(), "r") as file:
+        obj = json.load(file)
+    return obj
+
+
+def save_to_json(obj: Any, path: Path) -> None:
+    with open(path.as_posix(), "w") as file:
+        json.dump(obj, file, indent=4)
+
+
+def input_path(question: str) -> Path:
+    while True:
+        user_input = input(question)
+        try:
+            path = Path(user_input)
+        except:
+            logger.error("# Invalid input")
+            continue
+        if path.exists():
+            return path.absolute()
+        else:
+            logger.info("# Path does not exist")
+
+
+def input_filepath(question: str) -> Path:
+    while True:
+        path = input_path(question)
+        if not path.is_file():
+            continue
+        return path
+
+
+def setup_config() -> None:
+    config_path = get_config_path()
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    blender_path = input_filepath("# Path to Blender binary: ")
+    project_root = input_path("# Path to SVN project root: ")
+    obj = {
+        "blender_path": blender_path.as_posix(),
+        "project_root": project_root.as_posix(),
+    }
+    save_to_json(obj, config_path)
+    logger.info("Updatet config at:  %s", config_path.as_posix())
+
+
+def is_config_valid() -> bool:
+    keys = ["blender_path", "project_root"]
+    config_path = get_config_path()
+    json_obj = load_json(config_path)
+    for key in keys:
+        if key not in json_obj:
+            return False
+        if not json_obj[key]:
+            return False
+    return True
 
 
 @exception_handler
 def purge(args: argparse.Namespace) -> int:
 
+    """
     try:
         import pysvn
     except ModuleNotFoundError:
         raise RuntimeError("Pysvn not installed. Run: sudo apt-get install python3-svn")
+    """
 
     # parse arguments
     path = Path(args.path).absolute()
     confirm = args.confirm
     recursive = args.recursive
+    config_path = get_config_path()
 
+    # check config file
+    if not config_path.exists():
+        logger.info("# Seems like you are starting blender-purge for the first time!")
+        logger.info("# Some things needs to be configured")
+        setup_config()
+    else:
+        if not is_config_valid():
+            logger.info("# Config file at: %s is not valid", config_path.as_posix())
+            logger.info("# Please set it up again")
+            setup_config()
+
+    # check user input
     if not path:
-        raise ValueError("Please provide a path as first argument")
+        raise WrongInputException("Please provide a path as first argument")
 
     if not path.exists():
-        raise ValueError(f"Path does not exist: {path.as_posix()}")
+        raise WrongInputException(f"Path does not exist: {path.as_posix()}")
 
     # vars
     files = []
@@ -163,7 +274,7 @@ def purge(args: argparse.Namespace) -> int:
     # perform check of correct preference settings
     return_code = run_check()
     if return_code == 1:
-        raise RuntimeError(
+        raise SomethingWentWrongException(
             "Override auto resync is turned off. Turn it on in the preferences and try again."
         )
 
@@ -171,6 +282,8 @@ def purge(args: argparse.Namespace) -> int:
     for i in range(vars.PURGE_AMOUNT):
         return_code = purge_file(path)
         if return_code != 0:
-            raise RuntimeError("Blender Crashed on file: %s", path.as_posix())
+            raise SomethingWentWrongException(
+                "Blender Crashed on file: %s", path.as_posix()
+            )
 
     return 0
