@@ -735,8 +735,16 @@ class CacheConfigFactory:
                 # TODO: detect properties that have an animation or are driven
                 for driver in obj.animation_data.drivers:
 
+                    # seems to be an override resync issue that old datapaths are sill in .drivers
+                    # even tough they dont exist anynmore, filter them out like this:
+                    try:
+                        obj.path_resolve(driver.data_path)
+                    except ValueError:
+                        continue
+
                     # don't export animation for vis of modifiers
                     data_path = driver.data_path.split(".")
+
                     if len(data_path) > 1:
                         if data_path[0].startswith("modifiers"):
                             if data_path[-1] in cmglobals.DRIVER_VIS_DATA_PATHS:
@@ -820,7 +828,6 @@ class CacheConfigFactory:
                 logger.info("Storing animation data for frame %i", frame)
 
                 for obj in objects:
-
                     obj_category = "objects"
                     if obj.type in cmglobals.CAMERA_TYPES:
                         obj_category = "cameras"
