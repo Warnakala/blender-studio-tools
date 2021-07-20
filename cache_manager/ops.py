@@ -194,7 +194,6 @@ class CM_OT_cache_export(bpy.types.Operator):
                     sh_open=context.scene.cm.sh_open,
                     sh_close=context.scene.cm.sh_close,
                     selected=True,
-                    renderable_only=False,
                     visible_objects_only=False,
                     flatten=True,
                     uvs=True,
