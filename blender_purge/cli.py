@@ -1,12 +1,14 @@
 import argparse
 import sys
 import os
+import importlib
 
 from pathlib import Path
 
-from blender_purge import app
-from blender_purge.log import LoggerFactory
+import app
+from log import LoggerFactory
 
+importlib.reload(app)
 logger = LoggerFactory.getLogger()
 
 # Command line arguments

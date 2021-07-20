@@ -5,9 +5,10 @@ import json
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Union, Optional
 
-from . import vars
-from .log import LoggerFactory
-from .exception import SomethingWentWrongException, WrongInputException
+import vars
+from svn import SvnRepo
+from log import LoggerFactory
+from exception import SomethingWentWrongException, WrongInputException
 
 logger = LoggerFactory.getLogger()
 
@@ -47,6 +48,12 @@ def get_blender_path() -> Path:
     return Path(json_obj["blender_path"])
 
 
+def get_project_root_path() -> Path:
+    config_path = get_config_path()
+    json_obj = load_json(config_path)
+    return Path(json_obj["project_root"])
+
+
 def get_cmd_list(path: Path) -> Tuple[str]:
     cmd_list: Tuple[str] = (
         get_blender_path().as_posix(),
@@ -54,6 +61,7 @@ def get_cmd_list(path: Path) -> Tuple[str]:
         "-b",
         "-P",
         f"{vars.PURGE_PATH}",
+        "--factory-startup",
     )
     return cmd_list
 
@@ -207,13 +215,6 @@ def is_config_valid() -> bool:
 @exception_handler
 def purge(args: argparse.Namespace) -> int:
 
-    """
-    try:
-        import pysvn
-    except ModuleNotFoundError:
-        raise RuntimeError("Pysvn not installed. Run: sudo apt-get install python3-svn")
-    """
-
     # parse arguments
     path = Path(args.path).absolute()
     confirm = args.confirm
@@ -266,24 +267,32 @@ def purge(args: argparse.Namespace) -> int:
     # sort
     files.sort(key=lambda f: f.name)
 
-    # promp confirm
+    # prompt confirm
     if bool(confirm) or path.is_dir():
         if not prompt_confirm(files):
             cancel_program()
 
+    """
     # perform check of correct preference settings
     return_code = run_check()
     if return_code == 1:
         raise SomethingWentWrongException(
             "Override auto resync is turned off. Turn it on in the preferences and try again."
         )
+    """
 
     # purge each file two times
-    for i in range(vars.PURGE_AMOUNT):
-        return_code = purge_file(path)
-        if return_code != 0:
-            raise SomethingWentWrongException(
-                "Blender Crashed on file: %s", path.as_posix()
-            )
+    for blend_file in files:
+        for i in range(vars.PURGE_AMOUNT):
+            return_code = purge_file(blend_file)
+            if return_code != 0:
+                raise SomethingWentWrongException(
+                    f"Blender Crashed on file: {blend_file.as_posix()}",
+                )
 
+    # commit to svn
+    project_root = get_project_root_path()
+    svn_repo = SvnRepo(project_root)
+    file_rel = [p.relative_to(project_root) for p in files]
+    svn_repo.commit(file_rel)
     return 0

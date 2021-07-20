@@ -71,7 +71,6 @@ class SvnRepo:
 
         base = ["svn commit"]
         base.extend([p.as_posix() for p in relpath_list])
-        print(base)
         # base.append('-m "test commit')
         process = subprocess.call(base, shell=True, cwd=self._path.as_posix())
         return process
