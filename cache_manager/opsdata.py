@@ -734,12 +734,10 @@ def config_cache_constraint(
     abc_obj_path: str,
 ) -> bpy.types.TransformCacheConstraint:
     obj = con.id_data
+
     # move to index
-    # as we need to use bpy.ops for that object needs to be active
-    bpy.context.view_layer.objects.active = obj
-    override = context.copy()
-    override["constraint"] = con
-    bpy.ops.constraint.move_to_index(override, constraint=con.name, index=0)
+    current_index = obj.constraints.find(con.name)
+    obj.constraints.move(current_index, 0)
 
     # adjust settings
     con.cache_file = cachefile
