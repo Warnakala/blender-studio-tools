@@ -272,6 +272,10 @@ class CacheConfigBlueprint(CacheConfig):
     def append_value_to_data_path(
         self, obj_category: str, obj_name: str, data_path: str, value: Any
     ) -> None:
+        # otherwise jason will throw an error, tuple is supported by blender
+        if type(value).__name__ == "bpy_prop_array":
+            value = tuple(value)
+
         self._json_obj[obj_category][obj_name]["data_paths"][data_path]["value"].append(
             value
         )
