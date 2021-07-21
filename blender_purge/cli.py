@@ -5,8 +5,8 @@ import importlib
 
 from pathlib import Path
 
-import app
-from log import LoggerFactory
+from blender_purge import app
+from blender_purge.log import LoggerFactory
 
 importlib.reload(app)
 logger = LoggerFactory.getLogger()

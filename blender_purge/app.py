@@ -5,10 +5,10 @@ import json
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Union, Optional
 
-import vars
-from svn import SvnRepo
-from log import LoggerFactory
-from exception import SomethingWentWrongException, WrongInputException
+from blender_purge import vars
+from blender_purge.svn import SvnRepo
+from blender_purge.log import LoggerFactory
+from blender_purge.exception import SomethingWentWrongException, WrongInputException
 
 logger = LoggerFactory.getLogger()
 
