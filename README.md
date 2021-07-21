@@ -26,7 +26,7 @@ blender-kitsu is a Blender addon to interact with Kitsu from within Blender. It 
         - [Lookdev Tools](#lookdev-tools)
         - [Error System](#error-system)
 - [Troubleshoot](#troubleshoot)
-- [Plugins](#plugins)
+- [Credits](#plugins)
 - [Development](#development)
 
 ## Installation
