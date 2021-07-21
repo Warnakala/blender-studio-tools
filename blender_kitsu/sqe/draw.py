@@ -18,6 +18,10 @@
 
 # <pep8 compliant>
 
+# This file is copied from the blender-cloud-addon https://developer.blender.org/diffusion/BCA/
+# Author of this file is: Sybren A. Stuevel
+# Modified by: Paul Golter
+
 import typing
 
 import bpy
