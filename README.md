@@ -264,10 +264,10 @@ blender-kitsu has different checks that are performed during file load or during
 ## Troubleshoot
 blender-kitsu makes good use of logging and status reports. Most of the operators report information in the blender info bar. More detailed logs can be found in the blender system console. If you feel like anything went wrong, consider opening a console and check the logs.
 
-## Plugins
-This project uses gazu as a submodule to interact with the gazu data base.
-- gazu doc : https://gazu.cg-wire.com/
+## Credits
+This project uses gazu as a submodule to interact with the gazu data base. Gazu is written by CG Wire, a company based in France.
 - dazu repo: https://github.com/cgwire/gazu
+- gazu doc : https://gazu.cg-wire.com/
 
 ## Development
 In the project root you will find a `pyproject.toml` and `peotry.lock` file.
