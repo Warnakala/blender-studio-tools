@@ -269,6 +269,9 @@ This project uses gazu as a submodule to interact with the gazu data base. Gazu 
 - dazu repo: https://github.com/cgwire/gazu
 - gazu doc : https://gazu.cg-wire.com/
 
+The file at ./blender_kitsu/sqe/draw.py is copied and modified from the blender-cloud-addon (https://developer.blender.org/diffusion/BCA/).
+Original author of this file is: Sybren A. Stuevel.
+
 ## Development
 In the project root you will find a `pyproject.toml` and `peotry.lock` file.
 With `poetry` you can easily generate a virtual env for the project which should get you setup quickly.
