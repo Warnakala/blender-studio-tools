@@ -114,6 +114,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         # macOS: ~/Library/Application Support
         # windows: C:/Users/<USER>/AppData/Roaming
         """
+        # This function is copied from the edit_breakdown addon by Inês Almeida and Francesco Siddi
 
         home = Path.home()
 
@@ -130,6 +131,8 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         The path is constructed by combining the OS application data dir,
         "blender_kitsu" and a hashed version of the filepath.
         """
+        # This function is copied and modified from the edit_breakdown addon by Inês Almeida and Francesco Siddi
+
         hashed_filepath = hashlib.md5(bpy.data.filepath.encode()).hexdigest()
         storage_dir = (
             self.get_datadir() / "blender_kitsu" / "thumbnails" / hashed_filepath
