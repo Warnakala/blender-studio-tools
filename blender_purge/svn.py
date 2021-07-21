@@ -56,7 +56,7 @@ class SvnRepo:
 
     def revert(self, relpath_list: List[Path]) -> subprocess.Popen:
         arg_list = " ".join([p.as_posix() for p in relpath_list])
-        process = subprocess.Popen(
+        process = subprocess.call(
             (f"svn revert {arg_list}"), shell=True, cwd=self._path.as_posix()
         )
         return process
@@ -69,10 +69,8 @@ class SvnRepo:
         if not relpath_list:
             return None
 
-        base = ["svn commit"]
-        base.extend([p.as_posix() for p in relpath_list])
-        # base.append('-m "test commit')
-        process = subprocess.call(base, shell=True, cwd=self._path.as_posix())
+        cmd_list = f'svn commit {" ".join([p.as_posix() for p in relpath_list])}'
+        process = subprocess.call(cmd_list, shell=True, cwd=self._path.as_posix())
         return process
 
     def get_untracked(self) -> List[Path]:
@@ -97,4 +95,4 @@ if __name__ == "__main__":
     repo = SvnRepo(Path("/media/data/sprites"))
     modified = repo.get_modified()
     print(modified)
-    repo.commit(modified)
+    repo.commit(modified[:2])
