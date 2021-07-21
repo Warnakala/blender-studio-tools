@@ -268,9 +268,8 @@ def purge(args: argparse.Namespace) -> int:
     files.sort(key=lambda f: f.name)
 
     # prompt confirm
-    if bool(confirm) or path.is_dir():
-        if not prompt_confirm(files):
-            cancel_program()
+    if not prompt_confirm(files):
+        cancel_program()
 
     """
     # perform check of correct preference settings
