@@ -13,7 +13,9 @@ logger = LoggerFactory.getLogger()
 
 # Command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("path", help="Path to a file or folder on which to perform purge")
+parser.add_argument(
+    "path", help="Path to a file or folder on which to perform purge", type=str
+)
 parser.add_argument(
     "-R",
     "--recursive",
@@ -22,6 +24,11 @@ parser.add_argument(
 )
 parser.add_argument(
     "-c", "--confirm", help="Ask for confirmation before purging", action="store_true"
+)
+
+parser.add_argument(
+    "--regex",
+    help="Provide any regex pattern that will be performed on each found filepath with re.search()",
 )
 
 

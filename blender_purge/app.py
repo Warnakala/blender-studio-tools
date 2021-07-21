@@ -2,6 +2,7 @@ import sys
 import subprocess
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Union, Optional
 
@@ -220,6 +221,7 @@ def purge(args: argparse.Namespace) -> int:
     confirm = args.confirm
     recursive = args.recursive
     config_path = get_config_path()
+    regex = args.regex
 
     # check config file
     if not config_path.exists():
@@ -258,6 +260,17 @@ def purge(args: argparse.Namespace) -> int:
     else:
         is_filepath_valid(path)
         files.append(path)
+
+    # apply regex
+    if regex:
+        to_remove: List[Path] = []
+        for p in files:
+            match = re.search(regex, p.as_posix())
+            if not match:
+                to_remove.append(p)
+
+        for p in to_remove:
+            files.remove(p)
 
     # can only happen on folder here
     if not files:
