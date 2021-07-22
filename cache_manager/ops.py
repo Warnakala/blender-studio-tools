@@ -1,3 +1,23 @@
+# ***** BEGIN GPL LICENSE BLOCK *****
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
+# ***** END GPL LICENCE BLOCK *****
+#
+# (c) 2021, Blender Foundation
+
 import re
 import contextlib
 
@@ -265,6 +285,10 @@ class CM_OT_cache_export(bpy.types.Operator):
 
         # update cache version property to jump to latest version
         propsdata.update_cache_version_property(context)
+
+        # if it was do all reset after
+        if self.do_all:
+            self.do_all = False
 
         # log
         self.report(
@@ -685,6 +709,10 @@ class CM_OT_import_cache(bpy.types.Operator):
         log_new_lines(1)
         logger.info("-END- Importing Alembic Cache")
 
+        # if it was do all reset after
+        if self.do_all:
+            self.do_all = False
+
         # log
         self.report(
             {"INFO"},
@@ -740,6 +768,10 @@ class CM_OT_cache_hide(bpy.types.Operator):
 
             logger.info("Hide Cache for %s", coll.name)
 
+        # if it was do all hide reset after
+        if self.do_all:
+            self.do_all = False
+
         self.report(
             {"INFO"},
             f"Hid Cache of {len(collections)} Collections",
@@ -793,6 +825,10 @@ class CM_OT_cache_show(bpy.types.Operator):
 
             logger.info("Unhid Cache for %s", coll.name)
 
+        # if it was do all hide reset after
+        if self.do_all:
+            self.do_all = False
+
         self.report(
             {"INFO"},
             f"Unhid Cache of {len(collections)} Collections",
@@ -842,6 +878,10 @@ class CM_OT_cache_remove(bpy.types.Operator):
             coll.cm.is_cache_loaded = False
 
             logger.info("Remove Cache for %s", coll.name)
+
+        # if it was do all hide reset after
+        if self.do_all:
+            self.do_all = False
 
         self.report(
             {"INFO"},
