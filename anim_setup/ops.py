@@ -118,17 +118,30 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
     bl_label = "Load edit"
 
     @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
+    def can_load_edit(cls, context: bpy.types.Context) -> bool:
+        """Check if shared dir and VSE area are available"""
         addon_prefs = prefs.addon_prefs_get(context)
         editorial_path = Path(addon_prefs.editorial_path)
 
         # Needs to be run in sequence editor area
+        # TODO: temporarily create a VSE area if not available
         area_override = None
         for area in bpy.context.screen.areas:
             if area.type == "SEQUENCE_EDITOR":
                 area_override = area
 
         return bool(area_override and editorial_path)
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return cls.can_load_edit(context)
+
+    @classmethod
+    def description(cls, context, properties):
+        if cls.can_load_edit(context):
+            return "Load latest edit from shared folder"
+        else:
+            return "Shared folder not set, or VSE area not available in this workspace"
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
