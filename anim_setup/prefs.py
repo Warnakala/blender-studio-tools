@@ -176,9 +176,7 @@ class AS_AddonPreferences(bpy.types.AddonPreferences):
 
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
-    """
-    shortcut to get cache_manager addon preferences
-    """
+    """Shortcut to get cache_manager addon preferences"""
     return context.preferences.addons["anim_setup"].preferences
 
 

@@ -13,8 +13,7 @@ logger = LoggerFactory.getLogger()
 
 
 def ui_redraw() -> None:
-    """
-    Forces blender to redraw the UI.
+    """Forces blender to redraw the UI.
     """
     for screen in bpy.data.screens:
         for area in screen.areas:
@@ -22,9 +21,7 @@ def ui_redraw() -> None:
 
 
 class AS_OT_create_actions(bpy.types.Operator):
-    """
-    Creates default action for active collection
-    """
+    """Creates default action for active collection"""
 
     bl_idname = "as.create_action"
     bl_label = "Create action"
@@ -97,9 +94,7 @@ class AS_OT_create_actions(bpy.types.Operator):
 
 
 class AS_OT_setup_workspaces(bpy.types.Operator):
-    """
-    Sets up the workspaces for the animation task
-    """
+    """Sets up the workspaces for the animation task"""
 
     bl_idname = "as.setup_workspaces"
     bl_label = "Setup Workspace"
@@ -117,9 +112,7 @@ class AS_OT_setup_workspaces(bpy.types.Operator):
 
 
 class AS_OT_load_latest_edit(bpy.types.Operator):
-    """
-    Loads latest edit from dropbox folder
-    """
+    """Loads latest edit from dropbox folder"""
 
     bl_idname = "as.load_latest_edit"
     bl_label = "Load edit"
@@ -129,7 +122,7 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
         editorial_path = Path(addon_prefs.editorial_path)
 
-        # needs to be run in sequence editor area
+        # Needs to be run in sequence editor area
         area_override = None
         for area in bpy.context.screen.areas:
             if area.type == "SEQUENCE_EDITOR":
@@ -243,9 +236,7 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
 
 
 class AS_OT_import_camera(bpy.types.Operator):
-    """
-    Imports camera rig and makes library override
-    """
+    """Imports camera rig and makes library override"""
 
     bl_idname = "as.import_camera"
     bl_label = "Import Camera"
@@ -278,9 +269,7 @@ class AS_OT_import_camera(bpy.types.Operator):
 
 
 class AS_OT_import_camera_action(bpy.types.Operator):
-    """
-    Imports cam action of previs file that matches current shot and assignes it
-    """
+    """Imports cam action of previs file that matches current shot and assigns it"""
 
     bl_idname = "as.import_camera_action"
     bl_label = "Import Camera Action"
@@ -348,9 +337,7 @@ class AS_OT_import_camera_action(bpy.types.Operator):
 
 
 class AS_OT_import_asset_actions(bpy.types.Operator):
-    """
-    Imports asset action of previs file that matches current shot and assigne it
-    """
+    """Imports asset action of previs file that matches current shot and assigns it"""
 
     bl_idname = "as.import_asset_actions"
     bl_label = "Import Asset Actions"
@@ -501,9 +488,7 @@ class AS_OT_import_asset_actions(bpy.types.Operator):
 
 
 class AS_OT_import_multi_assets(bpy.types.Operator):
-    """
-    Imports asset action of previs file that matches current shot and assigne it
-    """
+    """Imports asset action of previs file that matches current shot and assigns it"""
 
     bl_idname = "as.import_multi_assets"
     bl_label = "Import Multi Assets"
@@ -633,9 +618,7 @@ class AS_OT_import_multi_assets(bpy.types.Operator):
 
 
 class AS_OT_shift_anim(bpy.types.Operator):
-    """
-    Shifts the animation as well as anim modifier values of the camera by number of frames
-    """
+    """Shifts the animation as well as anim modifier values of the camera by number of frames"""
 
     bl_idname = "as.shift_anim"
     bl_label = "Shift Anim"
@@ -749,10 +732,8 @@ class AS_OT_shift_anim(bpy.types.Operator):
 
 
 class AS_OT_get_frame_shift(bpy.types.Operator):
-    """
-    Gets the amount of frames that camera has to be shifted, by requesting the frame range
-    of the current shot in kitsu
-    """
+    """Gets the amount of frames that camera has to be shifted, by requesting the frame range
+    of the current shot in kitsu"""
 
     bl_idname = "as.get_frame_shift"
     bl_label = "Get Frame Shift"
@@ -798,9 +779,7 @@ class AS_OT_apply_additional_settings(bpy.types.Operator):
 
 
 class AS_OT_exclude_colls(bpy.types.Operator):
-    """
-    Excludes Collections that are not needed for Animation
-    """
+    """Excludes Collections that are not needed for animation"""
 
     bl_idname = "as.exclude_colls"
     bl_label = "Exclude Collections"
