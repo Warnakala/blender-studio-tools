@@ -638,7 +638,12 @@ class AS_OT_shift_anim(bpy.types.Operator):
     multi_assets: bpy.props.BoolProperty(name="Do Multi Assets")
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        nr_of_frames = context.scene.anim_setup.shift_frames
+        # Define the frame offset by:
+        # Subtracting the layout cut in frame (to set the 0)
+        # Adding 101 (the animation start for a shot)
+        # For example, layout frame 520 becomes frames_offset -520 + 101 = -419
+
+        frames_offset = -context.scene.anim_setup.layout_cut_in + 101
         rigs: List[bpy.types.Armature] = []
 
         if not self.multi_assets:
@@ -698,17 +703,17 @@ class AS_OT_shift_anim(bpy.types.Operator):
                 # shift all keyframes
                 for point in fcurve.keyframe_points:
                     # print(f"{fcurve.data_path}|{fcurve.array_index}: {point.co.x}|{point.co.y}")
-                    point.co.x += nr_of_frames
+                    point.co.x += frames_offset
                     # don't forget the keyframe's handles:
-                    point.handle_left.x += nr_of_frames
-                    point.handle_right.x += nr_of_frames
+                    point.handle_left.x += frames_offset
+                    point.handle_right.x += frames_offset
 
                 """
                 logger.info(
                     "%s: %s shifted all keyframes by %i frames",
                     fcurve.id_data.name,
                     fcurve.data_path,
-                    nr_of_frames,
+                    frames_offset,
                 )
                 """
 
@@ -717,45 +722,30 @@ class AS_OT_shift_anim(bpy.types.Operator):
                     if not m.type == "NOISE":
                         continue
 
-                    m.offset += nr_of_frames
+                    m.offset += frames_offset
 
                     if m.use_restricted_range:
                         frame_start = m.frame_start
                         frame_end = m.frame_end
-                        m.frame_start = frame_start + (nr_of_frames)
-                        m.frame_end = frame_end + (nr_of_frames)
+                        m.frame_start = frame_start + (frames_offset)
+                        m.frame_end = frame_end + (frames_offset)
 
                     logger.info(
                         "%s shifted %s modifier values by %i frames",
                         m.id_data.name,
                         m.type.lower(),
-                        nr_of_frames,
+                        frames_offset,
                     )
             logger.info(
                 "%s: %s shifted all keyframes by %i frames",
                 rig.name,
                 rig.animation_data.action.name,
-                nr_of_frames,
+                frames_offset,
             )
 
         self.report(
-            {"INFO"}, f"Shifted animation of {len(rigs)} actions by {nr_of_frames}"
+            {"INFO"}, f"Shifted animation of {len(rigs)} actions by {frames_offset}"
         )
-        return {"FINISHED"}
-
-
-class AS_OT_get_frame_shift(bpy.types.Operator):
-    """Gets the amount of frames that camera has to be shifted, by requesting the frame range
-    of the current shot in kitsu"""
-
-    bl_idname = "as.get_frame_shift"
-    bl_label = "Get Frame Shift"
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        addon_prefs = prefs.addon_prefs_get(context)
-        nr_of_frames = context.scene.anim_setup.shift_frames
-
-        self.report({"WARNING"}, "Not implemente yet")
         return {"FINISHED"}
 
 
@@ -832,7 +822,6 @@ classes = [
     AS_OT_import_camera,
     AS_OT_import_camera_action,
     AS_OT_shift_anim,
-    AS_OT_get_frame_shift,
     AS_OT_apply_additional_settings,
     AS_OT_import_asset_actions,
     AS_OT_exclude_colls,

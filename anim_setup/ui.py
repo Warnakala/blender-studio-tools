@@ -9,7 +9,6 @@ from .ops import (
     AS_OT_import_camera,
     AS_OT_import_camera_action,
     AS_OT_shift_anim,
-    AS_OT_get_frame_shift,
     AS_OT_apply_additional_settings,
     AS_OT_import_asset_actions,
     AS_OT_exclude_colls,
@@ -17,13 +16,13 @@ from .ops import (
 )
 
 
-class AS_PT_vi3d_main(bpy.types.Panel):
+class AS_PT_view3d_general(bpy.types.Panel):
     """
-    Panel in 3dview that displays main functions for anim-setup.
+    Animation Setup general operators.
     """
 
     bl_category = "Anim Setup"
-    bl_label = "Main"
+    bl_label = "General"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_order = 10
@@ -31,80 +30,98 @@ class AS_PT_vi3d_main(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
         valid_colls = opsdata.get_valid_collections(context)
         layout = self.layout
+        col = layout.column(align=True)
+
+        # Workspace
+        col.operator(AS_OT_setup_workspaces.bl_idname)
+
+        # Load edit
+        col.operator(AS_OT_load_latest_edit.bl_idname)
 
 
-        # ------general ops
-        box = layout.box()
-        box.label(text="General", icon="MODIFIER")
 
-        column = box.column(align=True)
+class AS_PT_view3d_animation_and_actions(bpy.types.Panel):
+    """
+    Animation Setup main operators and properties.
+    """
 
-        # workspace
-        column.operator(AS_OT_setup_workspaces.bl_idname)
+    bl_category = "Anim Setup"
+    bl_label = "Animation and Actions"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_order = 12
+    
+    def draw(self, context: bpy.types.Context) -> None:
+        
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False  # No animation.
 
-        # load edit
-        column.operator(AS_OT_load_latest_edit.bl_idname)
+        layout.label(text=f"Previs file: {opsdata.get_previs_file(context)}")
 
-        # apply additional settings
-        #column.operator(
-        #    AS_OT_apply_additional_settings.bl_idname
-        #)
+        col = layout.column(align=True)
 
-        #---------action and anim ops
-        box = layout.box()
-        box.label(text="Animation and Actions", icon="KEYTYPE_KEYFRAME_VEC")
+        # Import camera action
+        col.operator(AS_OT_import_camera_action.bl_idname)
 
-        box.label(text=f"Previs file: {opsdata.get_previs_file(context)}")
-
-
-        column = box.column(align=True)
-
-        # import camera action
-        column.operator(AS_OT_import_camera_action.bl_idname)
-
-        # import action
-        column.operator(
+        # Import action
+        col.operator(
             AS_OT_import_asset_actions.bl_idname, text=f"Import Char Actions"
         )
 
-        column.operator(
+        col.operator(
             AS_OT_import_multi_assets.bl_idname, text=f"Import Multi Asset Actions"
-        )
-        # import camera
-        #column = box_cam.column(align=True)
-        #column.operator(AS_OT_import_camera.bl_idname)
+        )      
 
+        col.separator()
+        col = layout.column()
 
-        # shift animation
-        split = column.split(factor=0.3, align=True)
-        split.prop(context.scene.anim_setup, "shift_frames", text="")
-        split2 = split.split(factor=0.5, align=True)
-        split2.operator(AS_OT_shift_anim.bl_idname, text="Shift Char/Cam")
-        split2.operator(AS_OT_shift_anim.bl_idname, text="Shift Multi").multi_assets = True
+        # Shift animation
+        col.prop(context.scene.anim_setup, "layout_cut_in")
+        col.separator()
+        split = col.split(factor=0.5, align=True)
+        split.operator(AS_OT_shift_anim.bl_idname, text="Shift Char/Cam")
+        split.operator(AS_OT_shift_anim.bl_idname, text="Shift Multi").multi_assets = True
 
-        # create actions
-        row = box.row(align=True)
+        col.separator()
+
+        # Create actions
+        valid_collections_count = len(opsdata.get_valid_collections(context))
+        row = col.row(align=True)
         row.operator(
-            AS_OT_create_actions.bl_idname, text=f"Create {len(valid_colls)} actions"
+            AS_OT_create_actions.bl_idname, text=f"Create {valid_collections_count} actions"
         )
-        # udpate shift amount
-        #column.operator(AS_OT_get_frame_shift.bl_idname)
 
-         #---------scene ops
-        box = layout.box()
-        box.label(text="Scene", icon="SCENE_DATA")
 
-        # exclude colls
-        row = box.row(align=True)
+class AS_PT_view3d_scene(bpy.types.Panel):
+    """
+    Animation Setup scene operators.
+    """
+
+    bl_category = "Anim Setup"
+    bl_label = "Scene"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_order = 13
+    
+    def draw(self, context: bpy.types.Context) -> None:
+        
+        layout = self.layout
+
+        # Exclude collections
+        row = layout.row(align=True)
         row.operator(
             AS_OT_exclude_colls.bl_idname, text="Exclude Collections"
         )
 
 
-
 # ---------REGISTER ----------
 
-classes = [AS_PT_vi3d_main]
+classes = [
+    AS_PT_view3d_general, 
+    AS_PT_view3d_animation_and_actions, 
+    AS_PT_view3d_scene,
+    ]
 
 
 def register():

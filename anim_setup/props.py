@@ -5,9 +5,9 @@ import bpy
 
 class CM_property_group_scene(bpy.types.PropertyGroup):
 
-    shift_frames: bpy.props.IntProperty(
-        name="Shift Frames",
-        description="Amount on which to shift the animation of the camera",
+    layout_cut_in: bpy.props.IntProperty(
+        name="Layout Cut In",
+        description="Frame where the camera marker is set for the shot, in the layout file",
         default=0,
         step=1,
     )
