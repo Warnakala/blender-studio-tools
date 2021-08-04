@@ -157,7 +157,7 @@ def update_is_approved(
         if Path(json_obj["source_current"]) == Path(bpy.path.abspath(s.directory)):
             s.rr.is_approved = True
             approved_strips.append(s)
-            logger.info("Detected aprooved strip: %s", s.name)
+            logger.info("Detected approved strip: %s", s.name)
         else:
             s.rr.is_approved = False
 

@@ -19,7 +19,7 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 class RR_OT_sqe_create_review_session(bpy.types.Operator):
     """
-    Look in tomain render folder of shot defined by context.scene.rr.render_dir_path.
+    Look into main render folder of shot defined by context.scene.rr.render_dir_path.
     It will search all available folder for preview sequences (.jpg / .png). Each found image
     sequence will be loaded in the sequence editor. Has enable blender_kitsu option that will
     create a linked metastrip for the loaded shot on the top most channel.
@@ -175,7 +175,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             prev_frame_end = strip_longest.frame_final_end
 
-        # set scene resolution to resolution of laoded image
+        # set scene resolution to resolution of loaded image
         context.scene.render.resolution_x = vars.RESOLUTION[0]
         context.scene.render.resolution_y = vars.RESOLUTION[1]
 
@@ -407,7 +407,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
             logger.info("Created metadata.json: %s", metadata_path.as_posix())
         else:
             json_dict = opsdata.load_json(metadata_path)
-            # soure backup will get value from old source current
+            # source backup will get value from old source current
             json_dict["source_backup"] = json_dict["source_current"]
             # source current will get value from strip dir
             json_dict["source_current"] = strip_dir.as_posix()
