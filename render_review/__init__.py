@@ -20,7 +20,7 @@ logger = LoggerFactory.getLogger(__name__)
 bl_info = {
     "name": "Render Review",
     "author": "Paul Golter",
-    "description": "Blender addon to review renderings from flamenco",
+    "description": "Review renders from Flamenco",
     "blender": (3, 0, 0),
     "version": (0, 1, 0),
     "location": "View3D",
