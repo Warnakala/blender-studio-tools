@@ -39,34 +39,34 @@ def get_valid_cs_sequences(
     return valid_sequences
 
 
-def get_frame_storage_path(strip: bpy.types.ImageSequence) -> Path:
-    # fs > frame_storage | fo > farm_output
+def get_shot_frames_dir(strip: bpy.types.ImageSequence) -> Path:
+    # sf > shot_frames | fo > farm_output
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     fo_dir = Path(strip.directory)
-    fs_dir_name = get_shot_dot_task_type(fo_dir)
-    fs_dir = (
-        addon_prefs.frame_storage_path
-        / fo_dir.parent.relative_to(fo_dir.parents[3])
-        / fs_dir_name
+    sf_dir_name = get_shot_dot_task_type(fo_dir)
+    sf_dir = (
+        addon_prefs.shot_frames_dir
+        / fo_dir.parent.relative_to(fo_dir.parents[2])
+        / sf_dir_name
     )
 
-    return fs_dir
+    return sf_dir
 
 
-def get_edit_storage_path(strip: bpy.types.ImageSequence) -> Path:
-    # fs > frame_storage | fo > farm_output
+def get_shot_previews_path(strip: bpy.types.ImageSequence) -> Path:
+    # fo > farm_output
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     fo_dir = Path(bpy.path.abspath(strip.directory))
     # 110_0150_A.lighting-2021-04-09_134706 -> 110_0150_A.lighting
-    edit_storage_dir_name = get_shot_dot_task_type(fo_dir)
+    shot_previews_dir_name = get_shot_dot_task_type(fo_dir)
 
-    edit_storage_dir = (
-        addon_prefs.edit_storage_path
-        / fo_dir.parent.relative_to(fo_dir.parents[3])
-        / edit_storage_dir_name
+    shot_previews_dir = (
+        addon_prefs.shot_previews_path
+        / fo_dir.parent.relative_to(fo_dir.parents[2])
+        / shot_previews_dir_name
     )
 
-    return edit_storage_dir
+    return shot_previews_dir
 
 
 def get_shot_dot_task_type(path: Path):
@@ -114,13 +114,13 @@ def get_best_preview_sequence(dir: Path) -> List[Path]:
     return preview_seq
 
 
-def get_frame_storage_backup_path(strip: bpy.types.ImageSequence) -> Path:
-    fs_dir = get_frame_storage_path(strip)
+def get_shot_frames_backup_path(strip: bpy.types.ImageSequence) -> Path:
+    fs_dir = get_shot_frames_dir(strip)
     return fs_dir.parent / f"_backup.{fs_dir.name}"
 
 
-def get_frame_storage_metadata_path(strip: bpy.types.ImageSequence) -> Path:
-    fs_dir = get_frame_storage_path(strip)
+def get_shot_frames_metadata_path(strip: bpy.types.ImageSequence) -> Path:
+    fs_dir = get_shot_frames_dir(strip)
     return fs_dir.parent / "metadata.json"
 
 
@@ -147,7 +147,7 @@ def update_is_approved(
     approved_strips = []
 
     for s in sequences:
-        metadata_path = get_frame_storage_metadata_path(s)
+        metadata_path = get_shot_frames_metadata_path(s)
         if not metadata_path.exists():
             continue
         json_obj = load_json(

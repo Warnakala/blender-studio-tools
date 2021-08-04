@@ -338,8 +338,8 @@ class RR_OT_sqe_clear_exr_inspect(bpy.types.Operator):
 
 class RR_OT_sqe_approve_render(bpy.types.Operator):
     """
-    Copies the selected strip render from the farm_output to the frame_storage.
-    Existing render in frame_storage will be renamed for extra backup.
+    Copies the selected strip render from the farm_output to the shot_frames.
+    Existing render in shot_frames will be renamed for extra backup.
     """
 
     bl_idname = "rr.sqe_approve_render"
@@ -353,7 +353,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(bpy.context)
 
         return bool(
-            addon_prefs.is_frame_storage_valid
+            addon_prefs.is_shot_frames_valid
             and active_strip
             and active_strip.type == "IMAGE"
             and active_strip.rr.is_render
@@ -363,38 +363,38 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
 
         active_strip = context.scene.sequence_editor.active_strip
         strip_dir = Path(bpy.path.abspath(active_strip.directory))
-        frame_storage_path = opsdata.get_frame_storage_path(active_strip)
-        frame_storage_backup_path = opsdata.get_frame_storage_backup_path(active_strip)
-        metadata_path = opsdata.get_frame_storage_metadata_path(active_strip)
+        shot_frames_dir = opsdata.get_shot_frames_dir(active_strip)
+        shot_frames_backup_path = opsdata.get_shot_frames_backup_path(active_strip)
+        metadata_path = opsdata.get_shot_frames_metadata_path(active_strip)
 
-        # create frame storage path if not exists yet
-        if frame_storage_path.exists():
+        # create Shot Frames path if not exists yet
+        if shot_frames_dir.exists():
 
             # delete backup if exists
-            if frame_storage_backup_path.exists():
-                shutil.rmtree(frame_storage_backup_path)
+            if shot_frames_backup_path.exists():
+                shutil.rmtree(shot_frames_backup_path)
 
             # rename current to backup
-            frame_storage_path.rename(frame_storage_backup_path)
+            shot_frames_dir.rename(shot_frames_backup_path)
             logger.info(
                 "Created backup: %s > %s",
-                frame_storage_path.name,
-                frame_storage_backup_path.name,
+                shot_frames_dir.name,
+                shot_frames_backup_path.name,
             )
         else:
-            frame_storage_path.mkdir(parents=True)
+            shot_frames_dir.mkdir(parents=True)
             logger.info(
-                "Created dir in frame storage: %s", frame_storage_path.as_posix()
+                "Created dir in Shot Frames: %s", shot_frames_dir.as_posix()
             )
 
         # copy dir
         shutil.copytree(
             strip_dir,
-            frame_storage_path,
+            shot_frames_dir,
             dirs_exist_ok=True,
         )
         logger.info(
-            "Copied: %s \nTo: %s", strip_dir.as_posix(), frame_storage_path.as_posix()
+            "Copied: %s \nTo: %s", strip_dir.as_posix(), shot_frames_dir.as_posix()
         )
 
         # udpate metadata json
@@ -419,33 +419,33 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
         util.redraw_ui()
 
         # log
-        self.report({"INFO"}, f"Updated {frame_storage_path.name} in frame storage")
+        self.report({"INFO"}, f"Updated {shot_frames_dir.name} in Shot Frames")
         logger.info("Updated metadata in: %s", metadata_path.as_posix())
 
         return {"FINISHED"}
 
     def invoke(self, context, event):
         active_strip = context.scene.sequence_editor.active_strip
-        frame_storage_path = opsdata.get_frame_storage_path(active_strip)
-        width = 200 + len(frame_storage_path.as_posix()) * 5
+        shot_frames_dir = opsdata.get_shot_frames_dir(active_strip)
+        width = 200 + len(shot_frames_dir.as_posix()) * 5
         return context.window_manager.invoke_props_dialog(self, width=width)
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         active_strip = context.scene.sequence_editor.active_strip
         strip_dir = Path(bpy.path.abspath(active_strip.directory))
-        frame_storage_path = opsdata.get_frame_storage_path(active_strip)
+        shot_frames_dir = opsdata.get_shot_frames_dir(active_strip)
 
         layout.separator()
         layout.row(align=True).label(text="From Farm Output:", icon="RENDER_ANIMATION")
         layout.row(align=True).label(text=strip_dir.as_posix())
 
         layout.separator()
-        layout.row(align=True).label(text="To Frame Storage:", icon="FILE_TICK")
-        layout.row(align=True).label(text=frame_storage_path.as_posix())
+        layout.row(align=True).label(text="To Shot Frames:", icon="FILE_TICK")
+        layout.row(align=True).label(text=shot_frames_dir.as_posix())
 
         layout.separator()
-        layout.row(align=True).label(text="Update Frame Storage?")
+        layout.row(align=True).label(text="Update Shot Frames?")
 
 
 class RR_OT_sqe_update_is_approved(bpy.types.Operator):
@@ -596,7 +596,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
     This operator pushes the active render strip to the edit. Only .mp4 files will be pushed to edit.
     If the .mp4 file is not existent but the preview .jpg sequence is in the render folder. This operator
     creates an .mp4 with ffmpeg. The .mp4 file will be named after the flamenco naming convention, but when
-    copied over to the edit storage it will be renamed and gets a version string.
+    copied over to the Shot Previews it will be renamed and gets a version string.
 
     """
 
@@ -607,7 +607,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        if not addon_prefs.edit_storage_path:
+        if not addon_prefs.shot_previews_path:
             return False
 
         active_strip = context.scene.sequence_editor.active_strip
@@ -619,9 +619,9 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         active_strip = context.scene.sequence_editor.active_strip
 
         render_dir = Path(bpy.path.abspath(active_strip.directory))
-        edit_storage_dir = Path(opsdata.get_edit_storage_path(active_strip))
-        shot_name = edit_storage_dir.parent.name
-        metadata_path = edit_storage_dir / "metadata.json"
+        shot_previews_dir = Path(opsdata.get_shot_previews_path(active_strip))
+        shot_name = shot_previews_dir.parent.name
+        metadata_path = shot_previews_dir / "metadata.json"
 
         # -------------GET MP4 OR CREATE WITH FFMPEG ---------------
         # try to get render_mp4_path will throw error if no jpg files are available
@@ -644,12 +644,12 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         else:
             logger.info("Found existing .mp4 file: %s", mp4_path.as_posix())
 
-        # --------------COPY MP4 TO EDIT STORAGE ----------------
+        # --------------COPY MP4 TO Shot Previews ----------------
 
         # create edit path if not exists yet
-        if not edit_storage_dir.exists():
-            edit_storage_dir.mkdir(parents=True)
-            logger.info("Created dir in edit storage: %s", edit_storage_dir.as_posix())
+        if not shot_previews_dir.exists():
+            shot_previews_dir.mkdir(parents=True)
+            logger.info("Created dir in Shot Previews: %s", shot_previews_dir.as_posix())
 
         # get edit_filepath
         edit_filepath = self.get_edit_filepath(active_strip)
@@ -707,11 +707,11 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         layout.row(align=True).label(text=mp4_path.as_posix())
 
         layout.separator()
-        layout.row(align=True).label(text="To Edit Storage:", icon="FILE_TICK")
+        layout.row(align=True).label(text="To Shot Previews:", icon="FILE_TICK")
         layout.row(align=True).label(text=edit_filepath.as_posix())
 
         layout.separator()
-        layout.row(align=True).label(text="Copy to Edit Storage?")
+        layout.row(align=True).label(text="Copy to Shot Previews?")
 
     def invoke(self, context, event):
         active_strip = context.scene.sequence_editor.active_strip
@@ -725,13 +725,13 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
 
     def get_edit_filepath(self, strip: bpy.types.ImageSequence) -> Path:
         render_dir = Path(bpy.path.abspath(strip.directory))
-        edit_storage_dir = Path(opsdata.get_edit_storage_path(strip))
+        shot_previews_dir = Path(opsdata.get_shot_previews_path(strip))
 
         # find latest edit version
         existing_files: List[Path] = []
         increment = "v001"
-        if edit_storage_dir.exists():
-            for file in edit_storage_dir.iterdir():
+        if shot_previews_dir.exists():
+            for file in shot_previews_dir.iterdir():
                 if not file.is_file():
                     continue
 
@@ -757,7 +757,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
 
         # compose edit filepath of new mp4 file
         edit_filepath = (
-            edit_storage_dir
+            shot_previews_dir
             / f"{opsdata.get_shot_dot_task_type(render_dir)}.{increment}.mp4"
         )
         return edit_filepath

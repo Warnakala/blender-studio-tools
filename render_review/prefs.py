@@ -57,23 +57,23 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         subtype="DIR_PATH",
     )
 
-    frame_storage_dir: bpy.props.StringProperty(  # type: ignore
-        name="Frame Storage Directory",
-        description="Should point to: /render/sprites/frame_storage",
-        default="/render/sprites/frame_storage",
+    shot_frames_dir: bpy.props.StringProperty(  # type: ignore
+        name="Shot Frames Directory",
+        description="Should point to: /render/sprites/shot_frames",
+        default="/render/sprites/shot_frames",
         subtype="DIR_PATH",
     )
 
-    edit_storage_dir: bpy.props.StringProperty(  # type: ignore
-        name="Edit Storage Directory",
-        description="Should point to: /home/guest/Blender Dropbox/render/sprites",
+    shot_previews_dir: bpy.props.StringProperty(  # type: ignore
+        name="Shot Previews Directory ",
+        description="Should point to: /render/sprites/shot_previews",
         default="",
         subtype="DIR_PATH",
     )
 
     contactsheet_dir: bpy.props.StringProperty(  # type: ignore
         name="Contactsheet Directory",
-        description="Should point to: /home/guest/Blender Dropbox/shared/sprites/contactsheet",
+        description="Should point to: /shared/sprites/contactsheet",
         default="",
         subtype="DIR_PATH",
     )
@@ -112,28 +112,28 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
                 icon="ERROR",
             )
 
-        # frame storage dir
-        box.row().prop(self, "frame_storage_dir")
+        # Shot Frames dir
+        box.row().prop(self, "shot_frames_dir")
 
-        if not self.frame_storage_dir:
+        if not self.shot_frames_dir:
             row = box.row()
-            row.label(text="Please specify the Frame Storage Directory", icon="ERROR")
+            row.label(text="Please specify the Shot Frames Directory", icon="ERROR")
 
-        if not bpy.data.filepath and self.frame_storage_dir.startswith("//"):
+        if not bpy.data.filepath and self.shot_frames_dir.startswith("//"):
             row = box.row()
             row.label(
                 text="In order to use a relative path the current file needs to be saved.",
                 icon="ERROR",
             )
 
-        # edit storage dir
-        box.row().prop(self, "edit_storage_dir")
+        # Shot Previews dir
+        box.row().prop(self, "shot_previews_dir")
 
-        if not self.edit_storage_dir:
+        if not self.shot_previews_dir:
             row = box.row()
-            row.label(text="Please specify the Edit Storage Directory", icon="ERROR")
+            row.label(text="Please specify the Shots Preview Directory", icon="ERROR")
 
-        if not bpy.data.filepath and self.edit_storage_dir.startswith("//"):
+        if not bpy.data.filepath and self.shot_previews_dir.startswith("//"):
             row = box.row()
             row.label(
                 text="In order to use a relative path the current file needs to be saved.",
@@ -159,19 +159,19 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         # box.row().prop(self, "enable_blender_kitsu")
 
     @property
-    def frame_storage_path(self) -> Optional[Path]:
-        if not self.is_frame_storage_valid:
+    def shot_frames_dir(self) -> Optional[Path]:
+        if not self.is_shot_frames_valid:
             return None
-        return Path(os.path.abspath(bpy.path.abspath(self.frame_storage_dir)))
+        return Path(os.path.abspath(bpy.path.abspath(self.shot_frames_dir)))
 
     @property
-    def is_frame_storage_valid(self) -> bool:
+    def is_shot_frames_valid(self) -> bool:
 
         # check if file is saved
-        if not self.frame_storage_dir:
+        if not self.shot_frames_dir:
             return False
 
-        if not bpy.data.filepath and self.frame_storage_dir.startswith("//"):
+        if not bpy.data.filepath and self.shot_frames_dir.startswith("//"):
             return False
 
         return True
@@ -195,19 +195,19 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         return True
 
     @property
-    def edit_storage_path(self) -> Optional[Path]:
-        if not self.is_edit_storage_valid:
+    def shot_previews_path(self) -> Optional[Path]:
+        if not self.is_shot_previews_valid:
             return None
-        return Path(os.path.abspath(bpy.path.abspath(self.edit_storage_dir)))
+        return Path(os.path.abspath(bpy.path.abspath(self.shot_previews_dir)))
 
     @property
-    def is_edit_storage_valid(self) -> bool:
+    def is_shot_previews_valid(self) -> bool:
 
         # check if file is saved
-        if not self.edit_storage_dir:
+        if not self.shot_previews_dir:
             return False
 
-        if not bpy.data.filepath and self.edit_storage_dir.startswith("//"):
+        if not bpy.data.filepath and self.shot_previews_dir.startswith("//"):
             return False
 
         return True
