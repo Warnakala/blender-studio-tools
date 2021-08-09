@@ -22,9 +22,6 @@ parser.add_argument(
     help="If -R is provided in combination with a folder path will perform recursive purge",
     action="store_true",
 )
-parser.add_argument(
-    "-c", "--confirm", help="Ask for confirmation before purging", action="store_true"
-)
 
 parser.add_argument(
     "--regex",

@@ -218,7 +218,6 @@ def purge(args: argparse.Namespace) -> int:
 
     # parse arguments
     path = Path(args.path).absolute()
-    confirm = args.confirm
     recursive = args.recursive
     config_path = get_config_path()
     regex = args.regex
