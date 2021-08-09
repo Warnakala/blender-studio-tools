@@ -21,7 +21,7 @@ class SetRenderSettingsStep(BuildStep):
         scene.render.resolution_percentage = 100
 
         shot = build_context.shot
-        logger.debug(f"set duration to {shot.frames}")
-        scene.frame_start = 101
-        scene.frame_current = 101
-        scene.frame_end = scene.frame_start + shot.frames - 1
+        scene.frame_start = shot.frame_start
+        scene.frame_current = shot.frame_start
+        scene.frame_end = shot.frame_start + shot.frames -1
+        logger.debug(f"set frame range to ({scene.frame_start}-{scene.frame_end})")

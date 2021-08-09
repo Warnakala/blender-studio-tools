@@ -27,7 +27,10 @@ class Shot:
     sequence_code = ""
     name = ""
     code = ""
+    frame_start = 0
     frames = 0
+    # Frame_end will be stored for debugging only.
+    frame_end = 0
     frames_per_second = 24.0
     file_path_format = "{production.path}/shots/{shot.sequence_code}/{shot.name}/{shot.name}.{task_type}.blend"
     file_path = ""
@@ -42,7 +45,7 @@ class Shot:
         if not self.name:
             return False
 
-        if self.frames == 0:
+        if self.frames <= 0:
             return False
 
         return True

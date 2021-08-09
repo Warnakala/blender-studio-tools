@@ -18,6 +18,7 @@
 
 # <pep8 compliant>
 import bpy
+from shot_builder import vars
 from shot_builder.shot import Shot, ShotRef
 from shot_builder.asset import Asset, AssetRef
 from shot_builder.task_type import TaskType
@@ -105,10 +106,12 @@ class KitsuSequenceRef(ShotRef):
 
 
 class KitsuShotRef(ShotRef):
-    def __init__(self, kitsu_id: str, name: str, code: str, frames: int, frames_per_second: float, sequence: KitsuSequenceRef):
+    def __init__(self, kitsu_id: str, name: str, code: str, frame_start: int, frames: int, frame_end: int, frames_per_second: float, sequence: KitsuSequenceRef):
         super().__init__(name=name, code=code)
         self.kitsu_id = kitsu_id
+        self.frame_start = frame_start
         self.frames = frames
+        self.frame_end = frame_end
         self.frames_per_second = frames_per_second
         self.sequence = sequence
 
@@ -116,7 +119,9 @@ class KitsuShotRef(ShotRef):
         shot.name = self.name
         shot.code = self.code
         shot.kitsu_id = self.kitsu_id
+        shot.frame_start = self.frame_start
         shot.frames = self.frames
+        shot.frame_end = self.frame_end
         shot.frames_per_second = self.frames_per_second
         self.sequence.sync_data(shot)
 
@@ -191,13 +196,33 @@ class KitsuConnector(Connector):
         ) for sequence_data in kitsu_sequences}
 
         kitsu_shots = self.__api_get(f"data/projects/{project_id}/shots")
-        return [KitsuShotRef(
-            kitsu_id=shot_data['id'],
-            name=shot_data['name'],
-            code=shot_data['code'],
-            frames_per_second=24.0,
-            frames=int(shot_data['nb_frames'] or 0),
-            sequence=sequence_lookup[shot_data['parent_id']]) for shot_data in kitsu_shots]
+
+        shots: typing.List[ShotRef] = []
+
+        for shot_data in kitsu_shots:
+            # If 3d_in key not found use default start frame.
+            frame_start = int(shot_data['data'].get('3d_in', vars.DEFAULT_FRAME_START))
+            frame_end = int(shot_data['data'].get('3d_out', 0))
+
+            # If 3d_in and 3d_out available use that to calculate frames.
+            # If not try shot_data['nb_frames'] or 0 -> invalid.
+            frames = int((frame_end - frame_start + 1) if frame_end else shot_data['nb_frames'] or 0)
+            if frames < 0:
+                logger.error("%s duration is negative: %i. Check frame range information on Kitsu", shot_data['name'], frames)
+                frames = 0
+
+            shots.append(KitsuShotRef(
+                kitsu_id=shot_data['id'],
+                name=shot_data['name'],
+                code=shot_data['code'],
+                frame_start=frame_start,
+                frames=frames,
+                frame_end = frame_end,
+                frames_per_second=24.0,
+                sequence=sequence_lookup[shot_data['parent_id']],
+                ))
+
+        return shots
 
     def get_assets_for_shot(self, shot: Shot) -> typing.List[AssetRef]:
         kitsu_assets = self.__api_get(
