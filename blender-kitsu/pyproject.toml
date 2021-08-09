@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "blender_kitsu"
+version = "0.1.0"
+description = "Blender Addon to interact with Kitsu Data Base"
+authors = ["Paul Golter <paul@blender.org>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+gazu = "^0.8.13"
+
+[tool.poetry.dev-dependencies]
+black = "^20.8b1"
+mypy = "^0.812"
+pylint = "^2.8.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
