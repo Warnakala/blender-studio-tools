@@ -67,12 +67,27 @@ def get_previs_file(context: bpy.types.Context) -> Optional[Path]:
     seqname = get_seqeunce_short_from_shot_name(shotname)
     previs_path = Path(addon_prefs.previs_root_path)
 
-    for f in previs_path.iterdir():
-        if f.is_file() and f.suffix == ".blend" and f.name.startswith(seqname):
-            if len(f.name.split(".")) > 2:
-                continue
-            return f
+    # catch custom cases when previs files are split up for specific shots
+    if shotname == "020_0010_A":
+        return previs_path / "020_grove.020_0010_A.blend"
+
+    elif shotname == "020_0020_A" or shotname == "020_0050_A":
+        return previs_path / "020_grove.shove.blend"
+
+    elif shotname == "020_0060_A" or shotname == "020_0070_A":
+        return previs_path / "020_grove.crowdcamping.blend"
+
+    elif shotname in ["020_0160_A", "020_0170_A", "020_0173_A", "020_0176_A"]:
+        return previs_path / "020_grove.weenie_alt.blend"
+
+    else:
+        for f in previs_path.iterdir():
+            if f.is_file() and f.suffix == ".blend" and f.name.startswith(seqname):
+                if len(f.name.split(".")) > 2:
+                    continue
+                return f
     return None
+
 
 def traverse_collection_tree(
     collection: bpy.types.Collection,
@@ -107,16 +122,18 @@ def import_data_from_lib(
             )
             return None
 
-        #check if datablock with same name already exists in blend file
+        # check if datablock with same name already exists in blend file
         try:
             eval(f"bpy.data.{data_category}['{data_name}']")
         except KeyError:
             pass
         else:
-            logger.info("%s already in bpy.data.%s of this blendfile.", data_name, data_category)
+            logger.info(
+                "%s already in bpy.data.%s of this blendfile.", data_name, data_category
+            )
             return None
 
-        #link appen data block
+        # link appen data block
         eval(f"data_to.{data_category}.append('{data_name}')")
         logger.info(
             "%s: %s from library: %s",
@@ -239,13 +256,15 @@ def get_valid_collections(context: bpy.types.Context) -> List[bpy.types.Collecti
 
     return valid_colls
 
+
 def is_multi_asset(asset_name: str) -> bool:
-    if asset_name.startswith('thorn'):
+    if asset_name.startswith("thorn"):
         return True
     multi_assets = ["sprite", "snail", "spider"]
     if asset_name.lower() in multi_assets:
         return True
     return False
+
 
 def gen_action_name(coll: bpy.types.Collection):
     action_prefix = "ANI"
@@ -266,7 +285,6 @@ def set_layer_coll_exlcude(
     layer_collections: List[bpy.types.LayerCollection], exclude: bool
 ) -> None:
 
-
     noun = "Excluded" if exclude else "Included"
 
     for lcoll in layer_collections:
@@ -286,14 +304,18 @@ def set_layer_coll_exlcude(
         logger.info("%s %s", noun, lcoll.name)
 
 
-def get_all_view_layer_colls(context: bpy.types.Context) -> List[bpy.types.LayerCollection]:
+def get_all_view_layer_colls(
+    context: bpy.types.Context,
+) -> List[bpy.types.LayerCollection]:
     return list(traverse_collection_tree(context.view_layer.layer_collection))
+
 
 def get_ref_coll(coll: bpy.types.Collection) -> bpy.types.Collection:
     if not coll.override_library:
         return coll
 
     return coll.override_library.reference
+
 
 def is_item_local(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]

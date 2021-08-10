@@ -13,8 +13,7 @@ logger = LoggerFactory.getLogger()
 
 
 def ui_redraw() -> None:
-    """Forces blender to redraw the UI.
-    """
+    """Forces blender to redraw the UI."""
     for screen in bpy.data.screens:
         for area in screen.areas:
             area.tag_redraw()
@@ -121,7 +120,7 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
     def can_load_edit(cls, context: bpy.types.Context) -> bool:
         """Check if shared dir and VSE area are available"""
         addon_prefs = prefs.addon_prefs_get(context)
-        editorial_path = Path(addon_prefs.editorial_path)
+        edit_export_path = Path(addon_prefs.edit_export_path)
 
         # Needs to be run in sequence editor area
         # TODO: temporarily create a VSE area if not available
@@ -130,7 +129,7 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
             if area.type == "SEQUENCE_EDITOR":
                 area_override = area
 
-        return bool(area_override and editorial_path)
+        return bool(area_override and edit_export_path)
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -146,12 +145,12 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         addon_prefs = prefs.addon_prefs_get(context)
-        editorial_path = Path(addon_prefs.editorial_path)
+        edit_export_path = Path(addon_prefs.edit_export_path)
         strip_channel = 1
         latest_file = self._get_latest_edit(context)
         if not latest_file:
             self.report(
-                {"ERROR"}, f"Found no edit file in: {editorial_path.as_posix()}"
+                {"ERROR"}, f"Found no edit file in: {edit_export_path.as_posix()}"
             )
         strip_filepath = latest_file.as_posix()
         strip_frame_start = 101
@@ -228,11 +227,11 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
     def _get_latest_edit(self, context: bpy.types.Context):
         addon_prefs = prefs.addon_prefs_get(context)
 
-        editorial_path = Path(addon_prefs.editorial_path)
+        edit_export_path = Path(addon_prefs.edit_export_path)
 
         files_list = [
             f
-            for f in editorial_path.iterdir()
+            for f in edit_export_path.iterdir()
             if f.is_file() and self._is_valid_edit_name(f.name)
         ]
         files_list = sorted(files_list, reverse=True)

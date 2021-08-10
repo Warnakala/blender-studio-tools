@@ -57,8 +57,8 @@ class AS_AddonPreferences(bpy.types.AddonPreferences):
         options={"HIDDEN", "SKIP_SAVE"},
         subtype="DIR_PATH",
     )
-    dropbox_root: bpy.props.StringProperty(  # type: ignore
-        name="Dropbox Root",
+    edit_export_dir: bpy.props.StringProperty(  # type: ignore
+        name="Edit Export Directory",
         default="",
         options={"HIDDEN", "SKIP_SAVE"},
         subtype="DIR_PATH",
@@ -84,16 +84,16 @@ class AS_AddonPreferences(bpy.types.AddonPreferences):
                 icon="ERROR",
             )
 
-        box.row().prop(self, "dropbox_root")
+        box.row().prop(self, "edit_export_dir")
 
-        if not self.dropbox_root:
+        if not self.edit_export_dir:
             row = box.row()
-            row.label(text="Please specify the dropbox root directory.", icon="ERROR")
+            row.label(text="Please specify the edit edxport directory.", icon="ERROR")
 
-        if not bpy.data.filepath and self.dropbox_root.startswith("//"):
+        if not bpy.data.filepath and self.edit_export_dir.startswith("//"):
             row = box.row()
             row.label(
-                text="In order to use a relative path as dropbox root directory the current file needs to be saved.",
+                text="In order to use a relative path as edit export directory the current file needs to be saved.",
                 icon="ERROR",
             )
 
@@ -118,37 +118,18 @@ class AS_AddonPreferences(bpy.types.AddonPreferences):
         return True
 
     @property
-    def dropbox_root_path(self) -> Optional[Path]:
-        if not self.is_dropbox_root_valid:
-            return None
-        return Path(os.path.abspath(bpy.path.abspath(self.dropbox_root)))
-
-    @property
-    def is_dropbox_root_valid(self) -> bool:
-
-        # check if file is saved
-        if not self.dropbox_root:
-            return False
-
-        if not bpy.data.filepath and self.dropbox_root.startswith("//"):
-            return False
-
-        return True
-
-    @property
     def is_editorial_valid(self) -> bool:
-        if not self.is_dropbox_root_valid:
+        if not self.edit_export_dir:
             return False
 
-        return self.dropbox_root_path.joinpath(
-            "shared/sprites/editorial/export"
-        ).exists()
+        return Path(self.edit_export_dir).exists()
 
     @property
-    def editorial_path(self) -> Optional[Path]:
+    def edit_export_path(self) -> Optional[Path]:
         if not self.is_editorial_valid:
             return None
-        return Path(self.dropbox_root_path.joinpath("shared/sprites/editorial/export"))
+
+        return Path(self.edit_export_dir)
 
     @property
     def previs_root_path(self) -> Optional[Path]:
