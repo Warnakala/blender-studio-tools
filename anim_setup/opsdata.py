@@ -74,8 +74,8 @@ def get_previs_file(context: bpy.types.Context) -> Optional[Path]:
     elif shotname == "020_0020_A" or shotname == "020_0050_A":
         return previs_path / "020_grove.shove.blend"
 
-    elif shotname == "020_0060_A" or shotname == "020_0070_A":
-        return previs_path / "020_grove.crowdcamping.blend"
+    elif shotname in ["020_0060_A", "020_0070_A"]:
+        return previs_path / "020_grove.crowdcamping_alt.blend"
 
     elif shotname in ["020_0160_A", "020_0170_A", "020_0173_A", "020_0176_A"]:
         return previs_path / "020_grove.weenie_alt.blend"
