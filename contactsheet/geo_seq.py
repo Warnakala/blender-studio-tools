@@ -8,6 +8,12 @@ from contactsheet.geo import Point, Rectangle, Cell, Grid
 
 
 class SequenceRect(Rectangle):
+    """
+    Class that represents a Blender sequence strip as a rectangle. It
+    inherits from Rectangle class and implements the _ methods so the
+    Rectangle public interface works as excpected.
+    """
+
     valid_types: List[str] = ["MOVIE", "IMAGE"]
 
     def __init__(self, sequence: bpy.types.Sequence):

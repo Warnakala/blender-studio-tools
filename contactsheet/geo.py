@@ -12,6 +12,9 @@ class Align(Enum):
 
 
 class Point:
+
+    "Class that represents a point with 2 coordinates."
+
     def __init__(self, x: int, y: int):
         self._x = int(x)
         self._y = int(y)
@@ -45,6 +48,13 @@ class Point:
 
 
 class RectCoords:
+    """
+    Class that represents the coordinates of a Rectangle.
+    Instances of this class are returned by the Rectangle class.
+    The individual coordinate can be retrieved with
+    (x1, x2, y1, y2) or (top_left, top_right, bot_left, bot_right).
+    """
+
     def __init__(self, x1: Point, x2: Point, y1: Point, y2: Point):
         self._x1 = x1
         self._x2 = x2
@@ -85,6 +95,11 @@ class RectCoords:
 
 
 class Rectangle:
+    """
+    Class that represents a rectangle. It makes heavy use of private functions so
+    this class can be easily re-implemented to work with Blender sequence strips.
+    """
+
     def __init__(self, x: int, y: int, width: int, height: int):
         self._width: int = int(width)
         self._height: int = int(height)
@@ -351,7 +366,9 @@ class Rectangle:
 
 class NestedRectangle(Rectangle):
     """
-    A Class that inherits from Rectangle and holds a child inside.
+    A Class that inherits from Rectangle and holds a child inside. The child can be anything
+    that supports the public interface of the Rectangle class. Can also be another instance of
+    a NestedRectangle.
     """
 
     def __init__(
@@ -511,6 +528,7 @@ class NestedRectangle(Rectangle):
 class Cell(NestedRectangle):
     """
     A Class that inherits from NestedRectangle and holds another NestedRectangle inside.
+    It's specifically bound to this hierarchy so it works well inside the Grid Class.
     """
 
     def __init__(

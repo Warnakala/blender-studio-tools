@@ -13,9 +13,12 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 
 class CS_OT_make_contactsheet(bpy.types.Operator):
-    """ """
+    """
+    This operator creates a contactsheet out of the selected sequence strips.
+    The contactsheet will be created in a separate scene.
+    """
 
-    bl_idname = "rr.make_contactsheet"
+    bl_idname = "contactsheet.make_contactsheet"
     bl_label = "Make Contact Sheet"
     bl_description = ""
 
@@ -54,7 +57,7 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
         scene_tmp.name = "contactsheet"
         logger.info("Create tmp scene for contactsheet: %s", scene_tmp.name)
 
-        # save contactsheet metadata
+        # Save contactsheet metadata.
         sqe_editor = opsdata.get_sqe_editor(context)
         sqe_editor.spaces.active.proxy_render_size = "PROXY_25"
         sqe_editor.spaces.active.use_proxies = True
@@ -65,24 +68,24 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
             orig_proxy_render_size
         )
 
-        # remove sequences in new scene that are not selected
+        # Remove sequences in new scene that are not selected.
         seq_rm: List[bpy.types.Sequence] = [
             s for s in scene_tmp.sequence_editor.sequences_all if not s.select
         ]
         for s in seq_rm:
             scene_tmp.sequence_editor.sequences.remove(s)
 
-        # get all sequences in new scene and sort them
+        # Get all sequences in new scene and sort them.
         sequences = list(scene_tmp.sequence_editor.sequences_all)
         sequences.sort(key=lambda strip: (strip.frame_final_start, strip.channel))
 
-        # Place black color strip in channel 1
+        # Place black color strip in channel 1.
         color_strip = context.scene.sequence_editor.sequences.new_effect(
             "background", "COLOR", 1, start_frame, frame_end=start_frame + 1
         )
         color_strip.color = (0, 0, 0)
 
-        # create required number of metastrips to workaround the limit of 32 channels
+        # Create required number of metastrips to workaround the limit of 32 channels.
         nr_of_metastrips = math.ceil(len(sequences) / 32)
         metastrips: List[bpy.types.MetaSequence] = []
         for i in range(nr_of_metastrips):
@@ -100,12 +103,12 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
             meta_index = math.floor(idx / 32)
             seq.move_to_meta(metastrips[meta_index])
 
-            # set seq properties inside metastrip
+            # Set seq properties inside metastrip.
             seq.channel = channel - ((meta_index) * 32)
             seq.frame_start = start_frame
             seq.blend_type = "ALPHA_OVER"
 
-        # elongate all strips to the strip with the longest duration
+        # Elongate all strips to the strip with the longest duration.
         tmp_sequences = sorted(sequences, key=lambda s: s.frame_final_end)
         tmp_sequences.insert(0, color_strip)
         max_end: int = tmp_sequences[-1].frame_final_end
@@ -113,25 +116,25 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
             if strip.frame_final_end < max_end:
                 strip.frame_final_end = max_end
 
-        # clip the metastrip frame end at max end and set alpha over
+        # Clip the metastrip frame end at max end and set alpha over.
         for strip in metastrips:
             strip.frame_start = start_frame
             strip.frame_final_end = max_end
             strip.blend_type = "ALPHA_OVER"
 
-        # scene settings
-        # change frame range and frame start
+        # Scene settings.
+        # Change frame range and frame start.
         self.set_render_settings(context)
         self.set_sqe_area_settings(context)
 
-        # create content list for grid
+        # Create content list for grid.
         sqe_rects: List[SequenceRect] = [SequenceRect(seq) for seq in sequences]
         content: List[NestedRectangle] = [
             NestedRectangle(0, 0, srect.width, srect.height, child=srect)
             for srect in sqe_rects
         ]
 
-        # create grid
+        # Create grid.
         if context.scene.contactsheet.use_custom_rows:
             row_count = context.scene.contactsheet.rows
 
@@ -180,14 +183,14 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
             )
             return
 
-        # set output path
+        # Set output path.
         context.scene.render.filepath = cs_dir.joinpath(f"contactsheet.png").as_posix()
 
 
 class CS_OT_exit_contactsheet(bpy.types.Operator):
     """ """
 
-    bl_idname = "rr.exit_contactsheet"
+    bl_idname = "contactsheet.exit_contactsheet"
     bl_label = "Exit Contact Sheet"
     bl_description = ""
 
@@ -199,10 +202,10 @@ class CS_OT_exit_contactsheet(bpy.types.Operator):
         cs_scene = context.scene
         cs_scene_name = cs_scene.name
 
-        # change active scene to orig scene before cs
+        # Change active scene to orig scene
         context.window.scene = context.scene.contactsheet.contactsheet_meta.scene
 
-        # restore proxy settings from rr.contactsheet_meta
+        # Restore proxy settings from contactsheet.contactsheet_meta.
         sqe_editor = opsdata.get_sqe_editor(context)
         sqe_editor.spaces.active.proxy_render_size = (
             cs_scene.contactsheet.contactsheet_meta.proxy_render_size
@@ -211,7 +214,7 @@ class CS_OT_exit_contactsheet(bpy.types.Operator):
             cs_scene.contactsheet.contactsheet_meta.use_proxies
         )
 
-        # remove cs scene
+        # Remove contactsheet scene.
         bpy.data.scenes.remove(cs_scene)
 
         self.report({"INFO"}, f"Exited and deleted scene: {cs_scene_name}")
