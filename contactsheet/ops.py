@@ -55,7 +55,7 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
         bpy.ops.scene.new(type="FULL_COPY")  # Changes active scene, makes copy.
         scene_tmp = bpy.context.scene
         scene_tmp.name = "contactsheet"
-        logger.info("Create tmp scene for contactsheet: %s", scene_tmp.name)
+        logger.info("Created temporary scene for contactsheet: %s", scene_tmp.name)
 
         # Save contactsheet metadata.
         sqe_editor = opsdata.get_sqe_editor(context)
@@ -94,9 +94,10 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
                 f"contactsheet_meta_{channel-1}", channel, start_frame
             )
             metastrips.append(meta_strip)
-            logger.info("Created metastrip: %s", meta_strip.name)
+            logger.debug("Created metastrip: %s", meta_strip.name)
 
-        # Move sequences in to metastrips, place them on top of each other, make them start at the same frame.
+        # Move sequences in to metastrips, place them on top of each other
+        # make them start at the same frame.
         for idx, seq in enumerate(sequences):
             # Move to metastrip.
             channel = idx + 1

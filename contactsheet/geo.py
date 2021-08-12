@@ -17,7 +17,9 @@ class Align(Enum):
 
 class Point:
 
-    "Class that represents a point with 2 coordinates."
+    """
+    Class that represents a point with 2 coordinates.
+    """
 
     def __init__(self, x: int, y: int):
         self._x = int(x)

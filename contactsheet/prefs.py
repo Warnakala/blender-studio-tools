@@ -8,7 +8,7 @@ import bpy
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """
-    shortcut to get addon preferences
+    Shortcut to get addon preferences.
     """
     return context.preferences.addons["contactsheet"].preferences
 
@@ -17,8 +17,8 @@ class CS_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     contactsheet_dir: bpy.props.StringProperty(  # type: ignore
-        name="Contactsheet Directory",
-        description="Should point to: /shared/sprites/contactsheet",
+        name="Contactsheet Output Directory",
+        description="The contactsheet scene will use this directory to compose the output filepath",
         default="",
         subtype="DIR_PATH",
     )
