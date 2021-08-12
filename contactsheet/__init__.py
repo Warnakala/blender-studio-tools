@@ -19,11 +19,8 @@ bl_info = {
     "description": "Blender addon to create a contactsheet from sequence editor strips",
     "blender": (3, 0, 0),
     "version": (0, 1, 0),
-    "location": "SequenceEditor",
-    "warning": "",
-    "doc_url": "",
-    "tracker_url": "",
-    "category": "Generic",
+    "location": "Sequence Editor",
+    "category": "Sequencer",
 }
 
 _need_reload = "ops" in locals()
