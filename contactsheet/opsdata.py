@@ -10,22 +10,14 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 
 def get_valid_cs_sequences(
-    context: bpy.types.Context, sequence_list: List[bpy.types.Sequence] = []
+    sequence_list: List[bpy.types.Sequence],
 ) -> List[bpy.types.Sequence]:
-
-    sequences: List[bpy.types.Sequence] = []
-
-    if sequence_list:
-        sequences = sequence_list
-    else:
-        sequences = (
-            context.selected_sequences or context.scene.sequence_editor.sequences_all
-        )
-
+    """
+    Returns list of valid sequences out of input sequence list
+    """
     valid_sequences = [
-        s for s in sequences if s.type in ["MOVIE", "IMAGE"] and not s.mute
+        s for s in sequence_list if s.type in ["MOVIE", "IMAGE"] and not s.mute
     ]
-
     return valid_sequences
 
 
@@ -60,12 +52,12 @@ def fit_frame_range_to_strips(
     return (context.scene.frame_start, context.scene.frame_end)
 
 
-def get_top_level_valid_strips_continious(
+def get_top_level_valid_strips_continuous(
     context: bpy.types.Context,
 ) -> List[bpy.types.Sequence]:
 
     sequences_tmp = get_valid_cs_sequences(
-        context, sequence_list=list(context.scene.sequence_editor.sequences_all)
+        list(context.scene.sequence_editor.sequences_all)
     )
 
     sequences_tmp.sort(key=lambda s: (s.channel, s.frame_final_start), reverse=True)
@@ -80,3 +72,21 @@ def get_top_level_valid_strips_continious(
             sequences.append(strip)
 
     return sequences
+
+
+def poll_make_contactsheet(context: bpy.types.Context) -> bool:
+
+    if not context.scene.sequence_editor.sequences_all:
+        return False
+
+    sequences = context.selected_sequences
+
+    if not sequences:
+        valid_sequences = get_top_level_valid_strips_continuous(context)
+    else:
+        valid_sequences = get_valid_cs_sequences(sequences)
+
+    return bool(valid_sequences)
+
+
+# TODO: add function to actually get sequences, same structure in 3 places

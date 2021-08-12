@@ -27,18 +27,19 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(opsdata.get_valid_cs_sequences(context))
+        return opsdata.poll_make_contactsheet(context)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         addon_prefs = prefs.addon_prefs_get(context)
 
         # Gather sequences to process.
-        sequences: List[bpy.types.Sequence] = opsdata.get_valid_cs_sequences(context)
-
-        if not context.selected_sequences:
+        sequences = context.selected_sequences
+        if not sequences:
             # If nothing selected take a continuous row of the top most sequences.
-            sequences = opsdata.get_top_level_valid_strips_continious(context)
+            sequences = opsdata.get_top_level_valid_strips_continuous(context)
+        else:
+            sequences = opsdata.get_valid_cs_sequences(sequences)
 
         # Select sequences, will remove sequences later that are not selected.
         bpy.ops.sequencer.select_all(action="DESELECT")

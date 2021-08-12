@@ -18,6 +18,11 @@ class CS_PT_contactsheet(bpy.types.Panel):
     bl_region_type = "UI"
     bl_order = 10
 
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        # return opsdata.poll_make_contactsheet(context)
+        return True
+
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
 
@@ -28,16 +33,14 @@ class CS_PT_contactsheet(bpy.types.Panel):
             row.operator(CS_OT_exit_contactsheet.bl_idname, icon="X")
             return
 
-        # Contactsheet tools.
-        valid_sequences = opsdata.get_valid_cs_sequences(context)
-        if not context.selected_sequences and not valid_sequences:
-            return
-
         # Make contact sheet.
         row = layout.row(align=True)
 
-        if not context.selected_sequences:
-            valid_sequences = opsdata.get_top_level_valid_strips_continious(context)
+        sequences = context.selected_sequences
+        if not sequences:
+            valid_sequences = opsdata.get_top_level_valid_strips_continuous(context)
+        else:
+            valid_sequences = opsdata.get_valid_cs_sequences(sequences)
 
         text = f"Make Contactsheet with {len(valid_sequences)} strips"
 
