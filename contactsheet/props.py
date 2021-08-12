@@ -1,5 +1,4 @@
 from typing import Set, Union, Optional, List, Dict, Any
-from pathlib import Path
 
 import bpy
 

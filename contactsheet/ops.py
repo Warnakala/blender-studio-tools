@@ -1,13 +1,10 @@
-import sys
 import math
-import subprocess
-import shutil
 from pathlib import Path
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
 
 import bpy
 
-from contactsheet import vars, prefs, opsdata, util
+from contactsheet import prefs, opsdata
 from contactsheet.log import LoggerFactory
 from contactsheet.geo_seq import SequenceRect
 from contactsheet.geo import Grid, NestedRectangle
@@ -15,7 +12,7 @@ from contactsheet.geo import Grid, NestedRectangle
 logger = LoggerFactory.getLogger(name=__name__)
 
 
-class RR_OT_make_contactsheet(bpy.types.Operator):
+class CS_OT_make_contactsheet(bpy.types.Operator):
     """ """
 
     bl_idname = "rr.make_contactsheet"
@@ -61,10 +58,12 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         sqe_editor = opsdata.get_sqe_editor(context)
         sqe_editor.spaces.active.proxy_render_size = "PROXY_25"
         sqe_editor.spaces.active.use_proxies = True
-        scene_tmp.rr.is_contactsheet = True
-        scene_tmp.rr.contactsheet_meta.scene = scene_orig
-        scene_tmp.rr.contactsheet_meta.use_proxies = orig_use_proxies
-        scene_tmp.rr.contactsheet_meta.proxy_render_size = orig_proxy_render_size
+        scene_tmp.contactsheet.is_contactsheet = True
+        scene_tmp.contactsheet.contactsheet_meta.scene = scene_orig
+        scene_tmp.contactsheet.contactsheet_meta.use_proxies = orig_use_proxies
+        scene_tmp.contactsheet.contactsheet_meta.proxy_render_size = (
+            orig_proxy_render_size
+        )
 
         # remove sequences in new scene that are not selected
         seq_rm: List[bpy.types.Sequence] = [
@@ -185,7 +184,7 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         context.scene.render.filepath = cs_dir.joinpath(f"contactsheet.png").as_posix()
 
 
-class RR_OT_exit_contactsheet(bpy.types.Operator):
+class CS_OT_exit_contactsheet(bpy.types.Operator):
     """ """
 
     bl_idname = "rr.exit_contactsheet"
@@ -224,8 +223,8 @@ class RR_OT_exit_contactsheet(bpy.types.Operator):
 
 
 classes = [
-    RR_OT_make_contactsheet,
-    RR_OT_exit_contactsheet,
+    CS_OT_make_contactsheet,
+    CS_OT_exit_contactsheet,
 ]
 
 

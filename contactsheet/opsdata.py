@@ -1,10 +1,9 @@
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
-import json
 from pathlib import Path
 
 import bpy
 
-from contactsheet import prefs
+from contactsheet import checksqe
 from contactsheet.log import LoggerFactory
 
 logger = LoggerFactory.getLogger(name=__name__)
@@ -23,29 +22,11 @@ def get_valid_cs_sequences(
             context.selected_sequences or context.scene.sequence_editor.sequences_all
         )
 
-    if prefs.is_blender_kitsu_enabled():
-
-        valid_sequences = [
-            s
-            for s in sequences
-            if s.type in ["MOVIE", "IMAGE"] and not s.mute and not s.kitsu.initialized
-        ]
-    else:
-        valid_sequences = [
-            s for s in sequences if s.type in ["MOVIE", "IMAGE"] and not s.mute
-        ]
+    valid_sequences = [
+        s for s in sequences if s.type in ["MOVIE", "IMAGE"] and not s.mute
+    ]
 
     return valid_sequences
-
-
-def get_image_editor(context: bpy.types.Context) -> Optional[bpy.types.Area]:
-    image_editor = None
-
-    for area in context.screen.areas:
-        if area.type == "IMAGE_EDITOR":
-            image_editor = area
-
-    return image_editor
 
 
 def get_sqe_editor(context: bpy.types.Context) -> Optional[bpy.types.Area]:

@@ -3,13 +3,13 @@ from typing import Set, Union, Optional, List, Dict, Any
 import bpy
 
 from contactsheet.ops import (
-    RR_OT_make_contactsheet,
-    RR_OT_exit_contactsheet,
+    CS_OT_make_contactsheet,
+    CS_OT_exit_contactsheet,
 )
-from contactsheet import opsdata, prefs
+from contactsheet import opsdata
 
 
-class RR_PT_contactsheet(bpy.types.Panel):
+class CS_PT_contactsheet(bpy.types.Panel):
     """ """
 
     bl_category = "Contactsheet"
@@ -19,18 +19,13 @@ class RR_PT_contactsheet(bpy.types.Panel):
     bl_order = 10
 
     def draw(self, context: bpy.types.Context) -> None:
+        layout = self.layout
 
-        addon_prefs = prefs.addon_prefs_get(context)
-
-        # Handle special case if scene is contactsheet.
+        # Handle case if scene is contactsheet.
         if context.scene.contactsheet.is_contactsheet:
-            layout = self.layout
-            box = layout.box()
-            box.label(text="Contactsheet", icon="MESH_GRID")
-
             # Exit contact sheet.
-            row = box.row(align=True)
-            row.operator(RR_OT_exit_contactsheet.bl_idname, icon="X")
+            row = layout.row(align=True)
+            row.operator(CS_OT_exit_contactsheet.bl_idname, icon="X")
             return
 
         # Contactsheet tools.
@@ -38,28 +33,23 @@ class RR_PT_contactsheet(bpy.types.Panel):
         if not context.selected_sequences and not valid_sequences:
             return
 
-        # Create box.
-        layout = self.layout
-        box = layout.box()
-        box.label(text="Contactsheet", icon="MESH_GRID")
-
         # Make contact sheet.
-        row = box.row(align=True)
+        row = layout.row(align=True)
 
         if not context.selected_sequences:
             valid_sequences = opsdata.get_top_level_valid_strips_continious(context)
 
         text = f"Make Contactsheet with {len(valid_sequences)} strips"
 
-        row.operator(RR_OT_make_contactsheet.bl_idname, icon="MESH_GRID", text=text)
+        row.operator(CS_OT_make_contactsheet.bl_idname, icon="MESH_GRID", text=text)
         icon = "UNLOCKED" if context.scene.contactsheet.use_custom_rows else "LOCKED"
         row.prop(context.scene.contactsheet, "use_custom_rows", text="", icon=icon)
 
         if context.scene.contactsheet.use_custom_rows:
-            box.row(align=True).prop(context.scene.contactsheet, "rows")
+            layout.row(align=True).prop(context.scene.contactsheet, "rows")
 
         # contact sheet resolution
-        row = box.row(align=True)
+        row = layout.row(align=True)
         row.prop(context.scene.contactsheet, "contactsheet_x", text="X")
         row.prop(context.scene.contactsheet, "contactsheet_y", text="Y")
 
@@ -67,7 +57,7 @@ class RR_PT_contactsheet(bpy.types.Panel):
 # ----------------REGISTER--------------
 
 classes = [
-    RR_PT_contactsheet,
+    CS_PT_contactsheet,
 ]
 
 

@@ -28,7 +28,6 @@ bl_info = {
 
 _need_reload = "ops" in locals()
 
-
 if _need_reload:
     import importlib
 

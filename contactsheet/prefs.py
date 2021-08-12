@@ -13,7 +13,7 @@ def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     return context.preferences.addons["contactsheet"].preferences
 
 
-class RR_AddonPreferences(bpy.types.AddonPreferences):
+class CS_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     contactsheet_dir: bpy.props.StringProperty(  # type: ignore
@@ -62,7 +62,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
 
 # ---------REGISTER ----------
 
-classes = [RR_AddonPreferences]
+classes = [CS_AddonPreferences]
 
 
 def register():
