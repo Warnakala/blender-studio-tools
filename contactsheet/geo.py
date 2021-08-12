@@ -5,6 +5,10 @@ from enum import Enum
 
 
 class Align(Enum):
+    """
+    Enum class that represents different alignment options.
+    """
+
     NO = 1
     CENTER = 2
     TOP = 3
