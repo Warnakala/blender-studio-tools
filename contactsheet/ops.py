@@ -133,14 +133,14 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
         ]
 
         # create grid
-        if context.scene.rr.use_custom_rows:
-            row_count = context.scene.rr.rows
+        if context.scene.contactsheet.use_custom_rows:
+            row_count = context.scene.contactsheet.rows
 
         grid = Grid.from_content(
             0,
             0,
-            context.scene.rr.contactsheet_x,
-            context.scene.rr.contactsheet_y,
+            context.scene.contactsheet.contactsheet_x,
+            context.scene.contactsheet.contactsheet_y,
             content,
             row_count=row_count,
         )
@@ -157,8 +157,8 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
     def set_render_settings(self, context: bpy.types.Context) -> None:
         opsdata.fit_frame_range_to_strips(context)
         context.scene.frame_current = context.scene.frame_start
-        context.scene.render.resolution_x = context.scene.rr.contactsheet_x
-        context.scene.render.resolution_y = context.scene.rr.contactsheet_y
+        context.scene.render.resolution_x = context.scene.contactsheet.contactsheet_x
+        context.scene.render.resolution_y = context.scene.contactsheet.contactsheet_y
         context.scene.render.image_settings.file_format = "PNG"
         context.scene.render.image_settings.color_mode = "RGB"
         context.scene.render.image_settings.color_depth = "8"
@@ -167,11 +167,11 @@ class RR_OT_make_contactsheet(bpy.types.Operator):
     def set_output_path(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
         cs_dir = addon_prefs.contactsheet_dir_path
-        render_dir = Path(context.scene.rr.render_dir_path)
+        render_dir = Path(context.scene.contactsheet.render_dir_path)
 
         if not render_dir:
             logger.warning(
-                "Failed to set output settings. Invalid context.scene.rr.render_dir"
+                "Failed to set output settings. Invalid context.scene.contactsheet.render_dir"
             )
             return
 
@@ -194,21 +194,23 @@ class RR_OT_exit_contactsheet(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.scene.rr.is_contactsheet)
+        return bool(context.scene.contactsheet.is_contactsheet)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         cs_scene = context.scene
         cs_scene_name = cs_scene.name
 
         # change active scene to orig scene before cs
-        context.window.scene = context.scene.rr.contactsheet_meta.scene
+        context.window.scene = context.scene.contactsheet.contactsheet_meta.scene
 
         # restore proxy settings from rr.contactsheet_meta
         sqe_editor = opsdata.get_sqe_editor(context)
         sqe_editor.spaces.active.proxy_render_size = (
-            cs_scene.rr.contactsheet_meta.proxy_render_size
+            cs_scene.contactsheet.contactsheet_meta.proxy_render_size
         )
-        sqe_editor.spaces.active.use_proxies = cs_scene.rr.contactsheet_meta.use_proxies
+        sqe_editor.spaces.active.use_proxies = (
+            cs_scene.contactsheet.contactsheet_meta.use_proxies
+        )
 
         # remove cs scene
         bpy.data.scenes.remove(cs_scene)

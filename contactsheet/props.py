@@ -8,23 +8,17 @@ from contactsheet.log import LoggerFactory
 logger = LoggerFactory.getLogger(name=__name__)
 
 
-class RR_isolate_collection_prop(bpy.types.PropertyGroup):
-    mute: bpy.props.BoolProperty()
-
-
-class RR_contactsheet_meta(bpy.types.PropertyGroup):
+class CS_meta(bpy.types.PropertyGroup):
     scene: bpy.props.PointerProperty(type=bpy.types.Scene)
     use_proxies: bpy.props.BoolProperty()
     proxy_render_size: bpy.props.StringProperty(default="PROXY_100")
 
 
-class RR_property_group_scene(bpy.types.PropertyGroup):
+class CS_property_group_scene(bpy.types.PropertyGroup):
     """"""
 
-    render_dir: bpy.props.StringProperty(name="Render Directory", subtype="DIR_PATH")
-    isolate_view: bpy.props.CollectionProperty(type=RR_isolate_collection_prop)
     is_contactsheet: bpy.props.BoolProperty()
-    contactsheet_meta: bpy.props.PointerProperty(type=RR_contactsheet_meta)
+    contactsheet_meta: bpy.props.PointerProperty(type=CS_meta)
     rows: bpy.props.IntProperty(
         name="Rows",
         description="Controls how many rows should be used for the contactsheet",
@@ -35,41 +29,12 @@ class RR_property_group_scene(bpy.types.PropertyGroup):
     contactsheet_x: bpy.props.IntProperty(name="Resolution X", default=1920, min=100)
     contactsheet_y: bpy.props.IntProperty(name="Resolution Y", default=1080, min=100)
 
-    @property
-    def render_dir_path(self):
-        if not self.is_render_dir_valid:
-            return None
-        return Path(bpy.path.abspath(self.render_dir)).absolute()
-
-    @property
-    def is_render_dir_valid(self) -> bool:
-        if not self.render_dir:
-            return False
-
-        if not bpy.data.filepath and self.render_dir.startswith("//"):
-            return False
-
-        return True
-
-
-class RR_property_group_sequence(bpy.types.PropertyGroup):
-    """
-    Property group that will be registered on sequence strips.
-    """
-
-    is_render: bpy.props.BoolProperty(name="Is Render")
-    is_approved: bpy.props.BoolProperty(name="Is Approved")
-    frames_found_text: bpy.props.StringProperty(name="Frames Found")
-    shot_name: bpy.props.StringProperty(name="Shot")
-
 
 # ----------------REGISTER--------------
 
 classes = [
-    RR_isolate_collection_prop,
-    RR_contactsheet_meta,
-    RR_property_group_scene,
-    RR_property_group_sequence,
+    CS_meta,
+    CS_property_group_scene,
 ]
 
 
@@ -79,16 +44,9 @@ def register():
         bpy.utils.register_class(cls)
 
     # Scene Properties
-    bpy.types.Scene.rr = bpy.props.PointerProperty(
-        name="Render Review",
-        type=RR_property_group_scene,
-        description="Metadata that is required for contactsheet",
-    )
-
-    # Sequence Properties
-    bpy.types.Sequence.rr = bpy.props.PointerProperty(
-        name="Render Review",
-        type=RR_property_group_sequence,
+    bpy.types.Scene.contactsheet = bpy.props.PointerProperty(
+        name="Contactsheet",
+        type=CS_property_group_scene,
         description="Metadata that is required for contactsheet",
     )
 

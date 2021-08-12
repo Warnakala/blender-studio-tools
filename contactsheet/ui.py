@@ -1,29 +1,19 @@
-from pathlib import Path
-
 from typing import Set, Union, Optional, List, Dict, Any
 
 import bpy
 
 from contactsheet.ops import (
-    RR_OT_sqe_create_review_session,
-    RR_OT_setup_review_workspace,
-    RR_OT_sqe_inspect_exr_sequence,
-    RR_OT_sqe_clear_exr_inspect,
-    RR_OT_sqe_approve_render,
-    RR_OT_sqe_update_is_approved,
-    RR_OT_open_path,
-    RR_OT_sqe_push_to_edit,
     RR_OT_make_contactsheet,
     RR_OT_exit_contactsheet,
 )
-from contactsheet import opsdata, prefs, kitsu
+from contactsheet import opsdata, prefs
 
 
 class RR_PT_contactsheet(bpy.types.Panel):
     """ """
 
-    bl_category = "Render Review"
-    bl_label = "Render Review"
+    bl_category = "Contactsheet"
+    bl_label = "Contactsheet"
     bl_space_type = "SEQUENCE_EDITOR"
     bl_region_type = "UI"
     bl_order = 10
@@ -32,119 +22,28 @@ class RR_PT_contactsheet(bpy.types.Panel):
 
         addon_prefs = prefs.addon_prefs_get(context)
 
-        # handle special case if scene is contactsheet
-        if context.scene.rr.is_contactsheet:
+        # Handle special case if scene is contactsheet.
+        if context.scene.contactsheet.is_contactsheet:
             layout = self.layout
             box = layout.box()
             box.label(text="Contactsheet", icon="MESH_GRID")
 
-            # exti contact sheet
+            # Exit contact sheet.
             row = box.row(align=True)
             row.operator(RR_OT_exit_contactsheet.bl_idname, icon="X")
             return
 
-        active_strip = context.scene.sequence_editor.active_strip
-
-        # create box
-        layout = self.layout
-        box = layout.box()
-
-        # label and setup workspace
-        row = box.row(align=True)
-        row.label(text="Review", icon="CAMERA_DATA")
-        row.operator(RR_OT_setup_review_workspace.bl_idname, text="", icon="WINDOW")
-
-        # render dir prop
-        row = box.row(align=True)
-        row.prop(context.scene.rr, "render_dir")
-
-        # create session
-        render_dir = context.scene.rr.render_dir_path
-        text = f"Invalid Render Directory"
-        if render_dir:
-            if opsdata.is_sequence_dir(render_dir):
-                text = f"Review Sequence: {render_dir.name}"
-            elif opsdata.is_shot_dir(render_dir):
-                text = f"Review Shot: {render_dir.stem}"
-
-        row = box.row(align=True)
-        row.operator(RR_OT_sqe_create_review_session.bl_idname, text=text, icon="PLAY")
-
-        # warning if kitsu on but not logged in
-        if addon_prefs.enable_blender_kitsu and prefs.is_blender_kitsu_enabled():
-            if not kitsu.is_auth():
-                row = box.split(align=True, factor=0.7)
-                row.label(text="Kitsu enabled but not logged in", icon="ERROR")
-                row.operator("kitsu.session_start", text="Login")
-
-            elif not kitsu.is_active_project():
-                row = box.row(align=True)
-                row.label(text="Kitsu enabled but no active project", icon="ERROR")
-
-        if active_strip and active_strip.rr.is_render:
-            # create box
-            layout = self.layout
-            box = layout.box()
-            box.label(
-                text=f"Render: {active_strip.rr.shot_name}", icon="RESTRICT_RENDER_OFF"
-            )
-            box.separator()
-
-            # render dir name label and open file op
-            row = box.row(align=True)
-            row.label(text=f"Folder: {Path(active_strip.directory).name}")
-            row.operator(
-                RR_OT_open_path.bl_idname, icon="FILEBROWSER", text="", emboss=False
-            ).filepath = bpy.path.abspath(active_strip.directory)
-
-            # nr of frames
-            box.row(align=True).label(
-                text=f"Frames: {active_strip.rr.frames_found_text}"
-            )
-
-            # inspect exr
-            text = "Inspect EXR"
-            icon = "VIEWZOOM"
-            if not opsdata.get_image_editor(context):
-                text = "Inspect EXR: Needs Image Editor"
-                icon = "ERROR"
-
-            row = box.row(align=True)
-            row.operator(RR_OT_sqe_inspect_exr_sequence.bl_idname, icon=icon, text=text)
-            row.operator(RR_OT_sqe_clear_exr_inspect.bl_idname, text="", icon="X")
-
-            # approve render & udpate approved
-            row = box.row(align=True)
-            row.operator(RR_OT_sqe_approve_render.bl_idname, icon="CHECKMARK")
-            row.operator(
-                RR_OT_sqe_update_is_approved.bl_idname, text="", icon="FILE_REFRESH"
-            )
-
-            # push to edit
-            if not addon_prefs.shot_previews_path:
-                shot_previews_dir = ""  # ops handle invalid path
-            else:
-                shot_previews_dir = Path(
-                    opsdata.get_shot_previews_path(active_strip)
-                ).as_posix()
-
-            row = box.row(align=True)
-            row.operator(RR_OT_sqe_push_to_edit.bl_idname, icon="EXPORT")
-            row.operator(
-                RR_OT_open_path.bl_idname, icon="FILEBROWSER", text=""
-            ).filepath = shot_previews_dir
-
-        # contactsheet tools
+        # Contactsheet tools.
         valid_sequences = opsdata.get_valid_cs_sequences(context)
         if not context.selected_sequences and not valid_sequences:
             return
 
-        # create box
+        # Create box.
         layout = self.layout
         box = layout.box()
         box.label(text="Contactsheet", icon="MESH_GRID")
 
-        # make contact sheet
+        # Make contact sheet.
         row = box.row(align=True)
 
         if not context.selected_sequences:
@@ -153,21 +52,16 @@ class RR_PT_contactsheet(bpy.types.Panel):
         text = f"Make Contactsheet with {len(valid_sequences)} strips"
 
         row.operator(RR_OT_make_contactsheet.bl_idname, icon="MESH_GRID", text=text)
-        icon = "UNLOCKED" if context.scene.rr.use_custom_rows else "LOCKED"
-        row.prop(context.scene.rr, "use_custom_rows", text="", icon=icon)
+        icon = "UNLOCKED" if context.scene.contactsheet.use_custom_rows else "LOCKED"
+        row.prop(context.scene.contactsheet, "use_custom_rows", text="", icon=icon)
 
-        if context.scene.rr.use_custom_rows:
-            box.row(align=True).prop(context.scene.rr, "rows")
+        if context.scene.contactsheet.use_custom_rows:
+            box.row(align=True).prop(context.scene.contactsheet, "rows")
 
         # contact sheet resolution
         row = box.row(align=True)
-        row.prop(context.scene.rr, "contactsheet_x", text="X")
-        row.prop(context.scene.rr, "contactsheet_y", text="Y")
-
-
-def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:
-    layout = self.layout
-    op = layout.operator(RR_OT_setup_review_workspace.bl_idname, text="Render Review")
+        row.prop(context.scene.contactsheet, "contactsheet_x", text="X")
+        row.prop(context.scene.contactsheet, "contactsheet_y", text="Y")
 
 
 # ----------------REGISTER--------------
@@ -178,18 +72,10 @@ classes = [
 
 
 def register():
-
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # append to topbar file new
-    bpy.types.TOPBAR_MT_file_new.append(RR_topbar_file_new_draw_handler)
-
 
 def unregister():
-
-    # remove to topbar file new
-    bpy.types.TOPBAR_MT_file_new.remove(RR_topbar_file_new_draw_handler)
-
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
