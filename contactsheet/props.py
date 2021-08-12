@@ -14,19 +14,34 @@ class CS_meta(bpy.types.PropertyGroup):
 
 
 class CS_property_group_scene(bpy.types.PropertyGroup):
-    """"""
-
     is_contactsheet: bpy.props.BoolProperty()
+
     contactsheet_meta: bpy.props.PointerProperty(type=CS_meta)
+
     rows: bpy.props.IntProperty(
         name="Rows",
         description="Controls how many rows should be used for the contactsheet",
         min=1,
         default=4,
     )
-    use_custom_rows: bpy.props.BoolProperty(name="Use Custom Amount of Rows")
-    contactsheet_x: bpy.props.IntProperty(name="Resolution X", default=1920, min=100)
-    contactsheet_y: bpy.props.IntProperty(name="Resolution Y", default=1080, min=100)
+
+    use_custom_rows: bpy.props.BoolProperty(
+        name="Use custom amount of rows",
+        description="Enables to overwrite the amount of rows for the contactsheet. Is otherwise calculated automatically",
+    )
+
+    contactsheet_x: bpy.props.IntProperty(
+        name="Resolution X",
+        default=1920,
+        min=100,
+        description="X resolution of contactsheet",
+    )
+    contactsheet_y: bpy.props.IntProperty(
+        name="Resolution Y",
+        default=1080,
+        min=100,
+        description="Y resolution of contactsheet",
+    )
 
 
 # ----------------REGISTER--------------
