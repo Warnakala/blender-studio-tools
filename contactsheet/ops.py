@@ -125,6 +125,7 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
         # Scene settings.
         # Change frame range and frame start.
         self.set_render_settings(context)
+        self.set_output_path(context)
         self.set_sqe_area_settings(context)
 
         # Create content list for grid.
@@ -168,23 +169,37 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
 
     def set_output_path(self, context: bpy.types.Context) -> None:
         addon_prefs = prefs.addon_prefs_get(context)
-        cs_dir = addon_prefs.contactsheet_dir_path
-        render_dir = Path(context.scene.contactsheet.render_dir_path)
+        cs_dir: Path = addon_prefs.contactsheet_dir_path
+        output_path: str = ""
 
-        if not render_dir:
+        # File not saved and cs_dir not available.
+        if not bpy.data.filepath and not cs_dir:
             logger.warning(
-                "Failed to set output settings. Invalid context.scene.contactsheet.render_dir"
+                "Failed to set output settings. Contactsheet Output Directory "
+                "not defined in addon preferences and file not saved."
             )
             return
 
-        if not cs_dir:
-            logger.warning(
-                "Failed to set output settings. Invalid addon_prefs.contactsheet_dir"
+        # File saved and cs_dir available.
+        if cs_dir and bpy.data.filepath:
+            output_path = cs_dir.joinpath(
+                f"{Path(bpy.data.filepath).stem}_contactsheet.png"
+            ).as_posix()
+
+        # File not saved but cs_dir available.
+        elif cs_dir:
+            output_path = cs_dir.joinpath(f"contactsheet.png").as_posix()
+
+        # File saved but cs_dir not available.
+        else:
+            output_path = (
+                Path(bpy.data.filepath)
+                .parent.joinpath(f"{Path(bpy.data.filepath).stem}_contactsheet.png")
+                .as_posix()
             )
-            return
 
         # Set output path.
-        context.scene.render.filepath = cs_dir.joinpath(f"contactsheet.png").as_posix()
+        context.scene.render.filepath = output_path
 
 
 class CS_OT_exit_contactsheet(bpy.types.Operator):
