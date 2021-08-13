@@ -329,7 +329,6 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         show_xray = sps.show_xray
         show_shadows = sps.show_shadows
         show_cavity = sps.show_cavity
-        use_dof = sps.use_dof
         show_object_outline = sps.show_object_outline
         show_specular_highlight = sps.show_specular_highlight
 
@@ -383,7 +382,6 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             sps.show_xray = False
             sps.show_shadows = False
             sps.show_cavity = False
-            sps.use_dof = False
             sps.show_object_outline = False
             sps.show_specular_highlight = True
 
@@ -439,7 +437,6 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             sps.show_xray = show_xray
             sps.show_shadows = show_shadows
             sps.show_cavity = show_cavity
-            sps.use_dof = use_dof
             sps.show_object_outline = show_object_outline
             sps.show_specular_highlight = show_specular_highlight
 
