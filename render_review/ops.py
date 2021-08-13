@@ -17,15 +17,20 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 class RR_OT_sqe_create_review_session(bpy.types.Operator):
     """
-    Look into main render folder of shot defined by context.scene.rr.render_dir_path.
-    It will search all available folder for preview sequences (.jpg / .png). Each found image
-    sequence will be loaded in the sequence editor. Has enable blender_kitsu option that will
-    create a linked metastrip for the loaded shot on the top most channel.
+    Has to modes to either review sequence or a single shot.
+    Review shot will load all available preview sequences (.jpg / .png) of each found rendering
+    in to the sequence editor of the specified shot.
+    Review sequence does it for each shot in that sequence.
+    If user enabled use_blender_kitsu in the addon preferences,
+    this operator will create a linked metastrip for the loaded shot on the top most channel.
     """
 
     bl_idname = "rr.sqe_create_review_session"
     bl_label = "Create Review Session"
-    bl_description = ""
+    bl_description = (
+        "Imports all available renderings for the specified shot / sequence "
+        "in to the sequence editor."
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -41,11 +46,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
-        image_data_blocks: bpy.types.Image = []
         render_dir = Path(context.scene.rr.render_dir_path)
         shot_folders: List[Path] = []
 
-        # if render is sequence folder user wants to review whole seqeuence
+        # If render is sequence folder user wants to review whole sequence.
         if opsdata.is_sequence_dir(render_dir):
             shot_folders.extend(list(render_dir.iterdir()))
         else:
@@ -60,7 +64,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             imported_sequences: bpy.types.ImageSequence = []
 
-            # find existing output dirs
+            # Find existing output dirs
             shot_name = opsdata.get_shot_name_from_dir(shot_folder)
             output_dirs = [
                 d
@@ -70,21 +74,21 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
             output_dirs = sorted(output_dirs, key=lambda d: d.name)
 
             # 070_0010_A.lighting is the latest render > with current structure
-            # this folder is [0] in output dirs > needs to be moved to [-1]
+            # This folder is [0] in output dirs > needs to be moved to [-1].
             output_dirs.append(output_dirs[0])
             output_dirs.pop(0)
 
-            # init sqe
+            # Init sqe.
             if not context.scene.sequence_editor:
                 context.scene.sequence_editor_create()
 
-            # load preview seqeunces in vse
+            # Load preview sequences in vse.
             for idx, dir in enumerate(output_dirs):
-                # compose frames found text
+                # Compose frames found text.
                 frames_found_text = opsdata.gen_frames_found_text(dir)
 
                 try:
-                    # get best preview files sequence
+                    # Get best preview files sequence.
                     image_sequence = opsdata.get_best_preview_sequence(dir)
 
                 except NoImageSequenceAvailableException:
@@ -123,16 +127,6 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                     # extend strip elements with all the available frames
                     for f in image_sequence[1:]:
                         strip.elements.append(f.name)
-
-                    """
-                    # create image datablock to read metadata like resolution
-                    img = bpy.data.images.load(
-                        image_sequence[0].as_posix(), check_existing=True
-                    )
-                    img.name = image_sequence[0].parent.name + "_PREVIEW"
-                    img.source = "SEQUENCE"
-                    image_data_blocks.append(img)
-                    """
 
                     # set strip properties
                     strip.mute = True if image_sequence[0].suffix == ".exr" else False
@@ -196,13 +190,16 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
 class RR_OT_setup_review_workspace(bpy.types.Operator):
     """
-    Deletes all non Video Editing Workspaces. Appends Video Editing workspace
+    Makes Video Editing Workspace active and deletes all other workspaces.
     Replaces File Browser area with Image Editor.
     """
 
     bl_idname = "rr.setup_review_workspace"
     bl_label = "Setup Review Workspace"
-    bl_description = ""
+    bl_description = (
+        "Makes Video Editing Workspace active and deletes all other workspaces."
+        "Replaces File Browser area with Image Editor"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -246,11 +243,11 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
 
 
 class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
-    """"""
-
     bl_idname = "rr.sqe_inspect_exr_sequence"
     bl_label = "Inspect EXR"
-    bl_description = ""
+    bl_description = (
+        "If available loads EXR sequence for selected sequence strip in image editor"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -281,7 +278,7 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         exr_seq_frame_start = int(exr_seq[0].stem)
         offset = exr_seq_frame_start - active_strip.frame_final_start
 
-        # remove all images with same filepath that are already laoded
+        # remove all images with same filepath that are already loaded
         img_to_rm: bpy.types.Image = []
         for img in bpy.data.images:
             if Path(bpy.path.abspath(img.filepath)) == exr_seq[0]:
@@ -305,11 +302,9 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
 
 
 class RR_OT_sqe_clear_exr_inspect(bpy.types.Operator):
-    """"""
-
     bl_idname = "rr.sqe_clear_exr_inspect"
     bl_label = "Clear EXR Inspect"
-    bl_description = ""
+    bl_description = "Removes the active image from the image editor"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -335,14 +330,12 @@ class RR_OT_sqe_clear_exr_inspect(bpy.types.Operator):
 
 
 class RR_OT_sqe_approve_render(bpy.types.Operator):
-    """
-    Copies the selected strip render from the farm_output to the shot_frames.
-    Existing render in shot_frames will be renamed for extra backup.
-    """
-
     bl_idname = "rr.sqe_approve_render"
     bl_label = "Approve Render"
-    bl_description = ""
+    bl_description = (
+        "Copies the selected strip render from the farm_output to the shot_frames directory."
+        "Existing render in shot_frames will be renamed for extra backup"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -445,14 +438,12 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
 
 
 class RR_OT_sqe_update_is_approved(bpy.types.Operator):
-    """
-    Scans sequence editor and checks for each render strip if it is approved
-    by reading the metadata.json file.
-    """
-
     bl_idname = "rr.update_is_approved"
     bl_label = "Update is Approved"
-    bl_description = ""
+    bl_description = (
+        "Scans sequence editor and checks for each render strip if it is approved."
+        "by reading the metadata.json file"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -479,6 +470,7 @@ class RR_OT_open_path(bpy.types.Operator):
 
     bl_idname = "rr.open_path"
     bl_label = "Open Path"
+    bl_description = "Opens filepath in system default file browser"
 
     filepath: bpy.props.StringProperty(  # type: ignore
         name="Filepath",
@@ -524,13 +516,9 @@ class RR_OT_open_path(bpy.types.Operator):
 
 
 class RR_OT_sqe_isolate_strip_exit(bpy.types.Operator):
-    """
-    Exits isolat strip view.
-    """
-
     bl_idname = "rr.sqe_isolate_strip_exit"
-    bl_label = "Unmute all strips"
-    bl_description = ""
+    bl_label = "Exit isolate strip view"
+    bl_description = "Exits isolate strip view and restores previous state"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -551,13 +539,9 @@ class RR_OT_sqe_isolate_strip_exit(bpy.types.Operator):
 
 
 class RR_OT_sqe_isolate_strip_enter(bpy.types.Operator):
-    """
-    Hides all other strips except for the selected strips in sequence editor.
-    """
-
     bl_idname = "rr.sqe_isolate_strip_enter"
     bl_label = "Isolate Strip"
-    bl_description = ""
+    bl_description = "Isolate all selected sequence strips, others are hidden. Previous state is saved and restorable"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -593,12 +577,15 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
     If the .mp4 file is not existent but the preview .jpg sequence is in the render folder. This operator
     creates an .mp4 with ffmpeg. The .mp4 file will be named after the flamenco naming convention, but when
     copied over to the Shot Previews it will be renamed and gets a version string.
-
     """
 
     bl_idname = "rr.sqe_push_to_edit"
     bl_label = "Push to edit"
-    bl_description = ""
+    bl_description = (
+        "Copies .mp4 file of current sequence strip to the shot preview directory with"
+        "auto version incrementation."
+        "Creates .mp4 with ffmpeg if not existent yet"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -725,7 +712,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         render_dir = Path(bpy.path.abspath(strip.directory))
         shot_previews_dir = Path(opsdata.get_shot_previews_path(strip))
 
-        # find latest edit version
+        # Find latest edit version.
         existing_files: List[Path] = []
         increment = "v001"
         if shot_previews_dir.exists():
