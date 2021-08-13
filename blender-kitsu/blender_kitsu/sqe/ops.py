@@ -1450,6 +1450,7 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
         ffmpeg_audio_codec = rd.ffmpeg.audio_codec
 
         # scene settings
+        use_preview_range = context.scene.use_preview_range
         frame_start = context.scene.frame_start
         frame_end = context.scene.frame_end
         current_frame = context.scene.frame_current
@@ -1462,6 +1463,10 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
             rd.ffmpeg.codec = "H264"
             rd.ffmpeg.format = "MPEG4"
             rd.ffmpeg.audio_codec = "AAC"
+
+            #scene settings
+            context.scene.use_preview_range= False
+
             yield
 
         finally:
@@ -1480,7 +1485,7 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
             context.scene.frame_start = frame_start
             context.scene.frame_end = frame_end
             context.scene.frame_current = current_frame
-
+            context.scene.use_preview_range = use_preview_range
 
 class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
     """"""
