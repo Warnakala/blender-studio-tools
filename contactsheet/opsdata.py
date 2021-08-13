@@ -109,4 +109,4 @@ def poll_make_contactsheet(context: bpy.types.Context) -> bool:
     return bool(valid_sequences)
 
 
-# TODO: add function to actually get sequences, same structure in 3 places
+# TODO: add function to actually get sequences, same structure in 3 places.

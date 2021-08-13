@@ -64,7 +64,7 @@ class CS_property_group_scene(bpy.types.PropertyGroup):
     )
 
 
-# ----------------REGISTER--------------
+# ----------------REGISTER--------------.
 
 classes = [
     CS_meta,
@@ -77,7 +77,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # Scene Properties
+    # Scene Properties.
     bpy.types.Scene.contactsheet = bpy.props.PointerProperty(
         name="Contactsheet",
         type=CS_property_group_scene,

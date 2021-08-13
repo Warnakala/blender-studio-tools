@@ -138,7 +138,7 @@ class Rectangle:
         self._scale_x: float = 1.0
         self._scale_y: float = 1.0
 
-    # X
+    # X.
     @property
     def x(self) -> int:
         return self._get_x()
@@ -160,7 +160,7 @@ class Rectangle:
     def _get_orig_x(self) -> int:
         return self._orig_x
 
-    # Y
+    # Y.
     @property
     def y(self) -> int:
         return self._get_y()
@@ -182,7 +182,7 @@ class Rectangle:
     def _get_orig_y(self) -> int:
         return self._orig_y
 
-    # WIDTH
+    # WIDTH.
     @property
     def width(self) -> int:
         return self._get_width()
@@ -204,7 +204,7 @@ class Rectangle:
     def _get_orig_width(self) -> int:
         return self._orig_width
 
-    # HEIGHT
+    # HEIGHT.
     @property
     def height(self) -> int:
         return self._get_height()
@@ -226,7 +226,7 @@ class Rectangle:
     def _get_orig_height(self) -> int:
         return self._orig_height
 
-    # SCALE
+    # SCALE.
 
     @property
     def scale_x(self):
@@ -264,24 +264,24 @@ class Rectangle:
         self.scale_x *= factor
         self.scale_y *= factor
 
-    # ASPECT
+    # ASPECT.
     @property
     def aspect_ratio(self) -> float:
         return self.width / self.height
 
-    # AREA
+    # AREA.
     @property
     def area(self) -> int:
         return self.width * self.height
 
-    # CENTER
+    # CENTER.
     @property
     def center(self) -> Point:
         center_x = int(self.x + (0.5 * self.width))
         center_y = int(self.y + (0.5 * self.height))
         return Point(center_x, center_y)
 
-    # POSITION
+    # POSITION.
     @property
     def position(self) -> Point:
         return Point(self.x, self.y)
@@ -291,7 +291,7 @@ class Rectangle:
         self.x = pos.x
         self.y = pos.y
 
-    # COORDS
+    # COORDS.
     @property
     def coords(self) -> RectCoords:
         top_left = self.position
@@ -300,7 +300,7 @@ class Rectangle:
         bot_right = Point(self.x + self.width, self.y + self.height)
         return RectCoords(top_left, top_right, bot_left, bot_right)
 
-    # FUNCTIONS
+    # FUNCTIONS.
     def fit_to_rect(
         self,
         rect: Rectangle,
@@ -308,38 +308,38 @@ class Rectangle:
         align: Align = Align.CENTER,
         keep_offset: bool = False,
     ):
-        # if self.aspect_ratio > rect.aspect_ratio:
+        # If self.aspect_ratio > rect.aspect_ratio:
         # -> fit self by width
-        # else fit bei height
+        # else fit bei height.
 
-        # width height
+        # Width height.
         if keep_aspect:
 
-            # fit by width
+            # Fit by width.
             if self.aspect_ratio > rect.aspect_ratio:
                 scale_fac = rect.width / self.width
                 self.width = rect.width
                 self.height = int(self.height * scale_fac)
 
-            # fit by height
+            # Fit by height.
             elif self.aspect_ratio < rect.aspect_ratio:
                 scale_fac = rect.height / self.height
                 self.height = rect.height
                 self.width = int(self.width * scale_fac)
 
         else:
-            # copy width and height
+            # Copy width and height.
             self.width = rect.width
             self.height = rect.height
 
-        # position
+        # Position.
         if keep_offset:
             self.position += self.position - rect.position
 
         else:
             self.position = rect.position
 
-            # fit by width
+            # Fit by width.
             if self.aspect_ratio > rect.aspect_ratio:
                 if align == Align.NO:
                     pass
@@ -355,7 +355,7 @@ class Rectangle:
                     height_diff = rect.height - self.height
                     self.y = rect.y + height_diff
 
-            # fit by height
+            # Fit by height.
             elif self.aspect_ratio < rect.aspect_ratio:
                 width_diff = rect.width - self.width
 
@@ -410,7 +410,7 @@ class NestedRectangle(Rectangle):
     ):
         super().__init__(x, y, width, height)
 
-        # if child was not supplied on init make child same dimensions as parent
+        # If child was not supplied on init make child same dimensions as parent.
         if child == None:
             child = Rectangle(0, 0, self.width, self.height)
 
@@ -567,11 +567,11 @@ class Cell(NestedRectangle):
         keep_aspect: bool = True,
         align: Align = Align.CENTER,
     ):
-        # if child was not supplied on init make child same dimensions as parent
+        # If child was not supplied on init make child same dimensions as parent.
         if child == None:
             child = NestedRectangle(0, 0, width, height)
 
-        # init self
+        # Init self.
         super().__init__(
             x, y, width, height, child, keep_aspect=keep_aspect, align=align
         )
@@ -609,13 +609,13 @@ class Grid(Rectangle):
         self._keep_aspect: bool = keep_aspect
         self._align: Align = align
 
-        # if cell_templ was not supplied on init make cell that has same dimensions as row / coll
+        # If cell_templ was not supplied on init make cell that has same dimensions as row / coll.
         if cell_templ == None:
             cell_templ: Cell = Cell(
                 0, 0, int(self.height / row_count), int(self.width / coll_count)
             )
 
-        # init rows, colls, cells
+        # Init rows, colls, cells.
         self.rows: List[Rectangle] = []
         self.colls: List[Rectangle] = []
         self.cells: List[List[Cell]] = []
@@ -658,7 +658,7 @@ class Grid(Rectangle):
         # TODO: cell.child.keep_aspect = keep_aspect
 
         self.cells.clear()
-        # if cell_templ was supplied make sure it has the right dimension to fit in grid
+        # If cell_templ was supplied make sure it has the right dimension to fit in grid.
         cell_templ.width = self.coll_width
         cell_templ.height = self.row_height
 
@@ -669,7 +669,7 @@ class Grid(Rectangle):
             for coll in self.colls:
                 cell_x = coll.x
 
-                # make copy to have each cell individual instance
+                # Make copy to have each cell individual instance.
                 cell_instance = cell_templ.copy()
                 cell_instance.position = Point(cell_x, cell_y)
                 self.cells[row_index].append(cell_instance)
@@ -691,7 +691,7 @@ class Grid(Rectangle):
         """
         if not row_count:
 
-            # Calculate by how much images need to be scaled in order to fit. (won't be perfect)
+            # Calculate by how much images need to be scaled in order to fit.. (won't be perfect)
             available_area = width * height
             content_area_orig = content[0].child.area
             content_area = available_area / len(content)
@@ -706,7 +706,7 @@ class Grid(Rectangle):
             coll_count = math.ceil(len(content) / row_count)
 
         else:
-            # row count should not be bigger as nr of cells
+            # Row count should not be bigger as nr of cells.
             row_count = min(row_count, len(content))
             coll_count = math.ceil(len(content) / row_count)  # 13 / 3 = 4.3 -> 4
 
@@ -770,7 +770,7 @@ class Grid(Rectangle):
                     if clear_cells:
                         cell.clear_content()
                 else:
-                    # switch child of cell
+                    # Switch child of cell.
                     cell.set_child(
                         content,
                         keep_aspect=keep_aspect,
@@ -790,7 +790,7 @@ class Grid(Rectangle):
         keep_offset: bool = False,
     ):
         cell = self.get_cell(row_index, coll_index)
-        # switch child of cell
+        # Switch child of cell.
         cell.set_child(
             content,
             keep_aspect=keep_aspect,

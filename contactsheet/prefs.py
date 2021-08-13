@@ -57,7 +57,7 @@ class CS_AddonPreferences(bpy.types.AddonPreferences):
         box = layout.box()
         box.label(text="Filepaths", icon="FILEBROWSER")
 
-        # contactsheet settings
+        # Contactsheet settings.
         box.row().prop(self, "contactsheet_dir")
         box.row().prop(self, "contactsheet_scale_factor")
 
@@ -70,7 +70,7 @@ class CS_AddonPreferences(bpy.types.AddonPreferences):
     @property
     def is_contactsheet_dir_valid(self) -> bool:
 
-        # check if file is saved
+        # Check if file is saved.
         if not self.contactsheet_dir:
             return False
 
@@ -80,7 +80,7 @@ class CS_AddonPreferences(bpy.types.AddonPreferences):
         return True
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [CS_AddonPreferences]
 

@@ -40,7 +40,7 @@ class CS_PT_contactsheet(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        # return opsdata.poll_make_contactsheet(context)
+        # Return opsdata.poll_make_contactsheet(context).
         return True
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -71,13 +71,13 @@ class CS_PT_contactsheet(bpy.types.Panel):
         if context.scene.contactsheet.use_custom_rows:
             layout.row(align=True).prop(context.scene.contactsheet, "rows")
 
-        # contact sheet resolution
+        # Contact sheet resolution.
         row = layout.row(align=True)
         row.prop(context.scene.contactsheet, "contactsheet_x", text="X")
         row.prop(context.scene.contactsheet, "contactsheet_y", text="Y")
 
 
-# ----------------REGISTER--------------
+# ----------------REGISTER--------------.
 
 classes = [
     CS_PT_contactsheet,

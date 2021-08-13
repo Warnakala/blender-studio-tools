@@ -242,7 +242,7 @@ class CS_OT_exit_contactsheet(bpy.types.Operator):
         cs_scene = context.scene
         cs_scene_name = cs_scene.name
 
-        # Change active scene to orig scene
+        # Change active scene to orig scene.
         context.window.scene = context.scene.contactsheet.contactsheet_meta.scene
 
         # Restore proxy settings from contactsheet.contactsheet_meta.
@@ -262,7 +262,7 @@ class CS_OT_exit_contactsheet(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# ----------------REGISTER--------------
+# ----------------REGISTER--------------.
 
 
 classes = [

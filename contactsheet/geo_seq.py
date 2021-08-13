@@ -57,19 +57,19 @@ class SequenceRect(Rectangle):
     def _get_orig_height(self) -> int:
         return self.sequence.elements[0].orig_height
 
-    # X
+    # X.
     def _get_x(self) -> int:
         return (
             self._canvas_x / 2 - (self.width / 2) + (self.sequence.transform.offset_x)
         )
 
     def _set_x(self, value: int) -> None:
-        # to origin
+        # To origin.
         self.sequence.transform.offset_x = -(self._canvas_x / 2) + (self.width / 2)
-        # plus value
+        # Plus value.
         self.sequence.transform.offset_x += value
 
-    # Y
+    # Y.
     def _get_y(self) -> int:
         return (
             self._canvas_y / 2 - (self.height / 2) - (self.sequence.transform.offset_y)
@@ -79,10 +79,10 @@ class SequenceRect(Rectangle):
         # y in blender sqe goes up ^ + and down minus (confusing)
         # to origin
         self.sequence.transform.offset_y = (self._canvas_y / 2) - (self.height / 2)
-        # minus value
+        # Minus value.
         self.sequence.transform.offset_y -= value
 
-    # WIDTH
+    # WIDTH.
     def _get_width(self) -> int:
         return self.orig_width * self.scale_x
 
@@ -90,7 +90,7 @@ class SequenceRect(Rectangle):
         scale_fac = value / self.orig_width
         self.scale_x = scale_fac
 
-    # HEIGHT
+    # HEIGHT.
     def _get_height(self) -> int:
         return self.orig_height * self.scale_y
 
@@ -98,7 +98,7 @@ class SequenceRect(Rectangle):
         scale_fac = value / self.orig_height
         self.scale_y = scale_fac
 
-    # SCALE
+    # SCALE.
 
     def _get_scale_x(self):
         return self.sequence.transform.scale_x
@@ -112,7 +112,7 @@ class SequenceRect(Rectangle):
     def _set_scale_y(self, factor: float) -> None:
         self.sequence.transform.scale_y = float(factor)
 
-    # FUNCTIONS
+    # FUNCTIONS.
     def copy(self) -> SequenceRect:
         if self.sequence.type == "IMAGE":
             strip = bpy.context.scene.sequence_editor.sequences.new_image(
