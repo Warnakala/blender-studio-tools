@@ -71,26 +71,11 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         subtype="DIR_PATH",
     )
 
-    contactsheet_dir: bpy.props.StringProperty(  # type: ignore
-        name="Contactsheet Directory",
-        description="Should point to: /shared/sprites/contactsheet",
-        default="",
-        subtype="DIR_PATH",
-    )
     enable_blender_kitsu: bpy.props.BoolProperty(
         name="Enable Blender Kitsu",
         description="This checkbox controls if render_review should try to use the blender_kitsu addon to extend its feature sets.",
         # set=_check_blender_kitsu_installed,
         default=False,
-    )
-
-    contactsheet_scale_factor: bpy.props.FloatProperty(
-        name="Contactsheet Scale Factor",
-        description="This value controls how much space there is between the individual cells of the contactsheet",
-        min=0.1,
-        max=1.0,
-        step=5,
-        default=0.9,
     )
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -139,9 +124,6 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
                 text="In order to use a relative path the current file needs to be saved.",
                 icon="ERROR",
             )
-        # contactsheet settings
-        box.row().prop(self, "contactsheet_dir")
-        box.row().prop(self, "contactsheet_scale_factor")
 
         # enable blender kitsu
         icon = "CHECKBOX_DEHLT"
@@ -155,8 +137,6 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
             RR_OT_enable_blender_kitsu.bl_idname, icon=icon, text="", emboss=False
         )
         row.label(text=label_text)
-
-        # box.row().prop(self, "enable_blender_kitsu")
 
     @property
     def shot_frames_dir(self) -> Optional[Path]:
@@ -208,24 +188,6 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
             return False
 
         if not bpy.data.filepath and self.shot_previews_dir.startswith("//"):
-            return False
-
-        return True
-
-    @property
-    def contactsheet_dir_path(self) -> Optional[Path]:
-        if not self.is_contactsheet_dir_valid:
-            return None
-        return Path(os.path.abspath(bpy.path.abspath(self.contactsheet_dir)))
-
-    @property
-    def is_contactsheet_dir_valid(self) -> bool:
-
-        # check if file is saved
-        if not self.contactsheet_dir:
-            return False
-
-        if not bpy.data.filepath and self.contactsheet_dir.startswith("//"):
             return False
 
         return True

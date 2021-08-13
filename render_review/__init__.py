@@ -10,8 +10,6 @@ from render_review import (
     ui,
     prefs,
     draw,
-    geo,
-    geo_seq,
 )
 from render_review.log import LoggerFactory
 
@@ -39,8 +37,6 @@ if _need_reload:
     logger.info("-START- Reloading render-review")
 
     util = importlib.reload(util)
-    geo_seq = importlib.reload(geo_seq)
-    geo = importlib.reload(geo)
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)
     kitsu = importlib.reload(kitsu)

@@ -13,8 +13,6 @@ from render_review.ops import (
     RR_OT_sqe_update_is_approved,
     RR_OT_open_path,
     RR_OT_sqe_push_to_edit,
-    RR_OT_make_contactsheet,
-    RR_OT_exit_contactsheet,
 )
 from render_review import opsdata, prefs, kitsu
 
@@ -31,18 +29,6 @@ class RR_PT_render_review(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
 
         addon_prefs = prefs.addon_prefs_get(context)
-
-        # handle special case if scene is contactsheet
-        if context.scene.rr.is_contactsheet:
-            layout = self.layout
-            box = layout.box()
-            box.label(text="Contactsheet", icon="MESH_GRID")
-
-            # exti contact sheet
-            row = box.row(align=True)
-            row.operator(RR_OT_exit_contactsheet.bl_idname, icon="X")
-            return
-
         active_strip = context.scene.sequence_editor.active_strip
 
         # create box
@@ -133,36 +119,6 @@ class RR_PT_render_review(bpy.types.Panel):
             row.operator(
                 RR_OT_open_path.bl_idname, icon="FILEBROWSER", text=""
             ).filepath = shot_previews_dir
-
-        # contactsheet tools
-        valid_sequences = opsdata.get_valid_cs_sequences(context)
-        if not context.selected_sequences and not valid_sequences:
-            return
-
-        # create box
-        layout = self.layout
-        box = layout.box()
-        box.label(text="Contactsheet", icon="MESH_GRID")
-
-        # make contact sheet
-        row = box.row(align=True)
-
-        if not context.selected_sequences:
-            valid_sequences = opsdata.get_top_level_valid_strips_continious(context)
-
-        text = f"Make Contactsheet with {len(valid_sequences)} strips"
-
-        row.operator(RR_OT_make_contactsheet.bl_idname, icon="MESH_GRID", text=text)
-        icon = "UNLOCKED" if context.scene.rr.use_custom_rows else "LOCKED"
-        row.prop(context.scene.rr, "use_custom_rows", text="", icon=icon)
-
-        if context.scene.rr.use_custom_rows:
-            box.row(align=True).prop(context.scene.rr, "rows")
-
-        # contact sheet resolution
-        row = box.row(align=True)
-        row.prop(context.scene.rr, "contactsheet_x", text="X")
-        row.prop(context.scene.rr, "contactsheet_y", text="Y")
 
 
 def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:
