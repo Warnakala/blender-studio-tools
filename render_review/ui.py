@@ -51,20 +51,20 @@ class RR_PT_render_review(bpy.types.Panel):
         addon_prefs = prefs.addon_prefs_get(context)
         active_strip = context.scene.sequence_editor.active_strip
 
-        # create box
+        # Create box.
         layout = self.layout
         box = layout.box()
 
-        # label and setup workspace
+        # Label and setup workspace.
         row = box.row(align=True)
         row.label(text="Review", icon="CAMERA_DATA")
         row.operator(RR_OT_setup_review_workspace.bl_idname, text="", icon="WINDOW")
 
-        # render dir prop
+        # Render dir prop.
         row = box.row(align=True)
         row.prop(context.scene.rr, "render_dir")
 
-        # create session
+        # Create session.
         render_dir = context.scene.rr.render_dir_path
         text = f"Invalid Render Directory"
         if render_dir:
@@ -76,7 +76,7 @@ class RR_PT_render_review(bpy.types.Panel):
         row = box.row(align=True)
         row.operator(RR_OT_sqe_create_review_session.bl_idname, text=text, icon="PLAY")
 
-        # warning if kitsu on but not logged in
+        # Warning if kitsu on but not logged in.
         if addon_prefs.enable_blender_kitsu and prefs.is_blender_kitsu_enabled():
             if not kitsu.is_auth():
                 row = box.split(align=True, factor=0.7)
@@ -88,7 +88,7 @@ class RR_PT_render_review(bpy.types.Panel):
                 row.label(text="Kitsu enabled but no active project", icon="ERROR")
 
         if active_strip and active_strip.rr.is_render:
-            # create box
+            # Create box.
             layout = self.layout
             box = layout.box()
             box.label(
@@ -96,19 +96,19 @@ class RR_PT_render_review(bpy.types.Panel):
             )
             box.separator()
 
-            # render dir name label and open file op
+            # Render dir name label and open file op.
             row = box.row(align=True)
             row.label(text=f"Folder: {Path(active_strip.directory).name}")
             row.operator(
                 RR_OT_open_path.bl_idname, icon="FILEBROWSER", text="", emboss=False
             ).filepath = bpy.path.abspath(active_strip.directory)
 
-            # nr of frames
+            # Nr of frames.
             box.row(align=True).label(
                 text=f"Frames: {active_strip.rr.frames_found_text}"
             )
 
-            # inspect exr
+            # Inspect exr.
             text = "Inspect EXR"
             icon = "VIEWZOOM"
             if not opsdata.get_image_editor(context):
@@ -119,14 +119,14 @@ class RR_PT_render_review(bpy.types.Panel):
             row.operator(RR_OT_sqe_inspect_exr_sequence.bl_idname, icon=icon, text=text)
             row.operator(RR_OT_sqe_clear_exr_inspect.bl_idname, text="", icon="X")
 
-            # approve render & udpate approved
+            # Approve render & udpate approved.
             row = box.row(align=True)
             row.operator(RR_OT_sqe_approve_render.bl_idname, icon="CHECKMARK")
             row.operator(
                 RR_OT_sqe_update_is_approved.bl_idname, text="", icon="FILE_REFRESH"
             )
 
-            # push to edit
+            # Push to edit.
             if not addon_prefs.shot_previews_path:
                 shot_previews_dir = ""  # ops handle invalid path
             else:
@@ -146,7 +146,7 @@ def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> No
     op = layout.operator(RR_OT_setup_review_workspace.bl_idname, text="Render Review")
 
 
-# ----------------REGISTER--------------
+# ----------------REGISTER--------------.
 
 classes = [
     RR_PT_render_review,
@@ -158,13 +158,13 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # append to topbar file new
+    # Append to topbar file new.
     bpy.types.TOPBAR_MT_file_new.append(RR_topbar_file_new_draw_handler)
 
 
 def unregister():
 
-    # remove to topbar file new
+    # Remove to topbar file new.
     bpy.types.TOPBAR_MT_file_new.remove(RR_topbar_file_new_draw_handler)
 
     for cls in reversed(classes):

@@ -51,11 +51,11 @@ def create_meta_strip(
     context: bpy.types.Context, strip: bpy.types.Sequence
 ) -> bpy.types.MovieSequence:
 
-    # get frame range information from current strip
+    # Get frame range information from current strip.
     strip_range = range(strip.frame_final_start, strip.frame_final_end)
     channel = strip.channel + 1
 
-    # create new meta strip
+    # Create new meta strip.
     meta_strip = context.scene.sequence_editor.sequences.new_movie(
         f"{strip.name}_metastrip",
         addon_prefs().metastrip_file,
@@ -63,15 +63,15 @@ def create_meta_strip(
         strip.frame_final_start,
     )
 
-    # set blend alpha
+    # Set blend alpha.
     meta_strip.blend_alpha = 0
 
-    # set frame in and out
+    # Set frame in and out.
     meta_strip.frame_final_start = strip.frame_final_start
     meta_strip.frame_final_end = strip.frame_final_end
-    # meta_strip.channel = strip.channel + 1
+    # Meta_strip.channel = strip.channel + 1.
 
-    # init start frame offst
+    # Init start frame offset.
     opsdata.init_start_frame_offset(meta_strip)
 
     logger.info(
@@ -90,7 +90,7 @@ def link_strip_by_name(
     sequence_name: str,
 ) -> None:
 
-    # get seq and shot
+    # Get seq and shot.
     active_project = cache.project_active_get()
     seq = active_project.get_sequence_by_name(sequence_name)
     shot = active_project.get_shot_by_name(seq, shot_name)
@@ -99,16 +99,16 @@ def link_strip_by_name(
         logger.error("Unable to find shot %s on kitsu", shot_name)
         return
 
-    # pull shot meta
+    # Pull shot meta.
     pull.shot_meta(strip, shot)
 
-    # rename strip
+    # Rename strip.
     strip.name = shot.name
 
-    # pull sequence color
+    # Pull sequence color.
     opsdata.append_sequence_color(context, seq)
 
-    # log
+    # Log.
     t = "Linked strip: %s to shot: %s with ID: %s" % (
         strip.name,
         shot.name,

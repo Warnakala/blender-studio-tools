@@ -48,7 +48,7 @@ class RR_OT_enable_blender_kitsu(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = addon_prefs_get(context)
 
-        # enable_blender_kitsu checkbox is off -> user wants to enable it
+        # Enable_blender_kitsu checkbox is off -> user wants to enable it.
         if not addon_prefs.enable_blender_kitsu:
             if not is_blender_kitsu_enabled():
                 self.report({"ERROR"}, "blender_kitsu is not enabled or installed")
@@ -57,7 +57,7 @@ class RR_OT_enable_blender_kitsu(bpy.types.Operator):
             addon_prefs.enable_blender_kitsu = True
             return {"FINISHED"}
 
-        # disable blender_kitsu, checkbox is on
+        # Disable blender_kitsu, checkbox is on.
         else:
             addon_prefs.enable_blender_kitsu = False
             return {"FINISHED"}
@@ -94,7 +94,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
     enable_blender_kitsu: bpy.props.BoolProperty(
         name="Enable Blender Kitsu",
         description="This checkbox controls if render_review should try to use the blender_kitsu addon to extend its feature sets.",
-        # set=_check_blender_kitsu_installed,
+        # Set=_check_blender_kitsu_installed,.
         default=False,
     )
 
@@ -103,7 +103,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         box = layout.box()
         box.label(text="Filepaths", icon="FILEBROWSER")
 
-        # farm outpur dir
+        # Farm outpur dir.
         box.row().prop(self, "farm_output_dir")
 
         if not self.farm_output_dir:
@@ -117,7 +117,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
                 icon="ERROR",
             )
 
-        # Shot Frames dir
+        # Shot Frames dir.
         box.row().prop(self, "shot_frames_dir")
 
         if not self.shot_frames_dir:
@@ -131,7 +131,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
                 icon="ERROR",
             )
 
-        # Shot Previews dir
+        # Shot Previews dir.
         box.row().prop(self, "shot_previews_dir")
 
         if not self.shot_previews_dir:
@@ -145,7 +145,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
                 icon="ERROR",
             )
 
-        # enable blender kitsu
+        # Enable blender kitsu.
         icon = "CHECKBOX_DEHLT"
         label_text = "Enable Blender Kitsu"
 
@@ -167,7 +167,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
     @property
     def is_shot_frames_valid(self) -> bool:
 
-        # check if file is saved
+        # Check if file is saved.
         if not self.shot_frames_dir:
             return False
 
@@ -185,7 +185,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
     @property
     def is_farm_output_valid(self) -> bool:
 
-        # check if file is saved
+        # Check if file is saved.
         if not self.farm_output_dir:
             return False
 
@@ -203,7 +203,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
     @property
     def is_shot_previews_valid(self) -> bool:
 
-        # check if file is saved
+        # Check if file is saved.
         if not self.shot_previews_dir:
             return False
 
@@ -213,7 +213,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         return True
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [RR_OT_enable_blender_kitsu, RR_AddonPreferences]
 

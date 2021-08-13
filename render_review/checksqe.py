@@ -52,17 +52,17 @@ def get_occupied_ranges(context: bpy.types.Context) -> Dict[str, List[range]]:
     Scans sequence editor and returns a dictionary. It contains a key for each channel
     and a list of ranges with the occupied frame ranges as values.
     """
-    # {'1': [(101, 213), (300, 320)]}
+    # {'1': [(101, 213), (300, 320)]}.
     ranges: Dict[str, List[range]] = {}
 
-    # populate ranges
+    # Populate ranges.
     for strip in context.scene.sequence_editor.sequences_all:
         ranges.setdefault(str(strip.channel), [])
         ranges[str(strip.channel)].append(
             range(strip.frame_final_start, strip.frame_final_end + 1)
         )
 
-    # sort ranges tuple list
+    # Sort ranges tuple list.
     for channel in ranges:
         liste = ranges[channel]
         ranges[channel] = sorted(liste, key=lambda item: item.start)
@@ -76,18 +76,18 @@ def get_occupied_ranges_for_strips(sequences: List[bpy.types.Sequence]) -> List[
     """
     ranges: List[range] = []
 
-    # populate ranges
+    # Populate ranges.
     for strip in sequences:
         ranges.append(range(strip.frame_final_start, strip.frame_final_end + 1))
 
-    # sort ranges tuple list
+    # Sort ranges tuple list.
     ranges.sort(key=lambda item: item.start)
     return ranges
 
 
 def is_range_occupied(range_to_check: range, occupied_ranges: List[range]) -> bool:
     for r in occupied_ranges:
-        # range(101, 150)
+        # Range(101, 150).
         if _do_ranges_collide(range_to_check, r):
             return True
         continue

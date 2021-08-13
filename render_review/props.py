@@ -66,7 +66,7 @@ class RR_property_group_sequence(bpy.types.PropertyGroup):
     shot_name: bpy.props.StringProperty(name="Shot")
 
 
-# ----------------REGISTER--------------
+# ----------------REGISTER--------------.
 
 classes = [
     RR_isolate_collection_prop,
@@ -80,14 +80,14 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # Scene Properties
+    # Scene Properties.
     bpy.types.Scene.rr = bpy.props.PointerProperty(
         name="Render Review",
         type=RR_property_group_scene,
         description="Metadata that is required for render_review",
     )
 
-    # Sequence Properties
+    # Sequence Properties.
     bpy.types.Sequence.rr = bpy.props.PointerProperty(
         name="Render Review",
         type=RR_property_group_sequence,

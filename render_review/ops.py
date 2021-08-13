@@ -83,7 +83,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             imported_sequences: bpy.types.ImageSequence = []
 
-            # Find existing output dirs
+            # Find existing output dirs.
             shot_name = opsdata.get_shot_name_from_dir(shot_folder)
             output_dirs = [
                 d
@@ -132,10 +132,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
                 finally:
 
-                    # get frame start
+                    # Get frame start.
                     frame_start = prev_frame_end or int(image_sequence[0].stem)
 
-                    # create new image strip
+                    # Create new image strip.
                     strip = context.scene.sequence_editor.sequences.new_image(
                         dir.name,
                         image_sequence[0].as_posix(),
@@ -143,11 +143,11 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                         frame_start,
                     )
 
-                    # extend strip elements with all the available frames
+                    # Extend strip elements with all the available frames.
                     for f in image_sequence[1:]:
                         strip.elements.append(f.name)
 
-                    # set strip properties
+                    # Set strip properties.
                     strip.mute = True if image_sequence[0].suffix == ".exr" else False
                     strip.rr.shot_name = shot_folder.name
                     strip.rr.is_render = True
@@ -155,11 +155,11 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
                     imported_sequences.append(strip)
 
-            # query the strip that is the longest for metastrip and prev_frame_end
+            # Query the strip that is the longest for metastrip and prev_frame_end.
             imported_sequences.sort(key=lambda s: s.frame_final_duration)
             strip_longest = imported_sequences[-1]
 
-            # perform kitsu operations if enabled
+            # Perform kitsu operations if enabled.
             if (
                 addon_prefs.enable_blender_kitsu
                 and prefs.is_blender_kitsu_enabled()
@@ -171,10 +171,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                     shot_name = shot_folder.name
                     sequence_name = shot_folder.parent.name
 
-                    # create metastrip
+                    # Create metastrip.
                     metastrip = kitsu.create_meta_strip(context, strip_longest)
 
-                    # link metastrip
+                    # Link metastrip.
                     kitsu.link_strip_by_name(
                         context, metastrip, shot_name, sequence_name
                     )
@@ -186,11 +186,11 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             prev_frame_end = strip_longest.frame_final_end
 
-        # set scene resolution to resolution of loaded image
+        # Set scene resolution to resolution of loaded image.
         context.scene.render.resolution_x = vars.RESOLUTION[0]
         context.scene.render.resolution_y = vars.RESOLUTION[1]
 
-        # change frame range and frame start
+        # Change frame range and frame start.
         opsdata.fit_frame_range_to_strips(context)
         context.scene.frame_current = context.scene.frame_start
 
@@ -223,12 +223,12 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
-        # remove non video editing workspaces
+        # Remove non video editing workspaces.
         for ws in bpy.data.workspaces:
             if ws.name != "Video Editing":
                 bpy.ops.workspace.delete({"workspace": ws})
 
-        # add / load video editing workspace
+        # Add / load video editing workspace.
         if "Video Editing" not in [ws.name for ws in bpy.data.workspaces]:
             blender_version = bpy.app.version  # gets (3, 0, 0)
             blender_version_str = f"{blender_version[0]}.{blender_version[1]}"
@@ -244,7 +244,7 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
         else:
             context.window.workspace = bpy.data.workspaces["Video Editing"]
 
-        # change video editing workspace media browser to image editor
+        # Change video editing workspace media browser to image editor.
         for window in context.window_manager.windows:
             screen = window.screen
 
@@ -252,7 +252,7 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
                 if area.type == "FILE_BROWSER":
                     area.type = "IMAGE_EDITOR"
 
-        # init sqe
+        # Init sqe.
         if not context.scene.sequence_editor:
             context.scene.sequence_editor_create()
 
@@ -285,7 +285,7 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         image_editor = opsdata.get_image_editor(context)
         output_dir = Path(bpy.path.abspath(active_strip.directory))
 
-        # find exr sequence
+        # Find exr sequence.
         exr_seq = [
             f for f in output_dir.iterdir() if f.is_file() and f.suffix == ".exr"
         ]
@@ -297,7 +297,7 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         exr_seq_frame_start = int(exr_seq[0].stem)
         offset = exr_seq_frame_start - active_strip.frame_final_start
 
-        # remove all images with same filepath that are already loaded
+        # Remove all images with same filepath that are already loaded.
         img_to_rm: bpy.types.Image = []
         for img in bpy.data.images:
             if Path(bpy.path.abspath(img.filepath)) == exr_seq[0]:
@@ -306,13 +306,13 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         for img in img_to_rm:
             bpy.data.images.remove(img)
 
-        # create new image datablock
+        # Create new image datablock.
         image = bpy.data.images.load(exr_seq[0].as_posix(), check_existing=True)
         image.name = exr_seq[0].parent.name + "_RENDER"
         image.source = "SEQUENCE"
         image.colorspace_settings.name = "Linear"
 
-        # set active image
+        # Set active image.
         image_editor.spaces.active.image = image
         image_editor.spaces.active.image_user.frame_duration = 5000
         image_editor.spaces.active.image_user.frame_offset = offset
@@ -377,14 +377,14 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
         shot_frames_backup_path = opsdata.get_shot_frames_backup_path(active_strip)
         metadata_path = opsdata.get_shot_frames_metadata_path(active_strip)
 
-        # create Shot Frames path if not exists yet
+        # Create Shot Frames path if not exists yet.
         if shot_frames_dir.exists():
 
-            # delete backup if exists
+            # Delete backup if exists.
             if shot_frames_backup_path.exists():
                 shutil.rmtree(shot_frames_backup_path)
 
-            # rename current to backup
+            # Rename current to backup.
             shot_frames_dir.rename(shot_frames_backup_path)
             logger.info(
                 "Created backup: %s > %s",
@@ -395,7 +395,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
             shot_frames_dir.mkdir(parents=True)
             logger.info("Created dir in Shot Frames: %s", shot_frames_dir.as_posix())
 
-        # copy dir
+        # Copy dir.
         shutil.copytree(
             strip_dir,
             shot_frames_dir,
@@ -405,7 +405,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
             "Copied: %s \nTo: %s", strip_dir.as_posix(), shot_frames_dir.as_posix()
         )
 
-        # udpate metadata json
+        # Udpate metadata json.
         if not metadata_path.exists():
             metadata_path.touch()
             opsdata.save_to_json(
@@ -415,18 +415,18 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
             logger.info("Created metadata.json: %s", metadata_path.as_posix())
         else:
             json_dict = opsdata.load_json(metadata_path)
-            # source backup will get value from old source current
+            # Source backup will get value from old source current.
             json_dict["source_backup"] = json_dict["source_current"]
-            # source current will get value from strip dir
+            # Source current will get value from strip dir.
             json_dict["source_current"] = strip_dir.as_posix()
 
             opsdata.save_to_json(json_dict, metadata_path)
 
-        # scan for approved renders
+        # Scan for approved renders.
         opsdata.update_is_approved(context)
         util.redraw_ui()
 
-        # log
+        # Log.
         self.report({"INFO"}, f"Updated {shot_frames_dir.name} in Shot Frames")
         logger.info("Updated metadata in: %s", metadata_path.as_posix())
 
@@ -551,7 +551,7 @@ class RR_OT_sqe_isolate_strip_exit(bpy.types.Operator):
 
             strip.mute = i.mute
 
-        # clear all items
+        # Clear all items.
         context.scene.rr.isolate_view.clear()
 
         return {"FINISHED"}
@@ -575,15 +575,15 @@ class RR_OT_sqe_isolate_strip_enter(bpy.types.Operator):
         if context.scene.rr.isolate_view.items():
             bpy.ops.rr.sqe_isolate_strip_exit()
 
-        # mute all and save state to restore later
+        # Mute all and save state to restore later.
         for s in sequences:
-            # save this state to restore it later
+            # Save this state to restore it later.
             item = context.scene.rr.isolate_view.add()
             item.name = s.name
             item.mute = s.mute
             s.mute = True
 
-        # unmute selected
+        # Unmute selected.
         for s in context.selected_sequences:
             s.mute = False
 
@@ -630,13 +630,13 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         try:
             mp4_path = Path(opsdata.get_farm_output_mp4_path(active_strip))
         except NoImageSequenceAvailableException:
-            # no jpeg files available
+            # No jpeg files available.
             self.report(
                 {"ERROR"}, f"No preview files available in {render_dir.as_posix()}"
             )
             return {"CANCELLED"}
 
-        # if mp4 path does not exists use ffmpeg to create preview file
+        # If mp4 path does not exists use ffmpeg to create preview file.
         if not mp4_path.exists():
             preview_files = opsdata.get_best_preview_sequence(render_dir)
             fffmpeg_command = f"ffmpeg -start_number {int(preview_files[0].stem)} -framerate {vars.FPS} -i {render_dir.as_posix()}/%06d{preview_files[0].suffix} -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p {mp4_path.as_posix()}"
@@ -646,33 +646,33 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         else:
             logger.info("Found existing .mp4 file: %s", mp4_path.as_posix())
 
-        # --------------COPY MP4 TO Shot Previews ----------------
+        # --------------COPY MP4 TO Shot Previews ----------------.
 
-        # create edit path if not exists yet
+        # Create edit path if not exists yet.
         if not shot_previews_dir.exists():
             shot_previews_dir.mkdir(parents=True)
             logger.info(
                 "Created dir in Shot Previews: %s", shot_previews_dir.as_posix()
             )
 
-        # get edit_filepath
+        # Get edit_filepath.
         edit_filepath = self.get_edit_filepath(active_strip)
 
-        # copy mp4 to edit filepath
+        # Copy mp4 to edit filepath.
         shutil.copy2(mp4_path.as_posix(), edit_filepath.as_posix())
         logger.info(
             "Copied: %s \nTo: %s", mp4_path.as_posix(), edit_filepath.as_posix()
         )
 
-        # ----------------UPDATE METADATA.JSON ------------------
+        # ----------------UPDATE METADATA.JSON ------------------.
 
-        # create metadata json
+        # Create metadata json.
         if not metadata_path.exists():
             metadata_path.touch()
             logger.info("Created metadata.json: %s", metadata_path.as_posix())
             opsdata.save_to_json({}, metadata_path)
 
-        # udpate metadata json
+        # Udpate metadata json.
         json_obj = opsdata.load_json(metadata_path)
         json_obj[edit_filepath.name] = mp4_path.as_posix()
         opsdata.save_to_json(
@@ -681,7 +681,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         )
         logger.info("Updated metadata in: %s", metadata_path.as_posix())
 
-        # log
+        # Log.
         self.report(
             {"INFO"},
             f"Pushed to edit: {edit_filepath.as_posix()}",
@@ -754,12 +754,12 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
 
             existing_files.sort(key=lambda f: f.name)
 
-            # get version string
+            # Get version string.
             if len(existing_files) > 0:
                 latest_version = util.get_version(existing_files[-1].name)
                 increment = "v{:03}".format(int(latest_version.replace("v", "")) + 1)
 
-        # compose edit filepath of new mp4 file
+        # Compose edit filepath of new mp4 file.
         edit_filepath = (
             shot_previews_dir
             / f"{opsdata.get_shot_dot_task_type(render_dir)}.{increment}.mp4"
@@ -767,7 +767,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         return edit_filepath
 
 
-# ----------------REGISTER--------------
+# ----------------REGISTER--------------.
 
 
 classes = [
@@ -797,14 +797,14 @@ def register():
         global addon_keymap_items
         keymap = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name="Window")
 
-        # isolate strip
+        # Isolate strip.
         addon_keymap_items.append(
             keymap.keymap_items.new(
                 "rr.sqe_isolate_strip_enter", value="PRESS", type="ONE"
             )
         )
 
-        # umute all
+        # Umute all.
         addon_keymap_items.append(
             keymap.keymap_items.new(
                 "rr.sqe_isolate_strip_exit", value="PRESS", type="ONE", alt=True
@@ -820,10 +820,10 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
-    # does not work if blender runs in background
+    # Does not work if blender runs in background.
     if not bpy.app.background:
         global addon_keymap_items
-        # remove hotkeys
+        # Remove hotkeys.
         keymap = bpy.context.window_manager.keyconfigs.addon.keymaps["Window"]
         for kmi in addon_keymap_items:
             logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)

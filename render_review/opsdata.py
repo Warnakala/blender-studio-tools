@@ -60,7 +60,7 @@ def get_valid_cs_sequences(
 
 
 def get_shot_frames_dir(strip: bpy.types.ImageSequence) -> Path:
-    # sf > shot_frames | fo > farm_output
+    # Sf > shot_frames | fo > farm_output.
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     fo_dir = Path(strip.directory)
     sf_dir_name = get_shot_dot_task_type(fo_dir)
@@ -74,10 +74,10 @@ def get_shot_frames_dir(strip: bpy.types.ImageSequence) -> Path:
 
 
 def get_shot_previews_path(strip: bpy.types.ImageSequence) -> Path:
-    # fo > farm_output
+    # Fo > farm_output.
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     fo_dir = Path(bpy.path.abspath(strip.directory))
-    # 110_0150_A.lighting-2021-04-09_134706 -> 110_0150_A.lighting
+    # 110_0150_A.lighting-2021-04-09_134706 -> 110_0150_A.lighting.
     shot_previews_dir_name = get_shot_dot_task_type(fo_dir)
 
     shot_previews_dir = (
@@ -117,18 +117,18 @@ def get_best_preview_sequence(dir: Path) -> List[Path]:
             f"No peview files found in: {dir.as_posix()}"
         )
 
-    # select the right images sequence
+    # Select the right images sequence.
     if len(files) == 1:
-        # if only one image sequence available take that
+        # If only one image sequence available take that.
         preview_seq = files[list(files.keys())[0]]
 
-    # both jpg and png available
+    # Both jpg and png available.
     else:
-        # if same amount of frames take png
+        # If same amount of frames take png.
         if len(files[".jpg"]) == len(files[".png"]):
             preview_seq = files[".png"]
         else:
-            # if not take whichever is longest
+            # If not take whichever is longest.
             preview_seq = [files[".jpg"], files[".png"]].sort(key=lambda x: len(x))[-1]
 
     return preview_seq
@@ -194,7 +194,7 @@ def gather_files_by_suffix(
 
     files: Dict[str, List[Path]] = {}
 
-    # gather files
+    # Gather files.
     for f in dir.iterdir():
         if not f.is_file():
             continue
@@ -204,17 +204,17 @@ def gather_files_by_suffix(
                 files.setdefault(suffix, [])
                 files[suffix].append(f)
 
-    # sort
+    # Sort.
     for suffix, file_list in files.items():
         files[suffix] = sorted(file_list, key=lambda f: f.name)
 
-    # return
+    # Return.
     if output == str:
         return_str = ""
         for suffix, file_list in files.items():
             return_str += f" | {suffix}: {len(file_list)}"
 
-        # replace first occurence, we dont want that at the beginning
+        # Replace first occurence, we dont want that at the beginning.
         return_str = return_str.replace(" | ", "", 1)
 
         return return_str
@@ -245,7 +245,7 @@ def gen_frames_found_text(
     for suffix, file_list in files_dict.items():
         frames_found_text += f" | {suffix}: {len(file_list)}"
 
-    # replace first occurence, we dont want that at the beginning
+    # Replace first occurence, we dont want that at the beginning.
     frames_found_text = frames_found_text.replace(
         " | ",
         "",
