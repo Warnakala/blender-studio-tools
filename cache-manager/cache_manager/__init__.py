@@ -20,16 +20,18 @@
 
 
 import bpy
-from . import cmglobals
-from . import logger
-from . import cache
-from . import models
-from . import prefs
-from . import propsdata
-from . import props
-from . import opsdata
-from . import ops
-from . import ui
+from cache_manager import (
+    cmglobals,
+    logger,
+    cache,
+    models,
+    prefs,
+    propsdata,
+    props,
+    opsdata,
+    ops,
+    ui
+)
 
 logg = logger.LoggerFactory.getLogger(__name__)
 

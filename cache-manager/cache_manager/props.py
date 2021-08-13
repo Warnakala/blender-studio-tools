@@ -25,7 +25,7 @@ from pathlib import Path
 
 import bpy
 
-from . import propsdata
+from cache_manager import propsdata
 
 
 class CM_collection_property(bpy.types.PropertyGroup):

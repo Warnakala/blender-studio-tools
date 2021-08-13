@@ -19,10 +19,15 @@
 # (c) 2021, Blender Foundation
 
 from pathlib import Path
-from typing import List, Tuple
 
 import bpy
-from .ops import (
+
+from cache_manager import (
+    propsdata,
+    props,
+    cache
+)
+from cache_manager.ops import (
     CM_OT_cache_export,
     CM_OT_cacheconfig_export,
     CM_OT_import_cache,
@@ -36,7 +41,6 @@ from .ops import (
     CM_OT_set_cache_version,
     CM_OT_add_cache_version_increment,
 )
-from . import propsdata, prefs, props, cache
 
 
 class CM_PT_vi3d_cache(bpy.types.Panel):

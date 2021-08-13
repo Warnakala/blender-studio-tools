@@ -24,7 +24,7 @@ from typing import Optional
 
 import bpy
 
-from . import propsdata
+from cache_manager import propsdata
 
 
 class CM_AddonPreferences(bpy.types.AddonPreferences):

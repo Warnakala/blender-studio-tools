@@ -18,19 +18,15 @@
 #
 # (c) 2021, Blender Foundation
 
-import re
-import contextlib
-
 from typing import List, Any, Set, cast, Tuple, Dict
 from pathlib import Path
-from copy import deepcopy
 
 import bpy
 from bpy.app.handlers import persistent
 
-from .logger import LoggerFactory, gen_processing_string, log_new_lines
-from . import cache, prefs, props, propsdata, opsdata, cmglobals
-from .cache import CacheConfigFactory, CacheConfigProcessor
+from cache_manager import cache, props, propsdata, opsdata, cmglobals
+from cache_manager.logger import LoggerFactory, gen_processing_string, log_new_lines
+from cache_manager.cache import CacheConfigFactory, CacheConfigProcessor
 
 logger = LoggerFactory.getLogger(__name__)
 

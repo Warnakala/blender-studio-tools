@@ -19,15 +19,15 @@
 # (c) 2021, Blender Foundation
 
 import os
-
 from pathlib import Path
 from typing import Any
 
-from . import opsdata
-from .logger import LoggerFactory
-
 import bpy
 from bpy.app.handlers import persistent
+
+from cache_manager import opsdata
+from cache_manager.logger import LoggerFactory
+
 
 logger = LoggerFactory.getLogger(__name__)
 

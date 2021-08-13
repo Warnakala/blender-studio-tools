@@ -21,7 +21,7 @@
 from pathlib import Path
 from typing import Union, Optional, Dict, List, Tuple
 
-from .logger import LoggerFactory
+from cache_manager.logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(__name__)
 
