@@ -24,6 +24,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "-N",
+    "--nocommit",
+    help="If -N is provided there will be no svn commit prompt with the purged files.",
+    action="store_true",
+)
+
+parser.add_argument(
     "--regex",
     help="Provide any regex pattern that will be performed on each found filepath with re.search()",
 )

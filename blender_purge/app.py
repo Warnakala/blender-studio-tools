@@ -220,6 +220,7 @@ def purge(args: argparse.Namespace) -> int:
     path = Path(args.path).absolute()
     recursive = args.recursive
     config_path = get_config_path()
+    no_commit = args.nocommit
     regex = args.regex
 
     # check config file
@@ -302,6 +303,9 @@ def purge(args: argparse.Namespace) -> int:
                 )
 
     # commit to svn
+    if no_commit:
+        return 0
+
     project_root = get_project_root_path()
     svn_repo = SvnRepo(project_root)
     file_rel = [p.relative_to(project_root) for p in files]
