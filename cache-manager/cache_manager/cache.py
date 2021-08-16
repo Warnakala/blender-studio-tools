@@ -122,7 +122,7 @@ class CacheConfig:
     def json_obj(self) -> Any:
         return self._json_obj
 
-    # META
+    # Meta.
 
     def get_meta(self) -> Dict[str, Any]:
         return deepcopy(self._json_obj["meta"])
@@ -130,7 +130,7 @@ class CacheConfig:
     def get_meta_key(self, key: str) -> Any:
         return self._json_obj["meta"][key]
 
-    # LIBFILES / COLLECTIONS
+    # Libfiles / Collections.
     def get_all_libfiles(self):
         return self._json_obj["libs"].keys()
 
@@ -149,7 +149,7 @@ class CacheConfig:
             self._json_obj["libs"][libfile]["data_from"]["collections"][coll_ref_name]
         )
 
-    # REMAPPING
+    # Remapping.
     def get_coll_to_lib_mapping(self) -> Dict[str, str]:
         remapping = {}
         for libfile in self._json_obj["libs"]:
@@ -160,7 +160,7 @@ class CacheConfig:
                     remapping[variant_name] = libfile
         return remapping
 
-    # OBJS / CAMS
+    # Objs / Cams.
     def get_animation_data(self, obj_category: str) -> Dict[str, Any]:
         return deepcopy(self._json_obj[obj_category])
 
@@ -230,16 +230,16 @@ class CacheConfigBlueprint(CacheConfig):
     def save_as_cacheconfig(self, filepath: Path) -> None:
         save_as_json(self._json_obj, filepath)
 
-    # META
+    # Meta.
 
     def set_meta_key(self, key: str, value: Any) -> None:
         self._json_obj["meta"][key] = value
 
-    # LIB
+    # Lib.
     def _ensure_lib(self, libfile: str) -> None:
         self._json_obj["libs"].setdefault(libfile, deepcopy(self._LIBDICT_TEMPL))
 
-    # COLLECTION
+    # Collection.
     def _ensure_coll_ref(self, libfile: str, coll_ref_name: str) -> None:
         self._json_obj["libs"][libfile]["data_from"]["collections"].setdefault(
             coll_ref_name, {}
@@ -268,7 +268,7 @@ class CacheConfigBlueprint(CacheConfig):
             coll_var_name
         ] = coll_dict
 
-    # OBJS / CAMERAS
+    # Objs / Cameras.
     def _ensure_obj(self, obj_category: str, obj_name: str) -> None:
         self._json_obj[obj_category].setdefault(
             obj_name, deepcopy(self._OBJ_DICT_TEMPL)
@@ -292,7 +292,7 @@ class CacheConfigBlueprint(CacheConfig):
     def append_value_to_data_path(
         self, obj_category: str, obj_name: str, data_path: str, value: Any
     ) -> None:
-        # otherwise jason will throw an error, tuple is supported by blender
+        # Otherwise json will throw an error, tuple is supported by blender.
         if type(value).__name__ == "bpy_prop_array":
             value = tuple(value)
 
@@ -310,10 +310,10 @@ class CacheConfigProcessor:
         cls, cacheconfig: CacheConfig, context: bpy.types.Context, link: bool = True
     ) -> List[bpy.types.Collection]:
 
-        # link collections in bpy.data of this blend file
+        # Link collections in bpy.data of this blend file.
         cls._import_data_from_libfiles(cacheconfig, link=link)
 
-        # create
+        # Create.
         colls = cls._instance_colls_to_scene_and_override(cacheconfig, context)
         return colls
 
@@ -363,15 +363,15 @@ class CacheConfigProcessor:
     def _instance_colls_to_scene_and_override(
         cls, cacheconfig: CacheConfig, context: bpy.types.Context
     ) -> List[bpy.types.Collection]:
-        # list of collections to track which ones got imported
+        # List of collections to track which ones got imported.
         colls: List[bpy.types.Collection] = []
 
         for libfile in cacheconfig.get_all_libfiles():
 
-            # link collections in current scene and add cm.cachfile property
+            # Link collections in current scene and add cm.cachfile property.
             for coll_name in cacheconfig.get_all_coll_ref_names(libfile):
 
-                # for each variant add instance object
+                # For each variant add instance object.
                 for variant_name in sorted(
                     cacheconfig.get_all_collvariants(libfile, coll_name)
                 ):
@@ -384,28 +384,28 @@ class CacheConfigProcessor:
                         variant_name,
                     )
 
-                    # get source collection and create collection instance of it
+                    # Get source collection and create collection instance of it.
                     source_collection = get_ref_coll_by_name(coll_name)
                     instance_obj = cls._create_collection_instance(
                         source_collection, variant_name
                     )
 
-                    # add library override to collection inst
+                    # Add library override to collection inst.
                     cls._make_library_override(instance_obj, context)
 
-                    # add collection properties
+                    # Add collection properties.
 
                     coll = bpy.data.collections[variant_name, None]
-                    # TODO: super risky but I found no other way around this
+                    # TODO: Super risky but I found no other way around this
                     # we have no influence on the naming of objects that will be created
                     # by bpy.ops.object.make_override_library() -> we can just hope here
                     # that there is not other object that would mess up the incrementation
-                    # -> cache would not work anymore with wrong incrementation
+                    # -> cache would not work anymore with wrong incrementation.
                     cachefile = cacheconfig.get_cachefile(
                         libfile, coll_name, variant_name
                     )
 
-                    # set cm.cachefile property
+                    # Set cm.cachefile property.
                     coll.cm.cachefile = cachefile
                     opsdata.add_coll_to_cache_collections(context, coll, "IMPORT")
                     colls.append(coll)
@@ -421,15 +421,15 @@ class CacheConfigProcessor:
 
     @classmethod
     def _is_coll_variant_in_blend(cls, variant_name: str) -> bool:
-        # check if variant already in this blend file
+        # Check if variant already in this blend file.
         try:
             coll = bpy.data.collections[variant_name, None]
         except KeyError:
             return False
         else:
-            # collection alrady exists, not continuing would add another
+            # Collection already exists, not continuing would add another
             # collection instance which then gets overwritten which results
-            # in an increase of object inrementation > caches wont work
+            # in an increase of object inrementation > caches wont work.
             if coll.library:
                 return False
             return True
@@ -438,10 +438,10 @@ class CacheConfigProcessor:
     def _create_collection_instance(
         cls, source_collection: bpy.types.Collection, variant_name: str
     ) -> bpy.types.Object:
-        # variant name has no effect how the overwritten library collection in the end
-        # will be named is supplied here just for loggin purposes
+        # Variant name has no effect how the overwritten library collection in the end
+        # will be named is supplied here just for loggin purposes.
 
-        # use empty to instance source collection
+        # Use empty to instance source collection.
         instance_obj = bpy.data.objects.new(name=variant_name, object_data=None)
         instance_obj.instance_collection = source_collection
         instance_obj.instance_type = "COLLECTION"
@@ -463,14 +463,14 @@ class CacheConfigProcessor:
         cls, instance_obj: bpy.types.Object, context: bpy.types.Context
     ) -> None:
         log_name = instance_obj.name
-        # deselect all
+        # Deselect all.
         bpy.ops.object.select_all(action="DESELECT")
 
-        # needs active object (coll instance)
+        # Needs active object (coll instance).
         context.view_layer.objects.active = instance_obj
         instance_obj.select_set(True)
 
-        # add lib override
+        # Add lib override.
         bpy.ops.object.make_override_library()
 
         logger.info(
@@ -493,7 +493,7 @@ class CacheConfigProcessor:
         objs_load_anim: List[bpy.types.Object] = []
         cams_laod_anim: List[bpy.types.Camera] = []
 
-        # gather all objects to load anim on
+        # Gather all objects to load anim on.
         for coll in colls:
             for obj in coll.all_objects:
                 if not is_valid_cache_object(obj):
@@ -505,10 +505,10 @@ class CacheConfigProcessor:
 
                 objs_load_anim.append(obj)
 
-        # extend objs list with cams
+        # Extend object list with cameras.
         objs_load_anim.extend(cams_laod_anim)
 
-        # import animation data for objecst
+        # Import animation data for objects.
         cls._import_animation_data_objects(cacheconfig, objs_load_anim)
 
         log_new_lines(1)
@@ -524,8 +524,8 @@ class CacheConfigProcessor:
         frame_in = cacheconfig.get_meta_key("frame_start")
         frame_out = cacheconfig.get_meta_key("frame_end")
 
-        # check if obj in collection is in cacheconfig
-        # if so key alle data paths with the value from cacheconfig
+        # Check if obj in collection is in cacheconfig
+        # if so key all data paths with the value from cacheconfig.
 
         for obj in objects:
 
@@ -542,38 +542,38 @@ class CacheConfigProcessor:
             anim_props_list = []  # for log
             muted_drivers = []  # for log
 
-            # get property that was driven and set keyframes
+            # Get property that was driven and set keyframes.
             for data_path in cacheconfig.get_all_data_paths(obj_category, obj_name):
 
-                # disable drivers
+                # Disable drivers.
                 muted_drivers.extend(
                     opsdata.disable_drivers_by_data_path([obj], data_path)
                 )
 
-                # for log
+                # For log.
                 anim_props_list.append(data_path)
 
-                # insert keyframe for frames in json_obj
+                # Insert keyframe for frames in json_obj.
                 for frame in range(frame_in, frame_out + 1):
 
-                    # get value to set prop to
+                    # Get value to set prop to.
                     prop_value = cacheconfig.get_data_path_value(
                         obj_category, obj_name, data_path, frame - frame_in
                     )
 
-                    # pack string prop in "" so exec works
+                    # Pack string prop in "" so exec works.
                     if type(prop_value) == str:
                         prop_value = f'"{prop_value}"'
 
-                    # get right delimeter
+                    # Get right delimeter.
                     deliminater = "."
                     if data_path.startswith("["):
                         deliminater = ""
 
-                    # get right data category
+                    # Get right data category.
                     command = f'bpy.data.{obj_category}["{obj_name}", None]{deliminater}{data_path}={prop_value}'
 
-                    # set property and insert keyframe
+                    # Set property and insert keyframe.
                     exec(command)
                     obj.keyframe_insert(data_path=data_path, frame=frame)
 
@@ -607,7 +607,7 @@ class CacheConfigFactory:
 
         colls = sorted(colls, key=lambda x: x.name)
 
-        # if cacheconfig already exists load it and update entries
+        # If cacheconfig already exists load it and update entries.
         if filepath.exists():
             logger.info(
                 "Cacheconfig already exists: %s. Will update entries.",
@@ -619,25 +619,25 @@ class CacheConfigFactory:
         noun = "Updating" if filepath.exists else "Creating"
         logger.info("-START- %s CacheConfig", noun)
 
-        # populate metadata
+        # Populate metadata.
         cls._populate_metadata(context, blueprint)
 
-        # poulate cacheconfig with libs based on collections
+        # Populate cacheconfig with libs based on collections.
         cls._populate_libs(context, colls, blueprint)
 
-        # populate cacheconfig with animation data
+        # Populate cacheconfig with animation data.
         objects_with_anim = cls._populate_with_objs(colls, blueprint)
 
-        # populate cacheconfig with cameras
+        # Populate cacheconfig with cameras.
         cams_to_cache = cls._populate_with_cameras(colls, blueprint)
 
-        # add cameras to objects with anim list
+        # Add cameras to objects with anim list.
         objects_with_anim.extend(cams_to_cache)
 
-        # get drive values for each frame
+        # Get drive values for each frame.
         cls._store_data_path_values(context, objects_with_anim, blueprint)
 
-        # save json obj to disk
+        # Save json obj to disk.
         blueprint.save_as_cacheconfig(filepath)
         logger.info("Generated cacheconfig and saved to: %s", filepath.as_posix())
 
@@ -687,23 +687,23 @@ class CacheConfigFactory:
 
         colls = sorted(colls, key=lambda x: x.name)
 
-        # get librarys
+        # Get libraries.
         for coll in colls:
 
             libfile = opsdata.get_item_libfile(coll)
             coll_ref = get_ref_coll(coll)
 
-            # create collection dict based on this variant collection
+            # Create collection dict based on this variant collection.
             _coll_dict = {
                 "cachefile": propsdata.gen_cachepath_collection(
                     coll, context
                 ).as_posix(),
             }
 
-            # set blueprint coll variant
+            # Set blueprint coll variant.
             blueprint.set_coll_variant(libfile, coll_ref.name, coll.name, _coll_dict)
 
-        # log
+        # Log.
         for libfile in blueprint.get_all_libfiles():
             logger.info(
                 "Gathered libfile: %s with collections: %s",
@@ -726,7 +726,7 @@ class CacheConfigFactory:
 
             obj_category = "objects"
 
-            # loop over all objects in that collection
+            # Loop over all objects in that collection.
             for obj in coll.all_objects:
 
                 is_anim = False
@@ -734,7 +734,7 @@ class CacheConfigFactory:
                 if not is_valid_cache_object(obj):
                     continue
 
-                # set abc_obj_path
+                # Set abc_obj_path.
                 blueprint.set_obj_key(
                     obj_category,
                     obj.name,
@@ -742,7 +742,7 @@ class CacheConfigFactory:
                     str(opsdata.gen_abc_object_path(obj)),
                 )
 
-                # set type
+                # Set type.
                 blueprint.set_obj_key(obj_category, obj.name, "type", str(obj.type))
 
                 if not obj.animation_data:
@@ -751,18 +751,18 @@ class CacheConfigFactory:
                 if not obj.animation_data.drivers:
                     continue
 
-                # for now we only write data paths that are driven,
-                # TODO: detect properties that have an animation or are driven
+                # For now we only write data paths that are driven,
+                # TODO: detect properties that have an animation or are driven.
                 for driver in obj.animation_data.drivers:
 
-                    # seems to be an override resync issue that old datapaths are sill in .drivers
-                    # even tough they dont exist anynmore, filter them out like this:
+                    # Seems to be an override resync issue that old datapaths are sill in .drivers
+                    # even tough they don't exist anymore, filter them out like this:.
                     try:
                         obj.path_resolve(driver.data_path)
                     except ValueError:
                         continue
 
-                    # don't export animation for vis of modifiers
+                    # Don't export animation for vis of modifiers.
                     data_path = driver.data_path.split(".")
 
                     if len(data_path) > 1:
@@ -770,7 +770,7 @@ class CacheConfigFactory:
                             if data_path[-1] in cmglobals.DRIVER_VIS_DATA_PATHS:
                                 continue
 
-                    # add data path of driver to obj data pats dict
+                    # Add data path of driver to obj data pats dict.
                     blueprint.add_obj_data_path(
                         obj_category, obj.name, driver.data_path
                     )
@@ -780,7 +780,7 @@ class CacheConfigFactory:
 
                 if is_anim:
                     objects_with_anim.append(obj)
-        # log
+        # Log.
         logger.info("Populated CacheConfig with animated properties.")
 
         return objects_with_anim
@@ -813,11 +813,11 @@ class CacheConfigFactory:
 
             libfile = opsdata.get_item_libfile(cam)
 
-            # make sure to only export cams that are in current cache collections
+            # Make sure to only export cams that are in current cache collections.
             if libfile not in blueprint.get_all_libfiles():
                 continue
 
-            # set type
+            # Set type.
             blueprint.set_obj_key(obj_category, cam.name, "type", str(cam.type))
 
             cams_to_cache.append(cam)
@@ -837,7 +837,7 @@ class CacheConfigFactory:
         blueprint: CacheConfigBlueprint,
     ) -> CacheConfigBlueprint:
 
-        # get driver values for each frame
+        # Get driver values for each frame.
         fin = context.scene.frame_start
         fout = context.scene.frame_end
         frame_range = range(fin, fout + 1)
@@ -860,7 +860,7 @@ class CacheConfigFactory:
                             obj_category, obj.name, data_path, data_path_value
                         )
 
-        # log
+        # Log.
         logger.info(
             "Stored data for animated properties (%i, %i).",
             fin,

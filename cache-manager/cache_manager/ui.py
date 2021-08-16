@@ -54,23 +54,23 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
         layout = self.layout
         split_factor = 0.225
         split_factor_small = 0.95
-        # category to choose between export / import
+        # Category to choose between export / import.
         row = layout.row(align=True)
         row.prop(context.scene.cm, "category", expand=True)
 
-        # add some space
+        # Add some space.
         row = layout.row(align=True)
         row.separator()
 
-        # box for cache version and cacheconfig
+        # Box for cache version and cacheconfig.
         box = layout.box()
 
-        # VERSION
+        # Version.
         version_text = self._get_version_text(context)
 
         split = box.split(factor=split_factor, align=True)
 
-        # version label
+        # Version label.
         split.label(text="Version:")
 
         if context.scene.cm.category == "EXPORT":
@@ -93,10 +93,10 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 text=version_text,
             )
 
-        # CACHEDIR
+        # Cachedir.
         split = box.split(factor=split_factor, align=True)
 
-        # cachedir label
+        # Cachedir label.
         split.label(text="Cache Directory:")
 
         if not context.scene.cm.is_cachedir_valid:
@@ -118,9 +118,9 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 else:
                     split.prop(context.scene.cm, "cachedir", text="")
 
-        # CACHECONFIG
+        # Cacheconfig.
         split = box.split(factor=split_factor, align=True)
-        # cachedir label
+        # Cachedir label.
         split.label(text="Cacheconfig:")
 
         if not context.scene.cm.is_cacheconfig_valid:
@@ -172,19 +172,19 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
                 row = box.row(align=True)
                 row.prop(context.scene.cm, "use_cacheconfig_custom")
 
-        # add some space
+        # Add some space.
         row = layout.row(align=True)
         row.separator()
 
-        # COLLECTION OPERATIONS
+        # Collection operations.
         box = layout.box()
         box.label(text="Cache Collections", icon="OUTLINER_COLLECTION")
         if context.scene.cm.category == "EXPORT":
 
-            # get collections
+            # Get collections.
             collections = list(props.get_cache_collections_export(context))
 
-            # uilist
+            # Ui-list.
             row = box.row()
             row.template_list(
                 "CM_UL_collection_cache_list_export",
@@ -221,10 +221,10 @@ class CM_PT_vi3d_cache(bpy.types.Panel):
             ).do_all = True
 
         else:
-            # get collections
+            # Get collections.
             collections = list(props.get_cache_collections_import(context))
 
-            # uilist
+            # Ui-list.
             row = box.row()
             row.template_list(
                 "CM_UL_collection_cache_list_import",
@@ -286,21 +286,21 @@ class CM_PT_vi3d_advanced(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
 
-        # alembic export settings
+        # Alembic export settings.
         box = layout.box()
         box.label(text="Alembic Export Settings", icon="MODIFIER")
 
-        # frame range
+        # Frame range.
         col = box.column(align=True)
         col.prop(context.scene.cm, "frame_handles_left")
         col.prop(context.scene.cm, "frame_handles_right")
 
-        # shutter
+        # Shutter.
         col = box.column(align=True)
         col.prop(context.scene.cm, "sh_open")
         col.prop(context.scene.cm, "sh_close")
 
-        # samples
+        # Samples.
         col = box.column(align=True)
         col.prop(context.scene.cm, "xsamples")
         col.prop(context.scene.cm, "gsamples")
@@ -313,7 +313,7 @@ class CM_UL_collection_cache_list_export(bpy.types.UIList):
         coll = item.coll_ptr
 
         if self.layout_type in {"DEFAULT", "COMPACT"}:
-            # item got deleted
+            # Item got deleted.
             if not coll:
                 layout.label(text=f"{item.name} was deleted")
                 return
@@ -333,7 +333,7 @@ class CM_UL_collection_cache_list_export(bpy.types.UIList):
                 text="",
                 icon="EXPORT",
             ).index = index
-            # disable row if coll not valid
+            # Disable row if coll not valid.
             if not cache.is_valid_cache_coll(coll):
                 split.enabled = False
 
@@ -349,7 +349,7 @@ class CM_UL_collection_cache_list_import(bpy.types.UIList):
         coll = item.coll_ptr
 
         if self.layout_type in {"DEFAULT", "COMPACT"}:
-            # item got deleted
+            # Item got deleted.
             if not coll:
                 layout.label(text=f"{item.name} was deleted")
                 return
@@ -398,7 +398,7 @@ class CM_UL_collection_cache_list_import(bpy.types.UIList):
             layout.label(text="", icon_value=layout.icon(item.coll_ptr))
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [
     CM_UL_collection_cache_list_export,

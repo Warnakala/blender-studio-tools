@@ -41,8 +41,6 @@ def ui_redraw() -> None:
 
 
 class CM_OT_cache_export(bpy.types.Operator):
-    """"""
-
     bl_idname = "cm.cache_export"
     bl_label = "Export Cache"
     bl_description = "Exports alembic cache for selected collections"
@@ -57,7 +55,7 @@ class CM_OT_cache_export(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        # remove invalid collections
+        # Remove invalid collections.
         collections = [
             coll
             for coll in props.get_cache_collections_export(context)
@@ -77,52 +75,52 @@ class CM_OT_cache_export(bpy.types.Operator):
 
         log_new_lines(1)
 
-        # get collections to be processed
+        # Get collections to be processed.
         if self.do_all:
             collections = list(props.get_cache_collections_export(context))
         else:
             collections = [context.scene.cm.colls_export[self.index].coll_ptr]
 
-        # remove invalid collections
+        # Remove invalid collections.
         collections = [coll for coll in collections if cache.is_valid_cache_coll(coll)]
 
         logger.info(
             "-START- Exporting Cache of: %s", ", ".join([c.name for c in collections])
         )
 
-        # create ouput dir if not existent
+        # Create output dir if not existent.
         filedir = Path(context.scene.cm.cachedir_path)
         if not filedir.exists():
             filedir.mkdir(parents=True, exist_ok=True)
             logger.info("Created directory %s", filedir.as_posix())
 
-        # frame range
+        # Frame range.
         frame_range = opsdata.get_cache_frame_range(context)
 
-        # begin progress udpate
+        # Begin progress update.
         context.window_manager.progress_begin(0, len(collections))
 
-        # create new scene
+        # Create new scene.
         scene_orig = bpy.context.scene
-        bpy.ops.scene.new(type="EMPTY")  # changes active scene
+        bpy.ops.scene.new(type="EMPTY")  # Changes active scene.
         scene_tmp = bpy.context.scene
         scene_tmp.name = "cm_tmp_export"
         logger.info("Create tmp scene for export: %s", scene_tmp.name)
 
-        # disable simplify
+        # Disable simplify.
         was_simplify = bpy.context.scene.render.use_simplify
         opsdata.set_simplify(False)
 
         for idx, coll in enumerate(collections):
 
-            # HAPPENS IN TMP SCENE
+            # Happens in tmp scene.
 
-            # log
+            # Log.
             log_new_lines(2)
             logger.info("%s", gen_processing_string(coll.name))
             context.window_manager.progress_update(idx)
 
-            # unlink all children of scene collection
+            # Unlink all children of scene collection.
             colls_unlink = list(context.scene.collection.children)
             colls_unlink.reverse()
 
@@ -130,77 +128,78 @@ class CM_OT_cache_export(bpy.types.Operator):
                 context.scene.collection.children.unlink(ucoll)
                 logger.info("%s unlink collection: %s", context.scene.name, ucoll.name)
 
-            # link in collection
+            # Link in collection.
             context.scene.collection.children.link(coll)
             logger.info("%s linked collection: %s", context.scene.name, coll.name)
 
-            # hide_render other cache collections for faster export
+            # Hide_render other cache collections for faster export.
             cache_colls_active_exluded = collections.copy()
             cache_colls_active_exluded.remove(coll)
             excluded_colls_to_restore_vis = opsdata.set_item_vis(
                 cache_colls_active_exluded, False
             )
 
-            # deselect all
+            # Deselect all.
             bpy.ops.object.select_all(action="DESELECT")
 
-            # create object list to be exported
+            # Create object list to be exported.
             object_list = cache.get_valid_cache_objects(coll)
 
-            # mute drivers
+            # Mute drivers.
             muted_vis_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
 
-            # ensure modifiers vis have render vis settings does not include MODIFIERS_KEEP
+            # Ensure modifiers vis have render vis settings does not include MODIFIERS_KEEP.
             mods_restore_vis_from_sync = opsdata.sync_modifier_vis_with_render_setting(
                 object_list
             )
 
-            # ensure MODIFIERS_KEEP are disabled for export (they will be enabled on import)
+            # Ensure MODIFIERS_KEEP are disabled for export (they will be enabled on import).
             mods_restore_vis_from_keep = opsdata.config_modifiers_keep_state(
                 object_list, enable=False
             )
 
-            # apply modifier suffix visibily override (.nocache) > will set show_viewport, show_render to False
+            # Apply modifier suffix visibility override (.nocache)
+            # > will set show_viewport, show_render to False.
             mods_restore_vis_from_suffix = opsdata.apply_modifier_suffix_vis_override(
                 object_list, "EXPORT"
             )
 
-            # gen one list of tuples that contains each modifier with its original vis settings once
+            # Gen one list of tuples that contains each modifier with its original vis settings once.
             mods_to_restore_vis = self._construct_mod_to_restore_vis_list(
                 mods_restore_vis_from_sync,
                 mods_restore_vis_from_keep,
                 mods_restore_vis_from_suffix,
             )
 
-            # ensure the all collections are visible for export
-            # otherwise object in it will not be exported
+            # Ensure the all collections are visible during export
+            # otherwise object in it will not be exported.
             colls_to_restore_vis = opsdata.set_item_vis(
                 list(opsdata.traverse_collection_tree(coll)), True
             )
 
-            # ensure that all objects are visible for export
+            # Ensure that all objects are visible for export.
             objs_to_restore_vis = opsdata.set_item_vis(object_list, True)
 
-            # set instancing type of emptys to none
+            # Set instancing type of empties to None.
             empties_to_restore = opsdata.set_instancing_type_of_empties(
                 object_list, "NONE"
             )
 
-            # select objects for bpy.ops.wm.alembic_export
+            # Select objects for bpy.ops.wm.alembic_export.
             for obj in object_list:
                 obj.select_set(True)
 
-            # filepath
+            # Filepath.
             filepath = Path(propsdata.gen_cachepath_collection(coll, context))
             if filepath.exists():
                 logger.warning(
                     "Filepath %s already exists. Will overwrite.", filepath.as_posix()
                 )
 
-            # export
+            # Export.
             try:
                 logger.info("Start alembic export of %s", coll.name)
-                # for each collection create seperate alembic
+                # For each collection create separate alembic.
                 bpy.ops.wm.alembic_export(
                     filepath=filepath.as_posix(),
                     start=frame_range[0],
@@ -239,54 +238,54 @@ class CM_OT_cache_export(bpy.types.Operator):
                 failed.append(coll)
                 continue
 
-            # restore instancing types of empties
+            # Restore instancing types of empties.
             opsdata.restore_instancing_type(empties_to_restore)
 
-            # hide objs again
+            # Hide objects again.
             opsdata.restore_item_vis(objs_to_restore_vis)
 
-            # hide colls again
+            # Hide colls again.
             opsdata.restore_item_vis(colls_to_restore_vis)
 
-            # restore modifier viewport vis / render vis
+            # Restore modifier viewport vis / render vis.
             opsdata.restore_modifier_vis(mods_to_restore_vis)
 
-            # entmute driver
+            # Entmute driver.
             opsdata.enable_muted_drivers(muted_vis_drivers)
 
-            # include other cache collections again
+            # Include other cache collections again.
             opsdata.restore_item_vis(excluded_colls_to_restore_vis)
 
-            # success log for this collections
+            # Success log for this collections.
             logger.info("Exported %s to %s", coll.name, filepath.as_posix())
             succeeded.append(coll)
 
-        # restore simplify state
+        # Restore simplify state.
         opsdata.set_simplify(was_simplify)
 
-        # change to original scene
+        # Change to original scene.
         bpy.context.window.scene = scene_orig
         logger.info("Set active scene: %s", context.scene.name)
 
-        # delete tmp scene
+        # Delete tmp scene.
         logger.info("Remove tmp scene: %s", scene_tmp.name)
         bpy.data.scenes.remove(scene_tmp)
 
-        # generate cacheconfig
+        # Generate cacheconfig.
         CacheConfigFactory.gen_config_from_colls(context, collections, cacheconfig_path)
 
-        # end progress update
+        # End progress update.
         context.window_manager.progress_update(len(collections))
         context.window_manager.progress_end()
 
-        # update cache version property to jump to latest version
+        # Update cache version property to jump to latest version.
         propsdata.update_cache_version_property(context)
 
-        # if it was do all reset after
+        # If it was do all reset after.
         if self.do_all:
             self.do_all = False
 
-        # log
+        # Log.
         self.report(
             {"INFO"},
             f"Exported {len(succeeded)} Collections | Failed: {len(failed)}.",
@@ -297,7 +296,7 @@ class CM_OT_cache_export(bpy.types.Operator):
             "-END- Exporting Cache of %s", ", ".join([c.name for c in succeeded])
         )
 
-        # clear deleted collections from list
+        # Clear deleted collections from list.
         propsdata.rm_deleted_colls_from_list(context)
 
         return {"FINISHED"}
@@ -311,15 +310,14 @@ class CM_OT_cache_export(bpy.types.Operator):
         return self.execute(context)
 
     def draw(self, context):
-        # UI
         layout = self.layout
 
-        # label
+        # Label.
         filedir = Path(context.scene.cm.cachedir_path)
         row = layout.row()
         row.label(text=f"{filedir.as_posix()} already exists.", icon="ERROR")
 
-        # confirm dialog
+        # Confirm dialog.
         col = layout.column()
         col.prop(
             self,
@@ -342,8 +340,6 @@ class CM_OT_cache_export(bpy.types.Operator):
 
 
 class CM_OT_cacheconfig_export(bpy.types.Operator):
-    """"""
-
     bl_idname = "cm.cacheconfig_export"
     bl_label = "Export Cacheconfig"
     bl_description = "Exports only the cacheconfig for selected collections"
@@ -355,7 +351,7 @@ class CM_OT_cacheconfig_export(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        # remove invalid collections
+        # Remove invalid collections.
         collections = [
             coll
             for coll in props.get_cache_collections_export(context)
@@ -368,31 +364,31 @@ class CM_OT_cacheconfig_export(bpy.types.Operator):
         log_new_lines(1)
         logger.info("-START- Exporting Cacheconfig")
 
-        # clear deleted collections from list
+        # Clear deleted collections from list.
         propsdata.rm_deleted_colls_from_list(context)
 
-        # get collections to be processed
+        # Get collections to be processed.
         if self.do_all:
             collections = list(props.get_cache_collections_export(context))
         else:
             collections = [context.scene.cm.colls_export[self.index].coll_ptr]
 
-        # remove invalid collections
+        # Remove invalid collections.
         collections = [coll for coll in collections if cache.is_valid_cache_coll(coll)]
 
-        # create ouput dir if not existent
+        # Create output dir if not existent.
         filedir = Path(context.scene.cm.cachedir_path)
         if not filedir.exists():
             filedir.mkdir(parents=True, exist_ok=True)
             logger.info("Created directory %s", filedir.as_posix())
 
-        # generate cacheconfig
+        # Generate cacheconfig.
         CacheConfigFactory.gen_config_from_colls(context, collections, cacheconfig_path)
 
-        # update cache version property to jump to latest version
+        # Update cache version property to jump to latest version.
         propsdata.update_cache_version_property(context)
 
-        # log
+        # Log.
         self.report(
             {"INFO"},
             f"Exported Cacheconfig {cacheconfig_path.as_posix()}",
@@ -502,15 +498,15 @@ class CM_OT_update_cache_colls_list(bpy.types.Operator):
         succeeded = []
         collections = list(opsdata.traverse_collection_tree(context.scene.collection))
 
-        # clear any collections that got deleted
+        # Clear any collections that got deleted.
         propsdata.rm_deleted_colls_from_list(context)
 
-        # search for cache collections that were not added
+        # Search for cache collections that were not added.
         for coll in collections:
             if not coll.cm.is_cache_coll:
                 continue
 
-            # should skip local colls if blend file not saved
+            # Should skip local collections if blend file not saved.
             result = opsdata.add_coll_to_cache_collections(
                 context, coll, context.scene.cm.category
             )
@@ -539,7 +535,6 @@ class CM_OT_assign_cachefile(bpy.types.Operator):
     index: bpy.props.IntProperty(name="Index")
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # collections = scn.cm_collections[scn.cm_collections_index]
         if not self.cachefile:
             self.report({"WARNING"}, f"Please select a valid cachefile")
             return {"CANCELLED"}
@@ -586,21 +581,21 @@ class CM_OT_import_cache(bpy.types.Operator):
         succeeded = []
         failed = []
 
-        # cacheconfig path
+        # Cacheconfig path.
         cacheconfig_path = context.scene.cm.cacheconfig_path
         if context.scene.cm.use_cacheconfig_custom:
             cacheconfig_path = context.scene.cm.cacheconfig_custom_path
 
-        # clear deleted collections from list
+        # Clear deleted collections from list.
         propsdata.rm_deleted_colls_from_list(context)
 
-        # get collections to be processed
+        # Get collections to be processed.
         if self.do_all:
             collections = list(props.get_cache_collections_import(context))
         else:
             collections = [context.scene.cm.colls_import[self.index].coll_ptr]
 
-        # skip if  no cachefile assigned
+        # Skip if no cachefile assigned.
         valid_colls = []
         for coll in collections:
             if not coll.cm.cachefile:
@@ -611,63 +606,62 @@ class CM_OT_import_cache(bpy.types.Operator):
 
         collections = valid_colls
 
-        # log collections
+        # Log collections.
         logger.info(
             "-START- Importing Cache for %s", ", ".join([c.name for c in collections])
         )
 
-        # load animation data from config #disables drivers #TODO: driver disabling should happen here
+        # Load animation data from config #disables drivers #TODO: driver disabling should happen here.
         cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
         CacheConfigProcessor.import_animation_data(cacheconfig, collections)
 
         logger.info("-START- Importing Alembic Cache")
 
-        # begin progress udpate
+        # Begin progress update.
         context.window_manager.progress_begin(0, len(collections))
 
-        # load alembic as mesh sequence cache
+        # Load alembic as mesh sequence cache.
         for idx, coll in enumerate(collections):
 
-            # log
+            # Log.
             context.window_manager.progress_update(idx)
             log_new_lines(2)
             logger.info("%s", gen_processing_string(coll.name))
 
-            # ensure cachefile is loaded or reloaded
+            # Ensure cachefile is loaded or reloaded.
             cachefile = opsdata.ensure_cachefile(coll.cm.cachefile)
 
-            # get list with valid objects to apply cache to
+            # Get list with valid objects to apply cache to.
             object_list = cache.get_valid_cache_objects(coll)
 
-            # mute drivers
+            # Mute drivers.
             muted_vis_drivers = opsdata.disable_vis_drivers(object_list, modifiers=True)
 
-            # add cache modifier and constraints
+            # Add cache modifier and constraints.
             for obj in object_list:
 
-                # get abc obj path
+                # Get abc obj path.
                 abc_obj_path = cacheconfig.get_abc_obj_path(obj.name)
 
-                # skip object if not found in cacheconfig
+                # Skip object if not found in cacheconfig.
                 if not abc_obj_path:
-                    # abc_obj_paht = ""
                     continue
 
-                # ensure and config constraint (can happen for mesh, empty, lattice, camera)
+                # Ensure and config constraint (can happen for mesh, empty, lattice, camera).
                 con = opsdata.ensure_cache_constraint(obj)
                 opsdata.config_cache_constraint(context, con, cachefile, abc_obj_path)
 
-                # disable constraints
+                # Disable constraints.
                 opsdata.disable_non_keep_constraints(obj)
 
-                # mesh sequence cache modifier configuration only for mesh objects
+                # Mesh sequence cache modifier configuration only for mesh objects.
                 if obj.type == "MESH":
 
-                    # disable all armature modifiers, get index of first one, use that index for cache modifier
+                    # Disable all armature modifiers, get index of first one, use that index for cache modifier.
                     a_index = opsdata.disable_non_keep_modifiers(obj)
                     modifier_index = a_index if a_index != -1 else 0
 
-                    # ensure and config cache modifier
+                    # Ensure and config cache modifier.
                     mod = opsdata.ensure_cache_modifier(obj)
                     opsdata.config_cache_modifier(
                         context,
@@ -676,35 +670,35 @@ class CM_OT_import_cache(bpy.types.Operator):
                         cachefile,
                         abc_obj_path,
                     )
-                # special case lattice needs mods disabled but cant have mesh sequence cash mod
+                # Special case lattice needs mods disabled but cant have mesh sequence cash mod.
                 if obj.type == "LATTICE":
                     opsdata.disable_non_keep_modifiers(obj)
 
-            # ensure MODIFIERS_KEEP are enabled after import
-            # does not change viewport setting on enable
+            # Ensure MODIFIERS_KEEP are enabled after import
+            # does not change viewport setting on enable.
             opsdata.config_modifiers_keep_state(object_list, enable=True)
 
-            # apply modifier suffix visibily override
+            # Apply modifier suffix visibility override.
             opsdata.apply_modifier_suffix_vis_override(object_list, "IMPORT")
 
-            # set is_cache_loaded property
+            # Set is_cache_loaded property.
             coll.cm.is_cache_loaded = True
 
             logger.info("%s imported cache %s", coll.name, cachefile.filepath)
             succeeded.append(coll)
 
-        # end progress update
+        # End progress update.
         context.window_manager.progress_update(len(collections))
         context.window_manager.progress_end()
 
         log_new_lines(1)
         logger.info("-END- Importing Alembic Cache")
 
-        # if it was do all reset after
+        # If it was do all, reset after.
         if self.do_all:
             self.do_all = False
 
-        # log
+        # Log.
         self.report(
             {"INFO"},
             f"Importing Cache for {len(succeeded)} Collections | Failed: {len(failed)}.",
@@ -730,7 +724,7 @@ class CM_OT_cache_hide(bpy.types.Operator):
         modifier_name = cmglobals.MODIFIER_NAME
         constraint_name = cmglobals.CONSTRAINT_NAME
 
-        # get collections to be processed
+        # Get collections to be processed.
         if self.do_all:
             collections = list(props.get_cache_collections_import(context))
         else:
@@ -739,12 +733,12 @@ class CM_OT_cache_hide(bpy.types.Operator):
         logger.info("-START- Hiding Cache")
 
         for idx, coll in enumerate(collections):
-            # Create a List with all selected Objects
+            # Create a list with all selected objects.
             object_list = cache.get_valid_cache_objects(coll)
 
-            # Loop Through All Objects
+            # Loop through all objects.
             for obj in object_list:
-                # Set Settings of Modifier
+                # Set settings of modifier.
                 if not obj.modifiers.find(modifier_name) == -1:
                     mod = obj.modifiers.get(modifier_name)
                     mod.show_viewport = False
@@ -754,12 +748,12 @@ class CM_OT_cache_hide(bpy.types.Operator):
                     con = obj.constraints.get(constraint_name)
                     con.mute = True
 
-            # set is_cache_hidden prop for ui
+            # Set is_cache_hidden prop for ui.
             coll.cm.is_cache_hidden = True
 
             logger.info("Hide Cache for %s", coll.name)
 
-        # if it was do all hide reset after
+        # If it was do all, reset after.
         if self.do_all:
             self.do_all = False
 
@@ -787,7 +781,7 @@ class CM_OT_cache_show(bpy.types.Operator):
         modifier_name = cmglobals.MODIFIER_NAME
         constraint_name = cmglobals.CONSTRAINT_NAME
 
-        # get collections to be processed
+        # Get collections to be processed.
         if self.do_all:
             collections = list(props.get_cache_collections_import(context))
         else:
@@ -796,12 +790,12 @@ class CM_OT_cache_show(bpy.types.Operator):
         logger.info("-START- Unhiding Cache")
 
         for idx, coll in enumerate(collections):
-            # Create a List with all selected Objects
+            # Create a list with all selected objects.
             object_list = cache.get_valid_cache_objects(coll)
 
-            # Loop Through All Objects
+            # Loop through all objects.
             for obj in object_list:
-                # Set Settings of Modifier and Constraint
+                # Set settings of modifier and constraint.
                 if not obj.modifiers.find(modifier_name) == -1:
                     mod = obj.modifiers.get(modifier_name)
                     mod.show_viewport = True
@@ -811,12 +805,12 @@ class CM_OT_cache_show(bpy.types.Operator):
                     con = obj.constraints.get(constraint_name)
                     con.mute = False
 
-            # set is_cache_hidden prop for ui
+            # Set is_cache_hidden prop for ui.
             coll.cm.is_cache_hidden = False
 
             logger.info("Unhid Cache for %s", coll.name)
 
-        # if it was do all hide reset after
+        # If it was do all, reset after.
         if self.do_all:
             self.do_all = False
 
@@ -843,7 +837,7 @@ class CM_OT_cache_remove(bpy.types.Operator):
         modifier_name = cmglobals.MODIFIER_NAME
         constraint_name = cmglobals.CONSTRAINT_NAME
 
-        # get collections to be processed
+        # Get collections to be processed.
         if self.do_all:
             collections = list(props.get_cache_collections_import(context))
         else:
@@ -852,10 +846,10 @@ class CM_OT_cache_remove(bpy.types.Operator):
         logger.info("-START- Removing Cache")
 
         for idx, coll in enumerate(collections):
-            # Create a List with all selected Objects
+            # Create a list with all selected objects.
             object_list = cache.get_valid_cache_objects(coll)
 
-            # Loop Through All Objects and remove Modifier and Constraint
+            # Loop through all objects and remove modifier and constraint.
             for obj in object_list:
                 if not obj.modifiers.find(modifier_name) == -1:
                     mod = obj.modifiers.get(modifier_name)
@@ -865,12 +859,12 @@ class CM_OT_cache_remove(bpy.types.Operator):
                     con = obj.constraints.get(constraint_name)
                     obj.constraints.remove(con)
 
-            # set is_cache_loaded property
+            # Set is_cache_loaded property.
             coll.cm.is_cache_loaded = False
 
             logger.info("Remove Cache for %s", coll.name)
 
-        # if it was do all hide reset after
+        # If it was do all, reset after.
         if self.do_all:
             self.do_all = False
 
@@ -884,11 +878,9 @@ class CM_OT_cache_remove(bpy.types.Operator):
 
 
 class CM_OT_set_cache_version(bpy.types.Operator):
-    """"""
 
     bl_idname = "cm.set_cache_version"
     bl_label = "Version"
-    # bl_options = {"REGISTER", "UNDO"}
     bl_property = "versions"
 
     versions: bpy.props.EnumProperty(
@@ -921,18 +913,18 @@ class CM_OT_set_cache_version(bpy.types.Operator):
             return {"CANCELLED"}
 
         log_new_lines(1)
-        # update global scene cache version prop
+        # Update global scene cache version prop.
         context.scene.cm.cache_version = version
         logger.info("Set cache version to %s", version)
 
         if context.scene.cm.category == "IMPORT":
-            # get collections to be processed
+            # Get collections to be processed.
             if self.do_all:
                 collections = list(props.get_cache_collections_import(context))
             else:
                 collections = [context.scene.cm.colls_import[self.index].coll_ptr]
 
-            # load cacheconfig
+            # Load cacheconfig.
             cacheconfig_path = Path(context.scene.cm.cacheconfig_path)
             if not cacheconfig_path.exists():
                 logger.error(
@@ -942,13 +934,13 @@ class CM_OT_set_cache_version(bpy.types.Operator):
             else:
                 cacheconfig = CacheConfigFactory.load_config_from_file(cacheconfig_path)
 
-            # process collections
+            # Process collections.
             for coll in collections:
                 if not coll.cm.cachefile:
                     logger.info("Ignored %s. No cachefile assigned yet.", coll.name)
                     continue
 
-                # get old cachefile path and version
+                # Get old cachefile path and version.
                 cachefile_path_old = Path(coll.cm.cachefile)
                 vers_old = opsdata.get_version(cachefile_path_old.name)
 
@@ -959,7 +951,7 @@ class CM_OT_set_cache_version(bpy.types.Operator):
                     )
                     continue
 
-                # gen new cachefile path with version that was selected
+                # Gen new cachefile path with version that was selected.
                 cachefile_path_new = Path(
                     cachefile_path_old.as_posix().replace(vers_old, version)
                 )
@@ -974,20 +966,20 @@ class CM_OT_set_cache_version(bpy.types.Operator):
                     )
                     continue
 
-                # try to get actual cachefile data block, catch key error if cachefile datablock not existent yet
+                # Try to get actual cachefile data block, catch key error if cachefile datablock not existent yet.
                 try:
                     cachefile = bpy.data.cache_files[cachefile_path_old.name]
-                # do nothing
                 except KeyError:
+                # Do nothing.
                     logger.error(
                         "%s assigned cachefile: %s is not imported. Skip changing cachefile path.",
                         coll.name,
                         cachefile_path_old.name,
                     )
-                # if cachefile data block exists, update it to new version and import animation data
-                # of cacheconfig with that version
+                # If cachefile data block exists, update it to new version and import animation data
+                # of cacheconfig with that version.
                 else:
-                    # change cachefile filepath and name of cachefile datablock
+                    # Change cachefile filepath and name of cachefile datablock.
                     cachefile.filepath = cachefile_path_new.as_posix()
                     cachefile.name = cachefile_path_new.name
                     logger.info(
@@ -996,7 +988,7 @@ class CM_OT_set_cache_version(bpy.types.Operator):
                         cachefile_path_new.as_posix(),
                     )
 
-                    # import animation data from other cacheconfig
+                    # Import animation data from other cacheconfig.
                     CacheConfigProcessor.import_animation_data(cacheconfig, [coll])
                     logger.info(
                         "%s loaded animation data from cacheconfig: %s",
@@ -1004,7 +996,7 @@ class CM_OT_set_cache_version(bpy.types.Operator):
                         cacheconfig_path,
                     )
 
-                # either way update the cachefile prop of the collection (we know it exists here)
+                # Either way update the cachefile prop of the collection (we know it exists here).
                 finally:
                     coll.cm.cachefile = cachefile_path_new.as_posix()
                     logger.info(
@@ -1013,7 +1005,7 @@ class CM_OT_set_cache_version(bpy.types.Operator):
                         cachefile_path_new.as_posix(),
                     )
 
-        # redraw ui
+        # Redraw ui.
         ui_redraw()
 
         return {"FINISHED"}
@@ -1024,8 +1016,6 @@ class CM_OT_set_cache_version(bpy.types.Operator):
 
 
 class CM_OT_add_cache_version_increment(bpy.types.Operator):
-    """"""
-
     bl_idname = "cm.add_cache_version_increment"
     bl_label = "Add Version Increment"
 
@@ -1035,10 +1025,10 @@ class CM_OT_add_cache_version_increment(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
-        # incremenet version
+        # Increment version.
         version = opsdata.add_version_increment()
 
-        # update cache_version prop
+        # Update cache_version prop.
         context.scene.cm.cache_version = version
 
         ui_redraw()
@@ -1047,7 +1037,7 @@ class CM_OT_add_cache_version_increment(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes: List[Any] = [
     CM_OT_cache_export,
@@ -1074,7 +1064,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # handlers
+    # Add handlers.
     bpy.app.handlers.load_post.append(post_load_handler_update_cache_colls_list)
 
 
@@ -1082,5 +1072,5 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
-    # clear handlers
+    # Clear handlers.
     bpy.app.handlers.load_post.remove(post_load_handler_update_cache_colls_list)

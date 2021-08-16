@@ -63,7 +63,7 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
     @property
     def is_cachedir_root_valid(self) -> bool:
 
-        # check if file is saved
+        # Check if file is saved.
         if not self.cachedir_root:
             return False
 
@@ -80,7 +80,7 @@ def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     return context.preferences.addons["cache_manager"].preferences
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [CM_AddonPreferences]
 

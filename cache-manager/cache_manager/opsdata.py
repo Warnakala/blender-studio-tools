@@ -45,7 +45,7 @@ def init_version_dir_model(
     global VERSION_DIR_MODEL
     global _version_dir_model_init
 
-    # is None if invalid
+    # Is None if invalid.
     if not context.scene.cm.cache_version_dir_path:
         logger.error(
             "Failed to initialize version directory model. Invalid path. Check addon preferences."
@@ -99,11 +99,11 @@ def get_versions_enum_list(
     global VERSION_DIR_MODEL
     global init_version_dir_model
 
-    # init model if it did not happen
+    # Init model if it did not happen.
     if not _version_dir_model_init:
         init_version_dir_model(context)
 
-    # clear all versions in enum list
+    # Clear all versions in enum list.
     _versions_enum_list.clear()
     _versions_enum_list.extend(VERSION_DIR_MODEL.items_as_enum_list)
 
@@ -174,42 +174,42 @@ def disable_vis_drivers(
     objects: List[bpy.types.Object], modifiers: bool = True
 ) -> List[bpy.types.Driver]:
 
-    # store driver that were muted to entmute them after
+    # Store driver that were muted to entmute them after.
     muted_drivers: List[bpy.types.Driver] = []
 
-    # log list
+    # Log list.
     log_list: Dict[str, List[str]] = {}
 
     for obj in objects:
         if obj.animation_data:
             for driver in obj.animation_data.drivers:
 
-                # get suffix of data path, if modifiers modifier name is at the beginning
+                # Get suffix of data path, if modifiers modifier name is at the beginning.
                 data_path_split = driver.data_path.split(".")
                 data_path_suffix = data_path_split[-1]
 
-                # if modifiers == False do not adjust drivers of which the data paths are starting
-                # with modifiers
+                # If modifiers == False do not adjust drivers of which the data
+                # paths are starting with modifiers.
                 if not modifiers:
                     if len(data_path_split) > 1:
                         if data_path_split[0].startswith("modifiers"):
                             continue
 
-                # only disable drivers that drive visibility data paths
+                # Only disable drivers that drive visibility data paths.
                 if data_path_suffix not in cmglobals.DRIVER_VIS_DATA_PATHS:
                     continue
 
-                # if muted already continue
+                # If muted already continue.
                 if driver.mute == True:
                     continue
 
-                # mute
+                # Mute.
                 driver.mute = True
                 muted_drivers.append(driver)
 
-                # populate log list
+                # Populate log list.
                 _append_str_to_log_list(log_list, obj.name, driver.data_path)
-    # log
+    # Log.
     _print_log_list(log_list, "Disable visibility drivers:")
     return muted_drivers
 
@@ -218,10 +218,10 @@ def disable_drivers_by_data_path(
     objects: List[bpy.types.Object], data_path: str
 ) -> List[bpy.types.Driver]:
 
-    # store driver that were muted to entmute them after
+    # Store driver that were muted to entmute them after.
     muted_drivers: List[bpy.types.Driver] = []
 
-    # log list
+    # Log list.
     log_list: Dict[str, List[str]] = {}
 
     for obj in objects:
@@ -231,19 +231,16 @@ def disable_drivers_by_data_path(
                 if driver.data_path != data_path:
                     continue
 
-                # skip if driver already muted
+                # Skip if driver already muted.
                 if driver.mute == True:
                     continue
 
-                # mute
+                # Mute.
                 driver.mute = True
                 muted_drivers.append(driver)
 
-                # populate log list
+                # Populate log list.
                 _append_str_to_log_list(log_list, obj.name, driver.data_path)
-
-    # log
-    # _print_log_list(log_list, "Disable drivers by data path:")
 
     return muted_drivers
 
@@ -259,29 +256,29 @@ def sync_modifier_vis_with_render_setting(
 
         for mod in obj.modifiers:
 
-            # do not affect those for export
+            # Do not affect those for export.
             if mod.type in cmglobals.MODIFIERS_KEEP:
                 continue
 
-            # if already synced continue
+            # If already synced continue.
             if mod.show_viewport == mod.show_render:
                 continue
 
-            # save cache for reconstrucion later
+            # Save cache for reconstruction later.
             show_viewport_cache = mod.show_viewport
             show_render_cache = mod.show_render
 
-            # sync show_viewport with show_render setting
+            # Sync show_viewport with show_render setting.
             mod.show_viewport = mod.show_render
             mods_vis_override.append((mod, show_viewport_cache, show_render_cache))
 
-            # populate log list
+            # Populate log list.
             _append_str_to_log_list(
                 log_list,
                 obj.name,
                 f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport}",
             )
-    # log
+    # Log.
     _print_log_list(log_list, "Sync modifier viewport vis with render vis:")
 
     return mods_vis_override
@@ -338,13 +335,13 @@ def apply_modifier_suffix_vis_override(
 
             mods_vis_override.append((mod, show_viewport_cache, show_render_cache))
 
-            # populate log list
+            # Populate log list.
             _append_str_to_log_list(
                 log_list,
                 obj.name,
                 f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport} R: {show_render_cache} -> {mod.show_render}",
             )
-    # log
+    # Log.
     _print_log_list(log_list, "Apply modifier suffix vis override:")
 
     return mods_vis_override
@@ -367,14 +364,14 @@ def restore_modifier_vis(
         mod.show_viewport = show_viewport
         mod.show_render = show_render
 
-        # populate log list
+        # Populate log list.
         _append_str_to_log_list(
             log_list,
             mod.id_data.name,
             f"{mod.name}: V: {show_viewport_cache} -> {mod.show_viewport} R: {show_render_cache} -> {mod.show_render}",
         )
 
-    # log
+    # Log.
     _print_log_list(log_list, "Restore modifier visiblity:")
 
 
@@ -402,9 +399,8 @@ def config_modifiers_keep_state(
             if enable:
                 if mod.show_viewport == True and mod.show_render == True:
                     continue
-                # do not change viewport setting on enable, might create overhead
-                # for mods that are only needed for render
-                # mod.show_viewport = True
+                # Do not change viewport setting on enable, might create overhead
+                # for mods that are only needed for render.
                 mod.show_render = True
 
             else:
@@ -415,13 +411,13 @@ def config_modifiers_keep_state(
 
             mods_vis_override.append((mod, show_viewport_cache, show_render_cache))
 
-            # populate log list
+            # Populate log list.
             _append_str_to_log_list(
                 log_list,
                 obj.name,
                 mod.name,
             )
-    # log
+    # Log.
     _print_log_list(log_list, f"{noun} modifiers:")
 
     return mods_vis_override
@@ -460,7 +456,7 @@ def set_item_vis(
         items_vis.append((item, hide_viewport_cache, hide_render_cache))
 
     if items_vis:
-        # log
+        # Log.
         logger.info(
             "%s:\n%s",
             noun,
@@ -489,14 +485,14 @@ def restore_item_vis(
         item.hide_viewport = hide_viewport
         item.hide_render = hide_render
 
-        # populate log list
+        # Populate log list.
         _append_str_to_log_list(
             log_list,
             item.name,
             f"V: {not hide_viewport_cache} -> {not item.hide_viewport} R: {not hide_render_cache} -> {not item.hide_render}",
         )
 
-    # log
+    # Log.
     _print_log_list(log_list, "Restore visibility:")
 
 
@@ -541,7 +537,7 @@ def set_layer_coll_exlcude(
         layer_colls_vis.append((lcoll, exclude_cache))
 
     if layer_colls_vis:
-        # log
+        # Log.
         logger.info(
             "%s layer collections in current view layer:\n%s",
             noun,
@@ -566,14 +562,14 @@ def restore_layer_coll_exlude(
 
         lcoll.exclude = exclude
 
-        # populate log list
+        # Populate log list.
         _append_str_to_log_list(
             log_list,
             lcoll.name,
             f"exclude: {exclude_cache} -> {lcoll.exclude}",
         )
 
-    # log
+    # Log.
     _print_log_list(log_list, "Restore layer collection visibility:")
 
 
@@ -581,7 +577,7 @@ def enable_muted_drivers(
     muted_drivers: List[bpy.types.Driver],
 ) -> List[bpy.types.Driver]:
 
-    # log list
+    # Log list.
     log_list: Dict[str, List[str]] = {}
 
     for driver in muted_drivers:
@@ -591,19 +587,19 @@ def enable_muted_drivers(
 
         driver.mute = False
 
-        # populate log list
+        # Populate log list.
         _append_str_to_log_list(log_list, driver.id_data.name, driver.data_path)
 
-    # log
+    # Log.
     _print_log_list(log_list, "Enable drivers:")
 
     return muted_drivers
 
 
 def gen_abc_object_path(obj: bpy.types.Object) -> str:
-    # if object is duplicated (multiple copys of the same object that get different cachses)
+    # If object is duplicated (multiple copies of the same object that get different cachses)
     # we have to kill the .001 postfix that gets created auto on duplication
-    # otherwise object path is not valid
+    # otherwise object path is not valid.
 
     object_name = obj.name
     object_path = "/" + object_name
@@ -612,7 +608,7 @@ def gen_abc_object_path(obj: bpy.types.Object) -> str:
         object_data_name = obj.data.name
         object_path = "/" + object_name + "/" + object_data_name
 
-    # dot and whitespace not valid in abc tree will be replaced with underscore
+    # Dot and whitespace not valid in abc tree will be replaced with underscore.
     replace = [" ", "."]
     for char in replace:
         object_path = object_path.replace(char, "_")
@@ -626,7 +622,7 @@ def disable_non_keep_modifiers(obj: bpy.types.Object) -> int:
     disabled_mods = []
     for idx, mod in enumerate(modifiers):
         if mod.type not in cmglobals.MODIFIERS_KEEP:
-            # save index of first armature modifier to
+            # Save index of first armature modifier to.
             if a_index == -1 and mod.type == "ARMATURE":
                 a_index = idx
 
@@ -668,10 +664,10 @@ def disable_non_keep_constraints(obj: bpy.types.Object) -> List[bpy.types.Constr
 
 
 def ensure_cachefile(cachefile_path: str) -> bpy.types.CacheFile:
-    # get cachefile path for this collection
+    # Get cachefile path for this collection.
     cachefile_name = Path(cachefile_path).name
 
-    # import Alembic Cache. if its already imported reload it
+    # Import Alembic Cache. if its already imported reload it.
     try:
         bpy.data.cache_files[cachefile_name]
     except KeyError:
@@ -688,7 +684,7 @@ def ensure_cachefile(cachefile_path: str) -> bpy.types.CacheFile:
 def ensure_cache_modifier(obj: bpy.types.Object) -> bpy.types.MeshSequenceCacheModifier:
     modifier_name = cmglobals.MODIFIER_NAME
 
-    # if modifier does not exist yet create it
+    # If modifier does not exist yet create it.
     if obj.modifiers.find(modifier_name) == -1:  # not found
         mod = obj.modifiers.new(modifier_name, "MESH_SEQUENCE_CACHE")
         logger.info(
@@ -704,7 +700,7 @@ def ensure_cache_constraint(
     obj: bpy.types.Object,
 ) -> bpy.types.TransformCacheConstraint:
     constraint_name = cmglobals.CONSTRAINT_NAME
-    # if constraint does not exist yet create it
+    # If constraint does not exist yet create it.
     if obj.constraints.find(constraint_name) == -1:  # not found
         con = obj.constraints.new("TRANSFORM_CACHE")
         con.name = constraint_name
@@ -732,15 +728,15 @@ def config_cache_modifier(
     abc_obj_path: str,
 ) -> bpy.types.MeshSequenceCacheModifier:
     obj = mod.id_data
-    # move to index
-    # as we need to use bpy.ops for that object needs to be active
+    # Move to index
+    # as we need to use bpy.ops for that object needs to be active.
     bpy.context.view_layer.objects.active = obj
     override = context.copy()
     override["modifier"] = mod
     bpy.ops.object.modifier_move_to_index(
         override, modifier=mod.name, index=modifier_index
     )
-    # adjust settings
+    # Adjust settings.
     mod.cache_file = cachefile
     mod.object_path = abc_obj_path
 
@@ -755,11 +751,11 @@ def config_cache_constraint(
 ) -> bpy.types.TransformCacheConstraint:
     obj = con.id_data
 
-    # move to index
+    # Move to index.
     current_index = obj.constraints.find(con.name)
     obj.constraints.move(current_index, 0)
 
-    # adjust settings
+    # Adjust settings.
     con.cache_file = cachefile
     con.object_path = abc_obj_path
 
@@ -783,14 +779,14 @@ def add_coll_to_cache_collections(
         logger.info(
             "%s already in the %s cache collections list", coll.name, category.lower()
         )
-        # set is_cache_coll
+        # Set is_cache_coll.
         coll.cm.is_cache_coll = True
 
         return None
     else:
         if category == "EXPORT" and not coll.override_library and not coll.library:
-            # local collection
-            # blend file needs to be saved for that
+            # Local collection
+            # blend file needs to be saved for that.
             if not bpy.data.filepath:
                 logger.error(
                     "Failed to add local collection %s to export list. Blend files needs to be saved.",
@@ -803,7 +799,7 @@ def add_coll_to_cache_collections(
         item.name = item.coll_ptr.name
         idx = len(scn_category) - 1
 
-        # set is_cache_coll
+        # Set is_cache_coll.
         coll.cm.is_cache_coll = True
 
         logger.info(
@@ -837,7 +833,7 @@ def rm_coll_from_cache_collections(
         scn_category.remove(idx)
         idx -= 1
 
-        # reset coll.cm properties
+        # Reset coll.cm properties.
         coll = item.coll_ptr
         if coll:  # check if not None (coll might be deleted)
             coll.cm.reset_properties()
@@ -890,7 +886,7 @@ def set_instancing_type_of_empties(
 
 def restore_instancing_type(restore_list: List[Tuple[bpy.types.Object, str]]) -> None:
 
-    # log list
+    # Log list.
     log_list: Dict[str, List[str]] = {}
 
     for obj, instance_type in restore_list:
@@ -901,21 +897,21 @@ def restore_instancing_type(restore_list: List[Tuple[bpy.types.Object, str]]) ->
         instance_type_cache = obj.instance_type
         obj.instance_type = instance_type
 
-        # populate log list
+        # Populate log list.
         _append_str_to_log_list(
             log_list,
             obj.name,
             f"{instance_type_cache}: -> {obj.instance_type}",
         )
 
-    # log
+    # Log.
     _print_log_list(log_list, "Restore instance types:")
 
 
 def is_item_local(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
 ) -> bool:
-    # local collection of blend file
+    # Local collection of blend file.
     if not item.override_library and not item.library:
         return True
     return False
@@ -924,7 +920,7 @@ def is_item_local(
 def is_item_lib_override(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
 ) -> bool:
-    # collection from libfile and overwritten
+    # Collection from libfile and overwritten.
     if item.override_library and not item.library:
         return True
     return False
@@ -933,7 +929,7 @@ def is_item_lib_override(
 def is_item_lib_source(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
 ) -> bool:
-    #  source collection from libfile not overwritten
+    #  Source collection from libfile not overwritten.
     if not item.override_library and item.library:
         return True
     return False
@@ -943,19 +939,19 @@ def get_item_libfile(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
 ) -> str:
     if is_item_lib_source(item):
-        # source collection not overwritten
+        # Source collection not overwritten.
         lib = item.library
         return Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
 
     if is_item_local(item):
-        # local collection
-        # blend file needs to be saved for that
+        # Local collection
+        # blend file needs to be saved for that.
         if not bpy.data.filepath:
             return ""
         return Path(os.path.abspath(bpy.path.abspath(bpy.data.filepath))).as_posix()
 
     if is_item_lib_override(item):
-        # overwritten collection
+        # Overwritten collection.
         lib = item.override_library.reference.library
         return Path(os.path.abspath(bpy.path.abspath(lib.filepath))).as_posix()
 

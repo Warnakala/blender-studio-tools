@@ -29,7 +29,6 @@ from cache_manager import propsdata
 
 
 class CM_collection_property(bpy.types.PropertyGroup):
-    # name: StringProperty() -> Instantiated by default
     coll_ptr: bpy.props.PointerProperty(name="Collection", type=bpy.types.Collection)
 
 
@@ -167,7 +166,6 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
 
     @property
     def is_cachedir_valid(self) -> bool:
-        # check if file is saved
         if not self.cachedir:
             return False
 
@@ -185,7 +183,6 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
 
     @property
     def is_cache_version_dir_valid(self) -> bool:
-        # check if file is saved
         if not self.cache_version_dir:
             return False
 
@@ -196,7 +193,6 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
 
     @property
     def is_cacheconfig_valid(self) -> bool:
-        # check if file is saved
         if not self.cacheconfig:
             return False
 
@@ -207,7 +203,6 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
 
     @property
     def is_cacheconfig_custom_valid(self) -> bool:
-        # check if file is saved
         if not self.cacheconfig_custom:
             return False
 
@@ -245,7 +240,7 @@ def get_cache_collections_export(
             yield item.coll_ptr
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes: List[Any] = [
     CM_collection_property,
@@ -259,10 +254,10 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # Scene Properties
+    # Scene Properties.
     bpy.types.Scene.cm = bpy.props.PointerProperty(type=CM_property_group_scene)
 
-    # Collection Properties
+    # Collection Properties.
     bpy.types.Collection.cm = bpy.props.PointerProperty(
         name="Cache Manager",
         type=CM_property_group_collection,

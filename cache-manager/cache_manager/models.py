@@ -75,7 +75,7 @@ class FolderListModel:
 
     def __detect_folders(self, path: Path) -> List[str]:
         if path.exists() and path.is_dir():
-            # iterate through directory and return all pathes that are dirs, only return their name
+            # Iterate through directory and return all pathes that are dirs, only return their name.
             return sorted(
                 [str(x.name) for x in path.iterdir() if x.is_dir()], reverse=True
             )

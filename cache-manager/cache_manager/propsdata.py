@@ -147,18 +147,18 @@ def rm_deleted_colls_from_list(context: bpy.types.Context) -> None:
         colls = [item.coll_ptr for item in category]
         colls.reverse()
 
-        # make sure to remove list from the back to not throw off the subsequent indexes.
+        # Make sure to remove list from the back to not throw off the subsequent indexes.
         for idx, coll in enumerate(colls):
             org_idx = len(colls) - 1 - idx
             if not coll:
-                # remove item for that category at that index
+                # Remove item for that category at that index.
                 category.remove(org_idx)
                 logger.info(
                     "Removed index %i from %s list. Does not exists anymore.",
                     org_idx,
                     category_name.lower(),
                 )
-                # update selection index
+                # Update selection index.
                 curr_index = context.scene.cm.colls_export_index
                 if category_name == "IMPORT":
                     curr_index = context.scene.cm.colls_import_index
@@ -177,14 +177,14 @@ def load_post_handler_init_model_cache_version(dummy: Any) -> None:
     category_upate_version_model(None, bpy.context)
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 
 def register():
-    # handlers
+    # Add handlers.
     bpy.app.handlers.load_post.append(load_post_handler_init_model_cache_version)
 
 
 def unregister():
-    # clear handlers
+    # Clear handlers.
     bpy.app.handlers.load_post.remove(load_post_handler_init_model_cache_version)
