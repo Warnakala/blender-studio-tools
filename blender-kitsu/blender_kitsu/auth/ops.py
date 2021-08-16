@@ -42,6 +42,10 @@ class KITSU_OT_session_start(bpy.types.Operator):
     bl_idname = "kitsu.session_start"
     bl_label = "Start Kitsu Session"
     bl_options = {"INTERNAL"}
+    bl_description = (
+        "Logs in to server with the credentials that are defined in the "
+        "addon preferences. Session is valid until Blender closes"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -92,6 +96,7 @@ class KITSU_OT_session_end(bpy.types.Operator):
     bl_idname = "kitsu.session_end"
     bl_label = "End Kitsu Session"
     bl_options = {"INTERNAL"}
+    bl_description = "Logs active user out"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:

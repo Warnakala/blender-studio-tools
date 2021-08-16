@@ -33,10 +33,9 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 
 class KITSU_OT_open_path(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.open_path"
     bl_label = "Open"
+    bl_description = "Opens specified path in the default system file browser"
 
     filepath: bpy.props.StringProperty(  # type: ignore
         name="Filepath",

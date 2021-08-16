@@ -34,7 +34,6 @@ from blender_kitsu import (
 )
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.types import (
-    Cache,
     Shot,
     Task,
     TaskStatus,
@@ -47,10 +46,14 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 
 class KITSU_OT_anim_create_playblast(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.anim_create_playblast"
     bl_label = "Create Playblast"
+    bl_description = (
+        "Creates a openGl render of the window in which the operator was triggered. "
+        "Saves the set version to disk and uploads it to kitsu with the specified "
+        "comment and task type. Overrides some render settings during export. "
+        "Opens webbrowser or vse after playblast if set in addon preferences"
+    )
 
     comment: bpy.props.StringProperty(
         name="Comment",
@@ -435,11 +438,13 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
 
 
 class KITSU_OT_anim_set_playblast_version(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.anim_set_playblast_version"
     bl_label = "Version"
     bl_property = "versions"
+    bl_description = (
+        "Sets version of playblast. Warning triangle in ui "
+        "indicates that version already exists on disk"
+    )
 
     versions: bpy.props.EnumProperty(
         items=opsdata.get_playblast_versions_enum_list, name="Versions"
@@ -474,11 +479,13 @@ class KITSU_OT_anim_set_playblast_version(bpy.types.Operator):
 
 
 class KITSU_OT_anim_pull_frame_range(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.anim_pull_frame_range"
     bl_label = "Update Frame Range"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Pulls frame range of active shot from server "
+        "and sets the one of current scene to it"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -518,10 +525,9 @@ class KITSU_OT_anim_pull_frame_range(bpy.types.Operator):
 
 
 class KITSU_OT_anim_increment_playblast_version(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.anim_increment_playblast_version"
     bl_label = "Add Version Increment"
+    bl_description = "Increment the playblast version by one"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -543,10 +549,12 @@ class KITSU_OT_anim_increment_playblast_version(bpy.types.Operator):
 
 
 class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.anim_quick_duplicate"
     bl_label = "Quick Duplicate"
+    bl_description = (
+        "Duplicate the active collection and add it to the "
+        "output collection of the current scene "
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -608,12 +616,13 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
 
 
 class KITSU_OT_anim_check_action_names(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.anim_check_action_names"
     bl_label = "Check Action Names "
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Inspects all actions of .blend file and checks if they follow the Blender Studio naming convention"
+    bl_description = (
+        "Inspects all action names of .blend file and checks "
+        "if they follow the Blender Studio naming convention"
+    )
     wrong: List[Tuple[bpy.types.Action, str]] = []
     # List of tuples that contains the action on index 0 with the wrong name
     # and the name it should have on index 1.
@@ -741,8 +750,6 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
 
 
 class KITSU_OT_anim_update_output_coll(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.anim_update_output_coll"
     bl_label = "Update Output Collection"
     bl_options = {"REGISTER", "UNDO"}

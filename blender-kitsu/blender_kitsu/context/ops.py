@@ -38,6 +38,7 @@ class KITSU_OT_con_productions_load(bpy.types.Operator):
     bl_idname = "kitsu.con_productions_load"
     bl_label = "Productions Load"
     bl_property = "enum_prop"
+    bl_description = "Sets active project"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_projects_enum_list)  # type: ignore
 
@@ -75,6 +76,7 @@ class KITSU_OT_con_sequences_load(bpy.types.Operator):
     bl_idname = "kitsu.con_sequences_load"
     bl_label = "Sequences Load"
     bl_property = "enum_prop"
+    bl_description = "Sets active sequence for this scene"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_sequences_enum_list)  # type: ignore
 
@@ -104,12 +106,13 @@ class KITSU_OT_con_sequences_load(bpy.types.Operator):
 
 class KITSU_OT_con_shots_load(bpy.types.Operator):
     """
-    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all shots that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
     bl_idname = "kitsu.con_shots_load"
     bl_label = "Shots Load"
     bl_property = "enum_prop"
+    bl_description = "Sets active shot for this scene"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_shots_enum_for_active_seq)  # type: ignore
 
@@ -136,12 +139,13 @@ class KITSU_OT_con_shots_load(bpy.types.Operator):
 
 class KITSU_OT_con_asset_types_load(bpy.types.Operator):
     """
-    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all asset_types that are available in server and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
     bl_idname = "kitsu.con_asset_types_load"
     bl_label = "Asset Types Load"
     bl_property = "enum_prop"
+    bl_description = "Sets active asset type for this scene"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_assetypes_enum_list)  # type: ignore
 
@@ -170,12 +174,13 @@ class KITSU_OT_con_asset_types_load(bpy.types.Operator):
 
 class KITSU_OT_con_assets_load(bpy.types.Operator):
     """
-    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all assets that are available on server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
     bl_idname = "kitsu.con_assets_load"
     bl_label = "Assets Load"
     bl_property = "enum_prop"
+    bl_description = "Sets active asset for this scene"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_assets_enum_for_active_asset_type)  # type: ignore
 
@@ -203,12 +208,13 @@ class KITSU_OT_con_assets_load(bpy.types.Operator):
 
 class KITSU_OT_con_task_types_load(bpy.types.Operator):
     """
-    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all task types that are available on server for active asset/shot and let's user select. Invokes a search Popup (enum_prop) on click.
     """
 
     bl_idname = "kitsu.con_task_types_load"
     bl_label = "Task Types Load"
     bl_property = "enum_prop"
+    bl_description = "Sets active task type for this scene"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_task_types_enum_for_current_context)  # type: ignore
 
@@ -245,12 +251,9 @@ class KITSU_OT_con_task_types_load(bpy.types.Operator):
 
 
 class KITSU_OT_con_detect_context(bpy.types.Operator):
-    """
-    Auto detects context by looking at file path
-    """
-
     bl_idname = "kitsu.con_detect_context"
     bl_label = "Detect Context"
+    bl_description = "Auto detects context by looking at file path"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:

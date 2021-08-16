@@ -34,11 +34,10 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 
 class KITSU_OT_lookdev_set_preset(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.lookdev_set_preset"
     bl_label = "Render Preset"
     bl_property = "files"
+    bl_description = "Sets active render settings preset that can be applied"
 
     files: bpy.props.EnumProperty(items=opsdata.get_rd_settings_enum_list, name="Files")
 
@@ -71,11 +70,10 @@ class KITSU_OT_lookdev_set_preset(bpy.types.Operator):
 
 
 class KITSU_OT_lookdev_apply_preset(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.lookdev_apply_preset"
     bl_label = "Apply Preset"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Applies active render settings preset"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
