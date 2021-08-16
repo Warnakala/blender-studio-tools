@@ -78,7 +78,7 @@ class FolderListModel:
 
     def __detect_folders(self, path: Path) -> List[str]:
         if path.exists() and path.is_dir():
-            # iterate through directory and return all pathes that are dirs, only return their name
+            # Iterate through directory and return all pathes that are dirs, only return their name.
             return sorted(
                 [str(x.name) for x in path.iterdir() if x.is_dir()], reverse=True
             )
@@ -132,7 +132,6 @@ class FileListModel:
             self.reset()
         else:
             self.__root_path = path
-            # logger.debug("FileListModel: Root path  was set to %s", path.as_posix())
             self.__load_dir(self.__root_path)
 
     def reset(self) -> None:
@@ -153,7 +152,7 @@ class FileListModel:
 
     def __detect_files(self, path: Path) -> List[str]:
         if path.exists() and path.is_dir():
-            # iterate through directory and return all pathes that are files, only return their name
+            # Iterate through directory and return all pathes that are files, only return their name.
             return sorted(
                 [str(x.name) for x in path.iterdir() if x.is_file()], reverse=True
             )

@@ -72,26 +72,26 @@ def sqe_update_duplicates(context: bpy.types.Context) -> List[Tuple[str, str, st
     else:
         strips = context.scene.sequence_editor.sequences_all
 
-    # create data dict that holds all shots ids and the corresponding strips that are linked to it
+    # Create data dict that holds all shots ids and the corresponding strips that are linked to it.
     for i in range(len(strips)):
 
         if strips[i].kitsu.linked:
-            # get shot_id, shot_name, create entry in data_dict if id not existent
+            # Get shot_id, shot_name, create entry in data_dict if id not existent.
             shot_id = strips[i].kitsu.shot_id
             shot_name = strips[i].kitsu.shot_name
             if shot_id not in data_dict:
                 data_dict[shot_id] = {"name": shot_name, "strips": []}
 
-            # append i to strips list
+            # Append i to strips list.
             if strips[i] not in set(data_dict[shot_id]["strips"]):
                 data_dict[shot_id]["strips"].append(strips[i])
 
-            # comparet to all other strip
+            # Comparet to all other strip.
             for j in range(i + 1, len(strips)):
                 if shot_id == strips[j].kitsu.shot_id:
                     data_dict[shot_id]["strips"].append(strips[j])
 
-    # convert in data strucutre for enum property
+    # Convert in data strucutre for enum property.
     for shot_id, data in data_dict.items():
         if len(data["strips"]) > 1:
             enum_list.append(("", data["name"], shot_id))
@@ -111,18 +111,18 @@ def sqe_update_multi_project(context: bpy.types.Context) -> List[Tuple[str, str,
     else:
         strips = context.scene.sequence_editor.sequences_all
 
-    # create data dict that holds project names as key and values the corresponding sequence strips
+    # Create data dict that holds project names as key and values the corresponding sequence strips.
     for strip in strips:
         if strip.kitsu.linked:
             project = strip.kitsu.project_name
             if project not in data_dict:
                 data_dict[project] = []
 
-            # append i to strips list
+            # Append i to strips list.
             if strip not in set(data_dict[project]):
                 data_dict[project].append(strip)
 
-    # convert in data strucutre for enum property
+    # Convert in data strucutre for enum property.
     for project, strips in data_dict.items():
         enum_list.append(("", project, ""))
         for strip in strips:
@@ -135,7 +135,7 @@ def resolve_pattern(pattern: str, var_lookup_table: Dict[str, str]) -> str:
 
     matches = re.findall(r"\<(\w+)\>", pattern)
     matches = list(set(matches))
-    # if no variable detected just return value
+    # If no variable detected just return value.
     if len(matches) == 0:
         return pattern
     else:
@@ -172,34 +172,34 @@ def get_shots_enum_for_link_shot_op(
 def upload_preview(
     context: bpy.types.Context, filepath: Path, task_type: TaskType, comment: str = ""
 ) -> None:
-    # get shot by id which is in filename of thumbnail
+    # Get shot by id which is in filename of thumbnail.
     shot_id = filepath.name.split("_")[0]
     shot = Shot.by_id(shot_id)
 
-    # find task from task type for that shot, ca be None of no task was added for that task type
+    # Find task from task type for that shot, ca be None of no task was added for that task type.
     task = Task.by_name(shot, task_type)
 
     if not task:
-        # turns out a entitiy on server can have 0 tasks even tough task types exist
-        # you have to create a task first before being able to upload a thumbnail
+        # Turns out a entity on the server can have 0 tasks even tough task types exist
+        # you have to create a task first before being able to upload a thumbnail.
         task_status = TaskStatus.by_short_name("wip")
         task = Task.new_task(shot, task_type, task_status=task_status)
     else:
         task_status = TaskStatus.by_id(task.task_status_id)
 
-    # create a comment, e.G 'Update thumbnail'
+    # Create a comment, e.G 'Update thumbnail'.
     comment_obj = task.add_comment(task_status, comment=comment)
 
-    # add_preview_to_comment
+    # Add_preview_to_comment.
     preview = task.add_preview_to_comment(comment_obj, filepath.as_posix())
 
-    # preview.set_main_preview()
+    # Preview.set_main_preview().
     preview.set_main_preview()
     logger.info(f"Uploaded preview for shot: {shot.name} under: {task_type.name}")
 
 
 def init_start_frame_offset(strip: bpy.types.Sequence) -> None:
-    # frame start offset
+    # Frame start offset.
     offset_start = strip.frame_final_start - strip.frame_start
     strip.kitsu.frame_start_offset = offset_start
 
@@ -210,7 +210,7 @@ def append_sequence_color(
     """
     Extend scene.kitsu.sequence_colors property with seq.data['color'] value if it exists.
     """
-    # pull sequencee color property
+    # Pull sequencee color property.
 
     if not seq.data:
         logger.info("%s failed to load sequence color. Missing 'data' key")
@@ -235,7 +235,7 @@ def append_sequence_color(
 
 
 def push_sequence_color(context: bpy.types.Context, sequence: Sequence) -> None:
-    # updates sequence color and logs
+    # Updates sequence color and logs.
     try:
         item = context.scene.kitsu.sequence_colors[sequence.id]
     except KeyError:

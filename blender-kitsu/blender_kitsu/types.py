@@ -48,17 +48,17 @@ class Session:
             gazu.client.set_host(self._host)
 
     def start(self) -> SessionData:
-        # clear all data
+        # Clear all data.
         gazu.cache.disable()
         gazu.cache.clear_all()
 
-        # enable cache
+        # Enable cache.
         gazu.cache.enable()
 
         if not self._is_host_up():
             raise gazu.exception.HostException
 
-        # login
+        # Login.
         self._login()
 
         return self._data
@@ -227,7 +227,7 @@ class Project:
 
     @classmethod
     def by_name(cls, project_name: str) -> Optional[Project]:
-        # can return None if seq does not exist
+        # Can return None if seq does not exist.
         project_dict = gazu.project.get_project_by_name(project_name)
         if project_dict:
             return cls(**project_dict)
@@ -256,7 +256,7 @@ class Project:
         return sorted(sequences, key=lambda x: x.name)
 
     def create_sequence(self, sequence_name: str) -> Sequence:
-        # this function returns a seq dict even if seq already exists, it does not override
+        # This function returns a seq dict even if seq already exists, it does not override.
         seq_dict = gazu.shot.new_sequence(asdict(self), sequence_name, episode=None)
         return Sequence(**seq_dict)
 
@@ -282,7 +282,7 @@ class Project:
         frame_out: Optional[int] = None,
         data: Dict[str, Any] = {},
     ) -> Shot:
-        # this function returns a shot dict even if shot already exists, it does not override
+        # This function returns a shot dict even if shot already exists, it does not override.
         shot_dict = gazu.shot.new_shot(
             asdict(self),
             asdict(sequence),
@@ -368,7 +368,7 @@ class Sequence:
         seq_name: str,
         episode: Union[str, Dict[str, Any], None] = None,
     ) -> Optional[Sequence]:
-        # can return None if seq does not exist
+        # Can return None if seq does not exist.
         seq_dict = gazu.shot.get_sequence_by_name(
             asdict(project), seq_name, episode=episode
         )
@@ -426,7 +426,7 @@ class AssetType:
 
     @classmethod
     def by_name(cls, asset_type_name: str) -> Optional[AssetType]:
-        # can return None if seq does not exist
+        # Can return None if asset type does not exist.
         tpye_dict = gazu.asset.get_asset_type_by_name(asset_type_name)
         if tpye_dict:
             return cls(**tpye_dict)
@@ -476,7 +476,7 @@ class Shot:
 
     @classmethod
     def by_name(cls, sequence: Sequence, shot_name: str) -> Optional[Shot]:
-        # can return None if seq does not exist
+        # Can return None if shot does not exist.
         shot_dict = gazu.shot.get_shot_by_name(asdict(sequence), shot_name)
         if shot_dict:
             return cls(**shot_dict)
@@ -555,11 +555,11 @@ class Asset:
         asset_type: Optional[AssetType] = None,
     ) -> Optional[Asset]:
 
-        # convert args to dict for api call
+        # Convert args to dict for api call.
         project_dict = asdict(project)
         asset_type_dict = asdict(asset_type) if asset_type else asset_type
 
-        # can return None if seq does not exist
+        # Can return None if asset does not exist.
         asset_dict = gazu.asset.get_asset_by_name(
             project_dict, asset_name, asset_type=asset_type_dict
         )
@@ -607,7 +607,7 @@ class TaskType:
 
     @classmethod
     def by_name(cls, task_type_name: str) -> Optional[TaskType]:
-        # can return None if seq does not exist
+        # Can return None if task type does not exist.
         task_type_dict = gazu.task.get_task_type_by_name(task_type_name)
 
         if task_type_dict:
@@ -678,14 +678,14 @@ class Task:
     assigner: Dict[str, Any] = field(default_factory=dict)  # assiger dict
     sequence: Dict[str, Any] = field(default_factory=dict)  # sequence dict
 
-    # if you call with all_tasks_for_shot you get these extra
+    # If you call with all_tasks_for_shot you get these extra.
     project_name: str = ""
     task_type_name: str = ""
     task_status_name: str = ""
     entity_type_name: str = ""
     entity_name: str = ""
 
-    # extra attributes from gazu.user.all_tasks_to_do()
+    # Extra attributes from gazu.user.all_tasks_to_do().
     project_has_avatar: str = "False"
     entity_description: str = ""
     entity_preview_file_id: str = ""
@@ -709,11 +709,11 @@ class Task:
         name: str = "main",
     ) -> Optional[Task]:
 
-        # convert args to dict for api call
+        # Convert args to dict for api call.
         asset_shotdict = asdict(asset_shot)
         task_type_dict = asdict(task_type)
 
-        # can return None if seq does not exist
+        # Can return None if task does not exist.
         task_dict = gazu.task.get_task_by_name(asset_shotdict, task_type_dict, name)
 
         if task_dict:
@@ -736,7 +736,7 @@ class Task:
         assignees: Optional[List[Person]] = None,
     ) -> Task:
 
-        # convert args
+        # Convert args.
         assigner = asdict(assigner) if assigner else assigner
         task_status = asdict(task_status) if task_status else task_status
         assignees = asdict(assignees) if assignees else assignees
@@ -783,11 +783,11 @@ class Task:
         user: Optional[Person] = None,
         checklist: List[Dict[str, Any]] = [],
         attachments: List[Dict[str, Any]] = [],
-        # i think equal to attachment_files in Comment
+        # I think attachements is equal to attachment_files in Comment class.
         created_at: Optional[str] = None,
     ) -> Comment:
 
-        # convert args
+        # Convert args.
         person = asdict(user) if user else user
 
         comment_dict = gazu.task.add_comment(
@@ -838,7 +838,7 @@ class TaskStatus:
     @classmethod
     def by_short_name(cls, short_name: str) -> Optional[TaskStatus]:
 
-        # can return None if seq does not exist
+        # Can return None if task status does not exist.
         task_status_dict = gazu.task.get_task_status_by_short_name(short_name)
 
         if task_status_dict:
@@ -848,7 +848,7 @@ class TaskStatus:
     @classmethod
     def by_name(cls, name: str) -> Optional[TaskStatus]:
 
-        # can return None if seq does not exist
+        # Can return None if task status does not exist.
         task_status_dict = gazu.task.get_task_status_by_name(name)
 
         if task_status_dict:
@@ -985,7 +985,7 @@ class User:
         task_list = [Task(**task_dict) for task_dict in gazu.user.all_tasks_to_do()]
         return task_list
 
-    # SHOTS
+    # SHOTS.
 
     def all_sequences_for_project(self, project: Project) -> List[Sequence]:
         seq_list = [
@@ -1015,7 +1015,7 @@ class User:
         ]
         return task_list
 
-    # ASSETS
+    # ASSETS.
 
     def all_asset_types_for_project(self, project: Project) -> List[AssetType]:
         asset_type_list = [

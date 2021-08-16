@@ -22,7 +22,7 @@ import importlib
 from blender_kitsu.sqe import opsdata, checkstrip, pull, push, ops, ui, draw
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 
 def reload():

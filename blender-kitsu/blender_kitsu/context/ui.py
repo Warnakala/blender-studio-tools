@@ -56,10 +56,10 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
-        category = context.scene.kitsu.category  # can be either 'SHOTS' or 'ASSETS'
+        category = context.scene.kitsu.category  # Can be either 'SHOTS' or 'ASSETS'.
         project_active = cache.project_active_get()
 
-        # ERRORS
+        # Catch errors.
         if self.poll_error(context):
             box = ui.draw_error_box(layout)
             if not project_active:
@@ -75,7 +75,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
             "zobject": cache.shot_active_get(),
             "operator": KITSU_OT_con_shots_load.bl_idname,
         }
-        # Production
+        # Production.
         layout.row().label(text=f"Production: {project_active.name}")
 
         row = layout.row(align=True)
@@ -84,7 +84,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
         row = box.row(align=True)
         row.label(text="Browser", icon="FILEBROWSER")
 
-        # Detect Context
+        # Detect Context.
         row.operator(
             KITSU_OT_con_detect_context.bl_idname,
             icon="FILE_REFRESH",
@@ -92,14 +92,14 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
             emboss=False,
         )
 
-        # Category
+        # Category.
         row = box.row(align=True)
         row.prop(context.scene.kitsu, "category", expand=True)
 
         if not prefs.session_auth(context) or not project_active:
             row.enabled = False
 
-        # Sequence / AssetType
+        # Sequence / AssetType.
         if category == "ASSETS":
             item_group_data["name"] = "AssetType"
             item_group_data["zobject"] = cache.asset_type_active_get()
@@ -117,7 +117,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
             item_group_data["operator"], text=item_group_text, icon="DOWNARROW_HLT"
         )
 
-        # Shot / Asset
+        # Shot / Asset.
         if category == "ASSETS":
             item_data["name"] = "Asset"
             item_data["zobject"] = cache.asset_active_get()
@@ -134,7 +134,7 @@ class KITSU_PT_vi3d_context(bpy.types.Panel):
 
         row.operator(item_data["operator"], text=item_text, icon="DOWNARROW_HLT")
 
-        # Task Type
+        # Task Type.
         t_text = "Select Task Type"
         task_type_active = cache.task_type_active_get()
         if task_type_active:
@@ -149,9 +149,9 @@ class KITSU_PT_comp_context(KITSU_PT_vi3d_context):
     bl_space_type = "NODE_EDITOR"
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
-# classes that inherit from another need to be registered first for some reason
+# Classes that inherit from another need to be registered first for some reason.
 classes = [KITSU_PT_comp_context, KITSU_PT_vi3d_context]
 
 

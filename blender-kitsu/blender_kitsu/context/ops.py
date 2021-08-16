@@ -46,13 +46,13 @@ class KITSU_OT_con_productions_load(bpy.types.Operator):
         return prefs.session_auth(context)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # store vars to check if project / seq / shot changed
+        # Store vars to check if project / seq / shot changed.
         project_prev_id = cache.project_active_get().id
 
-        # update kitsu metadata
+        # Update kitsu metadata.
         cache.project_active_set_by_id(context, self.enum_prop)
 
-        # clear active shot when sequence changes
+        # Clear active shot when sequence changes.
         if self.enum_prop != project_prev_id:
             cache.sequence_active_reset(context)
             cache.asset_type_active_reset(context)
@@ -84,13 +84,13 @@ class KITSU_OT_con_sequences_load(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
-        # store vars to check if project / seq / shot changed
+        # Store vars to check if project / seq / shot changed.
         zseq_prev_id = cache.sequence_active_get().id
 
-        # update kitsu metadata
+        # Update kitsu metadata.
         cache.sequence_active_set_by_id(context, self.enum_prop)
 
-        # clear active shot when sequence changes
+        # Clear active shot when sequence changes.
         if self.enum_prop != zseq_prev_id:
             cache.shot_active_reset(context)
 
@@ -115,7 +115,7 @@ class KITSU_OT_con_shots_load(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        # only if session is auth active_project and active sequence selected
+        # Only if session is auth active_project and active sequence selected.
         return bool(
             prefs.session_auth(context)
             and cache.sequence_active_get()
@@ -123,7 +123,7 @@ class KITSU_OT_con_shots_load(bpy.types.Operator):
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # update kitsu metadata
+        # Update kitsu metadata.
         if self.enum_prop:
             cache.shot_active_set_by_id(context, self.enum_prop)
         util.ui_redraw()
@@ -150,13 +150,13 @@ class KITSU_OT_con_asset_types_load(bpy.types.Operator):
         return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # store vars to check if project / seq / shot changed
+        # Store vars to check if project / seq / shot changed.
         asset_type_prev_id = cache.asset_type_active_get().id
 
-        # update kitsu metadata
+        # Update kitsu metadata.
         cache.asset_type_active_set_by_id(context, self.enum_prop)
 
-        # clear active shot when sequence changes
+        # Clear active shot when sequence changes.
         if self.enum_prop != asset_type_prev_id:
             cache.asset_active_reset(context)
 
@@ -191,7 +191,7 @@ class KITSU_OT_con_assets_load(bpy.types.Operator):
         if not self.enum_prop:
             return {"CANCELLED"}
 
-        # update kitsu metadata
+        # Update kitsu metadata.
         cache.asset_active_set_by_id(context, self.enum_prop)
         util.ui_redraw()
         return {"FINISHED"}
@@ -230,10 +230,10 @@ class KITSU_OT_con_task_types_load(bpy.types.Operator):
         return False
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # store vars to check if project / seq / shot changed
+        # Store vars to check if project / seq / shot changed.
         asset_task_type_id = cache.task_type_active_get().id
 
-        # update kitsu metadata
+        # Update kitsu metadata.
         cache.task_type_active_set_by_id(context, self.enum_prop)
 
         util.ui_redraw()
@@ -261,7 +261,7 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # update kitsu metadata
+        # Update kitsu metadata.
         filepath = Path(bpy.data.filepath)
         active_project = cache.project_active_get()
         category = filepath.parents[2].name
@@ -270,12 +270,12 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
         item_task_type = filepath.stem.split(".")[-1]
 
         if category == bkglobals.SHOT_DIR_NAME:
-            # TODO: check if frame range update gets triggered
+            # TODO: check if frame range update gets triggered.
 
-            # set category
+            # Set category.
             context.scene.kitsu.category = "SHOTS"
 
-            # detect ad load seqeunce
+            # Detect ad load seqeunce.
             sequence = active_project.get_sequence_by_name(item_group)
             if not sequence:
                 self.report(
@@ -285,7 +285,7 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
 
             bpy.ops.kitsu.con_sequences_load(enum_prop=sequence.id)
 
-            # detect and load shot
+            # Detect and load shot.
             shot = active_project.get_shot_by_name(sequence, item)
             if not shot:
                 self.report({"ERROR"}, f"Failed to find shot: '{item}' on server")
@@ -293,7 +293,7 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
 
             bpy.ops.kitsu.con_shots_load(enum_prop=shot.id)
 
-            # detect and load shot task type
+            # Detect and load shot task type.
             kitsu_task_type_name = self._find_in_mapping(
                 item_task_type, bkglobals.SHOT_TASK_MAPPING, "shot task type"
             )
@@ -312,10 +312,10 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
 
         elif category == bkglobals.ASSET_DIR_NAME:
 
-            # set category
+            # Set category.
             context.scene.kitsu.category = "ASSETS"
 
-            # detect and load asset type
+            # Detect and load asset type.
             kitsu_asset_type_name = self._find_in_mapping(
                 item_group, bkglobals.ASSET_TYPE_MAPPING, "asset type"
             )
@@ -332,7 +332,7 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
 
             bpy.ops.kitsu.con_asset_types_load(enum_prop=asset_type.id)
 
-            # detect and load asset
+            # Detect and load asset.
             asset = active_project.get_asset_by_name(item)
             if not asset:
                 self.report({"ERROR"}, f"Failed to find asset: '{item}' on server")
@@ -340,7 +340,7 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
 
             bpy.ops.kitsu.con_assets_load(enum_prop=asset.id)
 
-            # detect and load asset task_type
+            # Detect and load asset task_type.
             kitsu_task_type_name = self._find_in_mapping(
                 item_task_type, bkglobals.ASSET_TASK_MAPPING, "task type"
             )
@@ -383,7 +383,7 @@ class KITSU_OT_con_detect_context(bpy.types.Operator):
         return mapping[key]
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [
     KITSU_OT_con_productions_load,

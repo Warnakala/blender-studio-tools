@@ -376,13 +376,13 @@ def _update_tasks_collection_prop(context: bpy.types.Context) -> None:
     addon_prefs = _addon_prefs_get(bpy.context)
     tasks_coll_prop = addon_prefs.tasks
 
-    # get current index
+    # Get current index.
     idx = context.window_manager.kitsu.tasks_index
 
-    # clear all old tasks
+    # Clear all old tasks.
     tasks_coll_prop.clear()
 
-    # populate with new tasks
+    # Populate with new tasks.
     for task in _user_all_tasks:
         item = tasks_coll_prop.add()
         item.id = task.id
@@ -391,7 +391,7 @@ def _update_tasks_collection_prop(context: bpy.types.Context) -> None:
         item.task_type_id = task.task_type_id
         item.task_type_name = task.task_type_name
 
-    # update index
+    # Update index.
     idx = len(tasks_coll_prop) - 1
 
 
@@ -448,11 +448,11 @@ def init_startup_variables(context: bpy.types.Context) -> None:
         logger.info("Startup Cache already initiated")
         return
 
-    # User
+    # User.
     _user_active = User()
     logger.info("Initiated active user cache to: %s", _user_active.full_name)
 
-    # User Tasks
+    # User Tasks.
     load_user_all_tasks(context)
     logger.info("Initiated active user tasks")
 
@@ -555,16 +555,16 @@ def load_post_handler_init_startup_variables(dummy: Any) -> None:
     init_startup_variables(bpy.context)
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 
 def register():
-    # handlers
+    # Handlers.
     bpy.app.handlers.load_post.append(load_post_handler_update_cache)
     bpy.app.handlers.load_post.append(load_post_handler_init_startup_variables)
 
 
 def unregister():
-    # clear handlers
+    # Clear handlers.
     bpy.app.handlers.load_post.remove(load_post_handler_init_startup_variables)
     bpy.app.handlers.load_post.remove(load_post_handler_update_cache)

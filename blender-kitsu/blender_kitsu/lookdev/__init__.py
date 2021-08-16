@@ -26,7 +26,7 @@ from blender_kitsu.lookdev import ops
 from blender_kitsu.lookdev import ui
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 
 def reload():

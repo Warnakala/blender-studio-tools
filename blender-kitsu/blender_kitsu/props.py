@@ -55,20 +55,20 @@ class KITSU_property_group_sequence(bpy.types.PropertyGroup):
     def _get_sequence_name(self):
         return self.sequence_name
 
-    # shot
+    # Shot.
     shot_id: bpy.props.StringProperty(name="Shot ID")  # type: ignore
     shot_name: bpy.props.StringProperty(name="Shot", default="")  # type: ignore
     shot_description: bpy.props.StringProperty(name="Description", default="", options={"HIDDEN"})  # type: ignore
 
-    # sequence
+    # Sequence.
     sequence_name: bpy.props.StringProperty(name="Sequence", default="")  # type: ignore
     sequence_id: bpy.props.StringProperty(name="Seq ID", default="")  # type: ignore
 
-    # project
+    # Project.
     project_name: bpy.props.StringProperty(name="Project", default="")  # type: ignore
     project_id: bpy.props.StringProperty(name="Project ID", default="")  # type: ignore
 
-    # meta
+    # Meta.
     initialized: bpy.props.BoolProperty(  # type: ignore
         name="Initialized", default=False, description="Is Kitsu shot"
     )
@@ -76,17 +76,17 @@ class KITSU_property_group_sequence(bpy.types.PropertyGroup):
         name="Linked", default=False, description="Is linked to an ID on server"
     )
 
-    # frame range
+    # Frame range.
     frame_start_offset: bpy.props.IntProperty(name="Frame Start Offset")
 
-    # media
+    # Media.
     media_outdated: bpy.props.BoolProperty(
         name="Source Media Outdated",
         default=False,
         description="Indicated if there is a newer version of the source media available",
     )
 
-    # display props
+    # Display props.
     shot_description_display: bpy.props.StringProperty(name="Description", get=_get_shot_description)  # type: ignore
     sequence_name_display: bpy.props.StringProperty(name="Sequence", get=_get_sequence_name)  # type: ignore
 
@@ -135,7 +135,7 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         update=propsdata.reset_task_type,
     )
 
-    # context props
+    # Context props.
 
     sequence_active_id: bpy.props.StringProperty(  # type: ignore
         name="Active Sequence ID",
@@ -165,20 +165,20 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         default="",
     )
 
-    # thubnail props
+    # Thumbnail props.
     task_type_thumbnail_id: bpy.props.StringProperty(  # type: ignore
-        name="Thubmnail Task Type ID",
+        name="Thumbnail Task Type ID",
         description="ID that refers to the task type on server for which thumbnails will be uploaded",
         default="",
     )
 
     task_type_thumbnail_name: bpy.props.StringProperty(  # type: ignore
-        name="Thubmnail Task Type Name",
+        name="Thumbnail Task Type Name",
         description="Name that refers to the task type on server for which thumbnails will be uploaded",
         default="",
     )
 
-    # sqe render props
+    # Sqe render props.
     task_type_sqe_render_id: bpy.props.StringProperty(  # type: ignore
         name="Sqe Render Task Type ID",
         description="ID that refers to the task type on server for which the sqe render will be uploaded",
@@ -191,7 +191,7 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         default="",
     )
 
-    # playblast props
+    # Playblast props.
 
     playblast_version: bpy.props.StringProperty(name="Version", default="v001")
 
@@ -217,7 +217,7 @@ class KITSU_property_group_scene(bpy.types.PropertyGroup):
         default="",
     )
 
-    # sequence editor tools
+    # Sequence editor tools.
     pull_edit_channel: bpy.props.IntProperty(
         name="Channel",
         description="On which channel the operator will create the color strips",
@@ -257,7 +257,7 @@ class KITSU_property_group_window_manager(bpy.types.PropertyGroup):
 
 def _add_window_manager_props():
 
-    # Multi Edit Properties
+    # Multi Edit Properties.
     bpy.types.WindowManager.show_advanced = bpy.props.BoolProperty(
         name="Show Advanced",
         description="Shows advanced options to fine control shot pattern",
@@ -312,7 +312,7 @@ def _add_window_manager_props():
         description="Name of Sequence the generated Shots will be assinged to",
     )
 
-    # advanced delete props
+    # Advanced delete props.
     bpy.types.WindowManager.advanced_delete = bpy.props.BoolProperty(
         name="Advanced Delete",
         description="Checkbox to show advanced shot deletion operations",
@@ -346,7 +346,7 @@ def _calc_kitsu_frame_start(self):
     frame_start_final = (
         bkglobals.FRAME_START - self.kitsu.frame_start_offset + offset_start
     )
-    # 101 - (-10) +(-10) = 101
+    # 101 - (-10) +(-10) = 101.
 
     return frame_start_final
 
@@ -371,7 +371,7 @@ def _calc_kitsu_frame_end(self):
         - self.kitsu.frame_start_offset
         + ((self.frame_final_end - 1) - frame_end_global)
     )
-    # 101 + 1000 - 10 + ((101 -1) - 1040) = 151
+    # 101 + 1000 - 10 + ((101 -1) - 1040) = 151.
 
     return frame_end_final
 
@@ -390,7 +390,7 @@ def update_sequence_colors_coll_prop(dummy: Any) -> None:
     sequence_colors = bpy.context.scene.kitsu.sequence_colors
     existings_seq_ids: List[str] = []
 
-    # append missing sequences to scene.kitsu.seqeuence_colors
+    # Append missing sequences to scene.kitsu.seqeuence_colors.
     for seq in sequences:
 
         if not seq.kitsu.sequence_id:
@@ -405,7 +405,7 @@ def update_sequence_colors_coll_prop(dummy: Any) -> None:
 
         existings_seq_ids.append(seq.kitsu.sequence_id)
 
-    # delete sequence colors that are not in edit anymore
+    # Delete sequence colors that are not in edit anymore.
     existings_seq_ids = set(existings_seq_ids)
 
     to_be_removed = [
@@ -424,7 +424,7 @@ def update_sequence_colors_coll_prop(dummy: Any) -> None:
         )
 
 
-# ----------------REGISTER--------------
+# ----------------REGISTER--------------.
 
 classes = [
     KITSU_sequence_colors,
@@ -457,42 +457,42 @@ def register():
         get=_get_frame_final_duration,
     )
 
-    # used in general tools panel next to sqe_change_strip_source operator
+    # Used in general tools panel next to sqe_change_strip_source operator.
     bpy.types.MovieSequence.filepath_display = bpy.props.StringProperty(
         name="Filepath Display", get=_get_strip_filepath
     )
 
-    # Sequence Properties
+    # Sequence Properties.
     bpy.types.Sequence.kitsu = bpy.props.PointerProperty(
         name="Kitsu",
         type=KITSU_property_group_sequence,
         description="Metadata that is required for blender_kitsu",
     )
 
-    # Scene Properties
+    # Scene Properties.
     bpy.types.Scene.kitsu = bpy.props.PointerProperty(
         name="Kitsu",
         type=KITSU_property_group_scene,
         description="Metadata that is required for blender_kitsu",
     )
-    # Window Manager
+    # Window Manager.
     bpy.types.WindowManager.kitsu = bpy.props.PointerProperty(
         name="Kitsu",
         type=KITSU_property_group_window_manager,
         description="Metadata that is required for blender_kitsu",
     )
 
-    # Error Properties
+    # Error Properties.
     bpy.types.Scene.kitsu_error = bpy.props.PointerProperty(
         name="Kitsu Error",
         type=KITSU_property_group_error,
         description="Error property group",
     )
 
-    # Window Manager Properties
+    # Window Manager Properties.
     _add_window_manager_props()
 
-    # handlers
+    # Handlers.
     bpy.app.handlers.load_post.append(update_sequence_colors_coll_prop)
 
 
@@ -500,8 +500,8 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
-    # clear properties
+    # Clear properties.
     _clear_window_manager_props()
 
-    # handlers
+    # Handlers.
     bpy.app.handlers.load_post.remove(update_sequence_colors_coll_prop)

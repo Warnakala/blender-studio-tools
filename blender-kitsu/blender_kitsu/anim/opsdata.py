@@ -51,7 +51,7 @@ def init_playblast_file_model(
     global _playblast_file_model_init
     addon_prefs = addon_prefs_get(context)
 
-    # is None if invalid
+    # Is None if invalid.
     if not context.scene.kitsu.playblast_dir:
         logger.error(
             "Failed to initialize playblast file model. Invalid path. Check addon preferences"
@@ -65,11 +65,11 @@ def init_playblast_file_model(
 
     if not PLAYBLAST_FILE_MODEL.versions:
         PLAYBLAST_FILE_MODEL.append_item("v001")
-        # update playblast_version prop
+        # Update playblast_version prop.
         context.scene.kitsu.playblast_version = "v001"
 
     else:
-        # update playblast_version prop
+        # Update playblast_version prop.
         context.scene.kitsu.playblast_version = PLAYBLAST_FILE_MODEL.versions[0]
 
     _playblast_file_model_init = True
@@ -77,11 +77,11 @@ def init_playblast_file_model(
 
 def add_playblast_version_increment(context: bpy.types.Context) -> str:
 
-    # init model if it did not happen
+    # Init model if it did not happen.
     if not _playblast_file_model_init:
         init_playblast_file_model(context)
 
-    # should be already sorted
+    # Should be already sorted.
     versions = PLAYBLAST_FILE_MODEL.versions
 
     if len(versions) > 0:
@@ -104,11 +104,11 @@ def get_playblast_versions_enum_list(
     global init_playblast_file_model
     global _playblast_file_model_init
 
-    # init model if it did not happen
+    # Init model if it did not happen.
     if not _playblast_file_model_init:
         init_playblast_file_model(context)
 
-    # clear all versions in enum list
+    # Clear all versions in enum list.
     _playblast_enum_list.clear()
     _playblast_enum_list.extend(PLAYBLAST_FILE_MODEL.versions_as_enum_list)
 
@@ -125,7 +125,7 @@ def add_version_custom(custom_version: str) -> None:
 def is_item_local(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
 ) -> bool:
-    # local collection of blend file
+    # Local collection of blend file.
     if not item.override_library and not item.library:
         return True
     return False
@@ -134,7 +134,7 @@ def is_item_local(
 def is_item_lib_override(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
 ) -> bool:
-    # collection from libfile and overwritten
+    # Collection from libfile and overwritten.
     if item.override_library and not item.library:
         return True
     return False
@@ -143,7 +143,7 @@ def is_item_lib_override(
 def is_item_lib_source(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
 ) -> bool:
-    #  source collection from libfile not overwritten
+    #  Source collection from libfile not overwritten.
     if not item.override_library and item.library:
         return True
     return False
@@ -154,7 +154,7 @@ def create_collection_instance(
     ref_coll: bpy.types.Collection,
     instance_name: str,
 ) -> bpy.types.Object:
-    # use empty to instance source collection
+    # Use empty to instance source collection.
     instance_obj = bpy.data.objects.new(name=instance_name, object_data=None)
     instance_obj.instance_collection = ref_coll
     instance_obj.instance_type = "COLLECTION"
@@ -182,7 +182,7 @@ def find_rig(
     valid_rigs = []
 
     for obj in coll.all_objects:
-        # default rig name: 'RIG-rex' / 'RIG-Rex'
+        # Default rig name: 'RIG-rex' / 'RIG-Rex'.
         if obj.type != "ARMATURE":
             continue
 
@@ -238,7 +238,7 @@ def find_asset_collections_in_scene(
     asset_colls: List[bpy.types.Collection] = []
     colls: List[bpy.types.Collection] = []
 
-    # get all collections that are linked in this scene
+    # Get all collections that are linked in this scene.
     for coll in scene.collection.children:
         colls.extend(list(traverse_collection_tree(coll)))
 
@@ -296,12 +296,12 @@ def is_multi_asset(asset_name: str) -> bool:
 
 
 action_names_cache: List[str] = []
-# we need this in order to increment prefixes of duplications of the same asset correctly
-# gets cleared populated during call of KITSU_OT_anim_check_action_names
+# We need this in order to increment prefixes of duplications of the same asset correctly
+# gets cleared populated during call of KITSU_OT_anim_check_action_names.
 _current_asset: str = ""
 _curret_asset_idx: int = 0
-# we need these two variables to track if we are on the first asset that is currently processed
-# (if there are multiple ones) because the first one CAN get keep it postfix
+# We need these two variables to track if we are on the first asset that is currently processed
+# (if there are multiple ones) because the first one CAN get keep it postfix.
 
 
 def gen_action_name(
@@ -314,7 +314,7 @@ def gen_action_name(
     action_names_cache.sort()
 
     def _find_postfix(action_name: str) -> Optional[str]:
-        # ANI-lady_bug_A.030_0020_A.v001
+        # ANI-lady_bug_A.030_0020_A.v001.
         split1 = action_name.split("-")[-1]  # lady_bug_A.030_0020_A.v001
         split2 = split1.split(".")[0]  # lady_bug_A
         split3 = split2.split("_")[-1]  # A
@@ -330,7 +330,7 @@ def gen_action_name(
     asset_name = find_asset_name(ref_coll.name).lower()
     asset_name = asset_name.replace(".", "_")
 
-    # track on which repition we are of the same asset
+    # Track on which repition we are of the same asset.
     if asset_name == _current_asset:
         _curret_asset_idx += 1
     else:
@@ -342,24 +342,24 @@ def gen_action_name(
     has_action = False
     final_postfix = ""
 
-    # overwrite version v001 if there is an action which already contains a version
+    # Overwrite version v001 if there is an action which already contains a version.
     if armature.animation_data:
         if armature.animation_data.action:
             has_action = True
             version = util.get_version(armature.animation_data.action.name) or "v001"
 
-    # action name for single aset
+    # Action name for single aset.
     action_name = f"{action_prefix}-{asset_name}.{shot_name}.{version}"
 
     if is_multi_asset(asset_name):
         existing_postfixes = []
 
-        # find all actions that relate to the same asset except for the asset
+        # Find all actions that relate to the same asset except for the asset.
         for action_name in action_names_cache:
 
-            # skip action that was input as parameter of this function
+            # Skip action that was input as parameter of this function.
             if has_action and action_name == armature.animation_data.action.name:
-                # print(f"Skipping action same name: {action_name}")
+                # Print(f"Skipping action same name: {action_name}").
                 continue
 
             # print(action_names_cache)
@@ -372,30 +372,29 @@ def gen_action_name(
         # print(f"EXISTING: {existing_postfixes}")
         if existing_postfixes:
             if _curret_asset_idx == 0:
-                # print(f"{asset_name} is first asset can keep postifx")
-                # firs asset can keep its postfix
+                # print(f"{asset_name} is first asset can keep postfix")
                 final_postfix = multi_postfix
             else:
-                # otherwise increment the postfix by one
+                # Otherwise increment the postfix by one.
                 existing_postfixes.sort()
                 final_postfix = chr(
                     ord(existing_postfixes[-1]) + 1
                 )  # handle postfix == Z > [
         else:
-            # if there are no existing postfixes the first one is A
+            # If there are no existing postfixes the first one is A.
             final_postfix = "A"
 
         if has_action:
-            # overwrite multi_postfix if multi_postfix exists
+            # Overwrite multi_postfix if multi_postfix exists.
             current_postfix = _find_postfix(armature.animation_data.action.name)
 
-            # if existing action already has a postfix check if that one is in
-            # existing postfixes, if not use the actions post fix
+            # If existing action already has a postfix check if that one is in
+            # existing postfixes, if not use the actions post fix.
             if current_postfix:
                 if current_postfix not in existing_postfixes:
                     final_postfix = current_postfix
 
-        # action name for multi asset
+        # Action name for multi asset.
         action_name = (
             f"{action_prefix}-{asset_name}_{final_postfix}.{shot_name}.{version}"
         )

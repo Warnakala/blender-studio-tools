@@ -27,14 +27,14 @@ import bpy
 
 from blender_kitsu import cache, prefs
 
-# TODO: restructure that to not import from anim
+# TODO: restructure that to not import from anim.
 from blender_kitsu.anim import ops as ops_anim
 from blender_kitsu.anim import opsdata as ops_anim_data
 from blender_kitsu.logger import LoggerFactory
 
 logger = LoggerFactory.getLogger(name=__name__)
 
-# get functions for window manager properties
+# Get functions for window manager properties.
 def _get_project_active(self):
     return cache.project_active_get().name
 
@@ -43,7 +43,7 @@ def _resolve_pattern(pattern: str, var_lookup_table: Dict[str, str]) -> str:
 
     matches = re.findall(r"\<(\w+)\>", pattern)
     matches = list(set(matches))
-    # if no variable detected just return value
+    # If no variable detected just return value.
     if len(matches) == 0:
         return pattern
     else:
@@ -97,7 +97,7 @@ def _gen_shot_preview(self: Any) -> str:
 
 
 def get_playblast_dir(self: Any) -> str:
-    # .../110_rextoria/110_0030_A/110_0030_A.anim
+    # .../110_rextoria/110_0030_A/110_0030_A.anim.
 
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     if not addon_prefs.is_playblast_root_valid:
@@ -121,7 +121,7 @@ def get_playblast_file(self: Any) -> str:
 
     version = self.playblast_version
     shot_ative = cache.shot_active_get()
-    # 070_0010_A.anim.v001.mp4
+    # 070_0010_A.anim.v001.mp4.
     file_name = f"{shot_ative.name}.anim.{version}.mp4"
 
     return Path(self.playblast_dir).joinpath(file_name).as_posix()
@@ -149,8 +149,8 @@ def reset_task_type(self: Any, context: bpy.types.Context) -> None:
 
 
 def on_shot_change(self: Any, context: bpy.types.Context) -> None:
-    # reset versions
+    # Reset versions.
     ops_anim_data.init_playblast_file_model(context)
 
-    # check frame range
+    # Check frame range.
     ops_anim.load_post_handler_check_frame_range(context)

@@ -81,7 +81,7 @@ class KITSU_OT_open_path(bpy.types.Operator):
             return self._find_latest_existing_folder(path.parent)
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [KITSU_OT_open_path]
 

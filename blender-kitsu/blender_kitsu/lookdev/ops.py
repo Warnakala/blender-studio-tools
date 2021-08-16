@@ -56,11 +56,11 @@ class KITSU_OT_lookdev_set_preset(bpy.types.Operator):
         if context.scene.lookdev.preset_file == file:
             return {"CANCELLED"}
 
-        # update global scene cache version prop
+        # Update global scene cache version prop.
         context.scene.lookdev.preset_file = file
         logger.info("Set render preset file to %s", file)
 
-        # redraw ui
+        # Redraw ui.
         util.ui_redraw()
 
         return {"FINISHED"}
@@ -88,7 +88,7 @@ class KITSU_OT_lookdev_apply_preset(bpy.types.Operator):
         if not preset_file:
             return {"CANCELLED"}
 
-        # load module
+        # Load module.
         spec = importlib.util.spec_from_file_location(
             preset_path.name, preset_path.as_posix()
         )
@@ -96,7 +96,7 @@ class KITSU_OT_lookdev_apply_preset(bpy.types.Operator):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
-        # exec module main function
+        # Exec module main function.
         if "main" not in dir(module):
             self.report(
                 {"ERROR"}, f"{preset_path.name} does not contain a 'main' function"
@@ -109,7 +109,7 @@ class KITSU_OT_lookdev_apply_preset(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [KITSU_OT_lookdev_set_preset, KITSU_OT_lookdev_apply_preset]
 

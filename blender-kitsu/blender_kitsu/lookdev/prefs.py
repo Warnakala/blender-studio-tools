@@ -47,7 +47,7 @@ class LOOKDEV_preferences(bpy.types.PropertyGroup):
     @property
     def is_presets_dir_valid(self) -> bool:
 
-        # check if file is saved
+        # Check if file is saved.
         if not self.presets_dir:
             return False
 
@@ -68,13 +68,13 @@ class LOOKDEV_preferences(bpy.types.PropertyGroup):
         layout: bpy.types.UILayout,
     ) -> None:
 
-        # rd preset
+        # Render preset.
         box = layout.box()
         box.label(text="Lookdev Tools", icon="RESTRICT_RENDER_OFF")
         box.row().prop(self, "presets_dir")
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [LOOKDEV_preferences]
 
@@ -86,6 +86,6 @@ def register():
 
 def unregister():
 
-    # unregister classes
+    # Unregister classes.
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

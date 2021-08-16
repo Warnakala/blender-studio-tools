@@ -22,7 +22,7 @@ import importlib
 from blender_kitsu.auth import ops, ui
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 
 def reload():

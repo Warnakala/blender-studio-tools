@@ -29,7 +29,7 @@ import bpy
 
 from blender_kitsu import cache, bkglobals
 
-# TODO: restructure this to not acess ops_anim_data
+# TODO: restructure this to not access ops_anim_data.
 from blender_kitsu.anim import opsdata as ops_anim_data
 from blender_kitsu.types import Session
 from blender_kitsu.logger import LoggerFactory
@@ -103,7 +103,7 @@ class KITSU_OT_prefs_media_search_path_remove(bpy.types.Operator):
 
 class KITSU_addon_preferences(bpy.types.AddonPreferences):
     """
-    Addon preferences to kitsu. Holds variables that are important for authentification and configuring
+    Addon preferences to kitsu. Holds variables that are important for authentication and configuring
     how some of the operators work.
     """
 
@@ -114,7 +114,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         # macOS: ~/Library/Application Support
         # windows: C:/Users/<USER>/AppData/Roaming
         """
-        # This function is copied from the edit_breakdown addon by Inês Almeida and Francesco Siddi
+        # This function is copied from the edit_breakdown addon by Inês Almeida and Francesco Siddi.
 
         home = Path.home()
 
@@ -131,7 +131,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         The path is constructed by combining the OS application data dir,
         "blender_kitsu" and a hashed version of the filepath.
         """
-        # This function is copied and modified from the edit_breakdown addon by Inês Almeida and Francesco Siddi
+        # This function is copied and modified from the edit_breakdown addon by Inês Almeida and Francesco Siddi.
 
         hashed_filepath = hashlib.md5(bpy.data.filepath.encode()).hexdigest()
         storage_dir = (
@@ -213,7 +213,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         ),
         default="",
         subtype="DIR_PATH",
-        # update=,
     )
     config_dir: bpy.props.StringProperty(  # type: ignore
         name="Config Directory",
@@ -294,7 +293,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         layout = self.layout
         project_active = cache.project_active_get()
 
-        # login
+        # Login.
         box = layout.box()
         box.label(text="Login and Host Settings", icon="URL")
         if not self.session.is_auth():
@@ -313,7 +312,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
                 KITSU_OT_session_end.bl_idname, text="Logout", icon="PANEL_CLOSE"
             )
 
-        # Production
+        # Production.
         box = layout.box()
         box.label(text="Project settings", icon="FILEBROWSER")
         row = box.row(align=True)
@@ -329,19 +328,18 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             icon="DOWNARROW_HLT",
         )
         box.row().prop(self, "project_root_dir")
-        # box.row().prop(self, "config_dir") #hide it for now as there is no use so far
 
-        # anim tools settings
+        # Anim tools settings.
         box = layout.box()
         box.label(text="Animation Tools", icon="RENDER_ANIMATION")
         box.row().prop(self, "playblast_root_dir")
         box.row().prop(self, "pb_open_webbrowser")
         box.row().prop(self, "pb_open_vse")
 
-        # lookdev tools settings
+        # Lookdev tools settings.
         self.lookdev.draw(context, layout)
 
-        # sequence editor include paths
+        # Sequence editor include paths.
         box = layout.box()
         box.label(text="Media Update Search Paths", icon="SEQUENCE")
         box.label(
@@ -366,7 +364,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             emboss=False,
         )
 
-        # misc settings
+        # Misc settings.
         box = layout.box()
         box.label(text="Miscellaneous", icon="MODIFIER")
         box.row().prop(self, "thumbnail_dir")
@@ -387,8 +385,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     @property
     def is_playblast_root_valid(self) -> bool:
-
-        # check if file is saved
         if not self.playblast_root_dir:
             return False
 
@@ -405,8 +401,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     @property
     def is_project_root_valid(self) -> bool:
-
-        # check if file is saved
         if not self.project_root_dir:
             return False
 
@@ -417,8 +411,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
     @property
     def is_config_dir_valid(self) -> bool:
-
-        # check if file is saved
         if not self.config_dir:
             return False
 
@@ -430,7 +422,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
 
 def session_get(context: bpy.types.Context) -> Session:
     """
-    shortcut to get session from blender_kitsu addon preferences
+    Shortcut to get session from blender_kitsu addon preferences
     """
     prefs = context.preferences.addons["blender_kitsu"].preferences
     return prefs.session  # type: ignore
@@ -438,19 +430,19 @@ def session_get(context: bpy.types.Context) -> Session:
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """
-    shortcut to get blender_kitsu addon preferences
+    Shortcut to get blender_kitsu addon preferences
     """
     return context.preferences.addons["blender_kitsu"].preferences
 
 
 def session_auth(context: bpy.types.Context) -> bool:
     """
-    shortcut to check if zession is authorized
+    Shortcut to check if zession is authorized
     """
     return session_get(context).is_auth()
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [
     KITSU_OT_prefs_media_search_path_remove,
@@ -468,11 +460,11 @@ def register():
 
 def unregister():
 
-    # log user out
+    # Log user out.
     addon_prefs = bpy.context.preferences.addons["blender_kitsu"].preferences
     if addon_prefs.session.is_auth():
         addon_prefs.session.end()
 
-    # unregister classes
+    # Unregister classes.
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

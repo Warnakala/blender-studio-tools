@@ -175,20 +175,20 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
             elif s.kitsu.initialized:
                 strips_to_uninit.append(s)
 
-        # create box
+        # Create box.
         layout = self.layout
         box = layout.box()
         box.label(text="Setup Shots", icon="TOOL_SETTINGS")
 
-        # Production
+        # Production.
         if prefs.session_auth(context):
             box.row().label(text=f"Production: {project_active.name}")
 
-        # Single Selection
+        # Single Selection.
         if nr_of_shots == 1:
             row = box.row(align=True)
 
-            # initialize
+            # Initialize.
             if strip.type not in checkstrip.VALID_STRIP_TYPES:
                 row.label(
                     text=f"Only sequence strips of types: {checkstrip.VALID_STRIP_TYPES }"
@@ -196,24 +196,24 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 return
 
             if not strip.kitsu.initialized:
-                # init active
+                # Init active.
                 row.operator(
                     KITSU_OT_sqe_init_strip.bl_idname, text=f"Init {noun}", icon="ADD"
                 )
-                # link active
+                # Link active.
                 row.operator(
                     KITSU_OT_sqe_link_shot.bl_idname,
                     text=f"Link {noun}",
                     icon="LINKED",
                 )
-                # create metastrip from uninitialized strip
+                # Create metastrip from uninitialized strip.
                 row = box.row(align=True)
                 row.operator(
                     KITSU_OT_sqe_create_meta_strip.bl_idname,
                     text=f"Create Metastrip {noun}",
                 )
 
-            # unlink
+            # Unlink.
             elif strip.kitsu.linked:
 
                 row = box.row(align=True)
@@ -224,21 +224,21 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 )
                 row.menu("KITSU_MT_sqe_advanced_delete", icon="DOWNARROW_HLT", text="")
 
-            # uninitialize
+            # Uninitialize.
             else:
                 row = box.row(align=True)
-                # unlink active
+                # Unlink active.
                 row.operator(
                     KITSU_OT_sqe_uninit_strip.bl_idname,
                     text=f"Uninitialize {noun}",
                     icon="REMOVE",
                 )
 
-        # Multiple Selection
+        # Multiple Selection.
         elif nr_of_shots > 1:
             row = box.row(align=True)
 
-            # init
+            # Init.
             if strips_to_init:
                 row.operator(
                     KITSU_OT_sqe_init_strip.bl_idname,
@@ -251,11 +251,11 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                     text=f"Create {len(strips_to_init)} Metastrips",
                 )
 
-            # make row
+            # Make row.
             if strips_to_uninit or strips_to_unlink:
                 row = box.row(align=True)
 
-            # uninitialize
+            # Uninitialize.
             if strips_to_uninit:
                 row.operator(
                     KITSU_OT_sqe_uninit_strip.bl_idname,
@@ -263,7 +263,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                     icon="REMOVE",
                 )
 
-            # unlink all
+            # Unlink all.
             if strips_to_unlink:
                 row.operator(
                     KITSU_OT_sqe_unlink_shot.bl_idname,
@@ -288,14 +288,14 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
         strip = context.scene.sequence_editor.active_strip
 
-        # create box
+        # Create box.
         layout = self.layout
         box = layout.box()
         box.label(text="Metadata", icon="ALIGN_LEFT")
 
         col = box.column(align=True)
 
-        # sequence
+        # Sequence.
         split = col.split(factor=split_factor, align=True)
         split.label(text="Sequence")
 
@@ -310,8 +310,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
             )
 
         else:
-            # lots of splitting because color prop is too big by default
-            # i dont even know what split is what
+            # Lots of splitting because color prop is too big by default
             sub_split = split.split(factor=0.6, align=True)
             sub_split.prop(strip.kitsu, "sequence_name_display", text="")
 
@@ -337,18 +336,18 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
             else:
                 sub_sub_split.prop(sequence_color_item, "color", text="")
 
-        # shot
+        # Shot.
         split = col.split(factor=split_factor, align=True)
         split.label(text="Shot")
         split.prop(strip.kitsu, "shot_name", text="")
 
-        # description
+        # Description.
         split = col.split(factor=split_factor, align=True)
         split.label(text="Description")
         split.prop(strip.kitsu, "shot_description_display", text="")
         split.enabled = False if not strip.kitsu.initialized else True
 
-        # frame range
+        # Frame range.
         split = col.split(factor=split_factor)
         split.label(text="Frame Range")
         row = split.row(align=False)
@@ -383,7 +382,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         nr_of_shots = len(context.selected_sequences)
         noun = get_selshots_noun(nr_of_shots)
 
-        # create box
+        # Create box.
         layout = self.layout
         box = layout.box()
         box.label(text="Multi Edit", icon="PROPERTIES")
@@ -392,11 +391,11 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         # TODO: use link sequence operator instead or sequence_enum ?
         col = box.column()
         sub_row = col.row(align=True)
-        # sub_row.prop(context.window_manager, "sequence_name_display")
+        # Sub_row.prop(context.window_manager, "sequence_name_display").
         sub_row.prop(context.window_manager, "sequence_enum", text="Sequence")
         sub_row.operator(KITSU_OT_sqe_push_new_sequence.bl_idname, text="", icon="ADD")
 
-        # Counter
+        # Counter.
         row = box.row()
         row.prop(
             context.window_manager, "shot_counter_start", text="Shot Counter Start"
@@ -405,7 +404,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
         if context.window_manager.show_advanced:
 
-            # Counter
+            # Counter.
             box.row().prop(
                 addon_prefs, "shot_counter_digits", text="Shot Counter Digits"
             )
@@ -413,7 +412,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 addon_prefs, "shot_counter_increment", text="Shot Counter Increment"
             )
 
-            # variables
+            # Variables.
             row = box.row(align=True)
             row.prop(
                 context.window_manager,
@@ -423,7 +422,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
             if context.window_manager.var_use_custom_seq:
                 row.prop(context.window_manager, "var_sequence_custom", text="")
 
-            # project
+            # Project.
             row = box.row(align=True)
             row.prop(
                 context.window_manager,
@@ -433,10 +432,10 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
             if context.window_manager.var_use_custom_project:
                 row.prop(context.window_manager, "var_project_custom", text="")
 
-            # Shot pattern
+            # Shot pattern.
             box.row().prop(addon_prefs, "shot_pattern", text="Shot Pattern")
 
-        # preview
+        # Preview.
         row = box.row()
         row.prop(context.window_manager, "shot_preview", text="Preview")
 
@@ -449,7 +448,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
     @classmethod
     def poll_push(cls, context: bpy.types.Context) -> bool:
-        # if only one strip is selected and it is not init then hide panel
+        # If only one strip is selected and it is not init then hide panel.
         if not prefs.session_auth(context):
             return False
 
@@ -498,14 +497,14 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 if s.kitsu.shot_name and s.kitsu.sequence_name:
                     strips_to_submit.append(s)
 
-        # create box
+        # Create box.
         layout = self.layout
         box = layout.box()
         box.label(text="Push", icon="EXPORT")
-        # special case if one shot is selected and it is init but not linked
-        # shows the operator but it is not enabled until user types in required metadata
+        # Special case if one shot is selected and it is init but not linked
+        # shows the operator but it is not enabled until user types in required metadata.
         if nr_of_shots == 1 and not strip.kitsu.linked:
-            # new operator
+            # New operator.
             row = box.row()
             col = row.column(align=True)
             col.operator(
@@ -515,9 +514,9 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
             )
             return
 
-        # either way no selection one selection but linked or multiple
+        # Either way no selection one selection but linked or multiple.
 
-        # metadata operator
+        # Metadata operator.
         row = box.row()
         if strips_to_meta:
             col = row.column(align=True)
@@ -530,10 +529,10 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 icon="ALIGN_LEFT",
             )
 
-        # thumbnail and seqeunce renderoperator
+        # Thumbnail and seqeunce renderoperator.
         if strips_to_tb:
 
-            # upload thumbnail op
+            # Upload thumbnail op.
             noun = get_selshots_noun(len(strips_to_tb), prefix=f"{len(strips_to_meta)}")
             split = col.split(factor=0.7, align=True)
             split.operator(
@@ -541,7 +540,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 text=f"Thumbnail {noun}",
                 icon="IMAGE_DATA",
             )
-            # select task types op
+            # Select task types op.
             noun = context.scene.kitsu.task_type_thumbnail_name or "Select Task Type"
             split.operator(
                 KITSU_OT_sqe_set_thumbnail_task_type.bl_idname,
@@ -549,7 +548,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 icon="DOWNARROW_HLT",
             )
 
-            # sqe render op
+            # Sqe render op.
             noun = get_selshots_noun(len(strips_to_tb), prefix=f"{len(strips_to_meta)}")
             split = col.split(factor=0.7, align=True)
             split.operator(
@@ -557,7 +556,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 text=f"Render {noun}",
                 icon="IMAGE_DATA",
             )
-            # select task types op
+            # Select task types op.
             noun = context.scene.kitsu.task_type_sqe_render_name or "Select Task Type"
             split.operator(
                 KITSU_OT_sqe_set_sqe_render_task_type.bl_idname,
@@ -565,7 +564,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
                 icon="DOWNARROW_HLT",
             )
 
-        # submit operator
+        # Submit operator.
         if nr_of_shots > 0:
             if strips_to_submit:
                 noun = get_selshots_noun(
@@ -584,12 +583,10 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         if not prefs.session_auth(context):
             return False
 
-        project_active = cache.project_active_get()
-
         selshots = context.selected_sequences
         all_shots = context.scene.sequence_editor.sequences_all
 
-        if not selshots:  # pull entire edit
+        if not selshots:  # Pull entire edit.
             return True
 
         strips_to_meta_sel = [s for s in selshots if s.kitsu.linked]
@@ -614,7 +611,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
             if s.kitsu.linked:
                 strips_to_meta.append(s)
 
-        # create box
+        # Create box.
         layout = self.layout
         box = layout.box()
         box.label(text="Pull", icon="IMPORT")
@@ -647,7 +644,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         nr_of_shots = len(context.selected_sequences)
         noun = get_selshots_noun(nr_of_shots)
 
-        # create box
+        # Create box.
         layout = self.layout
         box = layout.box()
         box.label(text="Debug", icon="MODIFIER_ON")
@@ -705,12 +702,12 @@ class KITSU_PT_sqe_general_tools(bpy.types.Panel):
             if s.type == "MOVIE":
                 strips_to_update_media.append(s)
 
-        # create box
+        # Create box.
         layout = self.layout
         box = layout.box()
         box.label(text="General", icon="MODIFIER")
 
-        # scan for outdated media and reset operator
+        # Scan for outdated media and reset operator.
         row = box.row(align=True)
         row.operator(
             KITSU_OT_sqe_scan_for_media_updates.bl_idname,
@@ -718,7 +715,7 @@ class KITSU_PT_sqe_general_tools(bpy.types.Panel):
         )
         row.operator(KITSU_OT_sqe_clear_update_indicators.bl_idname, text="", icon="X")
 
-        # up down source operator
+        # Up down source operator.
         if len(selshots) == 1 and active_strip and active_strip.type == "MOVIE":
             row = box.row(align=True)
             row.prop(active_strip, "filepath_display", text="")
@@ -733,7 +730,7 @@ class KITSU_PT_sqe_general_tools(bpy.types.Panel):
             ).go_latest = True
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [
     KITSU_MT_sqe_advanced_delete,

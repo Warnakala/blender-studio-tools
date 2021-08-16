@@ -83,33 +83,33 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         layout = self.layout
         split_factor_small = 0.95
 
-        # ERROR
+        # ERROR.
         if self.poll_error(context):
             self.draw_error(context)
 
-        # playblast box
+        # Playblast box.
         box = layout.box()
         box.label(text="Playblast")
 
-        # playlast version op
+        # Playlast version op.
         row = box.row(align=True)
         row.operator(
             KITSU_OT_anim_set_playblast_version.bl_idname,
             text=context.scene.kitsu.playblast_version,
             icon="DOWNARROW_HLT",
         )
-        # playblast increment version op
+        # Playblast increment version op.
         row.operator(
             KITSU_OT_anim_increment_playblast_version.bl_idname,
             text="",
             icon="ADD",
         )
 
-        # playblast op
+        # Playblast op.
         row = box.row(align=True)
         row.operator(KITSU_OT_anim_create_playblast.bl_idname, icon="RENDER_ANIMATION")
 
-        # playblast path label
+        # Playblast path label.
         if Path(context.scene.kitsu.playblast_file).exists():
             split = box.split(factor=1 - split_factor_small, align=True)
             split.label(icon="ERROR")
@@ -125,25 +125,25 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
                 KITSU_OT_open_path.bl_idname, icon="FILE_FOLDER", text=""
             ).filepath = context.scene.kitsu.playblast_file
 
-        # scene operators
+        # Scene operators.
         box = layout.box()
         box.label(text="Scene", icon="SCENE_DATA")
 
-        # pull frame range
+        # Pull frame range.
         row = box.row(align=True)
         row.operator(
             KITSU_OT_anim_pull_frame_range.bl_idname,
             icon="FILE_REFRESH",
         )
 
-        # update output collection
+        # Update output collection.
         row = box.row(align=True)
         row.operator(
             KITSU_OT_anim_update_output_coll.bl_idname,
             icon="FILE_REFRESH",
         )
 
-        # quick duplicate
+        # Quick duplicate.
         act_coll = context.view_layer.active_layer_collection.collection
         dupli_text = "Duplicate: Select Collection"
 
@@ -159,7 +159,7 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         )
         split.prop(context.window_manager.kitsu, "quick_duplicate_amount", text="")
 
-        # check action names
+        # Check action names.
         row = box.row(align=True)
         row.operator(
             KITSU_OT_anim_check_action_names.bl_idname,
@@ -168,7 +168,7 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         )
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [
     KITSU_PT_vi3d_anim_tools,

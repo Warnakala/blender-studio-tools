@@ -16,7 +16,7 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-# <pep8 compliant>
+# <pep8 compliant>.
 
 # This file is copied from the blender-cloud-addon https://developer.blender.org/diffusion/BCA/
 # Author of this file is: Sybren A. Stuevel
@@ -42,7 +42,7 @@ strip_status_colour = {
 
 CONFLICT_COLOUR = (0.576, 0.118, 0.035, 1.0)  # RGBA tuple
 
-# glsl
+# Glsl.
 gpu_vertex_shader = """
 uniform mat4 ModelViewProjectionMatrix;
 
@@ -105,10 +105,10 @@ class LineDrawer:
 
 
 def get_strip_rectf(strip) -> Float4:
-    # Get x and y in terms of the grid's frames and channels
+    # Get x and y in terms of the grid's frames and channels.
     x1 = strip.frame_final_start
     x2 = strip.frame_final_end
-    # seems to be a 5 % offset from channel top start of strip
+    # Seems to be a 5 % offset from channel top start of strip.
     y1 = strip.channel + 0.05
     y2 = strip.channel - 0.05 + 1
 
@@ -123,17 +123,17 @@ def line_in_strip(
     out_coords: typing.List[Float2],
     out_colors: typing.List[Float4],
 ):
-    # Strip coords
+    # Strip coords.
     s_x1, s_y1, s_x2, s_y2 = strip_coords
 
-    # calculate line height with factor
+    # Calculate line height with factor.
     line_y = (1 - line_height_factor) * s_y1 + line_height_factor * s_y2
 
     # if strip is shorter than line_width use stips s_x2
     # line_x2 = s_x1 + line_width if (s_x2 - s_x1 > line_width) else s_x2
     line_x2 = s_x2
 
-    # be careful not to draw over the current frame line
+    # Be careful not to draw over the current frame line.
     cf_x = bpy.context.scene.frame_current_final
 
     # TODO(Sybren): figure out how to pass one colour per line,
@@ -184,7 +184,7 @@ def draw_callback_px(line_drawer: LineDrawer):
     if not context.scene.sequence_editor:
         return
 
-    # from . import shown_strips
+    # From . import shown_strips.
 
     region = context.region
     xwin1, ywin1 = region.view2d.region_to_view(0, 0)
@@ -192,7 +192,7 @@ def draw_callback_px(line_drawer: LineDrawer):
     one_pixel_further_x, one_pixel_further_y = region.view2d.region_to_view(1, 1)
     pixel_size_x = one_pixel_further_x - xwin1
 
-    # strips = shown_strips(context)
+    # Strips = shown_strips(context).
     strips = context.scene.sequence_editor.sequences_all
 
     coords = []  # type: typing.List[Float2]
@@ -201,10 +201,10 @@ def draw_callback_px(line_drawer: LineDrawer):
     # Collect all the lines (vertex coords + vertex colours) to draw.
     for strip in strips:
 
-        # Get corners (x1, y1), (x2, y2) of the strip rectangle in px region coords
+        # Get corners (x1, y1), (x2, y2) of the strip rectangle in px region coords.
         strip_coords = get_strip_rectf(strip)
 
-        # check if any of the coordinates are out of bounds
+        # Check if any of the coordinates are out of bounds.
         if (
             strip_coords[0] > xwin2
             or strip_coords[2] < xwin1
@@ -243,7 +243,7 @@ def draw_callback_px(line_drawer: LineDrawer):
 def tag_redraw_all_sequencer_editors():
     context = bpy.context
 
-    # Py cant access notifiers
+    # Py cant access notifiers.
     for window in context.window_manager.windows:
         for area in window.screen.areas:
             if area.type == "SEQUENCE_EDITOR":
@@ -293,7 +293,7 @@ def callback_disable():
     tag_redraw_all_sequencer_editors()
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 
 def register():

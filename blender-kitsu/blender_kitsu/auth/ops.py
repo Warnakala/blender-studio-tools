@@ -24,7 +24,7 @@ import bpy
 
 from blender_kitsu import cache, prefs, gazu
 
-# TODO: restructure this to not acess ops_anim_data
+# TODO: restructure this to not access ops_anim_data.
 from blender_kitsu.anim import opsdata as ops_anim_data
 from blender_kitsu.anim import ops as ops_anim
 from blender_kitsu.logger import LoggerFactory
@@ -60,16 +60,16 @@ class KITSU_OT_session_start(bpy.types.Operator):
             logger.error("Login data not correct")
             return {"CANCELLED"}
 
-        # init cache variables, will skip if cache already initiated
+        # Init cache variables, will skip if cache already initiated.
         cache.init_cache_variables()
 
-        # init startup variables, will skip if cache already initiated
+        # Init startup variables, will skip if cache already initiated.
         cache.init_startup_variables(context)
 
-        # init playblast version dir model
+        # Init playblast version dir model.
         ops_anim_data.init_playblast_file_model(context)
 
-        # check frame range
+        # Check frame range.
         ops_anim.load_post_handler_check_frame_range(None)
 
         self.report({"INFO"}, f"Logged in as {session_data.user['full_name']}")
@@ -101,10 +101,10 @@ class KITSU_OT_session_end(bpy.types.Operator):
         session = prefs.session_get(context)
         session.end()
 
-        # clear cache variables
+        # Clear cache variables.
         cache.clear_cache_variables()
 
-        # clear startup variables
+        # Clear startup variables.
         cache.clear_startup_variables()
 
         self.report({"INFO"}, "Logged out")
@@ -112,7 +112,7 @@ class KITSU_OT_session_end(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [
     KITSU_OT_session_start,

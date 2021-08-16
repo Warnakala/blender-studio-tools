@@ -77,7 +77,7 @@ class KITSU_PT_vi3d_lookdev_tools(bpy.types.Panel):
         box = layout.box()
         box.label(text="Render Settings", icon="RESTRICT_RENDER_OFF")
 
-        # render settings
+        # Render settings.
         row = box.row(align=True)
         rdpreset_text = "Select Render Preset"
         if context.scene.lookdev.preset_file:
@@ -106,7 +106,7 @@ class KITSU_PT_comp_lookdev_tools(KITSU_PT_vi3d_lookdev_tools):
 
 
 # ---------REGISTER ----------
-# classes that inherit from another need to be registered first for some reason
+# Classes that inherit from another need to be registered first for some reason.
 classes = [KITSU_PT_comp_lookdev_tools, KITSU_PT_vi3d_lookdev_tools]
 
 

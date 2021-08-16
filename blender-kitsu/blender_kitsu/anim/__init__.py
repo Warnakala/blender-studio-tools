@@ -22,7 +22,7 @@ import importlib
 from blender_kitsu.anim import opsdata, ops, ui
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 
 def reload():

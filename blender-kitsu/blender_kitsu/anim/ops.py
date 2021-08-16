@@ -80,7 +80,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
 
         shot_active = cache.shot_active_get()
 
-        # save playblast task status id for next time
+        # Save playblast task status id for next time.
         context.scene.kitsu.playblast_task_status_id = self.task_status
 
         logger.info("-START- Creating Playblast")
@@ -88,47 +88,47 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         context.window_manager.progress_begin(0, 2)
         context.window_manager.progress_update(0)
 
-        # ----RENDER AND SAVE PLAYBLAST ------
+        # ----RENDER AND SAVE PLAYBLAST ------.
         with self.override_render_settings(context):
 
-            # get output path
+            # Get output path.
             output_path = Path(context.scene.kitsu.playblast_file)
 
-            # ensure folder exists
+            # Ensure folder exists.
             Path(context.scene.kitsu.playblast_dir).mkdir(parents=True, exist_ok=True)
 
-            # make opengl render
+            # Make opengl render.
             bpy.ops.render.opengl(animation=True)
 
         context.window_manager.progress_update(1)
 
-        # ----ULPOAD PLAYBLAST ------
+        # ----ULPOAD PLAYBLAST ------.
         self._upload_playblast(context, output_path)
 
         context.window_manager.progress_update(2)
         context.window_manager.progress_end()
 
-        # log
+        # Log.
         self.report({"INFO"}, f"Created and uploaded playblast for {shot_active.name}")
         logger.info("-END- Creating Playblast")
 
-        # redraw ui
+        # Redraw ui.
         util.ui_redraw()
 
-        # ---- POST PLAYBLAST -----
+        # ---- POST PLAYBLAST -----.
 
-        # open webbrowser
+        # Open webbrowser.
         if addon_prefs.pb_open_webbrowser:
             self._open_webbrowser()
 
-        # open playblast in second scene video sequence editor
+        # Open playblast in second scene video sequence editor.
         if addon_prefs.pb_open_vse:
-            # create new scene
+            # Create new scene.
             scene_orig = bpy.context.scene
             try:
                 scene_pb = bpy.data.scenes[bkglobals.SCENE_NAME_PLAYBLAST]
             except KeyError:
-                # create scene
+                # Create scene.
                 bpy.ops.scene.new(type="EMPTY")  # changes active scene
                 scene_pb = bpy.context.scene
                 scene_pb.name = bkglobals.SCENE_NAME_PLAYBLAST
@@ -140,14 +140,14 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
                 logger.info(
                     "Use existing scene for playblast playback: %s", scene_pb.name
                 )
-                # change scene
+                # Change scene.
                 context.window.scene = scene_pb
 
-            # init video sequence editor
+            # Init video sequence editor.
             if not context.scene.sequence_editor:
                 context.scene.sequence_editor_create()  # what the hell
 
-            # setup video sequence editor space
+            # Setup video sequence editor space.
             if "Video Editing" not in [ws.name for ws in bpy.data.workspaces]:
                 blender_version = bpy.app.version  # gets (3, 0, 0)
                 blender_version_str = f"{blender_version[0]}.{blender_version[1]}"
@@ -163,11 +163,11 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             else:
                 context.window.workspace = bpy.data.workspaces["Video Editing"]
 
-            # add movie strip
+            # Add movie strip
             # load movie strip file in sequence editor
             # in this case we make use of ops.sequencer.movie_strip_add because
             # it provides handy auto placing,would be hard to achieve with
-            # context.scene.sequence_editor.sequences.new_movie()
+            # context.scene.sequence_editor.sequences.new_movie().
             override = context.copy()
             for window in bpy.context.window_manager.windows:
                 screen = window.screen
@@ -184,21 +184,21 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
                 frame_start=context.scene.frame_start,
             )
 
-            # playback
+            # Playback.
             context.scene.frame_current = context.scene.frame_start
             bpy.ops.screen.animation_play()
 
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        # initialize comment and playblast task status variable
+        # Initialize comment and playblast task status variable.
         self.comment = ""
 
         prev_task_status_id = context.scene.kitsu.playblast_task_status_id
         if prev_task_status_id:
             self.task_status = prev_task_status_id
         else:
-            # find todo
+            # Find todo.
             todo_status = TaskStatus.by_name(bkglobals.PLAYBLAST_DEFAULT_STATUS)
             if todo_status:
                 self.task_status = todo_status.id
@@ -213,10 +213,10 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         row.prop(self, "comment")
 
     def _upload_playblast(self, context: bpy.types.Context, filepath: Path) -> None:
-        # get shot
+        # Get shot.
         shot = cache.shot_active_get()
 
-        # get task status 'wip' and task type 'Animation'
+        # Get task status 'wip' and task type 'Animation'.
         task_status = TaskStatus.by_id(self.task_status)
         task_type = TaskType.by_name("Animation")
 
@@ -225,7 +225,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
                 "Failed to upload playblast. Task type: 'Animation' is missing"
             )
 
-        # find / get latest task
+        # Find / get latest task.
         task = Task.by_name(shot, task_type)
         if not task:
             # turns out a entitiy on server can have 0 tasks even tough task types exist
@@ -236,17 +236,17 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             else:
                 task = tasks[-1]
 
-        # create a comment
+        # Create a comment.
         comment_text = self._gen_comment_text(context, shot)
         comment = task.add_comment(
             task_status,
             comment=comment_text,
         )
 
-        # add_preview_to_comment
+        # Add_preview_to_comment.
         preview = task.add_preview_to_comment(comment, filepath.as_posix())
 
-        # preview.set_main_preview()
+        # Preview.set_main_preview().
         logger.info(f"Uploaded playblast for shot: {shot.name} under: {task_type.name}")
 
     def _gen_comment_text(self, context: bpy.types.Context, shot: Shot) -> str:
@@ -276,19 +276,16 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         rd = context.scene.render
         sps = context.space_data.shading
         sp = context.space_data
-        # get first last name for stamp note text
+        # Get first last name for stamp note text.
         session = prefs.session_get(context)
         first_name = session.data.user["first_name"]
         last_name = session.data.user["last_name"]
         # Remember current render settings in order to restore them later.
 
-        # filepath
+        # Filepath.
         filepath = rd.filepath
 
-        # simplify
-        # use_simplify = rd.use_simplify
-
-        # format render settings
+        # Format render settings.
         percentage = rd.resolution_percentage
         file_format = rd.image_settings.file_format
         ffmpeg_constant_rate = rd.ffmpeg.constant_rate_factor
@@ -296,7 +293,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         ffmpeg_format = rd.ffmpeg.format
         ffmpeg_audio_codec = rd.ffmpeg.audio_codec
 
-        # stamp metadata settings
+        # Stamp metadata settings.
         metadata_input = rd.metadata_input
         use_stamp_date = rd.use_stamp_date
         use_stamp_time = rd.use_stamp_time
@@ -318,7 +315,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         stamp_background = rd.stamp_background
         use_stamp_labels = rd.use_stamp_labels
 
-        # space data settings
+        # Space data settings.
         shading_type = sps.type
         shading_light = sps.light
         studio_light = sps.studio_light
@@ -335,13 +332,10 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         show_gizmo = sp.show_gizmo
 
         try:
-            # filepath
+            # Filepath.
             rd.filepath = context.scene.kitsu.playblast_file
 
-            # simplify
-            # rd.use_simplify = False
-
-            # format render settings
+            # Format render settings.
             rd.resolution_percentage = 100
             rd.image_settings.file_format = "FFMPEG"
             rd.ffmpeg.constant_rate_factor = "HIGH"
@@ -349,7 +343,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             rd.ffmpeg.format = "MPEG4"
             rd.ffmpeg.audio_codec = "AAC"
 
-            # stamp metadata settings
+            # Stamp metadata settings.
             rd.metadata_input = "SCENE"
             rd.use_stamp_date = False
             rd.use_stamp_time = False
@@ -371,7 +365,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             rd.stamp_background = (0, 0, 0, 0.25)
             rd.use_stamp_labels = True
 
-            # space data settings
+            # Space data settings.
             sps.type = "SOLID"
             sps.light = "STUDIO"
             sps.studio_light = "Default"
@@ -390,11 +384,8 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             yield
 
         finally:
-            # filepath
+            # Filepath.
             rd.filepath = filepath
-
-            # simplify
-            # rd.use_simplify = use_simplify
 
             # Return the render settings to normal.
             rd.resolution_percentage = percentage
@@ -404,7 +395,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             rd.ffmpeg.format = ffmpeg_format
             rd.ffmpeg.audio_codec = ffmpeg_audio_codec
 
-            # stamp metadata settings
+            # Stamp metadata settings.
             rd.metadata_input = metadata_input
             rd.use_stamp_date = use_stamp_date
             rd.use_stamp_time = use_stamp_time
@@ -426,7 +417,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             rd.stamp_background = stamp_background
             rd.use_stamp_labels = use_stamp_labels
 
-            # space data settings
+            # Space data settings.
             sps.type = shading_type
             sps.light = shading_light
             sps.studio_light = studio_light
@@ -468,11 +459,11 @@ class KITSU_OT_anim_set_playblast_version(bpy.types.Operator):
         if context.scene.kitsu.playblast_version == version:
             return {"CANCELLED"}
 
-        # update global scene cache version prop
+        # Update global scene cache version prop.
         context.scene.kitsu.playblast_version = version
         logger.info("Set playblast version to %s", version)
 
-        # redraw ui
+        # Redraw ui.
         util.ui_redraw()
 
         return {"FINISHED"}
@@ -506,7 +497,7 @@ class KITSU_OT_anim_pull_frame_range(bpy.types.Operator):
         frame_in = int(active_shot.data["3d_in"])
         frame_out = int(active_shot.data["3d_out"])
 
-        # check if current frame range matches the one for active shot
+        # Check if current frame range matches the one for active shot.
         if (
             frame_in == context.scene.frame_start
             and frame_out == context.scene.frame_end
@@ -514,14 +505,14 @@ class KITSU_OT_anim_pull_frame_range(bpy.types.Operator):
             self.report({"INFO"}, f"Frame range already up to date")
             return {"FINISHED"}
 
-        # update scene frame range
+        # Update scene frame range.
         context.scene.frame_start = frame_in
         context.scene.frame_end = frame_out
 
-        # update error prop
+        # Update error prop.
         context.scene.kitsu_error.frame_range = False
 
-        # log
+        # Log.
         self.report({"INFO"}, f"Updated frame range {frame_in} - {frame_out}")
         return {"FINISHED"}
 
@@ -538,13 +529,13 @@ class KITSU_OT_anim_increment_playblast_version(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
-        # incremenet version
+        # Incremenet version.
         version = opsdata.add_playblast_version_increment(context)
 
-        # update cache_version prop
+        # Update cache_version prop.
         context.scene.kitsu.playblast_version = version
 
-        # report
+        # Report.
         self.report({"INFO"}, f"Add playblast version {version}")
 
         util.ui_redraw()
@@ -577,7 +568,7 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
             self.report({"ERROR"}, f"No collection selected")
             return {"CANCELLED"}
 
-        # check if output colletion exists in scene
+        # Check if output colletion exists in scene.
         try:
             output_coll = bpy.data.collections[
                 opsdata.get_output_coll_name(shot_active)
@@ -590,23 +581,23 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
-        # get ref coll
+        # Get ref coll.
         ref_coll = opsdata.get_ref_coll(act_coll)
 
         for i in range(amount):
-            # create library override
+            # Create library override.
             coll = ref_coll.override_hierarchy_create(
                 context.scene, context.view_layer, reference=act_coll
             )
 
-            # set color tag to be the same
+            # Set color tag to be the same.
             coll.color_tag = act_coll.color_tag
 
-            # link coll in output collection
+            # Link coll in output collection.
             if coll not in list(output_coll.children):
                 output_coll.children.link(coll)
 
-        # report
+        # Report.
         self.report(
             {"INFO"},
             f"Created {amount} Duplicates of: {act_coll.name} and added to {output_coll.name}",
@@ -624,8 +615,8 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Inspects all actions of .blend file and checks if they follow the Blender Studio naming convention"
     wrong: List[Tuple[bpy.types.Action, str]] = []
-    # list of tuples that contains the action on index 0 with the wrong name
-    # and the name it should have on index 1
+    # List of tuples that contains the action on index 0 with the wrong name
+    # and the name it should have on index 1.
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -636,7 +627,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
         failed = []
         succeeded = []
 
-        # rename actions
+        # Rename actions.
         for action, name in self.wrong:
             if name in existing_action_names:
                 logger.warning(
@@ -653,7 +644,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
             succeeded.append(action)
             logger.info("Renamed action %s to %s", old_name, action.name)
 
-        # report
+        # Report.
         report_str = f"Renamed actions: {len(succeeded)}"
         report_state = "INFO"
         if failed:
@@ -665,7 +656,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
             report_str,
         )
 
-        # clear action names cache
+        # Clear action names cache.
         opsdata.action_names_cache.clear()
 
         return {"FINISHED"}
@@ -676,11 +667,11 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
         no_action = []
         correct = []
 
-        # clear action names cache
+        # Clear action names cache.
         opsdata.action_names_cache.clear()
         opsdata.action_names_cache.extend([a.name for a in bpy.data.actions])
 
-        # find all asset collections in .blend
+        # Find all asset collections in .blend.
         asset_colls = opsdata.find_asset_collections()
 
         if not asset_colls:
@@ -690,7 +681,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
-        # find rig of each asset collection
+        # Find rig of each asset collection.
         asset_rigs: List[Tuple[bpy.types.Collection, bpy.types.Armature]] = []
         for coll in asset_colls:
             rig = opsdata.find_rig(coll, log=False)
@@ -704,9 +695,8 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
-        # for each rig check the current action name if it matches the convention
+        # For each rig check the current action name if it matches the convention.
         for coll, rig in asset_rigs:
-            # print(f"Processing: {coll.name}")
             if not rig.animation_data or not rig.animation_data.action:
                 logger.info("%s has no animation data", rig.name)
                 no_action.append(rig)
@@ -715,19 +705,19 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
             action_name_should = opsdata.gen_action_name(rig, coll, shot_active)
             action_name_is = rig.animation_data.action.name
 
-            # if action name does not follow convention append it to wrong list
+            # If action name does not follow convention append it to wrong list.
             if action_name_is != action_name_should:
                 logger.warning(
                     "Action %s should be named %s", action_name_is, action_name_should
                 )
                 self.wrong.append((rig.animation_data.action, action_name_should))
 
-                # extend action_names_cache list so any follow up items in loop can
-                # acess that information and adjust postfix accordingly
+                # Extend action_names_cache list so any follow up items in loop can
+                # access that information and adjust postfix accordingly.
                 opsdata.action_names_cache.append(action_name_should)
                 continue
 
-            # action name of rig is correct
+            # Action name of rig is correct.
             correct.append(rig)
 
         if not self.wrong:
@@ -779,13 +769,13 @@ class KITSU_OT_anim_update_output_coll(bpy.types.Operator):
         missing: List[bpy.types.Collection] = []
         output_coll_childs = list(opsdata.traverse_collection_tree(output_coll))
 
-        # check if all found asset colls are in output coll
+        # Check if all found asset colls are in output coll.
         for coll in asset_colls:
             if coll in output_coll_childs:
                 continue
             missing.append(coll)
 
-        # only take parent colls
+        # Only take parent colls.
         childs = []
         for i in range(len(missing)):
             coll = missing[i]
@@ -823,7 +813,7 @@ def load_post_handler_check_frame_range(dummy: Any) -> None:
     if not active_shot:
         return
 
-    # pull update for shot
+    # Pull update for shot.
     cache.shot_active_pull_update()
 
     if "3d_in" not in active_shot.data or "3d_out" not in active_shot.data:
@@ -847,7 +837,7 @@ def load_post_handler_check_frame_range(dummy: Any) -> None:
     logger.warning("Current frame range is outdated!")
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [
     KITSU_OT_anim_create_playblast,
@@ -864,17 +854,16 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # init model
-    # init_playblast_file_model(bpy.context) #not working because of restr. context
+    # init_playblast_file_model(bpy.context) not working because of restricted context.
 
-    # handlers
+    # Handlers.
     bpy.app.handlers.load_post.append(load_post_handler_init_version_model)
     bpy.app.handlers.load_post.append(load_post_handler_check_frame_range)
 
 
 def unregister():
 
-    # clear handlers
+    # Clear handlers.
     bpy.app.handlers.load_post.remove(load_post_handler_check_frame_range)
     bpy.app.handlers.load_post.remove(load_post_handler_init_version_model)
 

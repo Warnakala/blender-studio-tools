@@ -31,7 +31,7 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 def shot_meta(strip: bpy.types.Sequence, shot: Shot) -> None:
 
-    # update shot info
+    # Update shot info.
     shot.name = strip.kitsu.shot_name
     shot.description = strip.kitsu.shot_description
     shot.data["frame_in"] = strip.frame_final_start
@@ -41,15 +41,15 @@ def shot_meta(strip: bpy.types.Sequence, shot: Shot) -> None:
     shot.nb_frames = strip.frame_final_duration
     shot.data["fps"] = bkglobals.FPS
 
-    # if user changed the seqeunce the shot belongs to
-    # (can only be done by operator not by hand)
+    # If user changed the sequence the shot belongs to
+    # (can only be done by operator not by hand).
     if strip.kitsu.sequence_id != shot.sequence_id:
         sequence = Sequence.by_id(strip.kitsu.sequence_id)
         shot.sequence_id = sequence.id
         shot.parent_id = sequence.id
         shot.sequence_name = sequence.name
 
-    # update on server
+    # Update on server.
     shot.update()
     logger.info("Pushed meta to shot: %s from strip: %s", shot.name, strip.name)
 
@@ -73,12 +73,12 @@ def new_shot(
             "3d_out": strip.kitsu_frame_end,
         },
     )
-    # update description, no option to pass that on create
+    # Update description, no option to pass that on create.
     if strip.kitsu.shot_description:
         shot.description = strip.kitsu.shot_description
         shot.update()
 
-    # set project name locally, will be available on next pull
+    # Set project name locally, will be available on next pull.
     shot.project_name = project.name
     logger.info("Pushed create shot: %s for project: %s", shot.name, project.name)
     return shot
