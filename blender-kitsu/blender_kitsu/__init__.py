@@ -60,8 +60,6 @@ _need_reload = "props" in locals()
 if _need_reload:
     import importlib
 
-    logger.info("-START- Reloading blender-kitsu")
-
     lookdev.reload()
     bkglobals = importlib.reload(bkglobals)
     cache = importlib.reload(cache)
@@ -80,12 +78,9 @@ if _need_reload:
     anim.reload()
 
     LoggerLevelManager.configure_levels()
-    logger.info("-END- Reloading blender-kitsu")
 
 
 def register():
-    logger.info("-START- Registering blender-kitsu")
-
     lookdev.register()
     prefs.register()
     cache.register()
@@ -98,12 +93,10 @@ def register():
     anim.register()
 
     LoggerLevelManager.configure_levels()
-    logger.info("-END- Registering blender-kitsu")
+    logger.info("Registered blender-kitsu")
 
 
 def unregister():
-    logger.info("-START- Unregistering blender-kitsu")
-
     anim.unregister()
     # tasks.unregister()
     context.unregister()
@@ -116,7 +109,6 @@ def unregister():
     lookdev.unregister()
 
     LoggerLevelManager.restore_levels()
-    logger.info("-END- Unregistering blender-kitsu")
 
 
 if __name__ == "__main__":
