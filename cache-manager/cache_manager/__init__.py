@@ -53,7 +53,6 @@ _need_reload = "ops" in locals()
 if _need_reload:
     import importlib
 
-    logg.info("-START- Reloading Cache Manager")
     cmglobals = importlib.reload(cmglobals)
     logger = importlib.reload(logger)
     cache = importlib.reload(cache)
@@ -64,27 +63,23 @@ if _need_reload:
     opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
-    logg.info("-END- Reloading Cache Manager")
 
 
 def register():
-    logg.info("-START- Registering Cache Manager")
     prefs.register()
     props.register()
     propsdata.register()
     ops.register()
     ui.register()
-    logg.info("-END- Registering Cache Manager")
+    logg.info("Registered cache-manager")
 
 
 def unregister():
-    logg.info("-START- Unregistering Cache Manager")
     ui.unregister()
     ops.unregister()
     propsdata.unregister()
     props.unregister()
     prefs.unregister()
-    logg.info("-END- Unregistering Cache Manager")
 
 
 if __name__ == "__main__":
