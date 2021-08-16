@@ -492,7 +492,6 @@ class CM_OT_import_colls_from_config(bpy.types.Operator):
 
 
 class CM_OT_update_cache_colls_list(bpy.types.Operator):
-    """Move items up and down, add and remove"""
 
     bl_idname = "cm.udpate_cache_colls_list"
     bl_label = "Update Cache Collections List"
@@ -502,9 +501,6 @@ class CM_OT_update_cache_colls_list(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         succeeded = []
         collections = list(opsdata.traverse_collection_tree(context.scene.collection))
-
-        log_new_lines(1)
-        logger.info("-START- Updating Cache Collections List")
 
         # clear any collections that got deleted
         propsdata.rm_deleted_colls_from_list(context)
@@ -523,7 +519,6 @@ class CM_OT_update_cache_colls_list(bpy.types.Operator):
 
         self.report({"INFO"}, f"Added {len(succeeded)} Collections to Cache List")
         log_new_lines(1)
-        logger.info("-END- Updating Cache Collections List")
 
         return {"FINISHED"}
 
