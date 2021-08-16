@@ -35,8 +35,6 @@ from blender_kitsu.types import (
     Cache,
     Sequence,
     Shot,
-    Task,
-    TaskStatus,
     TaskType,
 )
 
@@ -44,14 +42,13 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 
 class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
-    """
-    Operator that pushes metadata of all selected sequencce strips to sevrer
-    after performing various checks. Metadata is saved in strip.kitsu.
-    """
-
     bl_idname = "kitsu.sqe_push_shot_meta"
     bl_label = "Push Shot Metadata"
     bl_options = {"INTERNAL"}
+    bl_description = (
+        "Pushes metadata of all selected sequences to server. "
+        "This includes frame information, name, project, sequence and description."
+        )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -82,7 +79,6 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
         sequence_ids: List[str] = []
 
         # Shots.
-
         for idx, strip in enumerate(selected_sequences):
             context.window_manager.progress_update(idx)
 
@@ -147,14 +143,9 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
-    """
-    Operator that creates a new shot based on all selected sequencce strips to sevrer
-    after performing various checks. Does not create shot if already exists to sevrer .
-    """
-
     bl_idname = "kitsu.sqe_push_new_shot"
     bl_label = "Submit New Shot"
-    bl_description = "Creates a new shot based on all selected sequencce strips on server. Checks if shot already exists on sevrer"
+    bl_description = "Creates a new shot for each selected sequence strip on server. Checks if shot already exists."
 
     confirm: bpy.props.BoolProperty(name="confirm")
 
@@ -212,7 +203,7 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
                 # Failed.append(strip).
                 continue
 
-            # Check if strip is already linked to sevrer.
+            # Check if strip is already linked to server.
             if checkstrip.is_linked(strip):
                 failed.append(strip)
                 continue
@@ -222,14 +213,14 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
                 failed.append(strip)
                 continue
 
-            # Check if seq already to sevrer  > create it.
+            # Check if seq already to server  > create it.
             seq = checkstrip.seq_exists_by_name(
                 strip, project_active, clear_cache=False
             )
             if not seq:
                 seq = push.new_sequence(strip, project_active)
 
-            # Check if shot already to sevrer  > create it.
+            # Check if shot already to server  > create it.
             shot = checkstrip.shot_exists_by_name(
                 strip, project_active, seq, clear_cache=False
             )
@@ -313,11 +304,6 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
-    """
-    Operator with input dialog that creates a new sequence on server.
-    Does not create sequence if already exists on server.
-    """
-
     bl_idname = "kitsu.sqe_push_new_sequence"
     bl_label = "Submit New Sequence"
     bl_description = (
@@ -405,7 +391,7 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
 
     bl_idname = "kitsu.sqe_init_strip"
     bl_label = "Initialize Shot"
-    bl_description = "Adds required shot metadata to selecetd strips"
+    bl_description = "Initializes selected sequence strip as kitsu strip"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -465,13 +451,14 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
 
 class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
     """
-    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
+    Gets all sequences that are available in server for active production and let's user select. Invokes a search popup on click.
     """
 
     bl_idname = "kitsu.sqe_link_sequence"
     bl_label = "Link Sequence"
     bl_options = {"REGISTER", "UNDO"}
     bl_property = "enum_prop"
+    bl_description = "Links selected sequence strip to an existing sequence on server"
 
     enum_prop: bpy.props.EnumProperty(
         items=cache.get_sequences_enum_list,
@@ -513,14 +500,14 @@ class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
 class KITSU_OT_sqe_link_shot(bpy.types.Operator):
     """
     Operator that invokes ui which shows user all available shots on server.
-    It is used to 'link' a seqeunce strip to an alredy existent shot on server.
-    Fills out all metadata after selecting shot.
+    It is used to 'link' a sequence strip to an already existent shot on server.
+    Pulls all metadata after selecting shot.
     """
 
     bl_idname = "kitsu.sqe_link_shot"
     bl_label = "Link Shot"
     bl_description = (
-        "Adds required shot metadata to selecetd strip based on data from server"
+        "Links selected sequence strip to shot on server. Pulls all metadata of shot from server"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -624,13 +611,16 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_multi_edit_strip(bpy.types.Operator):
-    """"""
 
     bl_idname = "kitsu.sqe_multi_edit_strip"
     bl_label = "Multi Edit Strip"
     bl_options = {"INTERNAL"}
     bl_options = {"REGISTER", "UNDO"}
-
+    bl_description = (
+        "Multi edits shot name and sequence of selected sequence strips based on "
+        "settings in addon preferences with auto shot counter incrementation. "
+        "Useful to create a bulk of new shots"
+    )
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # Only if all selected strips are initialized but not linked
@@ -725,7 +715,7 @@ class KITSU_OT_sqe_multi_edit_strip(bpy.types.Operator):
 
 class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
     """
-    Operator that pulls metadata of all selected sequencce strips from server
+    Operator that pulls metadata of all selected sequence strips from server
     after performing various checks. Metadata will be saved in strip.kitsu.
     """
 
@@ -733,7 +723,11 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
     bl_label = "Pull Shot Metadata"
     bl_options = {"INTERNAL"}
     bl_options = {"REGISTER", "UNDO"}
-
+    bl_description = (
+        "Pulls metadata of all selected sequences from server. "
+        "This includes name, sequence, project and description. "
+        "Frame range information will not be pulled."
+        )
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(prefs.session_auth(context))
@@ -825,15 +819,14 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_uninit_strip(bpy.types.Operator):
-    """
-    Operator that deletes all  metadata of all selected sequencce strips
-    after performing various checks. It does NOT change anything on server.
-    """
-
     bl_idname = "kitsu.sqe_uninit_strip"
     bl_label = "Uninitialize"
-    bl_description = "Uninitialize selecetd strips. Only affects Sequence Editor. "
+    bl_description = "Uninitialize selected strips. Only affects Sequence Editor. "
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Deletes all kitsu metadata of selected sequence strips. "
+        "It does not delete anything on the server"
+        )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -879,15 +872,12 @@ class KITSU_OT_sqe_uninit_strip(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
-    """
-    Operator that deletes all  metadata of all selected sequencce strips
-    after performing various checks. It does NOT change anything on server.
-    """
-
     bl_idname = "kitsu.sqe_unlink_shot"
     bl_label = "Unlink"
     bl_description = (
-        "Deletes link to the server of selected shots. Only affects Sequence Editor"
+        "Deletes link to the server for each selected sequence strip. "
+        "Keeps some metadata. "
+        "It does not change anything on the server"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -936,14 +926,9 @@ class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
-    """
-    Operator that deletes all  metadata of all selected sequencce strips
-    after performing various checks. It does NOT change anything on server.
-    """
-
     bl_idname = "kitsu.sqe_push_del_shot"
     bl_label = "Delete Shot"
-    bl_description = "Deletes shot on server and clears metadata of selected strips"
+    bl_description = "Deletes shot on server and clears metadata of selected sequence strips"
 
     confirm: bpy.props.BoolProperty(name="Confirm")
 
@@ -1033,14 +1018,11 @@ class KITSU_OT_sqe_push_del_shot(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_set_thumbnail_task_type(bpy.types.Operator):
-    """
-    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
-    """
-
     bl_idname = "kitsu.set_thumbnail_task_type"
     bl_label = "Set Thumbnail Task Type"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
+    bl_description = "Sets kitsu task type that will be used when uploading thumbnails"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_shot_task_types_enum)  # type: ignore
 
@@ -1071,14 +1053,11 @@ class KITSU_OT_sqe_set_thumbnail_task_type(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_set_sqe_render_task_type(bpy.types.Operator):
-    """
-    Gets all sequences that are available in server for active production and let's user select. Invokes a search Popup (enum_prop) on click.
-    """
-
     bl_idname = "kitsu.set_sqe_render_task_type"
     bl_label = "Set Sqe Render Task Type"
     bl_options = {"INTERNAL"}
     bl_property = "enum_prop"
+    bl_description = "Sets kitsu task type that will be used when uploading sequence editor renders"
 
     enum_prop: bpy.props.EnumProperty(items=cache.get_shot_task_types_enum)  # type: ignore
 
@@ -1109,15 +1088,13 @@ class KITSU_OT_sqe_set_sqe_render_task_type(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
-    """
-    Operator that takes thumbnail of all selected sequencce strips and saves them
-    in tmp directory. Loops through all thumbnails and uploads them to sevrer .
-    uses Animation task type to create task and set main thumbnail in wip state.
-    """
-
     bl_idname = "kitsu.sqe_push_thumbnail"
     bl_label = "Push Thumbnail"
     bl_options = {"INTERNAL"}
+    bl_description = (
+        "Makes and saves one thumbnail for each shot. "
+        "Uploads each thumbnail to server under the selected task type"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1299,11 +1276,13 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_push_render(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.sqe_push_render"
     bl_label = "Push Render"
     bl_options = {"INTERNAL"}
+    bl_description = (
+        "Makes and saves a .mp4 for each shot. "
+        "Uploads each render on server under the selected task type"
+        )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1472,12 +1451,14 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
             context.scene.use_preview_range = use_preview_range
 
 class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.sqe_debug_duplicates"
     bl_label = "Debug Duplicates"
     bl_property = "duplicates"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Searches for sequence strips that are linked to the same "
+        "shot id. Shows them in a drop down menu which triggers a selection"
+        )
 
     duplicates: bpy.props.EnumProperty(
         items=opsdata.sqe_get_duplicates, name="Duplicates"
@@ -1508,12 +1489,14 @@ class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_debug_not_linked(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.sqe_debug_not_linked"
     bl_label = "Debug Not Linked"
     bl_property = "not_linked"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Searches for sequence strips that are initialized but not linked yet. "
+        "Shows them in a drop down menu which triggers a selection"
+        )
 
     not_linked: bpy.props.EnumProperty(
         items=opsdata.sqe_get_not_linked, name="Not Linked"
@@ -1545,12 +1528,14 @@ class KITSU_OT_sqe_debug_not_linked(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_debug_multi_project(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.sqe_debug_multi_project"
     bl_label = "Debug Multi Projects"
     bl_property = "multi_project"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Searches for sequence strips that come from different projects. "
+        "Shows them in a drop down menu which triggers a selection"
+        )
 
     multi_project: bpy.props.EnumProperty(
         items=opsdata.sqe_get_multi_project, name="Multi Project"
@@ -1582,16 +1567,10 @@ class KITSU_OT_sqe_debug_multi_project(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
-    """
-    Operator that invokes ui which shows user all available shots on server.
-    It is used to 'link' a seqeunce strip to an alredy existent shot on server.
-    Fills out all metadata after selecting shot.
-    """
-
     bl_idname = "kitsu.sqe_pull_edit"
     bl_label = "Pull Edit"
     bl_description = (
-        "Pulls the entire edit from kitsu and creates color strips for each shot. "
+        "Pulls the entire edit from kitsu and creates a metadata strip for each shot. "
         "Does not change existing strips. Only places new strips if there is space"
     )
     bl_options = {"REGISTER", "UNDO", "UNDO_GROUPED"}
@@ -1852,11 +1831,12 @@ class KITSU_OT_sqe_init_strip_start_frame(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
-    """"""
-
     bl_idname = "kitsu.sqe_create_meta_strip"
     bl_label = "Create Meta Strip"
-    bl_description = "Adds meta strip for each selected strip"
+    bl_description = (
+        "Adds metadata strip for each selected strip. "
+        "Tries to place metadata strip one channel above selected "
+        )
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1953,9 +1933,9 @@ class KITSU_OT_sqe_add_sequence_color(bpy.types.Operator):
     """
     Adds sequence of active strip to scene.kitsu.sequence_colors collection property
     """
-
     bl_idname = "kitsu.add_sequence_color"
     bl_label = "Add Sequence Color"
+    bl_description = "Registers a sequence color for active sequence strip"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1963,11 +1943,11 @@ class KITSU_OT_sqe_add_sequence_color(bpy.types.Operator):
         return bool(active_strip and active_strip.kitsu.sequence_id)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         sequence_colors = context.scene.kitsu.sequence_colors
         active_strip = context.scene.sequence_editor.active_strip
         sequence_id = active_strip.kitsu.sequence_id
 
+        # Check if sequence_id is already in sequence color collection property
         if sequence_id in sequence_colors.keys():
             self.report(
                 {"WARNING"},
@@ -1975,6 +1955,7 @@ class KITSU_OT_sqe_add_sequence_color(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
+        # Add new item to sequence color collection property
         item = context.scene.kitsu.sequence_colors.add()
         item.name = active_strip.kitsu.sequence_id
         self.report(
@@ -1985,9 +1966,8 @@ class KITSU_OT_sqe_add_sequence_color(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_scan_for_media_updates(bpy.types.Operator):
-
     bl_idname = "kitsu.sqe_scan_for_media_updates"
-    bl_label = "Scan for media udpates"
+    bl_label = "Scan for media updates"
     bl_description = "Scans sequence editor for movie strips and highlights them if there is a more recent version of their source media"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -2109,7 +2089,6 @@ class KITSU_OT_sqe_scan_for_media_updates(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_clear_update_indicators(bpy.types.Operator):
-
     bl_idname = "kitsu.sqe_clear_update_indicators"
     bl_label = "Clear Update Indicators"
     bl_description = "Removes the media update indicators from all strips"
@@ -2147,10 +2126,12 @@ class KITSU_OT_sqe_clear_update_indicators(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_change_strip_source(bpy.types.Operator):
-
     bl_idname = "kitsu.sqe_change_strip_source"
     bl_label = "Change Strip Media Source"
-    bl_description = ""
+    bl_description = (
+        "Changes the media source of the active strip by "
+        "cycling through the different versions on disk"
+        )
     bl_options = {"REGISTER", "UNDO"}
 
     direction: bpy.props.EnumProperty(items=[("UP", "UP", ""), ("DOWN", "DOWN", "")])
