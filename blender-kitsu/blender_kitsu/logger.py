@@ -19,9 +19,7 @@
 # (c) 2021, Blender Foundation - Paul Golter
 
 import logging
-import sys
 from typing import List, Tuple
-
 
 class LoggerFactory:
 
@@ -32,17 +30,7 @@ class LoggerFactory:
     @staticmethod
     def getLogger(name=__name__):
         name = name
-        """
-        formatter = logging.Formatter("%(levelname)s:%(name)s: %(message)s")
-        consoleHandler = logging.StreamHandler(sys.stdout)
-        consoleHandler.setFormatter(formatter)
-        """
         logger = logging.getLogger(name)
-        """
-        logger.addHandler(consoleHandler)
-        logger.setLevel(logging.INFO)
-        logger.propagate = False
-        """
         return logger
 
 
@@ -57,7 +45,7 @@ class LoggerLevelManager:
         cls.logger_levels = []
         for key in logging.Logger.manager.loggerDict:
             if key.startswith("urllib3"):
-                # save logger and value
+                # Save logger and value.
                 logger = logging.getLogger(key)
                 cls.logger_levels.append((logger, logger.level))
 
