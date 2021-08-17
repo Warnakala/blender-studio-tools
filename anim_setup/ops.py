@@ -20,10 +20,12 @@ def ui_redraw() -> None:
 
 
 class AS_OT_create_actions(bpy.types.Operator):
-    """Creates default action for active collection"""
-
     bl_idname = "as.create_action"
     bl_label = "Create action"
+    bl_description = (
+        "Creates action for all found assets that have no assigned yet. "
+        "Names them following the blender-studio convention"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -93,10 +95,9 @@ class AS_OT_create_actions(bpy.types.Operator):
 
 
 class AS_OT_setup_workspaces(bpy.types.Operator):
-    """Sets up the workspaces for the animation task"""
-
     bl_idname = "as.setup_workspaces"
     bl_label = "Setup Workspace"
+    bl_description = "Sets up the workspaces for the animation task"
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -111,10 +112,12 @@ class AS_OT_setup_workspaces(bpy.types.Operator):
 
 
 class AS_OT_load_latest_edit(bpy.types.Operator):
-    """Loads latest edit from dropbox folder"""
-
     bl_idname = "as.load_latest_edit"
     bl_label = "Load edit"
+    bl_description = (
+        "Loads latest edit from shot_preview_folder "
+        "Shifts edit so current shot starts at 3d_in metadata shot key from Kitsu"
+    )
 
     @classmethod
     def can_load_edit(cls, context: bpy.types.Context) -> bool:
@@ -248,10 +251,9 @@ class AS_OT_load_latest_edit(bpy.types.Operator):
 
 
 class AS_OT_import_camera(bpy.types.Operator):
-    """Imports camera rig and makes library override"""
-
     bl_idname = "as.import_camera"
     bl_label = "Import Camera"
+    bl_description = "Imports camera rig and makes library override"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -281,10 +283,11 @@ class AS_OT_import_camera(bpy.types.Operator):
 
 
 class AS_OT_import_camera_action(bpy.types.Operator):
-    """Imports cam action of previs file that matches current shot and assigns it"""
-
     bl_idname = "as.import_camera_action"
     bl_label = "Import Camera Action"
+    bl_description = (
+        "Imports camera action of previs file that matches current shot and assigns it"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -353,6 +356,10 @@ class AS_OT_import_asset_actions(bpy.types.Operator):
 
     bl_idname = "as.import_asset_actions"
     bl_label = "Import Asset Actions"
+    bl_description = (
+        "For each found asset tries to find action in previs file. "
+        "Imports it to current file, renames it, adds fake user and assigns it"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -491,10 +498,12 @@ class AS_OT_import_asset_actions(bpy.types.Operator):
 
 
 class AS_OT_import_multi_assets(bpy.types.Operator):
-    """Imports asset action of previs file that matches current shot and assigns it"""
-
     bl_idname = "as.import_multi_assets"
     bl_label = "Import Multi Assets"
+    bl_description = (
+        "For each found multi asset tries to find action in previs file. "
+        "Imports it to current file, renames it, adds fake user and assigns it"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -618,10 +627,13 @@ class AS_OT_import_multi_assets(bpy.types.Operator):
 
 
 class AS_OT_shift_anim(bpy.types.Operator):
-    """Shifts the animation as well as anim modifier values of the camera by number of frames"""
-
     bl_idname = "as.shift_anim"
     bl_label = "Shift Anim"
+    bl_description = (
+        "Shifts the animation of found assets by number of frames. "
+        "It also shifts the camera animation as well as its modifier values"
+    )
+
     multi_assets: bpy.props.BoolProperty(name="Do Multi Assets")
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -731,6 +743,9 @@ class AS_OT_apply_additional_settings(bpy.types.Operator):
 
     bl_idname = "as.apply_additional_settings"
     bl_label = "Apply Additional Settings"
+    bl_description = (
+        "Apply some additional settings that are important " "for animation scenes"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -764,6 +779,9 @@ class AS_OT_exclude_colls(bpy.types.Operator):
 
     bl_idname = "as.exclude_colls"
     bl_label = "Exclude Collections"
+    bl_description = (
+        "Exclude some collections by name that are not needed in animation scenes"
+    )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         view_layer_colls = opsdata.get_all_view_layer_colls(context)
