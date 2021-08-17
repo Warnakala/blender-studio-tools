@@ -214,6 +214,7 @@ def purge(args: argparse.Namespace) -> int:
     config_path = get_config_path()
     no_commit = args.nocommit
     regex = args.regex
+    yes = args.yes
 
     # check config file
     if not config_path.exists():
@@ -273,8 +274,9 @@ def purge(args: argparse.Namespace) -> int:
     files.sort(key=lambda f: f.name)
 
     # prompt confirm
-    if not prompt_confirm(files):
-        cancel_program()
+    if not yes:
+        if not prompt_confirm(files):
+            cancel_program()
 
     """
     # perform check of correct preference settings

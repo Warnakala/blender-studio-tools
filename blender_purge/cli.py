@@ -35,6 +35,12 @@ parser.add_argument(
     help="Provide any regex pattern that will be performed on each found filepath with re.search()",
 )
 
+parser.add_argument(
+    "--yes",
+    help="If --yes is provided there will be no confirmation prompt.",
+    action="store_true",
+)
+
 
 def main():
     args = parser.parse_args()
