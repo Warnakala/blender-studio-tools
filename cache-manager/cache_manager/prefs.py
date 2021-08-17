@@ -35,6 +35,7 @@ class CM_AddonPreferences(bpy.types.AddonPreferences):
         default="//cache",
         options={"HIDDEN", "SKIP_SAVE"},
         subtype="DIR_PATH",
+        description="Root directory in which the caches will be exported. Will create subfolders during export",
         update=propsdata.category_upate_version_model,
     )
 

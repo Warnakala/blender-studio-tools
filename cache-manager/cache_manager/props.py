@@ -94,7 +94,8 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     )
 
     cachedir: bpy.props.StringProperty(
-        name="Cachedir", get=propsdata.gen_cachedir_path_str
+        name="Cachedir", get=propsdata.gen_cachedir_path_str,
+        description="Directory in which the cachefiles are located"
     )
     cache_version_dir: bpy.props.StringProperty(
         name="Cache version dir", get=propsdata.get_cache_version_dir_path_str
