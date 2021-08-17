@@ -14,7 +14,7 @@ logger = LoggerFactory.getLogger(__name__)
 bl_info = {
     "name": "Anim Setup",
     "author": "Paul Golter",
-    "description": "Blender addon to quickl setup animation scenes for the spritefright project",
+    "description": "Blender addon to setup animation scenes for the spritefright project",
     "blender": (3, 0, 0),
     "version": (0, 1, 0),
     "location": "View3D",
@@ -29,7 +29,6 @@ _need_reload = "ops" in locals()
 if _need_reload:
     import importlib
 
-    logger.info("-START- Reloading anim-setup")
     asglobals = importlib.reload(asglobals)
     prefs = importlib.reload(prefs)
     kitsu = importlib.reload(kitsu)
@@ -37,25 +36,21 @@ if _need_reload:
     opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
-    logger.info("-END- Reloading anim-setup")
 
 
 def register():
-    logger.info("-START- Registering anim-setup")
     prefs.register()
     props.register()
     ops.register()
     ui.register()
-    logger.info("-END- Registering anim-setup")
+    logger.info("Registered anim-setup")
 
 
 def unregister():
-    logger.info("-START- Unregistering anim-setup")
     ui.unregister()
     ops.unregister()
     props.unregister()
     prefs.unregister()
-    logger.info("-END- Unregistering anim-setup")
 
 
 if __name__ == "__main__":
