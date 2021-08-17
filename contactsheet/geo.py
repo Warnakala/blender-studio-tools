@@ -182,7 +182,7 @@ class Rectangle:
     def _get_orig_y(self) -> int:
         return self._orig_y
 
-    # WIDTH.
+    # Width.
     @property
     def width(self) -> int:
         return self._get_width()
@@ -204,7 +204,7 @@ class Rectangle:
     def _get_orig_width(self) -> int:
         return self._orig_width
 
-    # HEIGHT.
+    # Height.
     @property
     def height(self) -> int:
         return self._get_height()
@@ -226,7 +226,7 @@ class Rectangle:
     def _get_orig_height(self) -> int:
         return self._orig_height
 
-    # SCALE.
+    # Scale.
 
     @property
     def scale_x(self):
@@ -264,24 +264,24 @@ class Rectangle:
         self.scale_x *= factor
         self.scale_y *= factor
 
-    # ASPECT.
+    # Aspect.
     @property
     def aspect_ratio(self) -> float:
         return self.width / self.height
 
-    # AREA.
+    # Area.
     @property
     def area(self) -> int:
         return self.width * self.height
 
-    # CENTER.
+    # Center.
     @property
     def center(self) -> Point:
         center_x = int(self.x + (0.5 * self.width))
         center_y = int(self.y + (0.5 * self.height))
         return Point(center_x, center_y)
 
-    # POSITION.
+    # Position.
     @property
     def position(self) -> Point:
         return Point(self.x, self.y)
@@ -291,7 +291,7 @@ class Rectangle:
         self.x = pos.x
         self.y = pos.y
 
-    # COORDS.
+    # Coords.
     @property
     def coords(self) -> RectCoords:
         top_left = self.position
@@ -300,7 +300,7 @@ class Rectangle:
         bot_right = Point(self.x + self.width, self.y + self.height)
         return RectCoords(top_left, top_right, bot_left, bot_right)
 
-    # FUNCTIONS.
+    # Functions.
     def fit_to_rect(
         self,
         rect: Rectangle,
@@ -655,7 +655,7 @@ class Grid(Rectangle):
         ]
 
     def _init_cells(self, cell_templ: Cell, keep_aspect: bool, align: Align) -> None:
-        # TODO: cell.child.keep_aspect = keep_aspect
+        # TODO: cell.child.keep_aspect = keep_aspect.
 
         self.cells.clear()
         # If cell_templ was supplied make sure it has the right dimension to fit in grid.
@@ -691,7 +691,7 @@ class Grid(Rectangle):
         """
         if not row_count:
 
-            # Calculate by how much images need to be scaled in order to fit.. (won't be perfect)
+            # Calculate by how much images need to be scaled in order to fit.. (won't be perfect).
             available_area = width * height
             content_area_orig = content[0].child.area
             content_area = available_area / len(content)

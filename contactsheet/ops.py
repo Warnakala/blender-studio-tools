@@ -228,11 +228,12 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
 
 
 class CS_OT_exit_contactsheet(bpy.types.Operator):
-    """ """
-
     bl_idname = "contactsheet.exit_contactsheet"
     bl_label = "Exit Contact Sheet"
-    bl_description = ""
+    bl_description = (
+        "Exits contactsheet scene, deletes it and "
+        "return to original scene that was used to create the contactsheet"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:

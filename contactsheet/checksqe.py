@@ -25,18 +25,18 @@ import bpy
 
 def _do_ranges_collide(range1: range, range2: range) -> bool:
     """Whether the two ranges collide with each other ."""
-    # usual strip setup strip1(101, 120)|strip2(120, 130)|strip3(130, 140)
-    # first and last frame can be the same for each strip
+    # Usual strip setup strip1(101, 120)|strip2(120, 130)|strip3(130, 140)
+    # first and last frame can be the same for each strip.
     range2 = range(range2.start + 1, range2.stop - 1)
 
     if not range1:
-        return True  # empty range is subset of anything
+        return True  # Empty range is subset of anything.
 
     if not range2:
-        return False  # non-empty range can't be subset of empty range
+        return False  # Non-empty range can't be subset of empty range.
 
     if len(range1) > 1 and range1.step % range2.step:
-        return False  # must have a single value or integer multiple step
+        return False  # Must have a single value or integer multiple step.
 
     if range(range1.start + 1, range1.stop - 1) == range2:
         return True
