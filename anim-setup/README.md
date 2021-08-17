@@ -1,20 +1,14 @@
 # anim-setup
 anim-setup is a blender-addon that automates the setup of animation scenes for the Sprite-Fright project
-
-## Table of Contents
-- [Installation](#installation)
-- [Features](#features)
-- [Development](#development)
-
 ## Installation
 Download or clone this repository.
 In the root project folder you will find the 'anim_setup' folder. Place this folder in your Blender addons directory or create a sym link to it.
 
 After install you need to configure the addon in the addon preferences.
-# Features
+
+## Features
 The addon relies on the correct naming of asset and camera actions in the corresponding previs file of the shot.
-Check the Animation Setup Checklist:
-https://www.notion.so/Animation-Setup-Checklist-ba4d044ec2354b8baae2b3472b757569
+Check the <a href="https://www.notion.so/Animation-Setup-Checklist-ba4d044ec2354b8baae2b3472b757569"> Animation Setup Checklist</a>.
 
 Operators of the addon:
 - Setup Workspace for animation
