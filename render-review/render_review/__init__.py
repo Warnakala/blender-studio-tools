@@ -63,8 +63,6 @@ if _need_reload:
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
     draw = importlib.reload(draw)
-    logger.info("Reloaded render-review")
-
 
 def register():
     props.register()
@@ -72,6 +70,7 @@ def register():
     ops.register()
     ui.register()
     draw.register()
+    logger.info("Registered render-review")
 
 
 def unregister():
