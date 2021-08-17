@@ -32,10 +32,10 @@ class AS_PT_view3d_general(bpy.types.Panel):
         layout = self.layout
         col = layout.column(align=True)
 
-        # Workspace
+        # Workspace.
         col.operator(AS_OT_setup_workspaces.bl_idname)
 
-        # Load edit
+        # Load edit.
         col.operator(AS_OT_load_latest_edit.bl_idname)
 
 
@@ -61,10 +61,10 @@ class AS_PT_view3d_animation_and_actions(bpy.types.Panel):
 
         col = layout.column(align=True)
 
-        # Import camera action
+        # Import camera action.
         col.operator(AS_OT_import_camera_action.bl_idname)
 
-        # Import action
+        # Import action.
         col.operator(
             AS_OT_import_asset_actions.bl_idname, text=f"Import Char Actions"
         )
@@ -76,7 +76,7 @@ class AS_PT_view3d_animation_and_actions(bpy.types.Panel):
         col.separator()
         col = layout.column()
 
-        # Shift animation
+        # Shift animation.
         col.prop(context.scene.anim_setup, "layout_cut_in")
         col.separator()
         split = col.split(factor=0.5, align=True)
@@ -85,7 +85,7 @@ class AS_PT_view3d_animation_and_actions(bpy.types.Panel):
 
         col.separator()
 
-        # Create actions
+        # Create actions.
         valid_collections_count = len(opsdata.get_valid_collections(context))
         row = col.row(align=True)
         row.operator(
@@ -108,14 +108,14 @@ class AS_PT_view3d_scene(bpy.types.Panel):
         
         layout = self.layout
 
-        # Exclude collections
+        # Exclude collections.
         row = layout.row(align=True)
         row.operator(
             AS_OT_exclude_colls.bl_idname, text="Exclude Collections"
         )
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [
     AS_PT_view3d_general, 

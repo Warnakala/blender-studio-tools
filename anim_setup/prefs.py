@@ -108,7 +108,7 @@ class AS_AddonPreferences(bpy.types.AddonPreferences):
     @property
     def is_project_root_valid(self) -> bool:
 
-        # check if file is saved
+        # Check if file is saved.
         if not self.project_root:
             return False
 
@@ -161,7 +161,7 @@ def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     return context.preferences.addons["anim_setup"].preferences
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes = [KitsuPreferences, AS_AddonPreferences]
 

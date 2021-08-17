@@ -13,7 +13,7 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
     )
 
 
-# ---------REGISTER ----------
+# ---------REGISTER ----------.
 
 classes: List[Any] = [
     CM_property_group_scene,
@@ -25,7 +25,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # Scene Properties
+    # Scene Properties.
     bpy.types.Scene.anim_setup = bpy.props.PointerProperty(type=CM_property_group_scene)
 
 

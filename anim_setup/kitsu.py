@@ -180,7 +180,6 @@ class Project(KitsuConnector):
     def get_sequences_all(self, connector: KitsuConnector) -> List[Sequence]:
         api_url = f"data/projects/{self.id}/sequences"
         seq_dicts = connector.api_get(api_url)
-        # seq_dicts_valid = connector.fetch_all(seq_dicts, {"project_id": self.id})
 
         sequences = [Sequence(**s) for s in seq_dicts]
         return sorted(sequences, key=lambda x: x.name)
@@ -194,7 +193,6 @@ class Project(KitsuConnector):
     def get_shots_all(self, connector: KitsuConnector) -> List[Shot]:
         api_url = f"data/projects/{self.id}/shots"
         shot_dicts = connector.api_get(api_url)
-        # shot_dicts_valid = connector.fetch_all(shot_dicts, {"project_id": self.id})
 
         shots = [Shot(**s) for s in shot_dicts]
         return sorted(shots, key=lambda x: x.name)
@@ -248,7 +246,7 @@ class Sequence(KitsuConnector):
         seq_dicts = connector.api_get(api_url)
         seq_dict = connector.fetch_first(seq_dicts, {"name": seq_name})
 
-        # can be None if name not found
+        # Can be None if name not found.
         if not seq_dict:
             return None
 
@@ -307,7 +305,7 @@ class Shot(KitsuConnector):
             shot_dicts, {"parent_id": sequence.id, "name": shot_name}
         )
 
-        # can be None if name not found
+        # Can be None if name not found.
         if not shot_dict:
             return None
 

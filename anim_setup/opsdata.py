@@ -16,7 +16,7 @@ def get_shot_name_from_file() -> Optional[str]:
     if not bpy.data.filepath:
         return None
 
-    # default 110_0030_A.anim.blend
+    # Default 110_0030_A.anim.blend.
     return Path(bpy.data.filepath).name.split(".")[0]
 
 
@@ -24,7 +24,7 @@ def get_sequence_from_file() -> Optional[str]:
     if not bpy.data.filepath:
         return None
 
-    # ./spritefright/pro/shots/110_rextoria/110_0010_A/110_0010_A.anim.blend
+    # ./spritefright/pro/shots/110_rextoria/110_0010_A/110_0010_A.anim.blend.
     return Path(bpy.data.filepath).parents[1].name
 
 
@@ -33,7 +33,7 @@ def get_seqeunce_short_from_shot_name(shotname: str) -> str:
 
 
 def get_cam_action_name_from_shot(shotname: str) -> str:
-    # ANI-camera.070_0010_A
+    # ANI-camera.070_0010_A.
     return f"ANI-camera.{shotname}"
 
 
@@ -67,7 +67,7 @@ def get_previs_file(context: bpy.types.Context) -> Optional[Path]:
     seqname = get_seqeunce_short_from_shot_name(shotname)
     previs_path = Path(addon_prefs.previs_root_path)
 
-    # catch custom cases when previs files are split up for specific shots
+    # Catch custom cases when previs files are split up for specific shots.
     if shotname == "020_0010_A":
         return previs_path / "020_grove.020_0010_A.blend"
 
@@ -122,7 +122,7 @@ def import_data_from_lib(
             )
             return None
 
-        # check if datablock with same name already exists in blend file
+        # Check if datablock with same name already exists in blend file.
         try:
             eval(f"bpy.data.{data_category}['{data_name}']")
         except KeyError:
@@ -133,7 +133,7 @@ def import_data_from_lib(
             )
             return None
 
-        # link appen data block
+        # Append data block.
         eval(f"data_to.{data_category}.append('{data_name}')")
         logger.info(
             "%s: %s from library: %s",
@@ -162,8 +162,8 @@ def _create_collection_instance(
     source_collection: bpy.types.Collection,
 ) -> bpy.types.Object:
 
-    # name has no effect how the overwritten library collection in the end
-    # use empty to instance source collection
+    # Name has no effect how the overwritten library collection in the end
+    # use empty to instance source collection.
     instance_obj = bpy.data.objects.new(name="", object_data=None)
     instance_obj.instance_collection = source_collection
     instance_obj.instance_type = "COLLECTION"
@@ -185,14 +185,14 @@ def _make_library_override(
     instance_obj: bpy.types.Object,
 ) -> None:
     log_name = instance_obj.name
-    # deselect all
+    # Deselect all.
     bpy.ops.object.select_all(action="DESELECT")
 
-    # needs active object (coll instance)
+    # Needs active object (coll instance).
     context.view_layer.objects.active = instance_obj
     instance_obj.select_set(True)
 
-    # add lib override
+    # Add library override.
     bpy.ops.object.make_override_library()
 
     logger.info(
@@ -215,7 +215,7 @@ def find_rig(coll: bpy.types.Collection) -> Optional[bpy.types.Armature]:
     valid_rigs = []
 
     for obj in coll.all_objects:
-        # default rig name: 'RIG-rex' / 'RIG-Rex'
+        # Default rig name: 'RIG-rex' / 'RIG-Rex'.
         if obj.type != "ARMATURE":
             continue
 
@@ -320,7 +320,7 @@ def get_ref_coll(coll: bpy.types.Collection) -> bpy.types.Collection:
 def is_item_local(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
 ) -> bool:
-    # local collection of blend file
+    # Local collection of blend file.
     if not item.override_library and not item.library:
         return True
     return False
@@ -329,7 +329,7 @@ def is_item_local(
 def is_item_lib_override(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
 ) -> bool:
-    # collection from libfile and overwritten
+    # Collection from libfile and overwritten.
     if item.override_library and not item.library:
         return True
     return False
@@ -338,7 +338,7 @@ def is_item_lib_override(
 def is_item_lib_source(
     item: Union[bpy.types.Collection, bpy.types.Object, bpy.types.Camera]
 ) -> bool:
-    #  source collection from libfile not overwritten
+    #  Source collection from libfile not overwritten.
     if not item.override_library and item.library:
         return True
     return False
