@@ -1,5 +1,5 @@
 # anim-setup
-anim-setup is a blender-addon that automates the setup of animation scenes for the Sprite-Fright project
+anim-setup is a Blender Add-on that automates the setup of animation scenes for the Sprite-Fright project.
 ## Installation
 Download or clone this repository.
 In the root project folder you will find the 'anim_setup' folder. Place this folder in your Blender addons directory or create a sym link to it.

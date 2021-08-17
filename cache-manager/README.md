@@ -1,5 +1,5 @@
-# cache_manager
-Cache Manager is a Blender Addon to streamline the alembic cache workflow of assets.
+# cache-manager
+cache-Manager is a Blender Add-on to streamline the alembic cache workflow of assets.
 
 ## Disclaimer
 This addon is not used in the production of the Blender-Studio anymore and is not maintained actively.

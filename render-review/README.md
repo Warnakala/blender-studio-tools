@@ -1,5 +1,5 @@
 # render-review
-Blender-addon to review renders from Flamenco with the Sequence Editor
+Blender Add-on to review renders from Flamenco with the Sequence Editor
 
 ## Table of Contents
 - [Installation](#installation)

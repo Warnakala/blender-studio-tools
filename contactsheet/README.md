@@ -1,5 +1,5 @@
 # contactsheet
-Blender addon to create a contactsheet from sequence editor strips.
+Blender Add-on to create a contactsheet from sequence editor strips.
 
 ## Installation
 Download or clone this repository.

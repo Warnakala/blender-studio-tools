@@ -1,5 +1,5 @@
 # blender-kitsu
-blender-kitsu is a Blender addon to interact with Kitsu from within Blender. It also has features that are not directly realted to Kitsu but support certain aspects of the Blender Studio Pipeline.
+blender-kitsu is a Blender Add-on to interact with Kitsu from within Blender. It also has features that are not directly related to Kitsu but support certain aspects of the Blender Studio Pipeline.
 
 ## Table of Contents
 - [Installation](#installation)
