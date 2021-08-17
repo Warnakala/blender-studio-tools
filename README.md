@@ -1,5 +1,6 @@
 # blender-purge
 blender-purge is a command line tools to purge orphan data of blend files via the console.
+
 ## Table of Contents
 - [Prerequisite](#prerequisite)
 - [Installation](#installation)
@@ -11,6 +12,7 @@ In order to use this tool you need:
 - python3
 - pip
 - svn
+
 ## Installation
 Download or clone this repository.
 This repository is a command line tool that can be installed with the python packaging manager.
@@ -25,7 +27,7 @@ This script does the following (follow this if you want to do this manually or o
 
 Ensure your $PATH variable contains:
 
-Linux:
+Linux/MacOs:
 - `$HOME/.local/lib/python3.8/site-packages`
 - `$HOME/.local/bin`
 
@@ -39,12 +41,11 @@ After install you can write `bpurge` in to the console.
 
 If you use the tool the first time it will ask you to specify a path to a blender executable and a path to the svn project directory, which will be saved in a configuration file:
 
+Linux/MacOs:
+- `$home/.config/blender-purge/config.json`
 
 Windows:
 - `$home/blender-purge/config.json`
-
-Linux/MacOs:
-- `$home/.config/blender-purge/config.json`
 
 
 Give `bpurge` a path to a .blend file or a folder as first argument.
