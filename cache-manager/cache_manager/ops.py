@@ -489,7 +489,7 @@ class CM_OT_import_colls_from_config(bpy.types.Operator):
 
 class CM_OT_update_cache_colls_list(bpy.types.Operator):
 
-    bl_idname = "cm.udpate_cache_colls_list"
+    bl_idname = "cm.update_cache_colls_list"
     bl_label = "Update Cache Collections List"
     bl_description = "Update cache collections list by scanning current scene for unadded cache collections"
     bl_options = {"REGISTER"}
@@ -1066,7 +1066,7 @@ classes: List[Any] = [
 
 @persistent
 def post_load_handler_update_cache_colls_list(dummy: Any) -> None:
-    bpy.ops.cm.udpate_cache_colls_list()
+    bpy.ops.cm.update_cache_colls_list()
 
 
 def register():
