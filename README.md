@@ -12,6 +12,7 @@ If no sequences were selected it takes a continuous row of the top most sequence
 The operator name always shows you how many sequences will be used.
 You can overwrite the resolution of the contactsheet by adjusting the X and Y sliders.
 The number of rows and columns is automatically calculated. It can also be overwritten by toggling the lock button.
+Check the addon preferences there you find some options to customize the contactsheet even more.
 
 ## Development
 In the project root you will find a `pyproject.toml` and `peotry.lock` file.
