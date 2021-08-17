@@ -67,14 +67,6 @@ def get_cmd_list(path: Path) -> Tuple[str]:
     return cmd_list
 
 
-"""
-        "--log",
-        "*overrides*",
-        "--log",
-        "-level 1",
-"""
-
-
 def validate_user_input(user_input, options):
     if user_input.lower() in options:
         return True
