@@ -104,20 +104,20 @@ def run_check():
 
 
 def purge_file(path: Path) -> int:
-    # get cmd list
+    # Get cmd list.
     cmd_list = get_cmd_list(path)
     p = subprocess.Popen(cmd_list, shell=False)
-    # stdout, stderr = p.communicate()
+    # Stdout, stderr = p.communicate().
     return p.wait()
 
 
 def is_filepath_valid(path: Path) -> None:
 
-    # check if path is file
+    # Check if path is file.
     if not path.is_file():
         raise WrongInputException(f"Not a file: {path.suffix}")
 
-    # check if path is blend file
+    # Check if path is blend file.
     if path.suffix != ".blend":
         raise WrongInputException(f"Not a blend file: {path.suffix}")
 
@@ -208,7 +208,7 @@ def is_config_valid() -> bool:
 @exception_handler
 def purge(args: argparse.Namespace) -> int:
 
-    # parse arguments
+    # Parse arguments.
     path = Path(args.path).absolute()
     recursive = args.recursive
     config_path = get_config_path()
@@ -216,7 +216,7 @@ def purge(args: argparse.Namespace) -> int:
     regex = args.regex
     yes = args.yes
 
-    # check config file
+    # Check config file.
     if not config_path.exists():
         logger.info("# Seems like you are starting blender-purge for the first time!")
         logger.info("# Some things needs to be configured")
@@ -227,18 +227,18 @@ def purge(args: argparse.Namespace) -> int:
             logger.info("# Please set it up again")
             setup_config()
 
-    # check user input
+    # Check user input.
     if not path:
         raise WrongInputException("Please provide a path as first argument")
 
     if not path.exists():
         raise WrongInputException(f"Path does not exist: {path.as_posix()}")
 
-    # vars
+    # Vars.
     files = []
 
-    # collect files to purge
-    # if dir
+    # Collect files to purge
+    # if dir.
     if path.is_dir():
         if recursive:
             blend_files = [
@@ -249,12 +249,12 @@ def purge(args: argparse.Namespace) -> int:
                 f for f in path.iterdir() if f.is_file() and f.suffix == ".blend"
             ]
         files.extend(blend_files)
-    # if just one file
+    # If just one file.
     else:
         is_filepath_valid(path)
         files.append(path)
 
-    # apply regex
+    # Apply regex.
     if regex:
         to_remove: List[Path] = []
         for p in files:
@@ -265,21 +265,21 @@ def purge(args: argparse.Namespace) -> int:
         for p in to_remove:
             files.remove(p)
 
-    # can only happen on folder here
+    # Can only happen on folder here.
     if not files:
         logger.info("# Found no .blend files to purge")
         cancel_program()
 
-    # sort
+    # Sort.
     files.sort(key=lambda f: f.name)
 
-    # prompt confirm
+    # Prompt confirm.
     if not yes:
         if not prompt_confirm(files):
             cancel_program()
 
     """
-    # perform check of correct preference settings
+    # Perform check of correct preference settings.
     return_code = run_check()
     if return_code == 1:
         raise SomethingWentWrongException(
@@ -287,7 +287,7 @@ def purge(args: argparse.Namespace) -> int:
         )
     """
 
-    # purge each file two times
+    # Purge each file two times.
     for blend_file in files:
         for i in range(vars.PURGE_AMOUNT):
             return_code = purge_file(blend_file)
@@ -296,7 +296,7 @@ def purge(args: argparse.Namespace) -> int:
                     f"Blender Crashed on file: {blend_file.as_posix()}",
                 )
 
-    # commit to svn
+    # Commit to svn.
     if no_commit:
         return 0
 

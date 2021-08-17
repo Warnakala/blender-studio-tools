@@ -20,10 +20,10 @@ class SvnRepo:
             ),
             "utf-8",
         )
-        # split output in string lines
+        # Split output in string lines.
         split = output.split("\n")
 
-        # remove empty lines
+        # Remove empty lines.
         while True:
             try:
                 split.remove("")
@@ -38,16 +38,16 @@ class SvnRepo:
 
         path_list: List[Path] = []
 
-        # assemble path list
+        # Assemble path list.
         for idx, line in enumerate(output):
             if not line.startswith("M"):
                 continue
             path = Path(line[5:].strip())
 
-            # if no suffix supplied append all files
+            # If no suffix supplied append all files.
             if suffix == ".*":
                 path_list.append(path)
-            # if suffix supplied only collect files that match
+            # If suffix supplied only collect files that match.
             else:
                 if path.suffix == suffix:
                     path_list.append(path)
@@ -80,7 +80,7 @@ class SvnRepo:
 
         path_list: List[Path] = []
 
-        # assemble path list
+        # Assemble path list.
         for idx, line in enumerate(output):
             if not line.startswith("?"):
                 continue
@@ -91,7 +91,7 @@ class SvnRepo:
 
 
 if __name__ == "__main__":
-    # test status
+    # Test status.
     repo = SvnRepo(Path("/media/data/sprites"))
     modified = repo.get_modified()
     print(modified)

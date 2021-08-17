@@ -15,8 +15,6 @@ class LoggerFactory:
     @classmethod
     def getLogger(cls, name=__name__):
         logger = logging.getLogger(name)
-
-        # cls.consoleHandler.setFormatter(cls.formatter)
         logger.addHandler(cls.consoleHandler)
         logger.setLevel(cls.level)
 

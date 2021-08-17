@@ -11,7 +11,7 @@ from blender_purge.log import LoggerFactory
 importlib.reload(app)
 logger = LoggerFactory.getLogger()
 
-# Command line arguments
+# Command line arguments.
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "path", help="Path to a file or folder on which to perform purge", type=str
