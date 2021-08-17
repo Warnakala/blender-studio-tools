@@ -43,7 +43,7 @@ def ui_redraw() -> None:
 class CM_OT_cache_export(bpy.types.Operator):
     bl_idname = "cm.cache_export"
     bl_label = "Export Cache"
-    bl_description = "Exports alembic cache for selected collections"
+    bl_description = "Exports alembic cache and generates cacheconfig for cache collections"
 
     do_all: bpy.props.BoolProperty(
         name="Process All", description="Process all cache collections", default=False
@@ -342,7 +342,7 @@ class CM_OT_cache_export(bpy.types.Operator):
 class CM_OT_cacheconfig_export(bpy.types.Operator):
     bl_idname = "cm.cacheconfig_export"
     bl_label = "Export Cacheconfig"
-    bl_description = "Exports only the cacheconfig for selected collections"
+    bl_description = "Exports only the cacheconfig for cache collections"
 
     do_all: bpy.props.BoolProperty(
         name="Process All", description="Process all cache collections", default=False
@@ -452,7 +452,7 @@ class CM_OT_import_colls_from_config(bpy.types.Operator):
 
     bl_idname = "cm.import_colls_from_config"
     bl_label = "Import Collections"
-    bl_description = "Import Colletions from Cacheconfig"
+    bl_description = "Import Collections from Cacheconfig"
     bl_options = {"REGISTER"}
 
     @classmethod
@@ -528,6 +528,7 @@ class CM_OT_assign_cachefile(bpy.types.Operator):
     bl_label = "Assign Cachefile"
     bl_options = {"INTERNAL"}
     bl_property = "cachefile"
+    bl_description = "Assign cachefile to cache collection that will be used during import"
 
     cachefile: bpy.props.EnumProperty(
         items=opsdata.get_cachefiles_enum, name="Cachefiles"
@@ -555,7 +556,7 @@ class CM_OT_import_cache(bpy.types.Operator):
     bl_idname = "cm.import_cache"
     bl_label = "Import Cache"
     bl_description = (
-        "Imports alembic cache and animationdata from cacheconfig for collections"
+        "Import alembic cache and animationdata from cacheconfig for cache collections"
     )
 
     do_all: bpy.props.BoolProperty(
@@ -826,6 +827,9 @@ class CM_OT_cache_show(bpy.types.Operator):
 class CM_OT_cache_remove(bpy.types.Operator):
     bl_idname = "cm.cache_remove"
     bl_label = "Remove Cache"
+    bl_description = (
+        "Remove cache from cache collection, deletes cache modifier and constraints"
+    )
 
     index: bpy.props.IntProperty(name="Index")
     do_all: bpy.props.BoolProperty(
@@ -882,6 +886,10 @@ class CM_OT_set_cache_version(bpy.types.Operator):
     bl_idname = "cm.set_cache_version"
     bl_label = "Version"
     bl_property = "versions"
+    bl_description = (
+        "Set active cache version, reloads animation data "
+        "from cacheconfig"
+    )
 
     versions: bpy.props.EnumProperty(
         items=opsdata.get_versions_enum_list, name="Versions"
@@ -1018,6 +1026,7 @@ class CM_OT_set_cache_version(bpy.types.Operator):
 class CM_OT_add_cache_version_increment(bpy.types.Operator):
     bl_idname = "cm.add_cache_version_increment"
     bl_label = "Add Version Increment"
+    bl_description = "Increment cache version by one for export"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
