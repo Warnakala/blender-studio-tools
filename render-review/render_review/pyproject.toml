@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "render-review"
+version = "0.1.0"
+description = ""
+authors = ["Paul Golter <paulgolter.de@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = "^21.6b0"
+mypy = "^0.910"
+pylint = "^2.8.3"
+pygame = "^2.0.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
