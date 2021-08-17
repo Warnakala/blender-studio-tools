@@ -38,11 +38,13 @@ def is_blender_kitsu_enabled() -> bool:
 
 
 class RR_OT_enable_blender_kitsu(bpy.types.Operator):
-    """"""
-
     bl_idname = "rr.enable_blender_kitsu"
     bl_label = "Enable Blender Kitsu"
-    bl_description = ""
+    bl_description = (
+        "Enables connection to blender_kitsu which "
+        "which adds additional functionality to operators "
+        "Blender-kitsu needs to be installed and enabled"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
