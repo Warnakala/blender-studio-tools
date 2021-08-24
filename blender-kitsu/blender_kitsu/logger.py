@@ -46,10 +46,13 @@ class LoggerLevelManager:
         for key in logging.Logger.manager.loggerDict:
             if key.startswith("urllib3"):
                 # Save logger and value.
-                logger = logging.getLogger(key)
-                cls.logger_levels.append((logger, logger.level))
+                log = logging.getLogger(key)
+                cls.logger_levels.append((log, logger.level))
 
-                logger.setLevel(logging.CRITICAL)
+                log.setLevel(logging.CRITICAL)
+
+        #set root logger level
+        logging.getLogger().setLevel(logging.INFO)
         logger.info("Configured logging Levels")
 
     @classmethod

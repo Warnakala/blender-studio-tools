@@ -77,9 +77,6 @@ if _need_reload:
     tasks.reload()
     anim.reload()
 
-    LoggerLevelManager.configure_levels()
-
-
 def register():
     lookdev.register()
     prefs.register()
