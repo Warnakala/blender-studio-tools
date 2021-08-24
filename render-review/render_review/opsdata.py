@@ -19,6 +19,7 @@
 # (c) 2021, Blender Foundation - Paul Golter
 
 import json
+import shutil
 from pathlib import Path
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
 
@@ -29,6 +30,43 @@ from render_review.log import LoggerFactory
 from render_review.exception import NoImageSequenceAvailableException
 
 logger = LoggerFactory.getLogger(name=__name__)
+
+copytree_list: List[Path] = []
+copytree_num_of_items: int = 0
+
+
+def copytree_verbose(src: Union[str, Path], dest: Union[str, Path], **kwargs):
+    _copytree_init_progress_update(Path(src))
+    shutil.copytree(src, dest, copy_function=_copy2_tree_progress, **kwargs)
+    _copytree_clear_progress_update()
+
+
+def _copytree_init_progress_update(source_dir: Path):
+    global copytree_num_of_items
+    file_list = [f for f in source_dir.glob("**/*") if f.is_file()]
+    copytree_num_of_items = len(file_list)
+
+
+def _copy2_tree_progress(src, dst):
+    """
+    Function that can be used for copy_function
+    argument on shutil.copytree function.
+    Logs every item that is currently copied.
+    """
+    global copytree_num_of_items
+    global copytree_list
+
+    copytree_list.append(Path(src))
+    progress = round((len(copytree_list) * 100) / copytree_num_of_items)
+    logger.info("Copying %s (%i%%)", src, progress)
+    shutil.copy2(src, dst)
+
+
+def _copytree_clear_progress_update():
+    global copytree_num_of_items
+
+    copytree_num_of_items = 0
+    copytree_list.clear()
 
 
 def get_valid_cs_sequences(

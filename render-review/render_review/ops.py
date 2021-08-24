@@ -396,7 +396,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
             logger.info("Created dir in Shot Frames: %s", shot_frames_dir.as_posix())
 
         # Copy dir.
-        shutil.copytree(
+        opsdata.copytree_verbose(
             strip_dir,
             shot_frames_dir,
             dirs_exist_ok=True,
@@ -405,7 +405,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
             "Copied: %s \nTo: %s", strip_dir.as_posix(), shot_frames_dir.as_posix()
         )
 
-        # Udpate metadata json.
+        # Update metadata json.
         if not metadata_path.exists():
             metadata_path.touch()
             opsdata.save_to_json(
