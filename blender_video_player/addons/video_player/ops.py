@@ -35,13 +35,50 @@ class VP_OT_load_media(bpy.types.Operator):
     bl_idname = "video_player.load_media"
     bl_label = "Load Media"
     bl_description = "Loads media in to sequence editor" ""
+    filepath: bpy.props.StringProperty(name="Filepath", subtype="FILE_PATH")
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        print(self.filepath)
+        self.report({"INFO"}, self.filepath)
         return {"FINISHED"}
+
+
+def find_file_browser(context: bpy.types.Context) -> Optional[bpy.types.Area]:
+    for area in context.screen.areas:
+        if area.type == "FILE_BROWSER":
+            return area
+    return None
+
+
+prev_file_name: Optional[str] = None
+
+
+def callback_filename_change(dummy: None):
+    global prev_file_name
+    area = find_file_browser(bpy.context)
+
+    # Early return no area.
+    if not area:
+        return
+
+    params = area.spaces[0].params
+
+    # Early return filename did not change.
+    if prev_file_name == params.filename:
+        return
+
+    # Update prev_file_name.
+    prev_file_name = params.filename
+    print(prev_file_name)
+
+    # Execute load media op.
+    # TODO: decode byte string to actual string
+    filepath = Path(bpy.path.abspath(str(params.directory))) / params.filename
+    bpy.ops.video_player.load_media(filepath=filepath.as_posix())
 
 
 # ----------------REGISTER--------------.
@@ -54,7 +91,15 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
+    # Handlers.
+    bpy.types.SpaceFileBrowser.draw_handler_add(
+        callback_filename_change, (None,), "WINDOW", "POST_PIXEL"
+    )
+
 
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+
+    # Handlers.
+    bpy.types.SpaceFileBrowser.draw_handler_remove(callback_filename_change, "WINDOW")
