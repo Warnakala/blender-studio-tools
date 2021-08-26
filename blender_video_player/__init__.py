@@ -34,17 +34,7 @@ class AppStateStore(AppOverrideState):
 
         classes.extend(
             bl_app_override.class_filter(
-                bpy.types.Panel,
-            ),
-        )
-        classes.extend(
-            bl_app_override.class_filter(
                 bpy.types.Header,
-            ),
-        )
-        classes.extend(
-            bl_app_override.class_filter(
-                bpy.types.Menu,
             ),
         )
         classes.extend(
@@ -52,7 +42,18 @@ class AppStateStore(AppOverrideState):
                 bpy.types.Operator,
             ),
         )
-        # print(self.classes)
+        classes.extend(
+            bl_app_override.class_filter(
+                bpy.types.Menu,
+            ),
+        )
+        """
+        classes.extend(
+            bl_app_override.class_filter(
+                bpy.types.Panel,
+            ),
+        )
+        """
 
         return classes
 
@@ -61,10 +62,11 @@ class AppStateStore(AppOverrideState):
 
     @staticmethod
     def ui_ignore_classes():
+        # What does this do?
         return (
             bpy.types.Header,
             bpy.types.Menu,
-            bpy.types.Panel,
+            # bpy.types.Panel,
         )
 
     @staticmethod
@@ -82,6 +84,9 @@ class AppStateStore(AppOverrideState):
     @staticmethod
     def ui_ignore_label(text):
         return True
+
+    """
+    """
 
     # -------
     # Add-ons
