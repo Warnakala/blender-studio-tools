@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple, List, Union, Dict
+from typing import Tuple, List, Union, Dict, Optional
 
 import bpy
 
@@ -49,3 +49,25 @@ def fit_frame_range_to_strips(
     context.scene.frame_end = strips[-1].frame_final_end
 
     return (context.scene.frame_start, context.scene.frame_end)
+
+
+def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.Area]:
+    for area in context.screen.areas:
+        if area.type == area_name:
+            return area
+    return None
+
+
+def fit_timeline_view(context: bpy.types.Context) -> None:
+    area = find_area(context, "DOPESHEET_EDITOR")
+
+    if not area:
+        return
+
+    for region in area.regions:
+        if region.type == "WINDOW":
+            ctx = bpy.context.copy()
+            ctx["area"] = area
+            ctx["region"] = region
+            bpy.ops.action.view_all(ctx)
+            break

@@ -91,6 +91,9 @@ class VP_OT_load_media(bpy.types.Operator):
         # Set frame range.
         opsdata.fit_frame_range_to_strips(context)
 
+        # Adjust view of timeline to fit all.
+        opsdata.fit_timeline_view(context)
+
         # Set playhead to start of scene.
         context.scene.frame_current = context.scene.frame_start
 
@@ -101,19 +104,12 @@ class VP_OT_load_media(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def find_file_browser(context: bpy.types.Context) -> Optional[bpy.types.Area]:
-    for area in context.screen.areas:
-        if area.type == "FILE_BROWSER":
-            return area
-    return None
-
-
 prev_file_name: Optional[str] = None
 
 
 def callback_filename_change(dummy: None):
     global prev_file_name
-    area = find_file_browser(bpy.context)
+    area = opsdata.find_area(bpy.context, "FILE_BROWSER")
 
     # Early return no area.
     if not area:
