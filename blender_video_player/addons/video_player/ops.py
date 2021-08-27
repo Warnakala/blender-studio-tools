@@ -54,6 +54,9 @@ class VP_OT_load_media(bpy.types.Operator):
         if not context.scene.sequence_editor:
             context.scene.sequence_editor_create()
 
+        # Stop playback.
+        bpy.ops.screen.animation_cancel()
+
         # Clear all media in the sequence editor
         opsdata.del_all_sequences(context)
 
@@ -94,9 +97,6 @@ class VP_OT_load_media(bpy.types.Operator):
         # Playback.
         if playback:
             bpy.ops.screen.animation_play()
-
-        else:
-            bpy.ops.screen.animation_cancel()
 
         return {"FINISHED"}
 
