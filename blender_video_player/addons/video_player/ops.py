@@ -24,6 +24,7 @@ from typing import Set, Union, Optional, List, Dict, Any, Tuple
 
 import bpy
 
+from video_player import opsdata
 from video_player.log import LoggerFactory
 
 
@@ -43,7 +44,60 @@ class VP_OT_load_media(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         print(self.filepath)
-        self.report({"INFO"}, self.filepath)
+        filepath = Path(self.filepath)
+        playback = False
+
+        if not filepath.exists():
+            return {"CANCELLED"}
+
+        # Init Sequence Editor.
+        if not context.scene.sequence_editor:
+            context.scene.sequence_editor_create()
+
+        # Clear all media in the sequence editor
+        opsdata.del_all_sequences(context)
+
+        # Import sequence.
+        if opsdata.is_image(filepath):
+
+            # Create new image strip.
+            strip = context.scene.sequence_editor.sequences.new_image(
+                filepath.stem,
+                filepath.as_posix(),
+                0,
+                context.scene.frame_start,
+            )
+            playback = False
+
+        elif opsdata.is_movie(filepath):
+
+            # Create new movie strip.
+            strip = context.scene.sequence_editor.sequences.new_movie(
+                filepath.stem,
+                filepath.as_posix(),
+                0,
+                context.scene.frame_start,
+            )
+            playback = True
+
+        # Unsupported file format.
+        else:
+            logger.warning("Unsupported file format %s", filepath.suffix)
+            return {"CANCELLED"}
+
+        # Set frame range.
+        opsdata.fit_frame_range_to_strips(context)
+
+        # Set playhead to start of scene.
+        context.scene.frame_current = context.scene.frame_start
+
+        # Playback.
+        if playback:
+            bpy.ops.screen.animation_play()
+
+        else:
+            bpy.ops.screen.animation_cancel()
+
         return {"FINISHED"}
 
 
@@ -65,7 +119,7 @@ def callback_filename_change(dummy: None):
     if not area:
         return
 
-    params = area.spaces[0].params
+    params = area.spaces.active.params
 
     # Early return filename did not change.
     if prev_file_name == params.filename:
@@ -76,8 +130,8 @@ def callback_filename_change(dummy: None):
     print(prev_file_name)
 
     # Execute load media op.
-    # TODO: decode byte string to actual string
-    filepath = Path(bpy.path.abspath(str(params.directory))) / params.filename
+    directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
+    filepath = directory / params.filename
     bpy.ops.video_player.load_media(filepath=filepath.as_posix())
 
 
