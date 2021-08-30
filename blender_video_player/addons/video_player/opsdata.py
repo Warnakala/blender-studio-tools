@@ -60,14 +60,18 @@ def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.
 
 def fit_timeline_view(context: bpy.types.Context) -> None:
     area = find_area(context, "DOPESHEET_EDITOR")
-
     if not area:
         return
 
+    ctx = get_context_for_area(area)
+    bpy.ops.action.view_all(ctx)
+
+
+def get_context_for_area(area: bpy.types.Area) -> Dict:
     for region in area.regions:
         if region.type == "WINDOW":
             ctx = bpy.context.copy()
             ctx["area"] = area
             ctx["region"] = region
-            bpy.ops.action.view_all(ctx)
-            break
+            return ctx
+    return {}

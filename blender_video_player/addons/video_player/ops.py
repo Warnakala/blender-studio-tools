@@ -35,7 +35,9 @@ class VP_OT_load_media(bpy.types.Operator):
 
     bl_idname = "video_player.load_media"
     bl_label = "Load Media"
-    bl_description = "Loads media in to sequence editor" ""
+    bl_description = (
+        "Loads media in to sequence editor and clears any media before that"
+    )
     filepath: bpy.props.StringProperty(name="Filepath", subtype="FILE_PATH")
 
     @classmethod
@@ -43,7 +45,6 @@ class VP_OT_load_media(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        print(self.filepath)
         filepath = Path(self.filepath)
         playback = False
 
@@ -104,6 +105,49 @@ class VP_OT_load_media(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class VP_OT_toggle_timeline(bpy.types.Operator):
+
+    bl_idname = "video_player.toggle_timeline"
+    bl_label = "Toggle Timeline"
+    bl_description = "Toggles visibility of timeline area"
+    hidden: bpy.props.BoolProperty()
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        area1 = opsdata.find_area(context, "SEQUENCE_EDITOR")
+        area2 = opsdata.find_area(context, "DOPESHEET_EDITOR")
+
+        if area2:
+            # Timeline needs to be closed.
+            ctx = opsdata.get_context_for_area(area2)
+            bpy.ops.screen.area_close(ctx)
+            self.hidden = True
+
+        elif area1:
+            # Sequence Editor area needs to be splitted.
+            # New area needs to be timeline
+
+            start_areas = context.screen.areas[:]
+            ctx = opsdata.get_context_for_area(area1)
+            bpy.ops.screen.area_split(ctx, direction="HORIZONTAL", factor=0.3)
+            for area in context.screen.areas:
+                if area not in start_areas:
+                    area.type = "DOPESHEET_EDITOR"
+            self.hidden = False
+
+        else:
+            logger.error(
+                "Toggle timeline failed. Missing areas: SEQUENCE_EDITOR | DOPESHEET_EDITOR"
+            )
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+
 prev_file_name: Optional[str] = None
 
 
@@ -134,7 +178,8 @@ def callback_filename_change(dummy: None):
 # ----------------REGISTER--------------.
 
 
-classes = [VP_OT_load_media]
+classes = [VP_OT_load_media, VP_OT_toggle_timeline]
+addon_keymap_items = []
 
 
 def register():
@@ -146,6 +191,24 @@ def register():
         callback_filename_change, (None,), "WINDOW", "POST_PIXEL"
     )
 
+    # Register Hotkeys.
+    # Does not work if blender runs in background.
+    if not bpy.app.background:
+        global addon_keymap_items
+        keymap = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name="Window")
+
+        # Toggle Timeline.
+        addon_keymap_items.append(
+            keymap.keymap_items.new(
+                "video_player.toggle_timeline", value="PRESS", type="T"
+            )
+        )
+
+        for kmi in addon_keymap_items:
+            logger.info(
+                "Registered new hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name
+            )
+
 
 def unregister():
     for cls in reversed(classes):
@@ -153,3 +216,15 @@ def unregister():
 
     # Handlers.
     bpy.types.SpaceFileBrowser.draw_handler_remove(callback_filename_change, "WINDOW")
+
+    # Unregister Hotkeys.
+    # Does not work if blender runs in background.
+    if not bpy.app.background:
+        global addon_keymap_items
+        keymap = bpy.context.window_manager.keyconfigs.addon.keymaps["Window"]
+
+        for kmi in addon_keymap_items:
+            logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
+            keymap.keymap_items.remove(kmi)
+
+        addon_keymap_items.clear()
