@@ -52,7 +52,13 @@ def fit_frame_range_to_strips(
 
 
 def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.Area]:
-    for area in context.screen.areas:
+    if isinstance(context, dict):
+        # Handle override context.
+        screen = context["screen"]
+    else:
+        screen = context.screen
+
+    for area in screen.areas:
         if area.type == area_name:
             return area
     return None
@@ -105,3 +111,13 @@ def split_area(
 def close_area(area: bpy.types.Area) -> None:
     ctx = get_context_for_area(area)
     bpy.ops.screen.area_close(ctx)
+
+
+def setup_filebrowser_area(filebrowser_area: bpy.types.Area) -> None:
+    params = filebrowser_area.spaces.active.params
+    params.display_type = "THUMBNAIL"
+    params.use_filter = True
+    params.use_filter_image = True
+    params.use_filter_folder = True
+    params.use_filter_movie = True
+    return

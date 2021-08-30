@@ -110,6 +110,9 @@ class VP_OT_toggle_timeline(bpy.types.Operator):
     bl_idname = "video_player.toggle_timeline"
     bl_label = "Toggle Timeline"
     bl_description = "Toggles visibility of timeline area"
+    factor: bpy.props.FloatProperty(
+        name="Factor that defines space for timeline after area split", default=0.15
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -127,7 +130,10 @@ class VP_OT_toggle_timeline(bpy.types.Operator):
         elif area_sqe:
             # Sequence Editor area needs to be splitted.
             # New area needs to be timeline
-            opsdata.split_area(context, area_sqe, "DOPESHEET_EDITOR", "HORIZONTAL", 0.3)
+            opsdata.split_area(
+                context, area_sqe, "DOPESHEET_EDITOR", "HORIZONTAL", self.factor
+            )
+            opsdata.fit_timeline_view(context)
 
         else:
             logger.error(
@@ -143,6 +149,12 @@ class VP_OT_toggle_filebrowser(bpy.types.Operator):
     bl_idname = "video_player.toggle_filebrowser"
     bl_label = "Toggle Filebrowser"
     bl_description = "Toggles visibility of filebrowser area"
+    factor_timeline: bpy.props.FloatProperty(
+        name="Factor that defines space for timeline after area split", default=0.15
+    )
+    factor_filebrowser: bpy.props.FloatProperty(
+        name="Factor that defines space for filebrowser after area split", default=0.3
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -170,25 +182,36 @@ class VP_OT_toggle_filebrowser(bpy.types.Operator):
             ctx["window"] = bpy.data.window_managers[wm_name].windows[0]
 
             # Open filebrowser.
-            opsdata.split_area(ctx, area_sqe, "FILE_BROWSER", "VERTICAL", 0.3)
+            area_fb = opsdata.split_area(
+                ctx, area_sqe, "FILE_BROWSER", "VERTICAL", self.factor_filebrowser
+            )
 
             # Open timeline
-            opsdata.split_area(ctx, area_sqe, "DOPESHEET_EDITOR", "HORIZONTAL", 0.3)
+            area_time = opsdata.split_area(
+                ctx, area_sqe, "DOPESHEET_EDITOR", "HORIZONTAL", self.factor_timeline
+            )
 
         elif not area_fb:
             # Sequence Editor area needs to be splitted.
             # New area needs to be filebrowser.
-            opsdata.split_area(context, area_sqe, "FILE_BROWSER", "VERTICAL", 0.3)
+            area_fb = opsdata.split_area(
+                context, area_sqe, "FILE_BROWSER", "VERTICAL", self.factor_filebrowser
+            )
 
         elif area_fb:
             # Filebrowser needs to be closed.
             opsdata.close_area(area_fb)
+            return {"FINISHED"}
 
         else:
             logger.error(
                 "Toggle timeline failed. Missing areas: SEQUENCE_EDITOR | FILE_BROWSER"
             )
             return {"CANCELLED"}
+
+        # Adjust properties of filebrowser panel.
+        # TODO: Screen does not update area has no params
+        # opsdata.setup_filebrowser_area(area_fb)
 
         return {"FINISHED"}
 
