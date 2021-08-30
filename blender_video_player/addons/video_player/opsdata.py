@@ -75,3 +75,33 @@ def get_context_for_area(area: bpy.types.Area) -> Dict:
             ctx["region"] = region
             return ctx
     return {}
+
+
+def split_area(
+    context: bpy.types.Context,
+    area_split: bpy.types.Area,
+    area_type_new: str,
+    direction: str,
+    factor: float,
+) -> bpy.types.Area:
+
+    if isinstance(context, dict):
+        # Handle override context.
+        screen = context["screen"]
+        ctx = context
+    else:
+        screen = context.screen
+        ctx = get_context_for_area(area_split)
+
+    start_areas = screen.areas[:]
+    bpy.ops.screen.area_split(ctx, direction=direction, factor=factor)
+
+    for area in screen.areas:
+        if area not in start_areas:
+            area.type = area_type_new.upper()
+            return area
+
+
+def close_area(area: bpy.types.Area) -> None:
+    ctx = get_context_for_area(area)
+    bpy.ops.screen.area_close(ctx)

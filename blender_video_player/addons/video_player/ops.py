@@ -110,7 +110,6 @@ class VP_OT_toggle_timeline(bpy.types.Operator):
     bl_idname = "video_player.toggle_timeline"
     bl_label = "Toggle Timeline"
     bl_description = "Toggles visibility of timeline area"
-    hidden: bpy.props.BoolProperty()
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -118,30 +117,76 @@ class VP_OT_toggle_timeline(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
-        area1 = opsdata.find_area(context, "SEQUENCE_EDITOR")
-        area2 = opsdata.find_area(context, "DOPESHEET_EDITOR")
+        area_sqe = opsdata.find_area(context, "SEQUENCE_EDITOR")
+        area_timeline = opsdata.find_area(context, "DOPESHEET_EDITOR")
 
-        if area2:
+        if area_timeline:
             # Timeline needs to be closed.
-            ctx = opsdata.get_context_for_area(area2)
-            bpy.ops.screen.area_close(ctx)
-            self.hidden = True
+            opsdata.close_area(area_timeline)
 
-        elif area1:
+        elif area_sqe:
             # Sequence Editor area needs to be splitted.
             # New area needs to be timeline
-
-            start_areas = context.screen.areas[:]
-            ctx = opsdata.get_context_for_area(area1)
-            bpy.ops.screen.area_split(ctx, direction="HORIZONTAL", factor=0.3)
-            for area in context.screen.areas:
-                if area not in start_areas:
-                    area.type = "DOPESHEET_EDITOR"
-            self.hidden = False
+            opsdata.split_area(context, area_sqe, "DOPESHEET_EDITOR", "HORIZONTAL", 0.3)
 
         else:
             logger.error(
                 "Toggle timeline failed. Missing areas: SEQUENCE_EDITOR | DOPESHEET_EDITOR"
+            )
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+
+class VP_OT_toggle_filebrowser(bpy.types.Operator):
+
+    bl_idname = "video_player.toggle_filebrowser"
+    bl_label = "Toggle Filebrowser"
+    bl_description = "Toggles visibility of filebrowser area"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        area_sqe = opsdata.find_area(context, "SEQUENCE_EDITOR")
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
+        area_time = opsdata.find_area(context, "DOPESHEET_EDITOR")
+        screen_name = context.screen.name
+        wm_name = context.window_manager.name
+
+        if not area_fb and area_time and area_sqe:
+            # If sqe and timeline visible but not filebrowser
+            # we need to first close timeline and then open it after to
+            # get correct layout.
+            opsdata.close_area(area_time)
+
+            # We need to do some custom context assembly here
+            # because the bpy.ops.screen.area_close() sets context.screen to NULL.
+            screen = bpy.data.screens[screen_name]
+            ctx = opsdata.get_context_for_area(area_sqe)
+            ctx["screen"] = screen
+            ctx["window"] = bpy.data.window_managers[wm_name].windows[0]
+
+            # Open filebrowser.
+            opsdata.split_area(ctx, area_sqe, "FILE_BROWSER", "VERTICAL", 0.3)
+
+            # Open timeline
+            opsdata.split_area(ctx, area_sqe, "DOPESHEET_EDITOR", "HORIZONTAL", 0.3)
+
+        elif not area_fb:
+            # Sequence Editor area needs to be splitted.
+            # New area needs to be filebrowser.
+            opsdata.split_area(context, area_sqe, "FILE_BROWSER", "VERTICAL", 0.3)
+
+        elif area_fb:
+            # Filebrowser needs to be closed.
+            opsdata.close_area(area_fb)
+
+        else:
+            logger.error(
+                "Toggle timeline failed. Missing areas: SEQUENCE_EDITOR | FILE_BROWSER"
             )
             return {"CANCELLED"}
 
@@ -178,7 +223,7 @@ def callback_filename_change(dummy: None):
 # ----------------REGISTER--------------.
 
 
-classes = [VP_OT_load_media, VP_OT_toggle_timeline]
+classes = [VP_OT_load_media, VP_OT_toggle_timeline, VP_OT_toggle_filebrowser]
 addon_keymap_items = []
 
 
@@ -204,6 +249,12 @@ def register():
             )
         )
 
+        # Toggle Filebrowser.
+        addon_keymap_items.append(
+            keymap.keymap_items.new(
+                "video_player.toggle_file_browser", value="PRESS", type="B"
+            )
+        )
         for kmi in addon_keymap_items:
             logger.info(
                 "Registered new hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name
