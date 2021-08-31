@@ -47,6 +47,15 @@ class VP_OT_load_media_movie(bpy.types.Operator):
         description="Controls if video should playback after load",
         default=True,
     )
+    # files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
+    append: bpy.props.BoolProperty(
+        name="Append File",
+        description=(
+            "Controls if all strips should be deleted "
+            "or new strip should be appended to timeline"
+        ),
+        default=False,
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -55,6 +64,7 @@ class VP_OT_load_media_movie(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         filepath = Path(self.filepath)
         can_playback = False
+        frame_start = context.scene.frame_start
 
         # Check if filepath exists.
         if not filepath.exists():
@@ -76,7 +86,10 @@ class VP_OT_load_media_movie(bpy.types.Operator):
         bpy.ops.screen.animation_cancel()
 
         # Clear all media in the sequence editor.
-        opsdata.del_all_sequences(context)
+        if self.append:
+            frame_start = opsdata.get_last_strip_frame(context)
+        else:
+            opsdata.del_all_sequences(context)
 
         # Import sequence.
 
@@ -88,7 +101,7 @@ class VP_OT_load_media_movie(bpy.types.Operator):
                 filepath.stem,
                 filepath.as_posix(),
                 0,
-                context.scene.frame_start,
+                frame_start,
             )
             can_playback = True
 
@@ -100,7 +113,7 @@ class VP_OT_load_media_movie(bpy.types.Operator):
                 filepath.stem,
                 filepath.as_posix(),
                 0,
-                context.scene.frame_start,
+                frame_start,
             )
             can_playback = False
 

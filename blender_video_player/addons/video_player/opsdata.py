@@ -201,3 +201,17 @@ def ensure_config_file() -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         save_to_json({}, path)
         logger.info(f"Created config file: {path.as_posix()}")
+
+
+def get_last_strip_frame(context: bpy.types.Context) -> int:
+    """
+    Checks all strips in the Sequence Editor and returns the
+    last frame from the most right strip.
+    If there are not strips it will return the start frame of the scene
+    as this function is used to place a strip at a specific point in time.
+    """
+    sequences = list(context.scene.sequence_editor.sequences_all)
+    if not sequences:
+        return context.scene.frame_start
+    sequences.sort(key=lambda s: s.frame_final_end)
+    return sequences[-1].frame_final_end
