@@ -7,18 +7,28 @@ import bpy
 from video_player import vars
 from video_player.log import LoggerFactory
 
+# MEDIA VIEWER
+
 
 logger = LoggerFactory.getLogger(name=__name__)
 
 
 def is_movie(filepath: Path) -> bool:
-    if filepath.suffix in vars.MOVIE_EXT:
+    if filepath.suffix in vars.EXT_MOVIE:
         return True
     return False
 
 
 def is_image(filepath: Path) -> bool:
+    if filepath.suffix in vars.EXT_IMG:
+        return True
+    return False
+
     if filepath.suffix in vars.IMG_EXT:
+
+
+def is_script(filepath: Path) -> bool:
+    if filepath.suffix in vars.EXT_SCRIPT:
         return True
     return False
 
@@ -28,6 +38,11 @@ def del_all_sequences(context: bpy.types.Context) -> None:
         context.scene.sequence_editor.sequences.remove(
             context.scene.sequence_editor.sequences[seq_name]
         )
+
+
+def del_all_images() -> None:
+    for image_name in [i.name for i in bpy.data.images]:
+        bpy.data.images.remove(bpy.data.images[image_name])
 
 
 def fit_frame_range_to_strips(
@@ -121,10 +136,13 @@ def close_area(area: bpy.types.Area) -> None:
 def setup_filebrowser_area(filebrowser_area: bpy.types.Area) -> None:
     params = filebrowser_area.spaces.active.params
     params.display_type = "THUMBNAIL"
+    params.display_size = "TINY"
     params.use_filter = True
     params.use_filter_image = True
     params.use_filter_folder = True
     params.use_filter_movie = True
+    params.use_filter_text = True
+    params.use_filter_script = True
     return
 
 
@@ -141,7 +159,7 @@ def save_to_json(obj: Any, path: Path) -> None:
 
 def set_filebrowser_dir(filebrowser_area: bpy.types.Area, path: Path) -> None:
     params = filebrowser_area.spaces.active.params
-    params.directory = bytes(path.as_posix(), 'utf-8')
+    params.directory = bytes(path.as_posix(), "utf-8")
     logger.info(f"Loaded recent directory: {path.as_posix()}")
     return
 

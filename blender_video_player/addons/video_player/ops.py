@@ -31,10 +31,12 @@ from video_player.log import LoggerFactory
 
 logger = LoggerFactory.getLogger(name=__name__)
 
+active_media_area = "SEQUENCE_EDITOR"
 
-class VP_OT_load_media(bpy.types.Operator):
 
-    bl_idname = "video_player.load_media"
+class VP_OT_load_media_movie(bpy.types.Operator):
+
+    bl_idname = "video_player.load_media_movie"
     bl_label = "Load Media"
     bl_description = (
         "Loads media in to sequence editor and clears any media before that"
@@ -56,6 +58,14 @@ class VP_OT_load_media(bpy.types.Operator):
         if not context.scene.sequence_editor:
             context.scene.sequence_editor_create()
 
+        # Check if sequence editor area available.
+        area = opsdata.find_area(context, "SEQUENCE_EDITOR")
+        if not area:
+            logger.error(
+                "Failed to load movie media. No Sequence Editor area available."
+            )
+            return {"CANCELLED"}
+
         # Stop playback.
         bpy.ops.screen.animation_cancel()
 
@@ -63,18 +73,8 @@ class VP_OT_load_media(bpy.types.Operator):
         opsdata.del_all_sequences(context)
 
         # Import sequence.
-        if opsdata.is_image(filepath):
 
-            # Create new image strip.
-            strip = context.scene.sequence_editor.sequences.new_image(
-                filepath.stem,
-                filepath.as_posix(),
-                0,
-                context.scene.frame_start,
-            )
-            playback = False
-
-        elif opsdata.is_movie(filepath):
+        if opsdata.is_movie(filepath):
 
             # Create new movie strip.
             strip = context.scene.sequence_editor.sequences.new_movie(
@@ -84,6 +84,17 @@ class VP_OT_load_media(bpy.types.Operator):
                 context.scene.frame_start,
             )
             playback = True
+
+        elif opsdata.is_image(filepath):
+
+            # Create new image strip.
+            strip = context.scene.sequence_editor.sequences.new_image(
+                filepath.stem,
+                filepath.as_posix(),
+                0,
+                context.scene.frame_start,
+            )
+            playback = False
 
         # Unsupported file format.
         else:
@@ -102,6 +113,52 @@ class VP_OT_load_media(bpy.types.Operator):
         # Playback.
         if playback:
             bpy.ops.screen.animation_play()
+
+        return {"FINISHED"}
+
+
+class VP_OT_load_media_image(bpy.types.Operator):
+
+    bl_idname = "video_player.load_media_image"
+    bl_label = "Load Image"
+    bl_description = (
+        "Loads image media in to image editor and clears any media before that"
+    )
+    filepath: bpy.props.StringProperty(name="Filepath", subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        filepath = Path(self.filepath)
+
+        # Stop playback.
+        bpy.ops.screen.animation_cancel()
+
+        # Check if filepath exists.
+        if not filepath.exists():
+            return {"CANCELLED"}
+
+        # Check if image editor area available.
+        area = opsdata.find_area(context, "IMAGE_EDITOR")
+        if not area:
+            logger.error("Failed to load image media. No Image Editor area available.")
+            return {"CANCELLED"}
+
+        # Delete all images.
+        opsdata.del_all_images()
+
+        # Create new image datablock.
+        image = bpy.data.images.load(filepath.as_posix(), check_existing=True)
+        image.name = filepath.stem
+        # image.source = "SEQUENCE"
+        # image.colorspace_settings.name = "Linear"
+
+        # Set active image.
+        area.spaces.active.image = image
+        # area.spaces.active.image_user.frame_duration = 5000
+        # area.spaces.active.image_user.frame_offset = offset
 
         return {"FINISHED"}
 
@@ -254,9 +311,50 @@ class VP_OT_set_template_defaults(bpy.types.Operator):
         if area_fb:
             opsdata.setup_filebrowser_area(area_fb)
         return {"FINISHED"}
+
+
+class VP_OT_set_media_area_type(bpy.types.Operator):
+
+    bl_idname = "video_player.set_media_area_type"
+    bl_label = "Set media area type"
+    bl_description = "Sets media are type to specified area type"
+
+    area_type: bpy.props.StringProperty(
+        name="Area Type",
+        description="Type that media area should be changed to",
+        default="SEQUENCE_EDITOR",
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+
+        # Find active media area.
+        area_media = opsdata.find_area(context, active_media_area)
+
+        if not area_media:
+            logger.info(
+                f"Failed to find active media area of type: {active_media_area}"
+            )
+            return {"CANCELLED"}
+
+        # Early return if same type already.
+        if area_media.type == self.area_type:
+            return {"FINISHED"}
+
+        # Change area type.
+        area_media.type = self.area_type
+
+        # Update global media area type.
+        active_media_area = area_media.type
+
+        logger.info(f"Changed active media area to: {area_media.type}")
+        return {"FINISHED"}
+
+
 # Global variables for frame handler to check previous value.
 prev_file_name: Optional[str] = None
 prev_dir_path: Path = Path.home()
+
 
 @persistent
 def callback_filename_change(dummy: None):
@@ -287,7 +385,16 @@ def callback_filename_change(dummy: None):
     # Update prev_file_name.
     prev_file_name = params.filename
 
+    filepath = directory.joinpath(params.filename)
+
     # Execute load media op.
+    if opsdata.is_movie(filepath):
+        bpy.ops.video_player.set_media_area_type(area_type="SEQUENCE_EDITOR")
+        bpy.ops.video_player.load_media_movie(filepath=filepath.as_posix())
+
+    elif opsdata.is_image(filepath):
+        bpy.ops.video_player.set_media_area_type(area_type="IMAGE_EDITOR")
+        bpy.ops.video_player.load_media_image(filepath=filepath.as_posix())
     filepath = directory / params.filename
     bpy.ops.video_player.load_media(filepath=filepath.as_posix())
 
@@ -295,7 +402,15 @@ def callback_filename_change(dummy: None):
 # ----------------REGISTER--------------.
 
 
+classes = [
+    VP_OT_load_media_movie,
+    VP_OT_load_media_image,
+    VP_OT_toggle_timeline,
+    VP_OT_toggle_filebrowser,
+    VP_OT_load_recent_dir,
+    VP_OT_set_media_area_type,
     VP_OT_set_template_defaults,
+]
 addon_keymap_items = []
 
 

@@ -1,7 +1,7 @@
 from pathlib import Path
 import bpy
 
-MOVIE_EXT = [
+EXT_MOVIE = [
     ".avi",
     ".flc",
     ".mov",
@@ -32,6 +32,26 @@ MOVIE_EXT = [
     ".webm",
 ]
 
+EXT_IMG = [
+    ".jpg",
+    ".png",
+    ".exr",
+    ".tga",
+    ".bmp",
+    ".jpeg",
+    ".sgi",
+    ".rgb",
+    ".rgba",
+    ".tif",
+    ".tiff",
+    ".tx",
+    ".hdr",
+    ".dpx",
+    ".cin",
+    ".psd",
+    ".pdd",
+    ".psb",
+]
 IMG_EXT = [".png", ".tga", ".bmp", ".jpg", ".jpeg", ".sgi", ".rgb", ".rgba"]
 
 
