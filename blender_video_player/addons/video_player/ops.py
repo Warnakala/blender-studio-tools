@@ -42,6 +42,11 @@ class VP_OT_load_media_movie(bpy.types.Operator):
         "Loads media in to sequence editor and clears any media before that"
     )
     filepath: bpy.props.StringProperty(name="Filepath", subtype="FILE_PATH")
+    playback: bpy.props.BoolProperty(
+        name="Playback",
+        description="Controls if video should playback after load",
+        default=True,
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -49,8 +54,9 @@ class VP_OT_load_media_movie(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         filepath = Path(self.filepath)
-        playback = False
+        can_playback = False
 
+        # Check if filepath exists.
         if not filepath.exists():
             return {"CANCELLED"}
 
@@ -66,14 +72,15 @@ class VP_OT_load_media_movie(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
-        # Stop playback.
+        # Stop can_playback.
         bpy.ops.screen.animation_cancel()
 
-        # Clear all media in the sequence editor
+        # Clear all media in the sequence editor.
         opsdata.del_all_sequences(context)
 
         # Import sequence.
 
+        # Handle movie files.
         if opsdata.is_movie(filepath):
 
             # Create new movie strip.
@@ -83,8 +90,9 @@ class VP_OT_load_media_movie(bpy.types.Operator):
                 0,
                 context.scene.frame_start,
             )
-            playback = True
+            can_playback = True
 
+        # Handle image files.
         elif opsdata.is_image(filepath):
 
             # Create new image strip.
@@ -94,7 +102,7 @@ class VP_OT_load_media_movie(bpy.types.Operator):
                 0,
                 context.scene.frame_start,
             )
-            playback = False
+            can_playback = False
 
         # Unsupported file format.
         else:
@@ -111,8 +119,9 @@ class VP_OT_load_media_movie(bpy.types.Operator):
         context.scene.frame_current = context.scene.frame_start
 
         # Playback.
-        if playback:
-            bpy.ops.screen.animation_play()
+        if can_playback:
+            if self.playback:
+                bpy.ops.screen.animation_play()
 
         return {"FINISHED"}
 
