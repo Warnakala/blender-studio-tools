@@ -24,6 +24,7 @@ import bl_app_override
 from bl_app_override.helpers import AppOverrideState
 from bpy.app.handlers import persistent
 
+
 class AppStateStore(AppOverrideState):
     # Just provides data & callbacks for AppOverrideState
     __slots__ = ()
@@ -98,10 +99,15 @@ class AppStateStore(AppOverrideState):
     def addons():
         return ("video_player",)
 
+
 @persistent
 def handler_load_recent_directory(_):
-    print("LOAD POST HANDLER IS RUNNING")
     bpy.ops.video_player.load_recent_directory()
+
+
+@persistent
+def handler_set_template_defaults(_):
+    bpy.ops.video_player.set_template_defaults()
 
 
 app_state = AppStateStore()
@@ -111,11 +117,9 @@ def register():
     print("Template Register", __file__)
     app_state.setup()
 
-
     # Handler.
     bpy.app.handlers.load_post.append(handler_load_recent_directory)
-    # bpy.ops.video_player.load_recent_directory()
-
+    bpy.app.handlers.load_post.append(handler_set_template_defaults)
 
 
 def unregister():
@@ -124,3 +128,4 @@ def unregister():
 
     # Handler.
     bpy.app.handlers.load_post.remove(handler_load_recent_directory)
+    bpy.app.handlers.load_post.remove(handler_set_template_defaults)

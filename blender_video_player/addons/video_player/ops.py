@@ -225,7 +225,7 @@ class VP_OT_load_recent_dir(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # Load last filebrowser path.
-        area_fb = opsdata.find_area(bpy.context, "FILE_BROWSER")
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
         if not area_fb:
             logger.info("No filebrowser area to load recent directory")
             return {"CANCELLED"}
@@ -239,6 +239,21 @@ class VP_OT_load_recent_dir(bpy.types.Operator):
         opsdata.ensure_config_file()
         return self.execute(context)
 
+
+class VP_OT_set_template_defaults(bpy.types.Operator):
+    bl_idname = "video_player.set_template_defaults"
+    bl_label = "Set Template defaults"
+    bl_description = (
+        "Sets default values that can't be saved in userpref.blend or startup.blend"
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
+
+        # Find filebrowser area.
+        if area_fb:
+            opsdata.setup_filebrowser_area(area_fb)
+        return {"FINISHED"}
 # Global variables for frame handler to check previous value.
 prev_file_name: Optional[str] = None
 prev_dir_path: Path = Path.home()
@@ -280,7 +295,7 @@ def callback_filename_change(dummy: None):
 # ----------------REGISTER--------------.
 
 
-classes = [VP_OT_load_media, VP_OT_toggle_timeline, VP_OT_toggle_filebrowser, VP_OT_load_recent_dir ]
+    VP_OT_set_template_defaults,
 addon_keymap_items = []
 
 
