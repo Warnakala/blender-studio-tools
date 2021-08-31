@@ -19,7 +19,7 @@
 
 import bpy
 
-from video_player import prefs, ops, log
+from video_player import prefs, vars, opsdata, ops, log
 
 from video_player.log import LoggerFactory
 
@@ -43,6 +43,8 @@ _need_reload = "ops" in locals()
 if _need_reload:
     import importlib
 
+    vars = importlib.reload(vars)
+    opsdata = importlib.reload(opsdata)
     prefs = importlib.reload(prefs)
     log = importlib.reload(log)
     ops = importlib.reload(ops)

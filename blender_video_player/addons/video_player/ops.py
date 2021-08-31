@@ -23,8 +23,9 @@ from pathlib import Path
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
 
 import bpy
+from bpy.app.handlers import persistent
 
-from video_player import opsdata
+from video_player import opsdata, vars
 from video_player.log import LoggerFactory
 
 
@@ -216,11 +217,37 @@ class VP_OT_toggle_filebrowser(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class VP_OT_load_recent_dir(bpy.types.Operator):
+
+    bl_idname = "video_player.load_recent_directory"
+    bl_label = "Load Recent Directory"
+    bl_description = "Loads the recent directory that is saved in the config file"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        # Load last filebrowser path.
+        area_fb = opsdata.find_area(bpy.context, "FILE_BROWSER")
+        if not area_fb:
+            logger.info("No filebrowser area to load recent directory")
+            return {"CANCELLED"}
+
+        opsdata.load_filebrowser_dir_from_config_file(area_fb)
+
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        # Ensure config file exists.
+        opsdata.ensure_config_file()
+        return self.execute(context)
+
+# Global variables for frame handler to check previous value.
 prev_file_name: Optional[str] = None
+prev_dir_path: Path = Path.home()
 
-
+@persistent
 def callback_filename_change(dummy: None):
     global prev_file_name
+    global prev_dir_path
+
     area = opsdata.find_area(bpy.context, "FILE_BROWSER")
 
     # Early return no area.
@@ -228,6 +255,15 @@ def callback_filename_change(dummy: None):
         return
 
     params = area.spaces.active.params
+    directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
+
+    # Save recent directory to config file if direcotry changed.
+    if prev_dir_path != directory:
+        opsdata.save_to_json(
+            {"recent_dir": directory.as_posix()}, vars.get_config_file()
+        )
+        logger.info(f"Saved new recent directory: {directory.as_posix()}")
+        prev_dir_path = directory
 
     # Early return filename did not change.
     if prev_file_name == params.filename:
@@ -235,10 +271,8 @@ def callback_filename_change(dummy: None):
 
     # Update prev_file_name.
     prev_file_name = params.filename
-    print(prev_file_name)
 
     # Execute load media op.
-    directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
     filepath = directory / params.filename
     bpy.ops.video_player.load_media(filepath=filepath.as_posix())
 
@@ -246,7 +280,7 @@ def callback_filename_change(dummy: None):
 # ----------------REGISTER--------------.
 
 
-classes = [VP_OT_load_media, VP_OT_toggle_timeline, VP_OT_toggle_filebrowser]
+classes = [VP_OT_load_media, VP_OT_toggle_timeline, VP_OT_toggle_filebrowser, VP_OT_load_recent_dir ]
 addon_keymap_items = []
 
 

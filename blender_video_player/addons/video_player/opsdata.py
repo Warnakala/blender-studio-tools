@@ -1,9 +1,14 @@
+import json
 from pathlib import Path
-from typing import Tuple, List, Union, Dict, Optional
+from typing import Tuple, Any, List, Union, Dict, Optional
 
 import bpy
 
 from video_player import vars
+from video_player.log import LoggerFactory
+
+
+logger = LoggerFactory.getLogger(name=__name__)
 
 
 def is_movie(filepath: Path) -> bool:
@@ -121,3 +126,51 @@ def setup_filebrowser_area(filebrowser_area: bpy.types.Area) -> None:
     params.use_filter_folder = True
     params.use_filter_movie = True
     return
+
+
+def load_json(path: Path) -> Any:
+    with open(path.as_posix(), "r") as file:
+        obj = json.load(file)
+    return obj
+
+
+def save_to_json(obj: Any, path: Path) -> None:
+    with open(path.as_posix(), "w") as file:
+        json.dump(obj, file, indent=4)
+
+
+def set_filebrowser_dir(filebrowser_area: bpy.types.Area, path: Path) -> None:
+    params = filebrowser_area.spaces.active.params
+    params.directory = bytes(path.as_posix(), 'utf-8')
+    logger.info(f"Loaded recent directory: {path.as_posix()}")
+    return
+
+
+def load_filebrowser_dir_from_config_file(filebrowser_area: bpy.types.Area) -> None:
+    path = vars.get_config_file()
+
+    if not path.exists():
+        return
+
+    json_obj = load_json(path)
+
+    if not "recent_dir" in json_obj:
+        return
+
+    if not json_obj["recent_dir"]:
+        return
+
+    path = Path(json_obj["recent_dir"])
+
+    if not path.exists():
+        return
+
+    set_filebrowser_dir(filebrowser_area, path)
+
+
+def ensure_config_file() -> None:
+    path = vars.get_config_file()
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        save_to_json({}, path)
+        logger.info(f"Created config file: {path.as_posix()}")

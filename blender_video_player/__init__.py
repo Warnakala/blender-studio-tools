@@ -22,7 +22,7 @@ import bpy
 import bl_app_override
 
 from bl_app_override.helpers import AppOverrideState
-
+from bpy.app.handlers import persistent
 
 class AppStateStore(AppOverrideState):
     # Just provides data & callbacks for AppOverrideState
@@ -85,9 +85,6 @@ class AppStateStore(AppOverrideState):
     def ui_ignore_label(text):
         return True
 
-    """
-    """
-
     # -------
     # Add-ons
 
@@ -101,6 +98,11 @@ class AppStateStore(AppOverrideState):
     def addons():
         return ("video_player",)
 
+@persistent
+def handler_load_recent_directory(_):
+    print("LOAD POST HANDLER IS RUNNING")
+    bpy.ops.video_player.load_recent_directory()
+
 
 app_state = AppStateStore()
 
@@ -110,6 +112,15 @@ def register():
     app_state.setup()
 
 
+    # Handler.
+    bpy.app.handlers.load_post.append(handler_load_recent_directory)
+    # bpy.ops.video_player.load_recent_directory()
+
+
+
 def unregister():
     print("Template Unregister", __file__)
     app_state.teardown()
+
+    # Handler.
+    bpy.app.handlers.load_post.remove(handler_load_recent_directory)
