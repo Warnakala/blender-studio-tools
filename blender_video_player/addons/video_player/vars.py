@@ -52,7 +52,22 @@ EXT_IMG = [
     ".pdd",
     ".psb",
 ]
-IMG_EXT = [".png", ".tga", ".bmp", ".jpg", ".jpeg", ".sgi", ".rgb", ".rgba"]
+
+EXT_TEXT = [
+    ".txt",
+    ".glsl",
+    ".osl",
+    ".data",
+    ".pov",
+    ".ini",
+    ".mcr",
+    ".inc",
+    ".fountain",
+    ".rst",
+    ".ass",
+]
+
+EXT_SCRIPT = [".py"]
 
 
 def get_config_file() -> Path:

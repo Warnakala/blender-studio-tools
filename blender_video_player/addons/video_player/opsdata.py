@@ -24,7 +24,11 @@ def is_image(filepath: Path) -> bool:
         return True
     return False
 
-    if filepath.suffix in vars.IMG_EXT:
+
+def is_text(filepath: Path) -> bool:
+    if filepath.suffix in vars.EXT_TEXT:
+        return True
+    return False
 
 
 def is_script(filepath: Path) -> bool:
@@ -43,6 +47,11 @@ def del_all_sequences(context: bpy.types.Context) -> None:
 def del_all_images() -> None:
     for image_name in [i.name for i in bpy.data.images]:
         bpy.data.images.remove(bpy.data.images[image_name])
+
+
+def del_all_texts() -> None:
+    for name in [i.name for i in bpy.data.texts]:
+        bpy.data.texts.remove(bpy.data.texts[name])
 
 
 def fit_frame_range_to_strips(

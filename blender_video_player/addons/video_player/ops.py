@@ -163,6 +163,48 @@ class VP_OT_load_media_image(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class VP_OT_load_media_text(bpy.types.Operator):
+
+    bl_idname = "video_player.load_media_text"
+    bl_label = "Load Text"
+    bl_description = (
+        "Loads text media in to text editor and clears any text media before that"
+    )
+    filepath: bpy.props.StringProperty(name="Filepath", subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        filepath = Path(self.filepath)
+
+        # Stop playback.
+        bpy.ops.screen.animation_cancel()
+
+        # Check if filepath exists.
+        if not filepath.exists():
+            return {"CANCELLED"}
+
+        # Check if text editor is available.
+        area = opsdata.find_area(context, "TEXT_EDITOR")
+        if not area:
+            logger.error("Failed to load text media. No Text Editor area available.")
+            return {"CANCELLED"}
+
+        # Delete all texts.
+        opsdata.del_all_texts()
+
+        # Create new text datablock.
+        text = bpy.data.texts.load(filepath.as_posix())
+        text.name = filepath.stem
+
+        # Set active text.
+        area.spaces.active.text = text
+
+        return {"FINISHED"}
+
+
 class VP_OT_toggle_timeline(bpy.types.Operator):
 
     bl_idname = "video_player.toggle_timeline"
@@ -395,8 +437,10 @@ def callback_filename_change(dummy: None):
     elif opsdata.is_image(filepath):
         bpy.ops.video_player.set_media_area_type(area_type="IMAGE_EDITOR")
         bpy.ops.video_player.load_media_image(filepath=filepath.as_posix())
-    filepath = directory / params.filename
-    bpy.ops.video_player.load_media(filepath=filepath.as_posix())
+
+    elif opsdata.is_text(filepath) or opsdata.is_script(filepath):
+        bpy.ops.video_player.set_media_area_type(area_type="TEXT_EDITOR")
+        bpy.ops.video_player.load_media_text(filepath=filepath.as_posix())
 
 
 # ----------------REGISTER--------------.
@@ -410,6 +454,7 @@ classes = [
     VP_OT_load_recent_dir,
     VP_OT_set_media_area_type,
     VP_OT_set_template_defaults,
+    VP_OT_load_media_text,
 ]
 addon_keymap_items = []
 
