@@ -199,11 +199,16 @@ class MV_OT_load_media_image(bpy.types.Operator):
 
             first_frame = opsdata.get_frame_counter(file_list[0])
             last_frame = opsdata.get_frame_counter(file_list[-1])
+            current_frame = opsdata.get_frame_counter(filepath)
 
             if all([first_frame, last_frame]):
                 context.scene.frame_start = int(first_frame)
                 context.scene.frame_end = int(last_frame)
                 can_playback = True
+
+                # Set playhead frame counter of clicked image.
+                if current_frame:
+                    context.scene.frame_current = int(current_frame)
 
             area.spaces.active.image_user.frame_duration = 5000
 
