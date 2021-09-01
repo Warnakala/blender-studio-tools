@@ -132,9 +132,8 @@ class MV_OT_load_media_movie(bpy.types.Operator):
         context.scene.frame_current = context.scene.frame_start
 
         # Playback.
-        if can_playback:
-            if self.playback:
-                bpy.ops.screen.animation_play()
+        if can_playback and self.playback:
+            bpy.ops.screen.animation_play()
 
         return {"FINISHED"}
 
@@ -147,6 +146,16 @@ class MV_OT_load_media_image(bpy.types.Operator):
         "Loads image media in to image editor and clears any media before that"
     )
     filepath: bpy.props.StringProperty(name="Filepath", subtype="FILE_PATH")
+    load_sequence: bpy.props.BoolProperty(
+        name="Load Sequence",
+        description="Controls if operator should search for an image sequence and load it",
+        default=True,
+    )
+    playback: bpy.props.BoolProperty(
+        name="Playback",
+        description="Controls if image sequence should playback after load",
+        default=True,
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -154,6 +163,7 @@ class MV_OT_load_media_image(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         filepath = Path(self.filepath)
+        can_playback = False
 
         # Stop playback.
         bpy.ops.screen.animation_cancel()
@@ -171,16 +181,42 @@ class MV_OT_load_media_image(bpy.types.Operator):
         # Delete all images.
         opsdata.del_all_images()
 
+        if self.load_sequence:
+            # Detect image sequence.
+            file_list = opsdata.get_image_sequence(filepath)
+        else:
+            file_list = [filepath]
+
         # Create new image datablock.
-        image = bpy.data.images.load(filepath.as_posix(), check_existing=True)
+        image = bpy.data.images.load(file_list[0].as_posix(), check_existing=True)
         image.name = filepath.stem
-        # image.source = "SEQUENCE"
+
+        # If sequence should be loaded and sequence actually detected
+        # set source to SEQUENCE and correct frame range settings
+        if self.load_sequence and len(file_list) > 1:
+
+            image.source = "SEQUENCE"
+
+            first_frame = opsdata.get_frame_counter(file_list[0])
+            last_frame = opsdata.get_frame_counter(file_list[-1])
+
+            if all([first_frame, last_frame]):
+                context.scene.frame_start = int(first_frame)
+                context.scene.frame_end = int(last_frame)
+                can_playback = True
+
+            area.spaces.active.image_user.frame_duration = 5000
+
         # image.colorspace_settings.name = "Linear"
 
         # Set active image.
         area.spaces.active.image = image
-        # area.spaces.active.image_user.frame_duration = 5000
-        # area.spaces.active.image_user.frame_offset = offset
+
+        # Playback.
+        if can_playback and self.playback:
+            pass
+            # TODO: does not seem to trigger playback in image editor
+            # bpy.ops.screen.animation_play()
 
         return {"FINISHED"}
 

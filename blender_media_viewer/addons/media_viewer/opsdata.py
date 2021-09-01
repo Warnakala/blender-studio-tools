@@ -1,3 +1,4 @@
+import re
 import json
 from pathlib import Path
 from typing import Tuple, Any, List, Union, Dict, Optional
@@ -215,3 +216,61 @@ def get_last_strip_frame(context: bpy.types.Context) -> int:
         return context.scene.frame_start
     sequences.sort(key=lambda s: s.frame_final_end)
     return sequences[-1].frame_final_end
+
+
+def get_image_sequence(filepath: Path) -> List[Path]:
+    """
+    Returns list of filepath objects. If input filepath is part
+    of an image sequence it will return all found items of sequence.
+    If filepath is not part of sequence it will just return it
+    as a single item list.
+    """
+    # Matches continuos number sequence end of string.
+    # Which follows format for most frame counters.
+
+    # Match for frame counter
+    frame_counter = get_frame_counter(filepath)
+
+    # If input filepath has no counter
+    # return list with only input item.
+    if not frame_counter:
+        return [filepath]
+
+    filename_no_counter = filepath.stem.replace(frame_counter, "")
+    files: List[Path] = []
+
+    for item in filepath.parent.iterdir():
+
+        # Continue if directory.
+        if not item.is_file():
+            continue
+
+        # Continue if different suffix.
+        if item.suffix != filepath.suffix:
+            continue
+
+        # Continue if file has no counter.
+        frame_counter = get_frame_counter(item)
+        if not frame_counter:
+            continue
+
+        # If filename is same as filename_no_counter it
+        # is part of a the same sequence.
+        if item.stem.replace(frame_counter, "") == filename_no_counter:
+            files.append(item)
+
+    # Sort files list.
+    files.sort(key=lambda file: file.name)
+
+    return files
+
+
+def get_frame_counter(filepath: Path) -> Optional[str]:
+    # Match for frame counter
+    match = re.search(vars.PATTERN_FRAME_COUNTER, filepath.stem)
+
+    # If input filepath has no counter
+    if not match:
+        return None
+
+    return match.group(0)

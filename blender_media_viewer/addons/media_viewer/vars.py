@@ -1,6 +1,8 @@
 from pathlib import Path
 import bpy
 
+PATTERN_FRAME_COUNTER = r"\d+$"
+
 EXT_MOVIE = [
     ".avi",
     ".flc",
