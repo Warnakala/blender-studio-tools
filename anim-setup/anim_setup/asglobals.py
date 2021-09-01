@@ -7,8 +7,11 @@ ACTION_ASSETS = [
     "CH-rex",
     "CH-elder_sprite",
     "CH-victoria",
+    "CH-bird",
     "PR-bbq_grill",
     "PR-boombox",
+    "PR-tree_chasm",
+    "PR-log_bridge_trunk"
 ]
 MULTI_ASSETS = ["CH-sprite"]
 HIDE_COLLS = ["mushrooms_center", "treetop_leaves"]
