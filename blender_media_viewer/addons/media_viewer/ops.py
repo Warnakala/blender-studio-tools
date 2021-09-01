@@ -37,7 +37,7 @@ active_media_area = "SEQUENCE_EDITOR"
 class MV_OT_load_media_movie(bpy.types.Operator):
 
     bl_idname = "media_viewer.load_media_movie"
-    bl_label = "Load Media"
+    bl_label = "Load Movie"
     bl_description = (
         "Loads media in to sequence editor and clears any media before that"
     )
