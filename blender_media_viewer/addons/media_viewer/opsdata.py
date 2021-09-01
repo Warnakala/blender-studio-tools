@@ -4,8 +4,8 @@ from typing import Tuple, Any, List, Union, Dict, Optional
 
 import bpy
 
-from video_player import vars
-from video_player.log import LoggerFactory
+from media_viewer import vars
+from media_viewer.log import LoggerFactory
 
 # MEDIA VIEWER
 

@@ -97,17 +97,17 @@ class AppStateStore(AppOverrideState):
 
     @staticmethod
     def addons():
-        return ("video_player",)
+        return ("media_viewer",)
 
 
 @persistent
 def handler_load_recent_directory(_):
-    bpy.ops.video_player.load_recent_directory()
+    bpy.ops.media_viewer.load_recent_directory()
 
 
 @persistent
 def handler_set_template_defaults(_):
-    bpy.ops.video_player.set_template_defaults()
+    bpy.ops.media_viewer.set_template_defaults()
 
 
 app_state = AppStateStore()

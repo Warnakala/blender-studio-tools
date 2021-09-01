@@ -25,8 +25,8 @@ from typing import Set, Union, Optional, List, Dict, Any, Tuple
 import bpy
 from bpy.app.handlers import persistent
 
-from video_player import opsdata, vars
-from video_player.log import LoggerFactory
+from media_viewer import opsdata, vars
+from media_viewer.log import LoggerFactory
 
 
 logger = LoggerFactory.getLogger(name=__name__)
@@ -34,9 +34,9 @@ logger = LoggerFactory.getLogger(name=__name__)
 active_media_area = "SEQUENCE_EDITOR"
 
 
-class VP_OT_load_media_movie(bpy.types.Operator):
+class MV_OT_load_media_movie(bpy.types.Operator):
 
-    bl_idname = "video_player.load_media_movie"
+    bl_idname = "media_viewer.load_media_movie"
     bl_label = "Load Media"
     bl_description = (
         "Loads media in to sequence editor and clears any media before that"
@@ -139,9 +139,9 @@ class VP_OT_load_media_movie(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class VP_OT_load_media_image(bpy.types.Operator):
+class MV_OT_load_media_image(bpy.types.Operator):
 
-    bl_idname = "video_player.load_media_image"
+    bl_idname = "media_viewer.load_media_image"
     bl_label = "Load Image"
     bl_description = (
         "Loads image media in to image editor and clears any media before that"
@@ -185,9 +185,9 @@ class VP_OT_load_media_image(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class VP_OT_load_media_text(bpy.types.Operator):
+class MV_OT_load_media_text(bpy.types.Operator):
 
-    bl_idname = "video_player.load_media_text"
+    bl_idname = "media_viewer.load_media_text"
     bl_label = "Load Text"
     bl_description = (
         "Loads text media in to text editor and clears any text media before that"
@@ -227,9 +227,9 @@ class VP_OT_load_media_text(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class VP_OT_toggle_timeline(bpy.types.Operator):
+class MV_OT_toggle_timeline(bpy.types.Operator):
 
-    bl_idname = "video_player.toggle_timeline"
+    bl_idname = "media_viewer.toggle_timeline"
     bl_label = "Toggle Timeline"
     bl_description = "Toggles visibility of timeline area"
     factor: bpy.props.FloatProperty(
@@ -266,9 +266,9 @@ class VP_OT_toggle_timeline(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class VP_OT_toggle_filebrowser(bpy.types.Operator):
+class MV_OT_toggle_filebrowser(bpy.types.Operator):
 
-    bl_idname = "video_player.toggle_filebrowser"
+    bl_idname = "media_viewer.toggle_filebrowser"
     bl_label = "Toggle Filebrowser"
     bl_description = "Toggles visibility of filebrowser area"
     factor_timeline: bpy.props.FloatProperty(
@@ -338,9 +338,9 @@ class VP_OT_toggle_filebrowser(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class VP_OT_load_recent_dir(bpy.types.Operator):
+class MV_OT_load_recent_dir(bpy.types.Operator):
 
-    bl_idname = "video_player.load_recent_directory"
+    bl_idname = "media_viewer.load_recent_directory"
     bl_label = "Load Recent Directory"
     bl_description = "Loads the recent directory that is saved in the config file"
 
@@ -361,8 +361,8 @@ class VP_OT_load_recent_dir(bpy.types.Operator):
         return self.execute(context)
 
 
-class VP_OT_set_template_defaults(bpy.types.Operator):
-    bl_idname = "video_player.set_template_defaults"
+class MV_OT_set_template_defaults(bpy.types.Operator):
+    bl_idname = "media_viewer.set_template_defaults"
     bl_label = "Set Template defaults"
     bl_description = (
         "Sets default values that can't be saved in userpref.blend or startup.blend"
@@ -377,9 +377,9 @@ class VP_OT_set_template_defaults(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class VP_OT_set_media_area_type(bpy.types.Operator):
+class MV_OT_set_media_area_type(bpy.types.Operator):
 
-    bl_idname = "video_player.set_media_area_type"
+    bl_idname = "media_viewer.set_media_area_type"
     bl_label = "Set media area type"
     bl_description = "Sets media are type to specified area type"
 
@@ -453,30 +453,30 @@ def callback_filename_change(dummy: None):
 
     # Execute load media op.
     if opsdata.is_movie(filepath):
-        bpy.ops.video_player.set_media_area_type(area_type="SEQUENCE_EDITOR")
-        bpy.ops.video_player.load_media_movie(filepath=filepath.as_posix())
+        bpy.ops.media_viewer.set_media_area_type(area_type="SEQUENCE_EDITOR")
+        bpy.ops.media_viewer.load_media_movie(filepath=filepath.as_posix())
 
     elif opsdata.is_image(filepath):
-        bpy.ops.video_player.set_media_area_type(area_type="IMAGE_EDITOR")
-        bpy.ops.video_player.load_media_image(filepath=filepath.as_posix())
+        bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
+        bpy.ops.media_viewer.load_media_image(filepath=filepath.as_posix())
 
     elif opsdata.is_text(filepath) or opsdata.is_script(filepath):
-        bpy.ops.video_player.set_media_area_type(area_type="TEXT_EDITOR")
-        bpy.ops.video_player.load_media_text(filepath=filepath.as_posix())
+        bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
+        bpy.ops.media_viewer.load_media_text(filepath=filepath.as_posix())
 
 
 # ----------------REGISTER--------------.
 
 
 classes = [
-    VP_OT_load_media_movie,
-    VP_OT_load_media_image,
-    VP_OT_toggle_timeline,
-    VP_OT_toggle_filebrowser,
-    VP_OT_load_recent_dir,
-    VP_OT_set_media_area_type,
-    VP_OT_set_template_defaults,
-    VP_OT_load_media_text,
+    MV_OT_load_media_movie,
+    MV_OT_load_media_image,
+    MV_OT_toggle_timeline,
+    MV_OT_toggle_filebrowser,
+    MV_OT_load_recent_dir,
+    MV_OT_set_media_area_type,
+    MV_OT_set_template_defaults,
+    MV_OT_load_media_text,
 ]
 addon_keymap_items = []
 
@@ -499,14 +499,14 @@ def register():
         # Toggle Timeline.
         addon_keymap_items.append(
             keymap.keymap_items.new(
-                "video_player.toggle_timeline", value="PRESS", type="T"
+                "media_viewer.toggle_timeline", value="PRESS", type="T"
             )
         )
 
         # Toggle Filebrowser.
         addon_keymap_items.append(
             keymap.keymap_items.new(
-                "video_player.toggle_file_browser", value="PRESS", type="B"
+                "media_viewer.toggle_file_browser", value="PRESS", type="B"
             )
         )
         for kmi in addon_keymap_items:

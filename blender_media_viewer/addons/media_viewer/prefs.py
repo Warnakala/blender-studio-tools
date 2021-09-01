@@ -28,10 +28,10 @@ def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
     """
     Shortcut to get addon preferences.
     """
-    return context.preferences.addons["video_player"].preferences
+    return context.preferences.addons["media_viewer"].preferences
 
 
-class VP_AddonPreferences(bpy.types.AddonPreferences):
+class MV_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -40,7 +40,7 @@ class VP_AddonPreferences(bpy.types.AddonPreferences):
 
 # ---------REGISTER ----------.
 
-classes = [VP_AddonPreferences]
+classes = [MV_AddonPreferences]
 
 
 def register():

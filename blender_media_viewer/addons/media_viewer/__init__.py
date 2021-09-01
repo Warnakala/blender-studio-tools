@@ -19,18 +19,18 @@
 
 import bpy
 
-from video_player import prefs, vars, opsdata, ops, log
+from media_viewer import prefs, vars, opsdata, ops, log
 
-from video_player.log import LoggerFactory
+from media_viewer.log import LoggerFactory
 
 logger = LoggerFactory.getLogger(__name__)
 
 bl_info = {
-    "name": "Video Player",
+    "name": "Media Viewer",
     "author": "Paul Golter",
     "description": (
         "Blender addon that provides additional tools "
-        "to make the blender_video_player application template more powerful"
+        "to make the blender_media_viewer application template more powerful"
     ),
     "blender": (3, 0, 0),
     "version": (0, 1, 0),

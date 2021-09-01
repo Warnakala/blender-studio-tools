@@ -71,5 +71,5 @@ EXT_SCRIPT = [".py"]
 
 
 def get_config_file() -> Path:
-    path = bpy.utils.user_resource("CONFIG", path="video_player", create=False)
+    path = bpy.utils.user_resource("CONFIG", path="media_viewer", create=False)
     return Path(path) / "config.json"
