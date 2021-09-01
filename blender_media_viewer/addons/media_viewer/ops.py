@@ -404,7 +404,7 @@ class MV_OT_load_recent_dir(bpy.types.Operator):
 
 class MV_OT_set_template_defaults(bpy.types.Operator):
     bl_idname = "media_viewer.set_template_defaults"
-    bl_label = "Set Template defaults"
+    bl_label = "Set Template Defaults"
     bl_description = (
         "Sets default values that can't be saved in userpref.blend or startup.blend"
     )
@@ -414,7 +414,15 @@ class MV_OT_set_template_defaults(bpy.types.Operator):
 
         # Find filebrowser area.
         if area_fb:
+            # Set filebrowser settings.
             opsdata.setup_filebrowser_area(area_fb)
+
+        # Set scene settings.
+        context.scene.view_settings.view_transform = "Standard"
+
+        # Set preference settings.
+        context.preferences.view.show_navigate_ui = False
+
         return {"FINISHED"}
 
 
