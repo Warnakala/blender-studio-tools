@@ -403,16 +403,19 @@ class MV_OT_set_template_defaults(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         area_fb = opsdata.find_area(context, "FILE_BROWSER")
 
-        # Find filebrowser area.
-        if area_fb:
-            # Set filebrowser settings.
-            opsdata.setup_filebrowser_area(area_fb)
-
         # Set scene settings.
         context.scene.view_settings.view_transform = "Standard"
 
         # Set preference settings.
         context.preferences.view.show_navigate_ui = False
+        context.preferences.view.show_layout_ui = False
+
+        # Find filebrowser area.
+        if area_fb:
+            # Set filebrowser settings.
+            opsdata.setup_filebrowser_area(area_fb)
+
+        logger.info("Set app template defaults")
 
         return {"FINISHED"}
 
