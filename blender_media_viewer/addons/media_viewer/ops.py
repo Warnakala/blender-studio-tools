@@ -465,16 +465,18 @@ class MV_OT_set_media_area_type(bpy.types.Operator):
 
 
 # Global variables for frame handler to check previous value.
-prev_file_name: Optional[str] = None
+prev_file_path: Optional[str] = None
 prev_dir_path: Path = Path.home()
 
 
 @persistent
 def callback_filename_change(dummy: None):
-    global prev_file_name
+    global prev_file_path
     global prev_dir_path
 
-    area = opsdata.find_area(bpy.context, "FILE_BROWSER")
+    # Because frame handler runs in area,
+    # context has active_file, and selected_files.
+    area = bpy.context.area
 
     # Early return no area.
     if not area:
@@ -482,6 +484,8 @@ def callback_filename_change(dummy: None):
 
     params = area.spaces.active.params
     directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
+    active_file = bpy.context.active_file  # Can be None.
+    selected_files = bpy.context.selected_files
 
     # Save recent directory to config file if direcotry changed.
     if prev_dir_path != directory:
@@ -491,14 +495,17 @@ def callback_filename_change(dummy: None):
         logger.info(f"Saved new recent directory: {directory.as_posix()}")
         prev_dir_path = directory
 
-    # Early return filename did not change.
-    if prev_file_name == params.filename:
+    # Early return no active_file:
+    if not active_file:
         return
 
-    # Update prev_file_name.
-    prev_file_name = params.filename
+    # Early return filename did not change.
+    if prev_file_path == active_file.relative_path:
+        return
 
-    filepath = directory.joinpath(params.filename)
+    # Update prev_file_path.
+    prev_file_path = active_file.relative_path
+    filepath = directory.joinpath(Path(active_file.relative_path))
 
     # Execute load media op.
     if opsdata.is_movie(filepath):
