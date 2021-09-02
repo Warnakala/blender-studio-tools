@@ -470,6 +470,17 @@ class MV_OT_set_media_area_type(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_screen_full_area(bpy.types.Operator):
+
+    bl_idname = "media_viewer.screen_full_area"
+    bl_label = "Toggle Fullscreen Area"
+    bl_description = "Toggle Fullscreen of active Area"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        bpy.ops.screen.screen_full_area(use_hide_panels=True)
+        return {"FINISHED"}
+
+
 # Global variables for frame handler to check previous value.
 prev_filepath: Optional[str] = None
 prev_dirpath: Path = Path.home()  # TODO: read from json on register
@@ -572,6 +583,7 @@ classes = [
     MV_OT_set_media_area_type,
     MV_OT_set_template_defaults,
     MV_OT_load_media_text,
+    MV_OT_screen_full_area,
 ]
 addon_keymap_items = []
 
@@ -604,6 +616,14 @@ def register():
                 "media_viewer.toggle_filebrowser", value="PRESS", type="B"
             )
         )
+
+        # Full Screen with Hide Panels.
+        addon_keymap_items.append(
+            keymap.keymap_items.new(
+                "media_viewer.screen_full_area", value="PRESS", type="F"
+            )
+        )
+
         for kmi in addon_keymap_items:
             logger.info(
                 "Registered new hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name
