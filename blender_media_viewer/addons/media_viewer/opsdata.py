@@ -274,3 +274,16 @@ def get_frame_counter(filepath: Path) -> Optional[str]:
         return None
 
     return match.group(0)
+
+
+def get_loaded_movie_sound_strip_paths(context: bpy.types.Context) -> List[Path]:
+    filepath_list = []
+    for strip in context.scene.sequence_editor.sequences_all:
+        if strip.type == "MOVIE":
+            filepath_list.append(Path(bpy.path.abspath(strip.filepath)))
+        elif strip.type == "SOUND":
+            filepath_list.append(Path(bpy.path.abspath(strip.sound.filepath)))
+        else:
+            continue
+
+    return filepath_list

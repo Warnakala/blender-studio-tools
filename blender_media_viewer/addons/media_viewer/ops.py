@@ -41,13 +41,20 @@ class MV_OT_load_media_movie(bpy.types.Operator):
     bl_description = (
         "Loads media in to sequence editor and clears any media before that"
     )
-    filepath: bpy.props.StringProperty(name="Filepath", subtype="FILE_PATH")
+
+    # This enables us to pass a list of items to the operator input.
+    # The list apparently needs to be a list of dictionaries [Dict["name": key]]
+    # This operator expects the 'name' key to be the full path.
+    files: bpy.props.CollectionProperty(
+        type=bpy.types.OperatorFileListElement,
+        description="List of filepaths to import in to Sequence Editor",
+    )
+
     playback: bpy.props.BoolProperty(
         name="Playback",
         description="Controls if video should playback after load",
         default=True,
     )
-    # files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
     append: bpy.props.BoolProperty(
         name="Append File",
         description=(
@@ -62,65 +69,49 @@ class MV_OT_load_media_movie(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        filepath = Path(self.filepath)
-        can_playback = False
         frame_start = context.scene.frame_start
 
-        # Check if filepath exists.
-        if not filepath.exists():
-            return {"CANCELLED"}
+        # print([f.name for f in self.files])
+
+        # Filter out all non movie files.
+        filepath_list: List[Path] = []
+        for f in self.files:
+            # Name key is full path.
+            p = Path(f.name)
+            if opsdata.is_movie(p):
+                filepath_list.append(p)
+
+        filepaths_import: List[Path] = []
 
         # Init Sequence Editor.
         if not context.scene.sequence_editor:
             context.scene.sequence_editor_create()
 
-        # Check if sequence editor area available.
-        area = opsdata.find_area(context, "SEQUENCE_EDITOR")
-        if not area:
-            logger.error(
-                "Failed to load movie media. No Sequence Editor area available."
-            )
-            return {"CANCELLED"}
-
         # Stop can_playback.
         bpy.ops.screen.animation_cancel()
 
-        # Clear all media in the sequence editor.
         if self.append:
-            frame_start = opsdata.get_last_strip_frame(context)
+            # Append strips, check which ones are already in sqe
+            loaded_files = opsdata.get_loaded_movie_sound_strip_paths(context)
+            filepaths_import.extend([f for f in filepath_list if f not in loaded_files])
+
         else:
+            # Clear all media in the sequence editor.
             opsdata.del_all_sequences(context)
+            filepaths_import.extend(filepath_list)
 
         # Import sequence.
 
         # Handle movie files.
-        if opsdata.is_movie(filepath):
-
+        for file in filepaths_import:
+            frame_start = opsdata.get_last_strip_frame(context)
             # Create new movie strip.
             strip = context.scene.sequence_editor.sequences.new_movie(
-                filepath.stem,
-                filepath.as_posix(),
+                file.stem,
+                file.as_posix(),
                 0,
                 frame_start,
             )
-            can_playback = True
-
-        # Handle image files.
-        elif opsdata.is_image(filepath):
-
-            # Create new image strip.
-            strip = context.scene.sequence_editor.sequences.new_image(
-                filepath.stem,
-                filepath.as_posix(),
-                0,
-                frame_start,
-            )
-            can_playback = False
-
-        # Unsupported file format.
-        else:
-            logger.warning("Unsupported file format %s", filepath.suffix)
-            return {"CANCELLED"}
 
         # Set frame range.
         opsdata.fit_frame_range_to_strips(context)
@@ -132,7 +123,7 @@ class MV_OT_load_media_movie(bpy.types.Operator):
         context.scene.frame_current = context.scene.frame_start
 
         # Playback.
-        if can_playback and self.playback:
+        if self.playback:
             bpy.ops.screen.animation_play()
 
         return {"FINISHED"}
@@ -465,60 +456,93 @@ class MV_OT_set_media_area_type(bpy.types.Operator):
 
 
 # Global variables for frame handler to check previous value.
-prev_file_path: Optional[str] = None
-prev_dir_path: Path = Path.home()
+prev_filepath: Optional[str] = None
+prev_dirpath: Path = Path.home()  # TODO: read from json on register
+prev_filepath_list: List[Path] = []
 
 
 @persistent
 def callback_filename_change(dummy: None):
-    global prev_file_path
-    global prev_dir_path
+    global prev_filepath
+    global prev_dirpath
 
     # Because frame handler runs in area,
     # context has active_file, and selected_files.
     area = bpy.context.area
-
-    # Early return no area.
-    if not area:
-        return
-
     params = area.spaces.active.params
     directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
     active_file = bpy.context.active_file  # Can be None.
     selected_files = bpy.context.selected_files
 
     # Save recent directory to config file if direcotry changed.
-    if prev_dir_path != directory:
+    if prev_dirpath != directory:
         opsdata.save_to_json(
             {"recent_dir": directory.as_posix()}, vars.get_config_file()
         )
         logger.info(f"Saved new recent directory: {directory.as_posix()}")
-        prev_dir_path = directory
+        prev_dirpath = directory
 
     # Early return no active_file:
     if not active_file:
         return
 
-    # Early return filename did not change.
-    if prev_file_path == active_file.relative_path:
-        return
+    # print(active_file)
+    # print(selected_files)
 
-    # Update prev_file_path.
-    prev_file_path = active_file.relative_path
+    # Assemble Path data structures.
     filepath = directory.joinpath(Path(active_file.relative_path))
+    filepath_list: List[Path] = [
+        directory.joinpath(Path(file.relative_path)) for file in selected_files
+    ]
 
     # Execute load media op.
     if opsdata.is_movie(filepath):
+        # Check if active filepath list grew bigger compared to the previous.
+        # If so that means, user added more files to existing selection.
+        # That means we append the new files to the sequence editor.
+        # If the selection shrinked we clear out all media before loading
+        # new files
+
+        # Selection did not change, early return.
+        if (
+            len(filepath_list) == len(prev_filepath_list)
+            and prev_filepath == active_file.relative_path
+        ):
+            return
+
+        append = False
+        if len(filepath_list) > len(prev_filepath_list):
+            append = True
+
         bpy.ops.media_viewer.set_media_area_type(area_type="SEQUENCE_EDITOR")
-        bpy.ops.media_viewer.load_media_movie(filepath=filepath.as_posix())
+        # Operator expects List[Dict] because of collection property.
+        bpy.ops.media_viewer.load_media_movie(
+            files=[{"name": f.as_posix()} for f in filepath_list], append=append
+        )
 
     elif opsdata.is_image(filepath):
+
+        # Early return filename did not change.
+        if prev_filepath == active_file.relative_path:
+            return
+
         bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
+        # Load media image handles image sequences.
         bpy.ops.media_viewer.load_media_image(filepath=filepath.as_posix())
 
     elif opsdata.is_text(filepath) or opsdata.is_script(filepath):
+
+        # Early return filename did not change.
+        if prev_filepath == active_file.relative_path:
+            return
+
         bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
         bpy.ops.media_viewer.load_media_text(filepath=filepath.as_posix())
+
+    # Update prev_ variables.
+    prev_filepath = active_file.relative_path
+    prev_filepath_list.clear()
+    prev_filepath_list.extend(filepath_list)
 
 
 # ----------------REGISTER--------------.
