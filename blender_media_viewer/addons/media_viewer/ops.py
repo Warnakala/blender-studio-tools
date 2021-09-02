@@ -192,6 +192,8 @@ class MV_OT_load_media_image(bpy.types.Operator):
             last_frame = opsdata.get_frame_counter(file_list[-1])
             current_frame = opsdata.get_frame_counter(filepath)
 
+            logger.info("Detected image sequence (%s - %s)", first_frame, last_frame)
+
             if all([first_frame, last_frame]):
                 context.scene.frame_start = int(first_frame)
                 context.scene.frame_end = int(last_frame)
@@ -273,25 +275,29 @@ class MV_OT_toggle_timeline(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
 
-        area_sqe = opsdata.find_area(context, "SEQUENCE_EDITOR")
+        area_media = opsdata.find_area(context, active_media_area)
         area_timeline = opsdata.find_area(context, "DOPESHEET_EDITOR")
 
         if area_timeline:
             # Timeline needs to be closed.
             opsdata.close_area(area_timeline)
+            logger.info("Hide timeline")
 
-        elif area_sqe:
-            # Sequence Editor area needs to be splitted.
+        elif area_media:
+            # Media area needs to be splitted.
             # New area needs to be timeline
             opsdata.split_area(
-                context, area_sqe, "DOPESHEET_EDITOR", "HORIZONTAL", self.factor
+                context, area_media, "DOPESHEET_EDITOR", "HORIZONTAL", self.factor
             )
             opsdata.fit_timeline_view(context)
+            logger.info("Show timeline")
 
         else:
             logger.error(
-                "Toggle timeline failed. Missing areas: SEQUENCE_EDITOR | DOPESHEET_EDITOR"
+                "Toggle timeline failed. Missing areas: %s | DOPESHEET_EDITOR",
+                active_media_area,
             )
             return {"CANCELLED"}
 
@@ -315,14 +321,15 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
 
-        area_sqe = opsdata.find_area(context, "SEQUENCE_EDITOR")
+        area_media = opsdata.find_area(context, active_media_area)
         area_fb = opsdata.find_area(context, "FILE_BROWSER")
         area_time = opsdata.find_area(context, "DOPESHEET_EDITOR")
         screen_name = context.screen.name
         wm_name = context.window_manager.name
 
-        if not area_fb and area_time and area_sqe:
+        if not area_fb and area_time and area_media:
             # If sqe and timeline visible but not filebrowser
             # we need to first close timeline and then open it after to
             # get correct layout.
@@ -331,35 +338,40 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
             # We need to do some custom context assembly here
             # because the bpy.ops.screen.area_close() sets context.screen to NULL.
             screen = bpy.data.screens[screen_name]
-            ctx = opsdata.get_context_for_area(area_sqe)
+            ctx = opsdata.get_context_for_area(area_media)
             ctx["screen"] = screen
             ctx["window"] = bpy.data.window_managers[wm_name].windows[0]
 
             # Open filebrowser.
             area_fb = opsdata.split_area(
-                ctx, area_sqe, "FILE_BROWSER", "VERTICAL", self.factor_filebrowser
+                ctx, area_media, "FILE_BROWSER", "VERTICAL", self.factor_filebrowser
             )
 
             # Open timeline
             area_time = opsdata.split_area(
-                ctx, area_sqe, "DOPESHEET_EDITOR", "HORIZONTAL", self.factor_timeline
+                ctx, area_media, "DOPESHEET_EDITOR", "HORIZONTAL", self.factor_timeline
             )
 
+            logger.info("Show filebrowser")
+
         elif not area_fb:
-            # Sequence Editor area needs to be splitted.
+            # Media area needs to be splitted.
             # New area needs to be filebrowser.
             area_fb = opsdata.split_area(
-                context, area_sqe, "FILE_BROWSER", "VERTICAL", self.factor_filebrowser
+                context, area_media, "FILE_BROWSER", "VERTICAL", self.factor_filebrowser
             )
+            logger.info("Show filebrowser")
 
         elif area_fb:
             # Filebrowser needs to be closed.
             opsdata.close_area(area_fb)
+            logger.info("Hide filebrowser")
             return {"FINISHED"}
 
         else:
             logger.error(
-                "Toggle timeline failed. Missing areas: SEQUENCE_EDITOR | FILE_BROWSER"
+                "Toggle timeline failed. Missing areas: %s | FILE_BROWSER",
+                active_media_area,
             )
             return {"CANCELLED"}
 
@@ -589,7 +601,7 @@ def register():
         # Toggle Filebrowser.
         addon_keymap_items.append(
             keymap.keymap_items.new(
-                "media_viewer.toggle_file_browser", value="PRESS", type="B"
+                "media_viewer.toggle_filebrowser", value="PRESS", type="B"
             )
         )
         for kmi in addon_keymap_items:
