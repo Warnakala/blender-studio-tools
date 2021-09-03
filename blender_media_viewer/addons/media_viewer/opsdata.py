@@ -140,6 +140,13 @@ def split_area(
 
 def close_area(area: bpy.types.Area) -> None:
     ctx = get_context_for_area(area)
+    # Save directory to a custom property so it can be restored later. 
+    # (TODO: This probably belongs somewhere else.)
+    for space in area.spaces:
+        if space.type == 'FILE_BROWSER':
+            path = space.params.directory.decode('utf-8')
+            bpy.context.window_manager['directory'] = path
+            break
     bpy.ops.screen.area_close(ctx)
 
 

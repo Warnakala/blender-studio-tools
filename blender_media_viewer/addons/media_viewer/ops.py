@@ -376,8 +376,15 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
             return {"CANCELLED"}
 
         # Adjust properties of filebrowser panel.
-        # TODO: Screen does not update area has no params
         # opsdata.setup_filebrowser_area(area_fb)
+
+        # Screen must be re-drawn, otherwise space.params is None (TODO: Maybe this belongs somewhere else)
+        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        for space in area_fb.spaces:
+            if space.type == 'FILE_BROWSER':
+                if 'directory' in bpy.context.window_manager:
+                    path = bpy.context.window_manager['directory']
+                    space.params.directory = path.encode('utf-8')
 
         return {"FINISHED"}
 
