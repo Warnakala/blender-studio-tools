@@ -844,6 +844,27 @@ def load_post_handler_check_frame_range(dummy: Any) -> None:
     logger.warning("Current frame range is outdated!")
 
 
+@persistent
+def save_pre_handler_clean_overrides(dummy: Any) -> None:
+    """
+    Removes some Library Override properties that could be accidentally
+    created and could cause problems.
+    """
+    for o in bpy.data.objects:
+        if not o.override_library:
+            continue
+        if o.library:
+            continue
+        override = o.override_library
+        props = override.properties
+        for prop in props[:]:
+            rna_path = prop.rna_path
+            if rna_path in ['active_material_index', 'active_material']:
+                props.remove(prop)
+                linked_value = getattr(override.reference, rna_path)
+                setattr(o, rna_path, linked_value)
+                o.property_unset(rna_path)
+
 # ---------REGISTER ----------.
 
 classes = [
@@ -867,12 +888,16 @@ def register():
     bpy.app.handlers.load_post.append(load_post_handler_init_version_model)
     bpy.app.handlers.load_post.append(load_post_handler_check_frame_range)
 
+    bpy.app.handlers.save_pre.append(save_pre_handler_clean_overrides)
+
 
 def unregister():
 
     # Clear handlers.
     bpy.app.handlers.load_post.remove(load_post_handler_check_frame_range)
     bpy.app.handlers.load_post.remove(load_post_handler_init_version_model)
+
+    bpy.app.handlers.save_pre.remove(save_pre_handler_clean_overrides)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
