@@ -365,3 +365,8 @@ def get_top_level_valid_strips_continious(
             sequences.append(strip)
 
     return sequences
+
+def setup_color_management(context: bpy.types.Context) -> None:
+    if context.scene.view_settings.view_transform != 'Standard':
+        context.scene.view_settings.view_transform = 'Standard'
+        logger.info("Set view transform to: Standard")
