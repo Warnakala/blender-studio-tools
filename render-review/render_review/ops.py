@@ -194,6 +194,9 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         opsdata.fit_frame_range_to_strips(context)
         context.scene.frame_current = context.scene.frame_start
 
+        # Setup color management.
+        opsdata.setup_color_management(bpy.context)
+
         # scan for approved renders, will modify strip.rr.is_approved prop
         # which controls the custom gpu overlay
         opsdata.update_is_approved(context)
@@ -255,6 +258,9 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
         # Init sqe.
         if not context.scene.sequence_editor:
             context.scene.sequence_editor_create()
+
+        # Setup color management.
+        opsdata.setup_color_management(bpy.context)
 
         self.report({"INFO"}, "Setup Render Review Workspace")
 
