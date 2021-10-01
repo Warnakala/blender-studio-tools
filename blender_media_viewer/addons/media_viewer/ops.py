@@ -426,8 +426,13 @@ class MV_OT_set_template_defaults(bpy.types.Operator):
         context.scene.view_settings.view_transform = "Standard"
 
         # Set preference settings.
-        context.preferences.view.show_navigate_ui = False
-        context.preferences.view.show_layout_ui = False
+        context.preferences.use_preferences_save = False
+
+        # Dedicated apps settings.
+        apps = context.preferences.apps
+        apps.show_corner_split = False
+        apps.show_regions_visibility_toggle = False
+        # apps.show_edge_resize = False
 
         # Find filebrowser area.
         if area_fb:

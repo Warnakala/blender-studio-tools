@@ -146,7 +146,7 @@ def close_area(area: bpy.types.Area) -> None:
 def setup_filebrowser_area(filebrowser_area: bpy.types.Area) -> None:
     params = filebrowser_area.spaces.active.params
     params.display_type = "THUMBNAIL"
-    params.display_size = "REGULAR"
+    params.display_size = "NORMAL"
     params.use_filter = True
     params.use_filter_image = True
     params.use_filter_folder = True
