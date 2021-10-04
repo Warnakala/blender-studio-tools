@@ -47,7 +47,7 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_description = (
         "Pushes metadata of all selected sequences to server. "
-        "This includes frame information, name, project, sequence and description."
+        "This includes frame information, name, project, sequence and description"
         )
 
     @classmethod
@@ -145,7 +145,7 @@ class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):
 class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
     bl_idname = "kitsu.sqe_push_new_shot"
     bl_label = "Submit New Shot"
-    bl_description = "Creates a new shot for each selected sequence strip on server. Checks if shot already exists."
+    bl_description = "Creates a new shot for each selected sequence strip on server. Checks if shot already exists"
 
     confirm: bpy.props.BoolProperty(name="confirm")
 
@@ -726,7 +726,7 @@ class KITSU_OT_sqe_pull_shot_meta(bpy.types.Operator):
     bl_description = (
         "Pulls metadata of all selected sequences from server. "
         "This includes name, sequence, project and description. "
-        "Frame range information will not be pulled."
+        "Frame range information will not be pulled"
         )
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:

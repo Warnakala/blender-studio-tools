@@ -48,7 +48,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
     bl_label = "Create Review Session"
     bl_description = (
         "Imports all available renderings for the specified shot / sequence "
-        "in to the sequence editor."
+        "in to the sequence editor"
     )
     bl_options = {"REGISTER", "UNDO"}
 

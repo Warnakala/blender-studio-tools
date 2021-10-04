@@ -145,14 +145,14 @@ class CM_property_group_scene(bpy.types.PropertyGroup):
 
     frame_handles_left: bpy.props.IntProperty(
         name="Frame Handles Start",
-        description="Caching starts at the frame in of the scene minus the specified amount of frame handles.",
+        description="Caching starts at the frame in of the scene minus the specified amount of frame handles",
         default=10,
         min=0,
         step=1,
     )
     frame_handles_right: bpy.props.IntProperty(
         name="Frame Handles End",
-        description="Caching stops at the frame out of the scene plus the specified amount of frame handles.",
+        description="Caching stops at the frame out of the scene plus the specified amount of frame handles",
         default=10,
         min=0,
         step=1,

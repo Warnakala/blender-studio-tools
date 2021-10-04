@@ -42,7 +42,7 @@ class CS_OT_make_contactsheet(bpy.types.Operator):
     bl_label = "Make Contact Sheet"
     bl_description = (
         "Creates a temporary scene and arranges the previously selected sequences in a grid. "
-        "If no sequences were selected it takes a continuous row of the top most sequences."
+        "If no sequences were selected it takes a continuous row of the top most sequences"
     )
 
     @classmethod

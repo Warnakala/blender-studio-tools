@@ -95,7 +95,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
 
     enable_blender_kitsu: bpy.props.BoolProperty(
         name="Enable Blender Kitsu",
-        description="This checkbox controls if render_review should try to use the blender_kitsu addon to extend its feature sets.",
+        description="This checkbox controls if render_review should try to use the blender_kitsu addon to extend its feature sets",
         # Set=_check_blender_kitsu_installed,.
         default=False,
     )
