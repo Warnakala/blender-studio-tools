@@ -200,9 +200,16 @@ class KitsuConnector(Connector):
         shots: typing.List[ShotRef] = []
 
         for shot_data in kitsu_shots:
-            # If 3d_in key not found use default start frame.
-            frame_start = int(shot_data['data'].get('3d_in', vars.DEFAULT_FRAME_START))
-            frame_end = int(shot_data['data'].get('3d_out', 0))
+
+            #Initialize default values
+            frame_start = vars.DEFAULT_FRAME_START
+            frame_end = 0
+
+            #  shot_data['data'] can be None
+            if shot_data['data']:
+                # If 3d_in key not found use default start frame.
+                frame_start = int(shot_data['data'].get('3d_in', vars.DEFAULT_FRAME_START))
+                frame_end = int(shot_data['data'].get('3d_out', 0))
 
             # If 3d_in and 3d_out available use that to calculate frames.
             # If not try shot_data['nb_frames'] or 0 -> invalid.
