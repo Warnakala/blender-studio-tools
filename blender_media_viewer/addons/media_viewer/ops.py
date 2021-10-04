@@ -496,6 +496,12 @@ prev_filepath_list: List[Path] = []
 
 @persistent
 def callback_filename_change(dummy: None):
+
+    """
+    This will be registered as a draw handler on the filebrowser and runs everytime the
+    area gets redrawn. This handles the dynamic loading of the selected media and
+    saves filebrowser directory on window manager to restore it on area toggling.
+    """
     global prev_filepath
     global prev_dirpath
 
@@ -506,6 +512,10 @@ def callback_filename_change(dummy: None):
     directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
     active_file = bpy.context.active_file  # Can be None.
     selected_files = bpy.context.selected_files
+
+    # Save directory to a custom property so it can be restored later.
+    # For example in toggling filebrowser window.
+    bpy.context.window_manager['directory'] = directory.as_posix()
 
     # Save recent directory to config file if direcotry changed.
     if prev_dirpath != directory:
