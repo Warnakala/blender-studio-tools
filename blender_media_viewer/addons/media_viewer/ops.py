@@ -528,8 +528,9 @@ class MV_OT_next_media_file(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         global prev_filepath  # Is relative path to prev_dirpath.
         global prev_dirpath
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
 
-        if not context.screen.show_fullscreen:
+        if not context.screen.show_fullscreen and area_fb:
             # If not fullscreen, just call select_wall op
             area_fb = opsdata.find_area(context, "FILE_BROWSER")
             ctx = opsdata.get_context_for_area(area_fb)
@@ -559,23 +560,24 @@ class MV_OT_next_media_file(bpy.types.Operator):
                 logger.info(
                     "File %s does not exist anymore", prev_filepath_abs.as_posix()
                 )
-                return {"CANCELLED"}
+                next_index = 0
 
-            # If direction is RIGHT we increment the new index.
-            if self.direction == "RIGHT":
-                next_index = index + 1
-
-                # If index is last index, go to the beginning.
-                if next_index > (len(file_list) - 1):
-                    next_index = 0
-
-            # If direction is LEFT we decrement the new index.
             else:
-                next_index = index - 1
+                # If direction is RIGHT we increment the new index.
+                if self.direction == "RIGHT":
+                    next_index = index + 1
 
-                # If index is first index, go to the end.
-                if next_index < 0:
-                    next_index = len(file_list) - 1
+                    # If index is last index, go to the beginning.
+                    if next_index > (len(file_list) - 1):
+                        next_index = 0
+
+                # If direction is LEFT we decrement the new index.
+                else:
+                    next_index = index - 1
+
+                    # If index is first index, go to the end.
+                    if next_index < 0:
+                        next_index = len(file_list) - 1
 
             filepath = file_list[next_index]
 
