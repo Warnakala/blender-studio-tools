@@ -347,6 +347,15 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
                 ctx, area_media, "FILE_BROWSER", "VERTICAL", self.factor_filebrowser
             )
 
+            # Screen must be re-drawn, otherwise space.params is None
+            bpy.ops.wm.redraw_timer(ctx, type="DRAW_WIN_SWAP", iterations=1)
+
+            # Load prev filebrowser dir from win manager
+            opsdata.load_filebrowser_dir_from_win_manager(area_fb)
+
+            # Adjust properties of filebrowser panel.
+            opsdata.setup_filebrowser_area(area_fb)
+
             # Open timeline
             area_time = opsdata.split_area(
                 ctx, area_media, "DOPESHEET_EDITOR", "HORIZONTAL", self.factor_timeline
@@ -362,8 +371,23 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
             )
             logger.info("Show filebrowser")
 
+            # Screen must be re-drawn, otherwise space.params is None
+            bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
+
+            # Load prev filebrowser dir from win manager
+            opsdata.load_filebrowser_dir_from_win_manager(area_fb)
+
+            # Adjust properties of filebrowser panel.
+            opsdata.setup_filebrowser_area(area_fb)
+
         elif area_fb:
             # Filebrowser needs to be closed.
+
+            # Save directory to a custom property so it can be restored later.
+            # For example in toggling filebrowser window.
+            params = area_fb.spaces.active.params
+            bpy.context.window_manager["directory"] = params.directory.decode("utf-8")
+
             opsdata.close_area(area_fb)
             logger.info("Hide filebrowser")
             return {"FINISHED"}
@@ -374,17 +398,6 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
                 active_media_area,
             )
             return {"CANCELLED"}
-
-        # Adjust properties of filebrowser panel.
-        # opsdata.setup_filebrowser_area(area_fb)
-
-        # Screen must be re-drawn, otherwise space.params is None (TODO: Maybe this belongs somewhere else)
-        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-        for space in area_fb.spaces:
-            if space.type == 'FILE_BROWSER':
-                if 'directory' in bpy.context.window_manager:
-                    path = bpy.context.window_manager['directory']
-                    space.params.directory = path.encode('utf-8')
 
         return {"FINISHED"}
 
@@ -517,10 +530,6 @@ def callback_filename_change(dummy: None):
     directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
     active_file = bpy.context.active_file  # Can be None.
     selected_files = bpy.context.selected_files
-
-    # Save directory to a custom property so it can be restored later.
-    # For example in toggling filebrowser window.
-    bpy.context.window_manager['directory'] = directory.as_posix()
 
     # Save recent directory to config file if direcotry changed.
     if prev_dirpath != directory:
