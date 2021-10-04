@@ -31,7 +31,13 @@ from media_viewer.log import LoggerFactory
 
 logger = LoggerFactory.getLogger(name=__name__)
 
+# Global variables
 active_media_area = "SEQUENCE_EDITOR"
+
+# Global variables for frame handler to check previous value.
+prev_filepath: Optional[str] = None
+prev_dirpath: Path = Path.home()  # TODO: read from json on register
+prev_filepath_list: List[Path] = []
 
 
 class MV_OT_load_media_movie(bpy.types.Operator):
@@ -506,10 +512,96 @@ class MV_OT_screen_full_area(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# Global variables for frame handler to check previous value.
-prev_filepath: Optional[str] = None
-prev_dirpath: Path = Path.home()  # TODO: read from json on register
-prev_filepath_list: List[Path] = []
+class MV_OT_next_media_file(bpy.types.Operator):
+
+    bl_idname = "media_viewer.next_media_file"
+    bl_label = "Next Media File"
+    bl_description = "Load next media file in the current file browser directory"
+    direction: bpy.props.EnumProperty(
+        items=(
+            ("LEFT", "LEFT", ""),
+            ("RIGHT", "RIGHT", ""),
+        ),
+        default="RIGHT",
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global prev_filepath  # Is relative path to prev_dirpath.
+        global prev_dirpath
+
+        if not context.screen.show_fullscreen:
+            # If not fullscreen, just call select_wall op
+            area_fb = opsdata.find_area(context, "FILE_BROWSER")
+            ctx = opsdata.get_context_for_area(area_fb)
+            bpy.ops.file.select_walk(ctx, "INVOKE_DEFAULT", direction=self.direction)
+            return {"FINISHED"}
+
+        # Get all files and folders and sort them alphabetically.
+        file_list = [
+            p for p in Path(prev_dirpath).iterdir() if not p.name.startswith(".")
+        ]
+        if not file_list:
+            logger.info("Empty directory: %s", prev_dirpath.as_posix())
+            return {"CANCELLED"}
+
+        file_list.sort(key=lambda p: p.name)
+
+        # If there was not previous filepath take the first file.
+        if not prev_filepath:
+            filepath = file_list[0]
+
+        # If previous filepath, get index of that and take next index.
+        else:
+            prev_filepath_abs = Path(prev_dirpath).joinpath(prev_filepath)
+            try:
+                index = file_list.index(prev_filepath_abs)
+            except ValueError:
+                logger.info(
+                    "File %s does not exist anymore", prev_filepath_abs.as_posix()
+                )
+                return {"CANCELLED"}
+
+            # If direction is RIGHT we increment the new index.
+            if self.direction == "RIGHT":
+                next_index = index + 1
+
+                # If index is last index, go to the beginning.
+                if next_index > (len(file_list) - 1):
+                    next_index = 0
+
+            # If direction is LEFT we decrement the new index.
+            else:
+                next_index = index - 1
+
+                # If index is first index, go to the end.
+                if next_index < 0:
+                    next_index = len(file_list) - 1
+
+            filepath = file_list[next_index]
+
+        # Load file in media viewer.
+        logger.info(f"Loading file: {filepath.as_posix()}")
+
+        # Execute load media op.
+        if opsdata.is_movie(filepath):
+            bpy.ops.media_viewer.set_media_area_type(area_type="SEQUENCE_EDITOR")
+            # Operator expects List[Dict] because of collection property.
+            bpy.ops.media_viewer.load_media_movie(
+                files=[{"name": filepath.as_posix()}], append=False
+            )
+
+        elif opsdata.is_image(filepath):
+            bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
+            # Load media image handles image sequences.
+            bpy.ops.media_viewer.load_media_image(filepath=filepath.as_posix())
+
+        elif opsdata.is_text(filepath) or opsdata.is_script(filepath):
+            bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
+            bpy.ops.media_viewer.load_media_text(filepath=filepath.as_posix())
+
+        # Update prev_ variables.
+        prev_filepath = filepath.relative_to(Path(prev_dirpath)).as_posix()
+        return {"FINISHED"}
 
 
 @persistent
@@ -615,6 +707,7 @@ classes = [
     MV_OT_set_template_defaults,
     MV_OT_load_media_text,
     MV_OT_screen_full_area,
+    MV_OT_next_media_file,
 ]
 addon_keymap_items = []
 
@@ -654,6 +747,20 @@ def register():
                 "media_viewer.screen_full_area", value="PRESS", type="F"
             )
         )
+
+        # Next media file.
+        kmi = keymap.keymap_items.new(
+            "media_viewer.next_media_file", value="PRESS", type="U"
+        )
+        kmi.properties.direction = "RIGHT"
+        addon_keymap_items.append(kmi)
+
+        # Previous media file.
+        kmi = keymap.keymap_items.new(
+            "media_viewer.next_media_file", value="PRESS", type="Y"
+        )
+        kmi.properties.direction = "LEFT"
+        addon_keymap_items.append(kmi)
 
         for kmi in addon_keymap_items:
             logger.info(
