@@ -711,7 +711,6 @@ classes = [
     MV_OT_screen_full_area,
     MV_OT_next_media_file,
 ]
-addon_keymap_items = []
 
 
 def register():
@@ -723,52 +722,6 @@ def register():
         callback_filename_change, (None,), "WINDOW", "POST_PIXEL"
     )
 
-    # Register Hotkeys.
-    # Does not work if blender runs in background.
-    if not bpy.app.background:
-        global addon_keymap_items
-        keymap = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name="Window")
-
-        # Toggle Timeline.
-        addon_keymap_items.append(
-            keymap.keymap_items.new(
-                "media_viewer.toggle_timeline", value="PRESS", type="T"
-            )
-        )
-
-        # Toggle Filebrowser.
-        addon_keymap_items.append(
-            keymap.keymap_items.new(
-                "media_viewer.toggle_filebrowser", value="PRESS", type="B"
-            )
-        )
-
-        # Full Screen with Hide Panels.
-        addon_keymap_items.append(
-            keymap.keymap_items.new(
-                "media_viewer.screen_full_area", value="PRESS", type="F"
-            )
-        )
-
-        # Next media file.
-        kmi = keymap.keymap_items.new(
-            "media_viewer.next_media_file", value="PRESS", type="U"
-        )
-        kmi.properties.direction = "RIGHT"
-        addon_keymap_items.append(kmi)
-
-        # Previous media file.
-        kmi = keymap.keymap_items.new(
-            "media_viewer.next_media_file", value="PRESS", type="Y"
-        )
-        kmi.properties.direction = "LEFT"
-        addon_keymap_items.append(kmi)
-
-        for kmi in addon_keymap_items:
-            logger.info(
-                "Registered new hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name
-            )
-
 
 def unregister():
     for cls in reversed(classes):
@@ -776,15 +729,3 @@ def unregister():
 
     # Handlers.
     bpy.types.SpaceFileBrowser.draw_handler_remove(callback_filename_change, "WINDOW")
-
-    # Unregister Hotkeys.
-    # Does not work if blender runs in background.
-    if not bpy.app.background:
-        global addon_keymap_items
-        keymap = bpy.context.window_manager.keyconfigs.addon.keymaps["Window"]
-
-        for kmi in addon_keymap_items:
-            logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
-            keymap.keymap_items.remove(kmi)
-
-        addon_keymap_items.clear()
