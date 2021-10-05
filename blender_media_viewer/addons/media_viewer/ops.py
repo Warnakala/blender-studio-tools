@@ -446,6 +446,9 @@ class MV_OT_set_template_defaults(bpy.types.Operator):
 
         # Set preference settings.
         context.preferences.use_preferences_save = False
+        context.preferences.view.show_playback_fps = False
+        context.preferences.view.show_view_name = False
+        context.preferences.view.show_object_info = False
 
         # Dedicated apps settings.
         apps = context.preferences.apps
