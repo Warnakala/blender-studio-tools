@@ -36,8 +36,6 @@ from media_viewer.log import LoggerFactory
 
 logger = LoggerFactory.getLogger(name=__name__)
 
-addon_keymap_items = []
-
 
 def clear_shortcuts(
     mode: str = "EXCLUDE",
@@ -134,7 +132,12 @@ def clear_shortcuts(
 @persistent
 def delete_shortcuts_load_post(_):
     bpy.context.preferences.use_preferences_save = False
-    print("LOAD POST IS RUNNING")
+
+    # Is None on load?
+    print(
+        bpy.context.window_manager.keyconfigs["Blender"].keymaps[0].keymap_items.items()
+    )
+
     clear_shortcuts(
         mode="INCLUDE",
         keymap_pattern=r"Frames",
@@ -143,17 +146,19 @@ def delete_shortcuts_load_post(_):
     )
 
 
+addon_keymaps = []
+
+
 def register():
     # Register Hotkeys.
     # Does not work if blender runs in background.
     if not bpy.app.background:
-        global addon_keymap_items
+        global addon_keymaps
 
         # Turn off autosave prefs.
         bpy.context.preferences.use_preferences_save = False
-
-        # Clear all shortcuts except MOUSE, ignore Screen keymap
         """
+        # Clear all shortcuts except MOUSE, ignore Screen keymap
         clear_shortcuts(
             keymap_pattern=r"(Screen)",
             map_type_pattern=r"MOUSE",
@@ -169,26 +174,35 @@ def register():
         )
         """
 
-        keymap = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name="Window")
+        keymap = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name="Screen")
 
         # Toggle Timeline.
-        addon_keymap_items.append(
-            keymap.keymap_items.new(
-                MV_OT_toggle_timeline.bl_idname, value="PRESS", type="T"
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_toggle_timeline.bl_idname, value="PRESS", type="T"
+                ),
             )
         )
 
         # Toggle Filebrowser.
-        addon_keymap_items.append(
-            keymap.keymap_items.new(
-                MV_OT_toggle_filebrowser.bl_idname, value="PRESS", type="B"
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_toggle_filebrowser.bl_idname, value="PRESS", type="B"
+                ),
             )
         )
 
         # Full Screen with Hide Panels.
-        addon_keymap_items.append(
-            keymap.keymap_items.new(
-                MV_OT_screen_full_area.bl_idname, value="PRESS", type="F"
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_screen_full_area.bl_idname, value="PRESS", type="F"
+                ),
             )
         )
 
@@ -197,16 +211,29 @@ def register():
             MV_OT_next_media_file.bl_idname, value="PRESS", type="RIGHT_ARROW"
         )
         kmi.properties.direction = "RIGHT"
-        addon_keymap_items.append(kmi)
+        addon_keymaps.append((keymap, kmi))
 
         # Previous media file.
         kmi = keymap.keymap_items.new(
             MV_OT_next_media_file.bl_idname, value="PRESS", type="LEFT_ARROW"
         )
         kmi.properties.direction = "LEFT"
-        addon_keymap_items.append(kmi)
+        addon_keymaps.append((keymap, kmi))
 
-        for kmi in addon_keymap_items:
+        # Offset current frame.
+        kmi = keymap.keymap_items.new(
+            "screen.frame_offset", value="PRESS", type="PERIOD", repeat=True
+        )
+        kmi.properties.delta = 1
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            "screen.frame_offset", value="PRESS", type="COMMA", repeat=True
+        )
+        kmi.properties.delta = -1
+        addon_keymaps.append((keymap, kmi))
+
+        for km, kmi in addon_keymaps:
             logger.info(
                 "Registered new hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name
             )
@@ -216,18 +243,19 @@ def register():
     # bpy.app.handlers.load_post.append(delete_shortcuts_load_post)
 
 
+def unregister_keymaps():
+    global addon_keymaps
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+        logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
+    addon_keymaps.clear()
+
+
 def unregister():
     # Unregister Hotkeys.
     # Does not work if blender runs in background.
     if not bpy.app.background:
-        global addon_keymap_items
-        keymap = bpy.context.window_manager.keyconfigs.addon.keymaps["Window"]
-
-        for kmi in addon_keymap_items:
-            logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
-            keymap.keymap_items.remove(kmi)
-
-        addon_keymap_items.clear()
+        unregister_keymaps()
 
     # Handlers
     # bpy.app.handlers.load_post.remove(delete_shortcuts_load_post)
