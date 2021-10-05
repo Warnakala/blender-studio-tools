@@ -58,25 +58,24 @@ class MoveBoneGizmo(Gizmo):
 		else:
 			self.load_shape_entire_object()
 
-	def init_properties(self):
+	def init_properties(self, context):
 		props = self.props
 		self.line_width = self.line_width
-		self.init_colors()
+		self.init_colors(context)
 
-	def init_colors(self):
+	def init_colors(self, context):
+		prefs = context.preferences.addons[__package__].preferences
 		props = self.props
 		if self.is_using_bone_group_colors():
 			pb = self.get_pose_bone()
 			self.color = pb.bone_group.colors.normal[:]
 			self.color_highlight = pb.bone_group.colors.select[:]
-			self.alpha = 0.2
-			self.alpha_highlight = 0.4
 		else:
-			self.color = props.color[:3]
-			self.alpha = props.color[3]
+			self.color = props.color[:]
+			self.color_highlight = props.color_highlight[:]
 
-			self.color_highlight = props.color_highlight[:3]
-			self.alpha_highlight = props.color_highlight[3]
+		self.alpha = prefs.bone_gizmo_alpha
+		self.alpha_highlight = prefs.bone_gizmo_alpha_highlight
 
 	def poll(self, context):
 		"""Whether any gizmo logic should be executed or not. This function is not
@@ -214,16 +213,18 @@ class MoveBoneGizmo(Gizmo):
 
 	def update_basis_and_offset_matrix(self, context):
 		pb = self.get_pose_bone(context)
-		self.matrix_basis = self.props.shape_object.matrix_world
+		armature = context.object
 
 		if not self.is_using_facemap() and not self.is_using_vgroup():
-			rest_matrix = pb.bone.matrix_local.copy()
-			pose_matrix = pb.matrix.copy()
-
-			delta_mat = pose_matrix @ rest_matrix.inverted()
-
-			self.matrix_offset = delta_mat
+			# The gizmo should function as a replacement for the custom shape.
+			self.matrix_basis = armature.matrix_world.copy()
+			loc, rot, scale = pb.matrix.to_translation(), pb.matrix.to_euler(), pb.matrix.to_scale()
+			if pb.use_custom_shape_bone_size:
+				scale *= pb.length
+			self.matrix_offset = Matrix.LocRotScale(loc, rot, scale)
 		else:
+			# The gizmo should stick strictly to the vertex group or face map of the shape object.
+			self.matrix_basis = self.props.shape_object.matrix_world.copy()
 			self.matrix_offset = Matrix.Identity(4)
 
 	def invoke(self, context, event):

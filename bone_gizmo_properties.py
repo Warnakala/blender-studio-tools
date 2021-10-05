@@ -77,20 +77,20 @@ class BoneGizmoProperties(PropertyGroup):
 		name		 = "Color"
 		,description = "Color of the gizmo"
 		,subtype	 = 'COLOR'
-		,size		 = 4
+		,size		 = 3
 		,min		 = 0.0
 		,max		 = 1.0
-		,default	 = (1.0, 0.05, 0.38, 0.5)
+		,default	 = (1.0, 0.05, 0.38)
 	)
 
 	color_highlight: FloatVectorProperty(
 		name		 = "Highlight Color"
 		,description = "Color of the gizmo when mouse hovered"
 		,subtype	 = 'COLOR'
-		,size		 = 4
+		,size		 = 3
 		,min		 = 0.0
 		,max		 = 1.0
-		,default	 = (1.0, 0.5, 1.0, 0.5)
+		,default	 = (1.0, 0.5, 1.0)
 	)
 
 	line_width: IntProperty(
@@ -138,26 +138,6 @@ def register():
 	register_cls()
 
 	bpy.types.PoseBone.bone_gizmo = PointerProperty(type=BoneGizmoProperties)
-
-
-	Scene.bone_gizmo_alpha = FloatProperty(
-		name = "Gizmo Opacity"
-		,min = 0.0
-		,max = 1.0
-		,subtype = 'FACTOR'
-	)
-	Scene.bone_gizmo_alpha_select = FloatProperty(
-		name = "Gizmo Opacity (Selected)"
-		,min = 0.0
-		,max = 1.0
-		,subtype = 'FACTOR'
-	)
-	Scene.bone_gizmo_alpha_highlight = FloatProperty(
-		name = "Gizmo Opacity (Highlighted)"
-		,min = 0.0
-		,max = 1.0
-		,subtype = 'FACTOR'
-	)
 
 	Scene.bone_gizmos_enabled = BoolProperty(
 		name		 = "Bone Gizmos"
