@@ -3,7 +3,8 @@ from typing import Dict, Tuple, List
 from bpy.types import GizmoGroup, Gizmo, Object, PoseBone
 from bpy.app.handlers import persistent
 
-gizmos = object()
+# msgbus system needs an arbitrary python object as storage, so here it is.
+gizmo_msgbus = object()
 
 class BoneGizmoGroup(GizmoGroup):
 	"""This single GizmoGroup manages all bone gizmos for all rigs."""	# TODO: Currently this will have issues when there are two rigs with similar bone names. Rig object names should be included when identifying widgets.
@@ -25,16 +26,34 @@ class BoneGizmoGroup(GizmoGroup):
 		return context.scene.bone_gizmos_enabled and context.object \
 			and context.object.type == 'ARMATURE' and context.object.mode=='POSE'
 
+	@staticmethod
+	def refresh_all_gizmo_colors(self):
+		context = bpy.context
+		addon_prefs = context.preferences.addons[__package__].preferences
+
+		for bone_name, gizmo in self.widgets.items():
+			gizmo.refresh_colors(context)
+
 	def setup(self, context):
 		"""Executed by Blender or by gizmo updates. We create all gizmos here,
 		so between calls to this, all gizmos should first be destroyed."""
-		print("Setup")
 		self.widgets = {}
 		for pose_bone in context.object.pose.bones:
 			if pose_bone.bone_gizmo.enabled:
 				gizmo = self.create_gizmo(context, pose_bone)
 				self.widgets[pose_bone.name] = gizmo
 				self.refresh_single_gizmo(self, pose_bone.name)
+
+		# Hook up the addon preferences to the relevant refresh function
+		# using msgbus system.
+		addon_prefs = context.preferences.addons[__package__]
+		global gizmo_msgbus
+		bpy.msgbus.subscribe_rna(
+			key		= addon_prefs.path_resolve('preferences', False)
+			,owner	= gizmo_msgbus
+			,args	= (self,)
+			,notify	= self.refresh_all_gizmo_colors
+		)
 
 	@staticmethod
 	def refresh_single_gizmo(self, bone_name):
@@ -68,9 +87,12 @@ class BoneGizmoGroup(GizmoGroup):
 		gizmo.props = gizmo_props
 		gizmo.gizmo_group = self
 
+		# Hook up gizmo properties (the ones that can be customized by user)
+		# to the gizmo refresh function, using msgbus system.
+		global gizmo_msgbus
 		bpy.msgbus.subscribe_rna(
 			key		= gizmo_props
-			,owner	= gizmos
+			,owner	= gizmo_msgbus
 			,args	= (self, gizmo.bone_name)
 			,notify	= self.refresh_single_gizmo
 		)
@@ -102,3 +124,8 @@ class BoneGizmoGroup(GizmoGroup):
 registry = [
 	BoneGizmoGroup,
 ]
+
+def unregister():
+	# Unhook everything from msgbus system
+	global gizmo_msgbus
+	bpy.msgbus.clear_by_owner(gizmo_msgbus)

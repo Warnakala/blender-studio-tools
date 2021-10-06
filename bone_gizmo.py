@@ -31,8 +31,10 @@ class MoveBoneGizmo(Gizmo):
 		,"custom_shape"
 		,"meshshape"
 
-		,"color_backup"
-		,"alpha_backup"
+		,"color_selected"
+		,"color_unselected"
+		,"alpha_selected"
+		,"alpha_unselected"
 
 		,"gizmo_group"
 	)
@@ -61,20 +63,26 @@ class MoveBoneGizmo(Gizmo):
 	def init_properties(self, context):
 		props = self.props
 		self.line_width = self.line_width
-		self.init_colors(context)
+		self.refresh_colors(context)
 
-	def init_colors(self, context):
+	def refresh_colors(self, context):
 		prefs = context.preferences.addons[__package__].preferences
 		props = self.props
 		if self.is_using_bone_group_colors():
 			pb = self.get_pose_bone()
-			self.color = pb.bone_group.colors.normal[:]
-			self.color_highlight = pb.bone_group.colors.select[:]
+			self.color_unselected = pb.bone_group.colors.normal[:]
+			self.color_selected = pb.bone_group.colors.select[:]
+			self.color_highlight = pb.bone_group.colors.active[:]
 		else:
-			self.color = props.color[:]
+			self.color_selected = self.color_unselected = props.color[:]
 			self.color_highlight = props.color_highlight[:]
 
-		self.alpha = prefs.bone_gizmo_alpha
+		if self.is_using_facemap() or self.is_using_vgroup():
+			self.alpha_unselected = prefs.bone_gizmo_alpha
+		else:
+			self.alpha_unselected = prefs.bone_gizmo_alpha_widget
+
+		self.alpha_selected = prefs.bone_gizmo_alpha_select
 		self.alpha_highlight = prefs.bone_gizmo_alpha_highlight
 
 	def poll(self, context):
@@ -165,18 +173,13 @@ class MoveBoneGizmo(Gizmo):
 			return
 
 		pb = self.get_pose_bone(context)
-		if pb.bone.select and not self.select:
-			# If the bone just got selected, swap the colors.
-			self.color_backup = self.color.copy()
-			self.alpha_backup = self.alpha
-			self.color = self.color_highlight
-			self.alpha = self.alpha_highlight
-		elif self.select and not pb.bone.select and hasattr(self, 'color_backup'):
-			# If the bone just got unselected, swap the colors back.
-			self.color = self.color_backup.copy()
-			self.alpha = self.alpha_backup
+		if pb.bone.select:
+			self.color = self.color_selected
+			self.alpha = self.alpha_selected
+		else:
+			self.color = self.color_unselected
+			self.alpha = self.alpha_unselected
 
-		self.select = pb.bone.select
 		self.draw_shared(context)
 
 	def draw_select(self, context, select_id):

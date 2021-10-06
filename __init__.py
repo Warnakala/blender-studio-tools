@@ -30,8 +30,16 @@ class BoneGizmoPreferences(AddonPreferences):
 	bl_idname = __package__
 
 	bone_gizmo_alpha: FloatProperty(
-		name = "Gizmo Opacity"
-		,description = "Mesh Gizmo opacity"
+		name = "Mesh Gizmo Opacity"
+		,description = "Opacity of unselected gizmos when they are defined by a vertex group or face map"
+		,min = 0.0
+		,max = 1.0
+		,default = 0.0
+		,subtype = 'FACTOR'
+	)
+	bone_gizmo_alpha_widget: FloatProperty(
+		name = "Widget Gizmo Opacity"
+		,description = "Opacity of unselected gizmos when they are NOT defined by a vertex group or face map"
 		,min = 0.0
 		,max = 1.0
 		,default = 0.0
@@ -56,10 +64,14 @@ class BoneGizmoPreferences(AddonPreferences):
 
 	def draw(self, context):
 		layout = self.layout
+		layout.use_property_split = True
 
-		layout.prop(self, 'bone_gizmo_alpha')
-		layout.prop(self, 'bone_gizmo_alpha_select')
-		layout.prop(self, 'bone_gizmo_alpha_highlight')
+		layout = layout.column(align=True)
+		layout.label(text="Gizmo Opacity")
+		layout.prop(self, 'bone_gizmo_alpha', text="Unselected Mesh")
+		layout.prop(self, 'bone_gizmo_alpha_widget', text="Unselected Widget")
+		layout.prop(self, 'bone_gizmo_alpha_select', text="Selected")
+		layout.prop(self, 'bone_gizmo_alpha_highlight', text="Highlighted")
 
 def register():
 	register_class(BoneGizmoPreferences)
