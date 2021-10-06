@@ -74,19 +74,21 @@ class MoveBoneGizmo(Gizmo):
 			pb = self.get_pose_bone()
 			self.color_unselected = pb.bone_group.colors.normal[:]
 			self.color_selected = pb.bone_group.colors.select[:]
-			self.color_highlight = pb.bone_group.colors.active[:]
+			self.color_highlight = pb.bone_group.colors.select[:]
 		else:
 			self.color_unselected = props.color[:]
-			self.color_selected = props.color[:]
+			self.color_selected = props.color_highlight[:]
 			self.color_highlight = props.color_highlight[:]
 
 		if self.is_using_facemap() or self.is_using_vgroup():
-			self.alpha_unselected = prefs.bone_gizmo_alpha
+			self.alpha_unselected = prefs.mesh_alpha
+			self.alpha_selected = prefs.mesh_alpha + prefs.delta_alpha_select
+			self.alpha_highlight = min(0.999, prefs.mesh_alpha + prefs.delta_alpha_highlight)
 		else:
-			self.alpha_unselected = prefs.bone_gizmo_alpha_widget
+			self.alpha_unselected = prefs.widget_alpha
+			self.alpha_selected = prefs.widget_alpha + prefs.delta_alpha_select
+			self.alpha_highlight = min(0.999, prefs.widget_alpha + prefs.delta_alpha_highlight)
 
-		self.alpha_selected = prefs.bone_gizmo_alpha_widget + prefs.bone_gizmo_alpha_select
-		self.alpha_highlight = min(0.999, prefs.bone_gizmo_alpha_widget + prefs.bone_gizmo_alpha_highlight)
 
 	def poll(self, context):
 		"""Whether any gizmo logic should be executed or not. This function is not

@@ -29,7 +29,7 @@ modules = (
 class BoneGizmoPreferences(AddonPreferences):
 	bl_idname = __package__
 
-	bone_gizmo_alpha: FloatProperty(
+	mesh_alpha: FloatProperty(
 		name = "Mesh Gizmo Opacity"
 		,description = "Opacity of unselected gizmos when they are defined by a vertex group or face map"
 		,min = 0.0
@@ -37,7 +37,7 @@ class BoneGizmoPreferences(AddonPreferences):
 		,default = 0.0
 		,subtype = 'FACTOR'
 	)
-	bone_gizmo_alpha_widget: FloatProperty(
+	widget_alpha: FloatProperty(
 		name = "Widget Gizmo Opacity"
 		,description = "Opacity of unselected gizmos when they are NOT defined by a vertex group or face map"
 		,min = 0.0
@@ -45,7 +45,7 @@ class BoneGizmoPreferences(AddonPreferences):
 		,default = 0.5
 		,subtype = 'FACTOR'
 	)
-	bone_gizmo_alpha_select: FloatProperty(
+	delta_alpha_select: FloatProperty(
 		name = "Gizmo Selected Opacity Delta"
 		,description = "Added Mesh Gizmo opacity when selected"
 		,min = -1.0
@@ -53,12 +53,12 @@ class BoneGizmoPreferences(AddonPreferences):
 		,default = 0.5
 		,subtype = 'FACTOR'
 	)
-	bone_gizmo_alpha_highlight: FloatProperty(
+	delta_alpha_highlight: FloatProperty(
 		name = "Gizmo Highlighted Opacity Delta"
 		,description = "Added Mesh Gizmo opacity when highlighted"
 		,min = -1.0
 		,max = 1.0
-		,default = 1.0
+		,default = 0.8
 		,subtype = 'FACTOR'
 	)
 
@@ -68,10 +68,10 @@ class BoneGizmoPreferences(AddonPreferences):
 
 		layout = layout.column(align=True)
 		layout.label(text="Gizmo Opacity")
-		layout.prop(self, 'bone_gizmo_alpha', text="Mesh")
-		layout.prop(self, 'bone_gizmo_alpha_widget', text="Widget")
-		layout.prop(self, 'bone_gizmo_alpha_select', text="Delta Selected")
-		layout.prop(self, 'bone_gizmo_alpha_highlight', text="Delta Highlighted")
+		layout.prop(self, 'mesh_alpha', text="Mesh")
+		layout.prop(self, 'widget_alpha', text="Widget")
+		layout.prop(self, 'delta_alpha_select', text="Delta Selected")
+		layout.prop(self, 'delta_alpha_highlight', text="Delta Highlighted")
 
 def register():
 	register_class(BoneGizmoPreferences)
@@ -89,6 +89,5 @@ def unregister():
 		if hasattr(m, 'unregister'):
 			m.unregister()
 		if hasattr(m, 'registry'):
-			if hasattr(m, 'registry'):
-				for c in m.registry:
-					unregister_class(c)
+			for c in m.registry:
+				unregister_class(c)

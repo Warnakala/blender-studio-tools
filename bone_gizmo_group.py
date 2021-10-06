@@ -35,8 +35,9 @@ class BoneGizmoGroup(GizmoGroup):
 			gizmo.refresh_colors(context)
 
 	def setup(self, context):
-		"""Executed by Blender or by gizmo updates. We create all gizmos here,
-		so between calls to this, all gizmos should first be destroyed."""
+		"""Runs when this GizmoGroup is created, I think.
+		Executed by Blender on launch, and for some reason
+		also when changing bone group colors. WHAT!?"""
 		self.widgets = {}
 		for pose_bone in context.object.pose.bones:
 			if pose_bone.bone_gizmo.enabled:
@@ -55,7 +56,6 @@ class BoneGizmoGroup(GizmoGroup):
 
 	@staticmethod
 	def refresh_single_gizmo(self, bone_name):
-
 		context = bpy.context
 		pose_bone = context.object.pose.bones.get(bone_name)
 		gizmo_props = pose_bone.bone_gizmo
@@ -73,6 +73,11 @@ class BoneGizmoGroup(GizmoGroup):
 				op.orient_axis = gizmo_props.rotation_mode
 				op.constraint_axis = [axis == gizmo_props.rotation_mode for axis in 'XYZ']
 		gizmo.init_properties(context)
+	
+	@staticmethod
+	def refresh_single_gizmo_shape(self, bone_name):
+		context = bpy.context
+		gizmo = self.widgets[bone_name]
 		gizmo.init_shape(context)
 
 	def create_gizmo(self, context, pose_bone) -> Gizmo:
@@ -95,8 +100,17 @@ class BoneGizmoGroup(GizmoGroup):
 			,notify	= self.refresh_single_gizmo
 		)
 
+		for prop_name in ['shape_object', 'vertex_group_name', 'face_map_name', 'use_face_map']:
+			bpy.msgbus.subscribe_rna(
+				key		= gizmo_props.path_resolve(prop_name, False)
+				,owner	= gizmo_msgbus
+				,args	= (self, gizmo.bone_name)
+				,notify	= self.refresh_single_gizmo_shape
+			)
+
 		self.widgets[pose_bone.name] = gizmo
 		self.refresh_single_gizmo(self, pose_bone.name)
+		self.refresh_single_gizmo_shape(self, pose_bone.name)
 
 		return gizmo
 
