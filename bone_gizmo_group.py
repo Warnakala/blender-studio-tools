@@ -41,8 +41,6 @@ class BoneGizmoGroup(GizmoGroup):
 		for pose_bone in context.object.pose.bones:
 			if pose_bone.bone_gizmo.enabled:
 				gizmo = self.create_gizmo(context, pose_bone)
-				self.widgets[pose_bone.name] = gizmo
-				self.refresh_single_gizmo(self, pose_bone.name)
 
 		# Hook up the addon preferences to the relevant refresh function
 		# using msgbus system.
@@ -57,6 +55,7 @@ class BoneGizmoGroup(GizmoGroup):
 
 	@staticmethod
 	def refresh_single_gizmo(self, bone_name):
+
 		context = bpy.context
 		pose_bone = context.object.pose.bones.get(bone_name)
 		gizmo_props = pose_bone.bone_gizmo
@@ -73,8 +72,8 @@ class BoneGizmoGroup(GizmoGroup):
 				op.orient_type = 'LOCAL'
 				op.orient_axis = gizmo_props.rotation_mode
 				op.constraint_axis = [axis == gizmo_props.rotation_mode for axis in 'XYZ']
-		gizmo.init_shape(context)
 		gizmo.init_properties(context)
+		gizmo.init_shape(context)
 
 	def create_gizmo(self, context, pose_bone) -> Gizmo:
 		"""Add a gizmo to this GizmoGroup based on user-defined properties."""
@@ -85,7 +84,6 @@ class BoneGizmoGroup(GizmoGroup):
 		gizmo = self.gizmos.new('GIZMO_GT_bone_gizmo')
 		gizmo.bone_name = pose_bone.name
 		gizmo.props = gizmo_props
-		gizmo.gizmo_group = self
 
 		# Hook up gizmo properties (the ones that can be customized by user)
 		# to the gizmo refresh function, using msgbus system.
@@ -96,6 +94,9 @@ class BoneGizmoGroup(GizmoGroup):
 			,args	= (self, gizmo.bone_name)
 			,notify	= self.refresh_single_gizmo
 		)
+
+		self.widgets[pose_bone.name] = gizmo
+		self.refresh_single_gizmo(self, pose_bone.name)
 
 		return gizmo
 

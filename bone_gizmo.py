@@ -28,15 +28,17 @@ class MoveBoneGizmo(Gizmo):
 		"bone_name"			# Name of the bone that owns this gizmo.
 		,"props"			# Instance of BoneGizmoProperties that's stored on the bone that owns this gizmo.
 
-		,"custom_shape"
-		,"meshshape"
+		,"custom_shape"		# Currently drawn shape, being passed into self.new_custom_shape().
+		,"meshshape"		# Cache of vertex indicies. Can fall out of sync if the mesh is modified; Only re-calculated when gizmo properties are changed by user.
 
+		# Gizmos, like bones, have 3 states.
 		,"color_selected"
 		,"color_unselected"
 		,"alpha_selected"
 		,"alpha_unselected"
-
-		,"gizmo_group"
+		# The 3rd one is "highlighted". 
+		# color_highlight and alpha_highlight are already provided by the API.
+		# We currently don't visually distinguish between selected and active gizmos.
 	)
 
 	def setup(self):
@@ -46,7 +48,7 @@ class MoveBoneGizmo(Gizmo):
 
 	def init_shape(self, context):
 		"""Should be called by the GizmoGroup, after it assigns the neccessary 
-		custom properties to properly initialize this Gizmo."""
+		__slots__ properties to properly initialize this Gizmo."""
 		props = self.props
 
 		if not self.poll(context):
@@ -74,7 +76,8 @@ class MoveBoneGizmo(Gizmo):
 			self.color_selected = pb.bone_group.colors.select[:]
 			self.color_highlight = pb.bone_group.colors.active[:]
 		else:
-			self.color_selected = self.color_unselected = props.color[:]
+			self.color_unselected = props.color[:]
+			self.color_selected = props.color[:]
 			self.color_highlight = props.color_highlight[:]
 
 		if self.is_using_facemap() or self.is_using_vgroup():
@@ -82,8 +85,8 @@ class MoveBoneGizmo(Gizmo):
 		else:
 			self.alpha_unselected = prefs.bone_gizmo_alpha_widget
 
-		self.alpha_selected = prefs.bone_gizmo_alpha_select
-		self.alpha_highlight = prefs.bone_gizmo_alpha_highlight
+		self.alpha_selected = prefs.bone_gizmo_alpha_widget + prefs.bone_gizmo_alpha_select
+		self.alpha_highlight = min(0.999, prefs.bone_gizmo_alpha_widget + prefs.bone_gizmo_alpha_highlight)
 
 	def poll(self, context):
 		"""Whether any gizmo logic should be executed or not. This function is not
@@ -120,21 +123,26 @@ class MoveBoneGizmo(Gizmo):
 		vertices = np.zeros((len(mesh.vertices), 3), 'f')
 		mesh.vertices.foreach_get("co", vertices.ravel())
 
-		if self.props.draw_style == 'POINTS':
+		draw_style = self.props.draw_style
+		if len(mesh.polygons) == 0:
+			# If mesh has no polygons, fall back to lines.
+			draw_style = 'LINES'
+
+		if draw_style == 'POINTS':
 			custom_shape_verts = vertices
 
-		elif self.props.draw_style == 'LINES':
+		elif draw_style == 'LINES':
 			edges = np.zeros((len(mesh.edges), 2), 'i')
 			mesh.edges.foreach_get("vertices", edges.ravel())
 			custom_shape_verts = vertices[edges].reshape(-1,3)
 
-		elif self.props.draw_style == 'TRIS':
+		elif draw_style == 'TRIS':
 			mesh.calc_loop_triangles()
 			tris = np.zeros((len(mesh.loop_triangles), 3), 'i')
 			mesh.loop_triangles.foreach_get("vertices", tris.ravel())
 			custom_shape_verts = vertices[tris].reshape(-1,3)
 
-		self.custom_shape = self.new_custom_shape(self.props.draw_style, custom_shape_verts)
+		self.custom_shape = self.new_custom_shape(draw_style, custom_shape_verts)
 
 	def draw_shape(self, context, select_id=None):
 		"""Shared drawing logic for selection and color.
@@ -175,10 +183,10 @@ class MoveBoneGizmo(Gizmo):
 		pb = self.get_pose_bone(context)
 		if pb.bone.select:
 			self.color = self.color_selected
-			self.alpha = self.alpha_selected
+			self.alpha = min(0.999, self.alpha_selected)	# An alpha value of 1.0 or greater results in glitched drawing.
 		else:
 			self.color = self.color_unselected
-			self.alpha = self.alpha_unselected
+			self.alpha = min(0.999, self.alpha_unselected)
 
 		self.draw_shared(context)
 

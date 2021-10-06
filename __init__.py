@@ -42,23 +42,23 @@ class BoneGizmoPreferences(AddonPreferences):
 		,description = "Opacity of unselected gizmos when they are NOT defined by a vertex group or face map"
 		,min = 0.0
 		,max = 1.0
-		,default = 0.0
+		,default = 0.5
 		,subtype = 'FACTOR'
 	)
 	bone_gizmo_alpha_select: FloatProperty(
-		name = "Gizmo Opacity (Selected)"
-		,description = "Mesh Gizmo opacity when selected"
-		,min = 0.0
+		name = "Gizmo Selected Opacity Delta"
+		,description = "Added Mesh Gizmo opacity when selected"
+		,min = -1.0
 		,max = 1.0
-		,default = 0.1
+		,default = 0.5
 		,subtype = 'FACTOR'
 	)
 	bone_gizmo_alpha_highlight: FloatProperty(
-		name = "Gizmo Opacity (Highlighted)"
-		,description = "Mesh Gizmo opacity when highlighted"
-		,min = 0.0
+		name = "Gizmo Highlighted Opacity Delta"
+		,description = "Added Mesh Gizmo opacity when highlighted"
+		,min = -1.0
 		,max = 1.0
-		,default = 0.2
+		,default = 1.0
 		,subtype = 'FACTOR'
 	)
 
@@ -68,10 +68,10 @@ class BoneGizmoPreferences(AddonPreferences):
 
 		layout = layout.column(align=True)
 		layout.label(text="Gizmo Opacity")
-		layout.prop(self, 'bone_gizmo_alpha', text="Unselected Mesh")
-		layout.prop(self, 'bone_gizmo_alpha_widget', text="Unselected Widget")
-		layout.prop(self, 'bone_gizmo_alpha_select', text="Selected")
-		layout.prop(self, 'bone_gizmo_alpha_highlight', text="Highlighted")
+		layout.prop(self, 'bone_gizmo_alpha', text="Mesh")
+		layout.prop(self, 'bone_gizmo_alpha_widget', text="Widget")
+		layout.prop(self, 'bone_gizmo_alpha_select', text="Delta Selected")
+		layout.prop(self, 'bone_gizmo_alpha_highlight', text="Delta Highlighted")
 
 def register():
 	register_class(BoneGizmoPreferences)
