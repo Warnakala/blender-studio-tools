@@ -39,7 +39,7 @@ class BoneGizmoGroup(GizmoGroup):
 	@staticmethod
 	def refresh_single_gizmo(self, bone_name):
 		context = bpy.context
-		pose_bone = context.active_pose_bone
+		pose_bone = context.object.pose.bones.get(bone_name)
 		gizmo_props = pose_bone.bone_gizmo
 		gizmo = self.widgets[bone_name]
 		
