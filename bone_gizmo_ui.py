@@ -34,17 +34,6 @@ class BONEGIZMO_PT_bone_gizmo_settings(Panel):
 			return
 		layout.enabled = props.enabled and overlay_enabled
 
-		style_col = layout.column(align=True)
-		style_col.row().prop(props, 'draw_style', expand=True)
-		if props.draw_style == 'LINES':
-			style_col.prop(props, 'line_width')
-		if props.shape_object and \
-				(
-					(props.use_face_map and props.face_map_name in props.shape_object.face_maps) or \
-					(not props.use_face_map and props.vertex_group_name in props.shape_object.vertex_groups)
-				):
-			style_col.enabled = False
-
 		bg = pb.bone_group
 		usable_bg_col = bg and bg.color_set != 'DEFAULT'
 		color_split = layout.split(factor=0.4)
@@ -68,6 +57,12 @@ class BONEGIZMO_PT_bone_gizmo_settings(Panel):
 		layout.row().prop(props, 'operator', expand=True)
 		if props.operator == 'transform.rotate':
 			layout.row().prop(props, 'rotation_mode', expand=True)
+		elif props.operator in ['transform.translate', 'transform.resize']:
+			row = layout.row(align=True, heading="Axis")
+			row.prop(props, 'transform_axes', index=0, toggle=True, text="X")
+			row.prop(props, 'transform_axes', index=1, toggle=True, text="Y")
+			row.prop(props, 'transform_axes', index=2, toggle=True, text="Z")
+
 		layout.prop(props, 'shape_object')
 		if props.shape_object:
 			row = layout.row(align=True)

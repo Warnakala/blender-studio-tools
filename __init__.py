@@ -5,7 +5,7 @@ from . import bone_gizmo
 from . import bone_gizmo_ui
 from . import bone_gizmo_group
 
-from bpy.props import FloatProperty
+from bpy.props import FloatProperty, IntProperty
 from bpy.types import Scene, AddonPreferences
 
 bl_info = {
@@ -62,11 +62,20 @@ class BoneGizmoPreferences(AddonPreferences):
 		,subtype = 'FACTOR'
 	)
 
+	line_width: IntProperty(
+		name		 = "Line Width"
+		,description = "Thickness of the drawn lines in pixels"
+		,min		 = 1
+		,max		 = 10
+		,default	 = 1
+	)
+
 	def draw(self, context):
 		layout = self.layout
 		layout.use_property_split = True
 
 		layout = layout.column(align=True)
+		layout.prop(self, 'line_width', slider=True)
 		layout.label(text="Gizmo Opacity")
 		layout.prop(self, 'mesh_alpha', text="Mesh")
 		layout.prop(self, 'widget_alpha', text="Widget")

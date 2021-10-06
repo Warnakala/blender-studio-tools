@@ -61,18 +61,6 @@ class BoneGizmoProperties(PropertyGroup):
 		,description = "Toggle between using Face Maps or Vertex Groups as the mesh masking data"	# Currently it seems face maps are just worse vertex groups, but maybe they are faster, or maybe it's good to have them separated.
 	)
 
-	draw_style: EnumProperty(
-		name		 = "Style"
-		,description = "Display style of the gizmo"
-		,items		 = [
-			('POINTS', "Points", "Points")
-			,('LINES', "Lines", "Lines")
-			,('TRIS', "Tris", "Tris")
-		]
-		,default	 = 'LINES'
-	)
-
-
 	use_bone_group_color: BoolProperty(
 		name		 = "Use Bone Group Color"
 		,description = "Use the bone group color for this Gizmo, rather than the unique colors"
@@ -96,14 +84,6 @@ class BoneGizmoProperties(PropertyGroup):
 		,min		 = 0.0
 		,max		 = 1.0
 		,default	 = (1.0, 0.5, 1.0)
-	)
-
-	line_width: IntProperty(
-		name		 = "Line Width"
-		,description = "Thickness of the drawn lines in pixels"
-		,min		 = 1
-		,max		 = 10
-		,default	 = 1
 	)
 
 	# This is made redundant by the ability to set the color to fully transparent.

@@ -70,7 +70,6 @@ class BoneGizmoGroup(GizmoGroup):
 
 			if op_name == 'transform.rotate' and gizmo_props.rotation_mode in 'XYZ':
 				op.orient_type = 'LOCAL'
-				op.orient_axis = gizmo_props.rotation_mode	# TODO: I think this is not needed?
 				op.constraint_axis = [axis == gizmo_props.rotation_mode for axis in 'XYZ']
 
 			if op_name in ['transform.translate', 'transform.resize']:
