@@ -68,10 +68,14 @@ class BoneGizmoGroup(GizmoGroup):
 
 			op = gizmo.target_set_operator(op_name)
 
-			if gizmo_props.rotation_mode in 'XYZ':
+			if op_name == 'transform.rotate' and gizmo_props.rotation_mode in 'XYZ':
 				op.orient_type = 'LOCAL'
-				op.orient_axis = gizmo_props.rotation_mode
+				op.orient_axis = gizmo_props.rotation_mode	# TODO: I think this is not needed?
 				op.constraint_axis = [axis == gizmo_props.rotation_mode for axis in 'XYZ']
+
+			if op_name in ['transform.translate', 'transform.resize']:
+				op.constraint_axis = gizmo_props.transform_axes
+
 		gizmo.init_properties(context)
 	
 	@staticmethod

@@ -3,7 +3,7 @@ from bpy.types import Object, Scene, PropertyGroup
 from bpy.props import (
 	IntProperty, PointerProperty, BoolProperty,
 	FloatVectorProperty, StringProperty, EnumProperty,
-	FloatProperty
+	BoolVectorProperty
 )
 
 class BoneGizmoProperties(PropertyGroup):
@@ -35,6 +35,11 @@ class BoneGizmoProperties(PropertyGroup):
 			,('Z', "Z", "Rotate along local Z axis")
 		]
 		,default	 = 'VIEW'
+	)
+	transform_axes: BoolVectorProperty(
+		name		 = "On Axis"
+		,description = "Lock transformation along one or more axes on initial click & drag interaction"
+		,size		 = 3
 	)
 
 	shape_object: PointerProperty(
