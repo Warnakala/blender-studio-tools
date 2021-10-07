@@ -115,6 +115,8 @@ class MoveBoneGizmo(Gizmo):
 		draw_style = 'TRIS'
 		if len(self.meshshape._indices) < 3:
 			draw_style = 'LINES'
+		if len(self.meshshape._indices) < 2:
+			return
 		self.custom_shape = self.new_custom_shape(draw_style, self.meshshape.get_vertices(eval_mesh))
 		return True
 
