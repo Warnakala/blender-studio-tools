@@ -7,12 +7,6 @@ from bpy.props import (
 )
 
 class BoneGizmoProperties(PropertyGroup):
-	enabled: BoolProperty(
-		name		 = "Enable Gizmo"
-		,description = "Attach a custom gizmo to this bone"
-		,default	 = False
-	)
-
 	operator: EnumProperty(
 		name		 = "Operator"
 		,description = "Operator to use when click and dragging on the gizmo"
@@ -122,6 +116,12 @@ register_cls, unregister_cls = bpy.utils.register_classes_factory(classes)
 def register():
 	register_cls()
 
+	# This cannot be a part of the PropertyGroup because we need it to be drivable. See T48975.
+	bpy.types.PoseBone.enable_bone_gizmo = BoolProperty(
+		name		 = "Enable Bone Gizmo"
+		,description = "Attach a custom gizmo to this bone"
+		,default	 = False
+	)
 	bpy.types.PoseBone.bone_gizmo = PointerProperty(type=BoneGizmoProperties)
 
 	Scene.bone_gizmos_enabled = BoolProperty(

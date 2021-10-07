@@ -15,9 +15,9 @@ class BONEGIZMO_PT_bone_gizmo_settings(Panel):
 		return ob.type == 'ARMATURE' and pb
 
 	def draw_header(self, context):
-		props = context.active_pose_bone.bone_gizmo
+		pb = context.active_pose_bone
 		layout = self.layout
-		layout.prop(props, 'enabled', text="")
+		layout.prop(pb, 'enable_bone_gizmo', text="")
 
 	def draw(self, context):
 		overlay_enabled = context.scene.bone_gizmos_enabled
@@ -32,7 +32,7 @@ class BONEGIZMO_PT_bone_gizmo_settings(Panel):
 			layout.alert = True
 			layout.label(text="Bone Gizmos are disabled in the Viewport Gizmos settings in the 3D View header.")
 			return
-		layout.enabled = props.enabled and overlay_enabled
+		layout.enabled = pb.enable_bone_gizmo and overlay_enabled
 
 		bg = pb.bone_group
 		usable_bg_col = bg and bg.color_set != 'DEFAULT'

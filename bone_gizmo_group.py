@@ -20,7 +20,7 @@ def mb_ensure_gizmos_on_active_armature(gizmo_group):
 	obj = context.object
 
 	for pose_bone in obj.pose.bones:
-		if pose_bone.bone_gizmo.enabled and pose_bone.name not in gizmo_group.widgets:
+		if pose_bone.enable_bone_gizmo and pose_bone.name not in gizmo_group.widgets:
 			gizmo = gizmo_group.create_gizmo(context, pose_bone)
 
 def mb_refresh_all_gizmo_colors(gizmo_group):
@@ -103,9 +103,8 @@ class BoneGizmoGroup(GizmoGroup):
 
 		# Hook up Custom Gizmo checkbox to a function that will ensure that 
 		# a Gizmo instance actually exists for each bone that needs one.
-		properties_class = bpy.types.PropertyGroup.bl_rna_get_subclass_py('BoneGizmoProperties')
 		bpy.msgbus.subscribe_rna(
-			key		= (properties_class, "enabled")
+			key		= (bpy.types.PoseBone, "enable_bone_gizmo")
 			,owner	= gizmo_msgbus
 			,args	= (self,)
 			,notify	= mb_ensure_gizmos_on_active_armature
@@ -115,7 +114,7 @@ class BoneGizmoGroup(GizmoGroup):
 		"""Add a gizmo to this GizmoGroup based on user-defined properties."""
 		gizmo_props = pose_bone.bone_gizmo
 
-		if not gizmo_props.enabled:
+		if not pose_bone.enable_bone_gizmo:
 			return
 		gizmo = self.gizmos.new('GIZMO_GT_bone_gizmo')
 		gizmo.bone_name = pose_bone.name

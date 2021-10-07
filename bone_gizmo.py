@@ -68,7 +68,7 @@ class MoveBoneGizmo(Gizmo):
 
 	def refresh_colors(self, context):
 		prefs = context.preferences.addons[__package__].preferences
-		
+
 		self.line_width = prefs.line_width
 
 		props = self.props
@@ -98,7 +98,7 @@ class MoveBoneGizmo(Gizmo):
 		pb = self.get_pose_bone(context)
 		bone_visible = pb and not pb.bone.hide and any(bl and al for bl, al in zip(pb.bone.layers[:], pb.id_data.data.layers[:]))
 
-		return self.props.shape_object and self.props.enabled and bone_visible
+		return self.props.shape_object and bone_visible and pb.enable_bone_gizmo
 
 	def load_shape_vertex_group(self, obj, v_grp: str, weight_threshold=0.2):
 		"""Update the vertex indicies that the gizmo shape corresponds to when using
@@ -227,17 +227,31 @@ class MoveBoneGizmo(Gizmo):
 		pb = self.get_pose_bone(context)
 		armature = context.object
 
-		if not self.is_using_facemap() and not self.is_using_vgroup():
-			# The gizmo should function as a replacement for the custom shape.
-			self.matrix_basis = armature.matrix_world.copy()
-			loc, rot, scale = pb.matrix.to_translation(), pb.matrix.to_euler(), pb.matrix.to_scale()
-			if pb.use_custom_shape_bone_size:
-				scale *= pb.length
-			self.matrix_offset = Matrix.LocRotScale(loc, rot, scale)
-		else:
+		if self.is_using_facemap() or self.is_using_vgroup():
 			# The gizmo should stick strictly to the vertex group or face map of the shape object.
 			self.matrix_basis = self.props.shape_object.matrix_world.copy()
 			self.matrix_offset = Matrix.Identity(4)
+		else:
+			# The gizmo should function as a replacement for the custom shape.
+			self.matrix_basis = armature.matrix_world.copy()
+
+			display_bone = pb
+			if pb.custom_shape_transform:
+				display_bone = pb.custom_shape_transform
+
+			loc, rot, scale = display_bone.matrix.to_translation(), display_bone.matrix.to_euler(), display_bone.matrix.to_scale()
+			if pb.use_custom_shape_bone_size:
+				scale *= display_bone.length
+
+			bone_matrix = Matrix.LocRotScale(loc, rot, scale)
+
+			custom_shape_offset = Matrix.LocRotScale(
+				pb.custom_shape_translation, 
+				pb.custom_shape_rotation_euler, 
+				pb.custom_shape_scale_xyz
+			)
+
+			self.matrix_offset = bone_matrix @ custom_shape_offset
 
 	def invoke(self, context, event):
 		armature = context.object
@@ -247,6 +261,14 @@ class MoveBoneGizmo(Gizmo):
 		pb = self.get_pose_bone(context)
 		pb.bone.select = True
 		armature.data.bones.active = pb.bone
+
+		if pb.name in ['IK-MSTR-Wrist.L', 'IK-POLE-UpperArm.L']:
+			if not armature.pose.bones["PRP-UpperArm.L"]["ik_left_upperarm"]:
+				bpy.ops.pose.cloudrig_toggle_ikfk_bake(select_bones=False, map_on="[[\"IK-MSTR-Wrist.L\", \"FK-Wrist.L\"], [\"IK-MSTR-C-Wrist.L\", \"FK-Wrist.L\"], [\"IK-UpperArm.L\", \"FK-UpperArm.L\"]]", map_off="[[\"FK-UpperArm.L\", \"IK-UpperArm.L\"], [\"FK-Forearm.L\", \"IK-Forearm.L\"], [\"FK-Wrist.L\", \"IK-Wrist.L\"]]", hide_on="[\"FK-UpperArm.L\", \"FK-Forearm.L\", \"FK-Wrist.L\"]", hide_off="[\"IK-MSTR-C-Wrist.L\", \"IK-POLE-UpperArm.L\", \"IK-MSTR-Wrist.L\"]", frame_start=97, frame_end=200, bones="[\"IK-MSTR-Wrist.L\", \"IK-MSTR-C-Wrist.L\", \"IK-UpperArm.L\", \"IK-POLE-UpperArm.L\"]", prop_bone="PRP-UpperArm.L", prop_id="ik_left_upperarm", ik_pole="IK-POLE-UpperArm.L", fk_first="FK-UpperArm.L", fk_last="FK-Forearm.L")
+		elif pb.name in ['FK-Forearm.L', 'FK-UpperArm.L', 'FK-Wrist.L']:
+			if armature.pose.bones["PRP-UpperArm.L"]["ik_left_upperarm"]:
+				bpy.ops.pose.cloudrig_toggle_ikfk_bake(select_bones=False, map_on="[[\"IK-MSTR-Wrist.L\", \"FK-Wrist.L\"], [\"IK-MSTR-C-Wrist.L\", \"FK-Wrist.L\"], [\"IK-UpperArm.L\", \"FK-UpperArm.L\"]]", map_off="[[\"FK-UpperArm.L\", \"IK-UpperArm.L\"], [\"FK-Forearm.L\", \"IK-Forearm.L\"], [\"FK-Wrist.L\", \"IK-Wrist.L\"]]", hide_on="[\"FK-UpperArm.L\", \"FK-Forearm.L\", \"FK-Wrist.L\"]", hide_off="[\"IK-MSTR-C-Wrist.L\", \"IK-POLE-UpperArm.L\", \"IK-MSTR-Wrist.L\"]", frame_start=97, frame_end=200, bones="[\"FK-UpperArm.L\", \"FK-Forearm.L\", \"FK-Wrist.L\"]", prop_bone="PRP-UpperArm.L", prop_id="ik_left_upperarm", ik_pole="IK-POLE-UpperArm.L", fk_first="FK-UpperArm.L", fk_last="FK-Forearm.L")
+
 		return {'RUNNING_MODAL'}
 
 	def exit(self, context, cancel):
