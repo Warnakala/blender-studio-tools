@@ -26,7 +26,6 @@ class MoveBoneGizmo(Gizmo):
 		# This __slots__ thing allows us to use arbitrary Python variable 
 		# assignments on instances of this gizmo.
 		"bone_name"			# Name of the bone that owns this gizmo.
-		,"props"			# Instance of BoneGizmoProperties that's stored on the bone that owns this gizmo.
 
 		,"custom_shape"		# Currently drawn shape, being passed into self.new_custom_shape().
 		,"meshshape"		# Cache of vertex indicies. Can fall out of sync if the mesh is modified; Only re-calculated when gizmo properties are changed by user.
@@ -49,21 +48,21 @@ class MoveBoneGizmo(Gizmo):
 	def init_shape(self, context):
 		"""Should be called by the GizmoGroup, after it assigns the neccessary 
 		__slots__ properties to properly initialize this Gizmo."""
-		props = self.props
+		props = self.get_props(context)
 
 		if not self.poll(context):
 			return
 
-		if self.is_using_vgroup():
-			self.load_shape_vertex_group(props.shape_object, props.vertex_group_name)
-		elif self.is_using_facemap():
+		if self.is_using_vgroup(context):
+			self.load_shape_vertex_group(self.get_shape_object(context), props.vertex_group_name)
+		elif self.is_using_facemap(context):
 			# We use the built-in function to draw face maps, so we don't need to do any extra processing.
 			pass
 		else:
-			self.load_shape_entire_object()
+			self.load_shape_entire_object(context)
 
 	def init_properties(self, context):
-		props = self.props
+		props = self.get_props(context)
 		self.refresh_colors(context)
 
 	def refresh_colors(self, context):
@@ -71,9 +70,9 @@ class MoveBoneGizmo(Gizmo):
 
 		self.line_width = prefs.line_width
 
-		props = self.props
-		if self.is_using_bone_group_colors():
-			pb = self.get_pose_bone()
+		props = self.get_props(context)
+		if self.is_using_bone_group_colors(context):
+			pb = self.get_pose_bone(context)
 			self.color_unselected = pb.bone_group.colors.normal[:]
 			self.color_selected = pb.bone_group.colors.select[:]
 			self.color_highlight = pb.bone_group.colors.select[:]
@@ -82,7 +81,7 @@ class MoveBoneGizmo(Gizmo):
 			self.color_selected = props.color_highlight[:]
 			self.color_highlight = props.color_highlight[:]
 
-		if self.is_using_facemap() or self.is_using_vgroup():
+		if self.is_using_facemap(context) or self.is_using_vgroup(context):
 			self.alpha_unselected = prefs.mesh_alpha
 			self.alpha_selected = prefs.mesh_alpha + prefs.delta_alpha_select
 			self.alpha_highlight = min(0.999, prefs.mesh_alpha + prefs.delta_alpha_highlight)
@@ -96,9 +95,11 @@ class MoveBoneGizmo(Gizmo):
 		from the API! Call this manually to prevent logic execution.
 		"""
 		pb = self.get_pose_bone(context)
-		bone_visible = pb and not pb.bone.hide and any(bl and al for bl, al in zip(pb.bone.layers[:], pb.id_data.data.layers[:]))
+		any_visible_layer = any(bl and al for bl, al in zip(pb.bone.layers[:], pb.id_data.data.layers[:]))
+		bone_visible = pb and not pb.bone.hide and any_visible_layer
 
-		return self.props.shape_object and bone_visible and pb.enable_bone_gizmo
+		ret = pb.bone_gizmo.shape_object and bone_visible and pb.enable_bone_gizmo
+		return ret
 
 	def load_shape_vertex_group(self, obj, v_grp: str, weight_threshold=0.2):
 		"""Update the vertex indicies that the gizmo shape corresponds to when using
@@ -120,12 +121,12 @@ class MoveBoneGizmo(Gizmo):
 		self.custom_shape = self.new_custom_shape(draw_style, self.meshshape.get_vertices(eval_mesh))
 		return True
 
-	def load_shape_entire_object(self):
+	def load_shape_entire_object(self, context):
 		"""Update the custom shape to an entire object. This is somewhat expensive,
 		should only be called when Gizmo display object is changed or mask
 		facemap/vgroup is cleared.
 		"""
-		mesh = self.props.shape_object.data
+		mesh = self.get_shape_object(context).data
 		vertices = np.zeros((len(mesh.vertices), 3), 'f')
 		mesh.vertices.foreach_get("co", vertices.ravel())
 
@@ -148,9 +149,12 @@ class MoveBoneGizmo(Gizmo):
 		The actual color seems to be determined deeper, between self.color and self.color_highlight.
 		"""
 
-		face_map = self.props.shape_object.face_maps.get(self.props.face_map_name)
-		if face_map and self.props.use_face_map:
-			self.draw_preset_facemap(self.props.shape_object, face_map.index, select_id=select_id or 0)
+		ob = self.get_shape_object(context)
+		props = self.get_props(context)
+
+		face_map = ob.face_maps.get(props.face_map_name)
+		if face_map and props.use_face_map:
+			self.draw_preset_facemap(ob, face_map.index, select_id=select_id or 0)
 		elif self.custom_shape:
 			self.draw_custom_shape(self.custom_shape, select_id=select_id)
 		else:
@@ -160,7 +164,7 @@ class MoveBoneGizmo(Gizmo):
 	def draw_shared(self, context, select_id=None):
 		if not self.poll(context):
 			return
-		if not self.props.shape_object:
+		if not self.get_shape_object(context):
 			return
 		self.update_basis_and_offset_matrix(context)
 
@@ -198,38 +202,51 @@ class MoveBoneGizmo(Gizmo):
 			return
 		self.draw_shared(context, select_id)
 
-	def is_using_vgroup(self):
-		props = self.props
-		return not props.use_face_map and props.shape_object and props.vertex_group_name in props.shape_object.vertex_groups
+	def is_using_vgroup(self, context):
+		ob = self.get_shape_object(context)
+		props = self.get_pose_bone(context).bone_gizmo
+		vgroup_exists = props.vertex_group_name in ob.vertex_groups
+		ret = ob and not props.use_face_map and vgroup_exists
+		return ret
 
-	def is_using_facemap(self):
-		props = self.props
-		return props.use_face_map and props.face_map_name in props.shape_object.face_maps
+	def is_using_facemap(self, context):
+		props = self.get_props(context)
+		ob = self.get_shape_object(context)
+		return props.use_face_map and props.face_map_name in ob.face_maps
 
-	def is_using_bone_group_colors(self):
-		pb = self.get_pose_bone()
-		props = self.props
+	def is_using_bone_group_colors(self, context):
+		pb = self.get_pose_bone(context)
+		props = self.get_props(context)
 		return pb and pb.bone_group and pb.bone_group.color_set != 'DEFAULT' and props.use_bone_group_color
 
-	def get_pose_bone(self, context=None):
-		if not context:
-			context = bpy.context
+	def get_pose_bone(self, context):
 		arm_ob = context.object
 		if not arm_ob or arm_ob.type != 'ARMATURE':
 			return
-		return arm_ob.pose.bones.get(self.bone_name)
+		ret = arm_ob.pose.bones.get(self.bone_name)
+		return ret
 
-	def get_bone_matrix(self, context):
+	def get_shape_object(self, context):
+		"""Get the shape object selected by the user in the Custom Gizmo panel.
+		"""
 		pb = self.get_pose_bone(context)
-		return pb.matrix.copy()
+		ret = pb.bone_gizmo.shape_object
+		return ret
+
+	def get_props(self, context):
+		"""Use this context-based getter rather than any direct mean of referencing
+		the gizmo properties, because that would result in a crash on undo.
+		"""
+		pb = self.get_pose_bone(context)
+		return pb.bone_gizmo
 
 	def update_basis_and_offset_matrix(self, context):
 		pb = self.get_pose_bone(context)
 		armature = context.object
 
-		if self.is_using_facemap() or self.is_using_vgroup():
+		if self.is_using_facemap(context) or self.is_using_vgroup(context):
 			# The gizmo should stick strictly to the vertex group or face map of the shape object.
-			self.matrix_basis = self.props.shape_object.matrix_world.copy()
+			self.matrix_basis = self.get_shape_object(context).matrix_world.copy()
 			self.matrix_offset = Matrix.Identity(4)
 		else:
 			# The gizmo should function as a replacement for the custom shape.

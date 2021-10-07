@@ -116,9 +116,9 @@ class BoneGizmoGroup(GizmoGroup):
 
 		if not pose_bone.enable_bone_gizmo:
 			return
+
 		gizmo = self.gizmos.new('GIZMO_GT_bone_gizmo')
 		gizmo.bone_name = pose_bone.name
-		gizmo.props = gizmo_props
 
 		# Hook up gizmo properties (the ones that can be customized by user)
 		# to the gizmo refresh functions, using msgbus system.
@@ -151,14 +151,16 @@ class BoneGizmoGroup(GizmoGroup):
 		This should be done whenever a bone position changes.
 		This should be kept performant!
 		"""
-		dg = bpy.context.evaluated_depsgraph_get()
+		dg = context.evaluated_depsgraph_get()
 		eval_meshes = {}
 
 		for bonename, gizmo in self.widgets.items():
-			if not gizmo or not gizmo.is_using_vgroup() or not gizmo.poll(context):
+			pb = gizmo.get_pose_bone(context)
+
+			if not gizmo or not gizmo.is_using_vgroup(context) or not gizmo.poll(context):
 				continue
 
-			obj = gizmo.props.shape_object
+			obj = pb.bone_gizmo.shape_object
 			if obj.name in eval_meshes:
 				eval_mesh = eval_meshes[obj.name]
 			else:
