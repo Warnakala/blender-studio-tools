@@ -3,8 +3,65 @@ from typing import Dict, Tuple, List
 from bpy.types import GizmoGroup, Gizmo, Object, PoseBone
 from bpy.app.handlers import persistent
 
+
+### MSGBUS FUNCTIONS ###
+# The Gizmo API doesn't provide the necessary callbacks to do careful partial
+# updates of gizmo data based on what properties are modified.
+# However, the msgbus system allows us to create our own connections between
+# Blender properties and the functions that should be called when those properties
+# change.
+
 # msgbus system needs an arbitrary python object as storage, so here it is.
 gizmo_msgbus = object()
+
+def mb_ensure_gizmos_on_active_armature(gizmo_group):
+	"""Ensure gizmos exist for all PoseBones that need them.""" 
+	context = bpy.context
+	obj = context.object
+
+	for pose_bone in obj.pose.bones:
+		if pose_bone.bone_gizmo.enabled and pose_bone.name not in gizmo_group.widgets:
+			gizmo = gizmo_group.create_gizmo(context, pose_bone)
+
+def mb_refresh_all_gizmo_colors(gizmo_group):
+	"""Keep Gizmo colors in sync with addon preferences."""
+	context = bpy.context
+	addon_prefs = context.preferences.addons[__package__].preferences
+
+	for bone_name, gizmo in gizmo_group.widgets.items():
+		gizmo.refresh_colors(context)
+
+def mb_refresh_single_gizmo(gizmo_group, bone_name):
+	"""Refresh Gizmo behaviour settings. This should be called when the user changes
+	the Gizmo settings in the Properties editor.
+	"""
+	context = bpy.context
+	pose_bone = context.object.pose.bones.get(bone_name)
+	gizmo_props = pose_bone.bone_gizmo
+	gizmo = gizmo_group.widgets[bone_name]
+	
+	if gizmo_props.operator != 'None':
+		op_name = gizmo_props.operator
+		if op_name == 'transform.rotate' and gizmo_props.rotation_mode == 'TRACKBALL':
+			op_name = 'transform.trackball'
+
+		op = gizmo.target_set_operator(op_name)
+
+		if op_name == 'transform.rotate' and gizmo_props.rotation_mode in 'XYZ':
+			op.orient_type = 'LOCAL'
+			op.constraint_axis = [axis == gizmo_props.rotation_mode for axis in 'XYZ']
+
+		if op_name in ['transform.translate', 'transform.resize']:
+			op.constraint_axis = gizmo_props.transform_axes
+
+	gizmo.init_properties(context)
+
+def mb_refresh_single_gizmo_shape(gizmo_group, bone_name):
+	"""Re-calculate a gizmo's vertex indicies. This is expensive, so it should
+	be called sparingly."""
+	context = bpy.context
+	gizmo = gizmo_group.widgets[bone_name]
+	gizmo.init_shape(context)
 
 class BoneGizmoGroup(GizmoGroup):
 	"""This single GizmoGroup manages all bone gizmos for all rigs."""	# TODO: Currently this will have issues when there are two rigs with similar bone names. Rig object names should be included when identifying widgets.
@@ -26,24 +83,14 @@ class BoneGizmoGroup(GizmoGroup):
 		return context.scene.bone_gizmos_enabled and context.object \
 			and context.object.type == 'ARMATURE' and context.object.mode=='POSE'
 
-	@staticmethod
-	def refresh_all_gizmo_colors(self):
-		context = bpy.context
-		addon_prefs = context.preferences.addons[__package__].preferences
-
-		for bone_name, gizmo in self.widgets.items():
-			gizmo.refresh_colors(context)
-
 	def setup(self, context):
 		"""Runs when this GizmoGroup is created, I think.
 		Executed by Blender on launch, and for some reason
 		also when changing bone group colors. WHAT!?"""
 		self.widgets = {}
-		for pose_bone in context.object.pose.bones:
-			if pose_bone.bone_gizmo.enabled:
-				gizmo = self.create_gizmo(context, pose_bone)
+		mb_ensure_gizmos_on_active_armature(self)
 
-		# Hook up the addon preferences to the relevant refresh function
+		# Hook up the addon preferences to color refresh function
 		# using msgbus system.
 		addon_prefs = context.preferences.addons[__package__]
 		global gizmo_msgbus
@@ -51,37 +98,18 @@ class BoneGizmoGroup(GizmoGroup):
 			key		= addon_prefs.path_resolve('preferences', False)
 			,owner	= gizmo_msgbus
 			,args	= (self,)
-			,notify	= self.refresh_all_gizmo_colors
+			,notify	= mb_refresh_all_gizmo_colors
 		)
 
-	@staticmethod
-	def refresh_single_gizmo(self, bone_name):
-		context = bpy.context
-		pose_bone = context.object.pose.bones.get(bone_name)
-		gizmo_props = pose_bone.bone_gizmo
-		gizmo = self.widgets[bone_name]
-		
-		if gizmo_props.operator != 'None':
-			op_name = gizmo_props.operator
-			if op_name == 'transform.rotate' and gizmo_props.rotation_mode == 'TRACKBALL':
-				op_name = 'transform.trackball'
-
-			op = gizmo.target_set_operator(op_name)
-
-			if op_name == 'transform.rotate' and gizmo_props.rotation_mode in 'XYZ':
-				op.orient_type = 'LOCAL'
-				op.constraint_axis = [axis == gizmo_props.rotation_mode for axis in 'XYZ']
-
-			if op_name in ['transform.translate', 'transform.resize']:
-				op.constraint_axis = gizmo_props.transform_axes
-
-		gizmo.init_properties(context)
-	
-	@staticmethod
-	def refresh_single_gizmo_shape(self, bone_name):
-		context = bpy.context
-		gizmo = self.widgets[bone_name]
-		gizmo.init_shape(context)
+		# Hook up Custom Gizmo checkbox to a function that will ensure that 
+		# a Gizmo instance actually exists for each bone that needs one.
+		properties_class = bpy.types.PropertyGroup.bl_rna_get_subclass_py('BoneGizmoProperties')
+		bpy.msgbus.subscribe_rna(
+			key		= (properties_class, "enabled")
+			,owner	= gizmo_msgbus
+			,args	= (self,)
+			,notify	= mb_ensure_gizmos_on_active_armature
+		)
 
 	def create_gizmo(self, context, pose_bone) -> Gizmo:
 		"""Add a gizmo to this GizmoGroup based on user-defined properties."""
@@ -94,13 +122,13 @@ class BoneGizmoGroup(GizmoGroup):
 		gizmo.props = gizmo_props
 
 		# Hook up gizmo properties (the ones that can be customized by user)
-		# to the gizmo refresh function, using msgbus system.
+		# to the gizmo refresh functions, using msgbus system.
 		global gizmo_msgbus
 		bpy.msgbus.subscribe_rna(
 			key		= gizmo_props
 			,owner	= gizmo_msgbus
 			,args	= (self, gizmo.bone_name)
-			,notify	= self.refresh_single_gizmo
+			,notify	= mb_refresh_single_gizmo
 		)
 
 		for prop_name in ['shape_object', 'vertex_group_name', 'face_map_name', 'use_face_map']:
@@ -108,12 +136,12 @@ class BoneGizmoGroup(GizmoGroup):
 				key		= gizmo_props.path_resolve(prop_name, False)
 				,owner	= gizmo_msgbus
 				,args	= (self, gizmo.bone_name)
-				,notify	= self.refresh_single_gizmo_shape
+				,notify	= mb_refresh_single_gizmo_shape
 			)
 
 		self.widgets[pose_bone.name] = gizmo
-		self.refresh_single_gizmo(self, pose_bone.name)
-		self.refresh_single_gizmo_shape(self, pose_bone.name)
+		mb_refresh_single_gizmo(self, pose_bone.name)
+		mb_refresh_single_gizmo_shape(self, pose_bone.name)
 
 		return gizmo
 
