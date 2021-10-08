@@ -15,25 +15,25 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 
 def is_movie(filepath: Path) -> bool:
-    if filepath.suffix in vars.EXT_MOVIE:
+    if filepath.suffix.lower() in vars.EXT_MOVIE:
         return True
     return False
 
 
 def is_image(filepath: Path) -> bool:
-    if filepath.suffix in vars.EXT_IMG:
+    if filepath.suffix.lower() in vars.EXT_IMG:
         return True
     return False
 
 
 def is_text(filepath: Path) -> bool:
-    if filepath.suffix in vars.EXT_TEXT:
+    if filepath.suffix.lower() in vars.EXT_TEXT:
         return True
     return False
 
 
 def is_script(filepath: Path) -> bool:
-    if filepath.suffix in vars.EXT_SCRIPT:
+    if filepath.suffix.lower() in vars.EXT_SCRIPT:
         return True
     return False
 
