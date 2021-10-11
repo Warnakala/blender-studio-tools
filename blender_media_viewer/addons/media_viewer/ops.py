@@ -644,6 +644,10 @@ def callback_filename_change(dummy: None):
     if not active_file:
         return
 
+    # When user goes in fullscreen mode and then exits, selected_files will be None
+    # And therefore media files will be cleared. Active file tough survives the full
+    # screen mode switch. Therefore we can append that to selected files, so we don't
+    # loose the loaded media.
     if not selected_files:
         selected_files.append(active_file)
 
