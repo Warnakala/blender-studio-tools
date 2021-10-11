@@ -102,6 +102,21 @@ def fit_timeline_view(context: bpy.types.Context) -> None:
     ctx = get_context_for_area(area)
     bpy.ops.action.view_all(ctx)
 
+def fit_image_editor_view(context: bpy.types.Context) -> None:
+    area = find_area(context, "IMAGE_EDITOR")
+    if not area:
+        return
+
+    ctx = get_context_for_area(area)
+    bpy.ops.image.view_all(ctx, fit_view=True)
+
+def fit_sqe_preview(context: bpy.types.Context) -> None:
+    area = find_area(context, "SEQUENCE_EDITOR")
+    if not area:
+        return
+
+    ctx = get_context_for_area(area)
+    bpy.ops.sequencer.view_all_preview(ctx)
 
 def get_context_for_area(area: bpy.types.Area) -> Dict:
     for region in area.regions:

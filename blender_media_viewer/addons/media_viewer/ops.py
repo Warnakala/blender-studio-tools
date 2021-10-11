@@ -124,6 +124,7 @@ class MV_OT_load_media_movie(bpy.types.Operator):
 
         # Adjust view of timeline to fit all.
         opsdata.fit_timeline_view(context)
+        opsdata.fit_sqe_preview(context)
 
         # Set playhead to start of scene.
         context.scene.frame_current = context.scene.frame_start
@@ -215,6 +216,9 @@ class MV_OT_load_media_image(bpy.types.Operator):
 
         # Set active image.
         area.spaces.active.image = image
+
+        # Fit view.
+        opsdata.fit_image_editor_view(context)
 
         # Playback.
         if can_playback and self.playback:
@@ -640,8 +644,11 @@ def callback_filename_change(dummy: None):
     if not active_file:
         return
 
-    # print(active_file)
-    # print(selected_files)
+    if not selected_files:
+        selected_files.append(active_file)
+
+    print(active_file)
+    print(selected_files)
 
     # Assemble Path data structures.
     filepath = directory.joinpath(Path(active_file.relative_path))
