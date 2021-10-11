@@ -651,8 +651,8 @@ def callback_filename_change(dummy: None):
     if not selected_files:
         selected_files.append(active_file)
 
-    print(active_file)
-    print(selected_files)
+    # print(active_file)
+    # print(selected_files)
 
     # Assemble Path data structures.
     filepath = directory.joinpath(Path(active_file.relative_path))
