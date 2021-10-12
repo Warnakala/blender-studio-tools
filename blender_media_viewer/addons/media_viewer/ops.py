@@ -515,8 +515,11 @@ class MV_OT_screen_full_area(bpy.types.Operator):
     bl_description = "Toggle Fullscreen of active Area"
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # TODO: only fullscreen media area
-        bpy.ops.screen.screen_full_area(use_hide_panels=True)
+
+        # Fullscreen area media.
+        area_media = opsdata.find_area(context, active_media_area)
+        ctx = opsdata.get_context_for_area(area_media)
+        bpy.ops.screen.screen_full_area(ctx, use_hide_panels=True)
         return {"FINISHED"}
 
 
