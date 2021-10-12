@@ -29,6 +29,7 @@ from media_viewer.ops import (
     MV_OT_toggle_timeline,
     MV_OT_next_media_file,
     MV_OT_screen_full_area,
+    MV_OT_toggle_fb_region_toolbar,
 )
 from media_viewer import opsdata
 from media_viewer.log import LoggerFactory
@@ -192,6 +193,19 @@ def register():
                 keymap,
                 keymap.keymap_items.new(
                     MV_OT_toggle_filebrowser.bl_idname, value="PRESS", type="B"
+                ),
+            )
+        )
+
+        # Toggle Filebrowser region toolbar.
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_toggle_fb_region_toolbar.bl_idname,
+                    value="PRESS",
+                    type="T",
+                    ctrl=True,
                 ),
             )
         )

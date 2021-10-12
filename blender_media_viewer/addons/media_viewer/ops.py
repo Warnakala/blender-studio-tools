@@ -515,7 +515,26 @@ class MV_OT_screen_full_area(bpy.types.Operator):
     bl_description = "Toggle Fullscreen of active Area"
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        # TODO: only fullscreen media area
         bpy.ops.screen.screen_full_area(use_hide_panels=True)
+        return {"FINISHED"}
+
+
+class MV_OT_toggle_fb_region_toolbar(bpy.types.Operator):
+
+    bl_idname = "media_viewer.toggle_fb_region_toolbar"
+    bl_label = "Toggle Filebrowser Toolbar"
+    bl_description = "Toggle Filebrowser Toolbar"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
+        if not area_fb:
+            return {"CANCELLED"}
+
+        # Invert current value.
+        area_fb.spaces.active.show_region_toolbar = (
+            not area_fb.spaces.active.show_region_toolbar
+        )
         return {"FINISHED"}
 
 
@@ -724,6 +743,7 @@ classes = [
     MV_OT_load_media_text,
     MV_OT_screen_full_area,
     MV_OT_next_media_file,
+    MV_OT_toggle_fb_region_toolbar,
 ]
 
 
