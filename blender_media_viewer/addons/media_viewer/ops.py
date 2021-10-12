@@ -27,7 +27,7 @@ from bpy.app.handlers import persistent
 
 from media_viewer import opsdata, vars
 from media_viewer.log import LoggerFactory
-
+from media_viewer.states import FileBrowserState
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -38,6 +38,7 @@ active_media_area = "SEQUENCE_EDITOR"
 prev_relpath: Optional[str] = None
 prev_dirpath: Path = Path.home()  # TODO: read from json on register
 prev_filepath_list: List[Path] = []
+filebrowser_state: FileBrowserState = FileBrowserState()
 
 
 class MV_OT_load_media_movie(bpy.types.Operator):
@@ -332,6 +333,8 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         global active_media_area
+        global filebrowser_state
+        global prev_relpath
 
         area_media = opsdata.find_area(context, active_media_area)
         area_fb = opsdata.find_area(context, "FILE_BROWSER")
@@ -357,14 +360,13 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
                 ctx, area_media, "FILE_BROWSER", "VERTICAL", self.factor_filebrowser
             )
 
-            # Screen must be re-drawn, otherwise space.params is None
+            # Screen must be re-drawn, otherwise space.params is None.
             bpy.ops.wm.redraw_timer(ctx, type="DRAW_WIN_SWAP", iterations=1)
 
-            # Load prev filebrowser dir from win manager
-            opsdata.load_filebrowser_dir_from_win_manager(area_fb)
-
-            # Adjust properties of filebrowser panel.
-            opsdata.setup_filebrowser_area(area_fb)
+            # Restore previous filebrowser state.
+            filebrowser_state.apply_to_area(area_fb)
+            # if prev_relpath: #TODO: does crash Blender, investigate
+            #     area_fb.spaces.active.select_file(relative_path=prev_relpath)
 
             # Open timeline
             area_time = opsdata.split_area(
@@ -384,19 +386,17 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
             # Screen must be re-drawn, otherwise space.params is None
             bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
 
-            # Load prev filebrowser dir from win manager
-            opsdata.load_filebrowser_dir_from_win_manager(area_fb)
+            # Restore previous filebrowser state.
+            filebrowser_state.apply_to_area(area_fb)
 
-            # Adjust properties of filebrowser panel.
-            opsdata.setup_filebrowser_area(area_fb)
+            # if prev_relpath: #TODO: does crash Blender, investigate
+            #     area_fb.spaces.active.select_file(relative_path=prev_relpath)
 
         elif area_fb:
             # Filebrowser needs to be closed.
 
-            # Save directory to a custom property so it can be restored later.
-            # For example in toggling filebrowser window.
-            params = area_fb.spaces.active.params
-            bpy.context.window_manager["directory"] = params.directory.decode("utf-8")
+            # Save filebrowser state.
+            filebrowser_state = FileBrowserState(area=area_fb)
 
             opsdata.close_area(area_fb)
             logger.info("Hide filebrowser")
@@ -515,11 +515,18 @@ class MV_OT_screen_full_area(bpy.types.Operator):
     bl_description = "Toggle Fullscreen of active Area"
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        global filebrowser_state
+        global prev_relpath
 
         # Fullscreen area media.
         area_media = opsdata.find_area(context, active_media_area)
         ctx = opsdata.get_context_for_area(area_media)
         bpy.ops.screen.screen_full_area(ctx, use_hide_panels=True)
+
+        # TODO: does not work, selection not happening
+        # if not context.screen.show_fullscreen and area_media.type == "FILE_BROWSER":
+        #     area_media.spaces.active.select_file(relative_path=prev_relpath)
+
         return {"FINISHED"}
 
 

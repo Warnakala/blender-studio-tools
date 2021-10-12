@@ -189,14 +189,6 @@ def set_filebrowser_dir(filebrowser_area: bpy.types.Area, path: Path) -> None:
     return
 
 
-def load_filebrowser_dir_from_win_manager(area_fb: bpy.types.Area) -> None:
-    for space in area_fb.spaces:
-        if space.type == "FILE_BROWSER":
-            if "directory" in bpy.context.window_manager:
-                path = bpy.context.window_manager["directory"]
-                space.params.directory = path.encode("utf-8")
-
-
 def load_filebrowser_dir_from_config_file(filebrowser_area: bpy.types.Area) -> None:
     path = vars.get_config_file()
 
