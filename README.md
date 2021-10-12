@@ -1,6 +1,6 @@
 # Project Description
 
-This project contains tools that are used buy the Blender Animation Studio
+This project contains tools that are used by the Blender Animation Studio
 across productions.
 
 ## shot-builder
@@ -30,3 +30,6 @@ render-review (/render-review) is a Bender Add-on to review renders from flamenc
 
 ## anim-setup
 anim-setup is a Blender Add-on that automates the setup of animation scenes for the Sprite-Fright project.
+
+## bone-gizmos
+bone-gizmos is a Blender Add-on that attempts to prototype a system for using meshes for the manipulation of armatures.
