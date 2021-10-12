@@ -1,8 +1,7 @@
 import bpy
 from typing import Dict, Tuple, List
-from bpy.types import GizmoGroup, Gizmo, Object, PoseBone
+from bpy.types import GizmoGroup, Gizmo, Object, PoseBone, Operator
 from bpy.app.handlers import persistent
-
 
 ### MSGBUS FUNCTIONS ###
 # The Gizmo API doesn't provide the necessary callbacks to do careful partial
@@ -168,8 +167,22 @@ class BoneGizmoGroup(GizmoGroup):
 				eval_mesh.calc_loop_triangles()
 			gizmo.refresh_shape_vgroup(context, eval_mesh)
 
+class BONEGIZMO_OT_RestartGizmoGroup(Operator):
+	"""Re-initialize all gizmos. Needed when the gizmo shape objects are modified, since there's no dependency between gizmos and their target shapes"""
+
+	bl_idname = "pose.restart_gizmos"
+	bl_label = "Refresh All"
+	bl_options = {'REGISTER', 'UNDO'}
+
+	def execute(self, context):
+		bpy.utils.unregister_class(BoneGizmoGroup)
+		bpy.utils.register_class(BoneGizmoGroup)
+
+		return {'FINISHED'}
+
 registry = [
 	BoneGizmoGroup,
+	BONEGIZMO_OT_RestartGizmoGroup
 ]
 
 def unregister():

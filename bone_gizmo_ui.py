@@ -34,6 +34,8 @@ class BONEGIZMO_PT_bone_gizmo_settings(Panel):
 			return
 		layout.enabled = pb.enable_bone_gizmo and overlay_enabled
 
+		layout.operator('pose.restart_gizmos', icon='FILE_REFRESH')
+		layout.separator()
 		bg = pb.bone_group
 		usable_bg_col = bg and bg.color_set != 'DEFAULT'
 		color_split = layout.split(factor=0.4)
