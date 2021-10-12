@@ -35,7 +35,7 @@ logger = LoggerFactory.getLogger(name=__name__)
 active_media_area = "SEQUENCE_EDITOR"
 
 # Global variables for frame handler to check previous value.
-prev_filepath: Optional[str] = None
+prev_relpath: Optional[str] = None
 prev_dirpath: Path = Path.home()  # TODO: read from json on register
 prev_filepath_list: List[Path] = []
 
@@ -533,7 +533,7 @@ class MV_OT_next_media_file(bpy.types.Operator):
     )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        global prev_filepath  # Is relative path to prev_dirpath.
+        global prev_relpath  # Is relative path to prev_dirpath.
         global prev_dirpath
         area_fb = opsdata.find_area(context, "FILE_BROWSER")
 
@@ -555,12 +555,12 @@ class MV_OT_next_media_file(bpy.types.Operator):
         file_list.sort(key=lambda p: p.name)
 
         # If there was not previous filepath take the first file.
-        if not prev_filepath:
+        if not prev_relpath:
             filepath = file_list[0]
 
         # If previous filepath, get index of that and take next index.
         else:
-            prev_filepath_abs = Path(prev_dirpath).joinpath(prev_filepath)
+            prev_filepath_abs = Path(prev_dirpath).joinpath(prev_relpath)
             try:
                 index = file_list.index(prev_filepath_abs)
             except ValueError:
@@ -609,7 +609,7 @@ class MV_OT_next_media_file(bpy.types.Operator):
             bpy.ops.media_viewer.load_media_text(filepath=filepath.as_posix())
 
         # Update prev_ variables.
-        prev_filepath = filepath.relative_to(Path(prev_dirpath)).as_posix()
+        prev_relpath = filepath.relative_to(Path(prev_dirpath)).as_posix()
         return {"FINISHED"}
 
 
@@ -621,7 +621,7 @@ def callback_filename_change(dummy: None):
     area gets redrawn. This handles the dynamic loading of the selected media and
     saves filebrowser directory on window manager to restore it on area toggling.
     """
-    global prev_filepath
+    global prev_relpath
     global prev_dirpath
 
     # Because frame handler runs in area,
@@ -671,7 +671,7 @@ def callback_filename_change(dummy: None):
         # Selection did not change, early return.
         if (
             len(filepath_list) == len(prev_filepath_list)
-            and prev_filepath == active_file.relative_path
+            and prev_relpath == active_file.relative_path
         ):
             return
 
@@ -688,7 +688,7 @@ def callback_filename_change(dummy: None):
     elif opsdata.is_image(filepath):
 
         # Early return filename did not change.
-        if prev_filepath == active_file.relative_path:
+        if prev_relpath == active_file.relative_path:
             return
 
         bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
@@ -698,14 +698,14 @@ def callback_filename_change(dummy: None):
     elif opsdata.is_text(filepath) or opsdata.is_script(filepath):
 
         # Early return filename did not change.
-        if prev_filepath == active_file.relative_path:
+        if prev_relpath == active_file.relative_path:
             return
 
         bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
         bpy.ops.media_viewer.load_media_text(filepath=filepath.as_posix())
 
     # Update prev_ variables.
-    prev_filepath = active_file.relative_path
+    prev_relpath = active_file.relative_path
     prev_filepath_list.clear()
     prev_filepath_list.extend(filepath_list)
 
