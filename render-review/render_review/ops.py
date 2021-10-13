@@ -122,8 +122,8 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                         logger.error("%s found no exr or preview sequence", dir.name)
                         continue
 
-                    logger.info("%s found %i exr frames", dir.name, len(image_sequence))
                     image_sequence = exr_files[0]
+                    logger.info("%s found %i exr frames", dir.name, len(image_sequence))
 
                 else:
                     logger.info(
