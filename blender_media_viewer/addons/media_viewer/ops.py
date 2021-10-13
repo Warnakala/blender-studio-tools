@@ -548,6 +548,53 @@ class MV_OT_toggle_fb_region_toolbar(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_jump_folder_up(bpy.types.Operator):
+
+    bl_idname = "media_viewer.jump_folder_up"
+    bl_label = "Folder Up"
+    bl_description = "Jumps one folder up in current File Browser directory"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
+        if not area_fb:
+            return {"CANCELLED"}
+
+        current_dir = Path(area_fb.spaces.active.params.directory.decode("utf-8"))
+        area_fb.spaces.active.params.directory = current_dir.parent.as_posix().encode(
+            "utf-8"
+        )
+
+        return {"FINISHED"}
+
+
+class MV_OT_jump_folder_in(bpy.types.Operator):
+
+    bl_idname = "media_viewer.jump_folder_in"
+    bl_label = "Folder In"
+    bl_description = "Jumps in selected folder in current File Browser directory"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global prev_relpath
+
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
+
+        # If File Browser area not available.
+        if not area_fb:
+            return {"CANCELLED"}
+
+        # If no item selected.
+        if not prev_relpath:
+            return {"CANCELLED"}
+
+        current_dir = Path(area_fb.spaces.active.params.directory.decode("utf-8"))
+        new_path = current_dir.joinpath(prev_relpath)
+
+        if new_path.exists() and new_path.is_dir():
+            area_fb.spaces.active.params.directory = new_path.as_posix().encode("utf-8")
+
+        return {"FINISHED"}
+
+
 class MV_OT_next_media_file(bpy.types.Operator):
 
     bl_idname = "media_viewer.next_media_file"
@@ -756,6 +803,8 @@ classes = [
     MV_OT_screen_full_area,
     MV_OT_next_media_file,
     MV_OT_toggle_fb_region_toolbar,
+    MV_OT_jump_folder_in,
+    MV_OT_jump_folder_up,
 ]
 
 
