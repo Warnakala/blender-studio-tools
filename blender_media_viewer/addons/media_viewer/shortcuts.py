@@ -227,11 +227,23 @@ def register():
         kmi.properties.direction = "RIGHT"
         addon_keymaps.append((keymap, kmi))
 
+        kmi = keymap.keymap_items.new(
+            MV_OT_next_media_file.bl_idname, value="PRESS", type="DOWN_ARROW"
+        )
+        kmi.properties.direction = "DOWN"
+        addon_keymaps.append((keymap, kmi))
+
         # Previous media file.
         kmi = keymap.keymap_items.new(
             MV_OT_next_media_file.bl_idname, value="PRESS", type="LEFT_ARROW"
         )
         kmi.properties.direction = "LEFT"
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            MV_OT_next_media_file.bl_idname, value="PRESS", type="UP_ARROW"
+        )
+        kmi.properties.direction = "UP"
         addon_keymaps.append((keymap, kmi))
 
         # Offset current frame.

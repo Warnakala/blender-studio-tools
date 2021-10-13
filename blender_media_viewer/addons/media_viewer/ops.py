@@ -557,6 +557,8 @@ class MV_OT_next_media_file(bpy.types.Operator):
         items=(
             ("LEFT", "LEFT", ""),
             ("RIGHT", "RIGHT", ""),
+            ("UP", "UP", ""),
+            ("DOWN", "DOWN", ""),
         ),
         default="RIGHT",
     )
@@ -600,7 +602,7 @@ class MV_OT_next_media_file(bpy.types.Operator):
 
             else:
                 # If direction is RIGHT we increment the new index.
-                if self.direction == "RIGHT":
+                if self.direction in ["RIGHT", "DOWN"]:
                     next_index = index + 1
 
                     # If index is last index, go to the beginning.
