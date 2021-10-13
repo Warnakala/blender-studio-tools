@@ -1,3 +1,23 @@
+# ***** BEGIN GPL LICENSE BLOCK *****
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
+# ***** END GPL LICENCE BLOCK *****
+#
+# (c) 2021, Blender Foundation - Paul Golter
+
 import re
 import json
 from pathlib import Path
@@ -102,6 +122,7 @@ def fit_timeline_view(context: bpy.types.Context) -> None:
     ctx = get_context_for_area(area)
     bpy.ops.action.view_all(ctx)
 
+
 def fit_image_editor_view(context: bpy.types.Context) -> None:
     area = find_area(context, "IMAGE_EDITOR")
     if not area:
@@ -110,6 +131,7 @@ def fit_image_editor_view(context: bpy.types.Context) -> None:
     ctx = get_context_for_area(area)
     bpy.ops.image.view_all(ctx, fit_view=True)
 
+
 def fit_sqe_preview(context: bpy.types.Context) -> None:
     area = find_area(context, "SEQUENCE_EDITOR")
     if not area:
@@ -117,6 +139,7 @@ def fit_sqe_preview(context: bpy.types.Context) -> None:
 
     ctx = get_context_for_area(area)
     bpy.ops.sequencer.view_all_preview(ctx)
+
 
 def get_context_for_area(area: bpy.types.Area) -> Dict:
     for region in area.regions:
