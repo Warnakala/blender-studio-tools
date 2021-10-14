@@ -213,13 +213,11 @@ class MV_OT_load_media_image(bpy.types.Operator):
 
             area.spaces.active.image_user.frame_duration = 5000
 
-        # image.colorspace_settings.name = "Linear"
-
-        # Set active image.
-        area.spaces.active.image = image
-
-        # Fit view.
-        opsdata.fit_image_editor_view(context)
+        # Set colorspace depending on file extension:
+        if file_list[0].suffix == ".exr":
+            context.scene.view_settings.view_transform = "Filmic"
+        else:
+            context.scene.view_settings.view_transform = "Standard"
 
         # Playback.
         if can_playback and self.playback:
