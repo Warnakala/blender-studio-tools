@@ -559,10 +559,8 @@ class MV_OT_jump_folder_up(bpy.types.Operator):
         if not area_fb:
             return {"CANCELLED"}
 
-        current_dir = Path(area_fb.spaces.active.params.directory.decode("utf-8"))
-        area_fb.spaces.active.params.directory = current_dir.parent.as_posix().encode(
-            "utf-8"
-        )
+        ctx = opsdata.get_context_for_area(area_fb)
+        bpy.ops.file.parent(ctx)
 
         return {"FINISHED"}
 
