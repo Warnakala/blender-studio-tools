@@ -95,6 +95,7 @@ class MoveBoneGizmo(Gizmo):
 		from the API! Call this manually to prevent logic execution.
 		"""
 		pb = self.get_pose_bone(context)
+		if not pb: return False
 		any_visible_layer = any(bl and al for bl, al in zip(pb.bone.layers[:], pb.id_data.data.layers[:]))
 		bone_visible = pb and not pb.bone.hide and any_visible_layer
 
@@ -204,6 +205,7 @@ class MoveBoneGizmo(Gizmo):
 
 	def is_using_vgroup(self, context):
 		ob = self.get_shape_object(context)
+		if not ob: return False
 		props = self.get_pose_bone(context).bone_gizmo
 		vgroup_exists = props.vertex_group_name in ob.vertex_groups
 		ret = ob and not props.use_face_map and vgroup_exists
@@ -212,6 +214,7 @@ class MoveBoneGizmo(Gizmo):
 	def is_using_facemap(self, context):
 		props = self.get_props(context)
 		ob = self.get_shape_object(context)
+		if not ob: return False
 		return props.use_face_map and props.face_map_name in ob.face_maps
 
 	def is_using_bone_group_colors(self, context):
@@ -230,6 +233,7 @@ class MoveBoneGizmo(Gizmo):
 		"""Get the shape object selected by the user in the Custom Gizmo panel.
 		"""
 		pb = self.get_pose_bone(context)
+		if not pb: return
 		ret = pb.bone_gizmo.shape_object
 		return ret
 
@@ -279,12 +283,21 @@ class MoveBoneGizmo(Gizmo):
 		pb.bone.select = True
 		armature.data.bones.active = pb.bone
 
-		if pb.name in ['IK-MSTR-Wrist.L', 'IK-POLE-UpperArm.L']:
-			if not armature.pose.bones["PRP-UpperArm.L"]["ik_left_upperarm"]:
-				bpy.ops.pose.cloudrig_toggle_ikfk_bake(select_bones=False, map_on="[[\"IK-MSTR-Wrist.L\", \"FK-Wrist.L\"], [\"IK-MSTR-C-Wrist.L\", \"FK-Wrist.L\"], [\"IK-UpperArm.L\", \"FK-UpperArm.L\"]]", map_off="[[\"FK-UpperArm.L\", \"IK-UpperArm.L\"], [\"FK-Forearm.L\", \"IK-Forearm.L\"], [\"FK-Wrist.L\", \"IK-Wrist.L\"]]", hide_on="[\"FK-UpperArm.L\", \"FK-Forearm.L\", \"FK-Wrist.L\"]", hide_off="[\"IK-MSTR-C-Wrist.L\", \"IK-POLE-UpperArm.L\", \"IK-MSTR-Wrist.L\"]", frame_start=97, frame_end=200, bones="[\"IK-MSTR-Wrist.L\", \"IK-MSTR-C-Wrist.L\", \"IK-UpperArm.L\", \"IK-POLE-UpperArm.L\"]", prop_bone="PRP-UpperArm.L", prop_id="ik_left_upperarm", ik_pole="IK-POLE-UpperArm.L", fk_first="FK-UpperArm.L", fk_last="FK-Forearm.L")
-		elif pb.name in ['FK-Forearm.L', 'FK-UpperArm.L', 'FK-Wrist.L']:
-			if armature.pose.bones["PRP-UpperArm.L"]["ik_left_upperarm"]:
-				bpy.ops.pose.cloudrig_toggle_ikfk_bake(select_bones=False, map_on="[[\"IK-MSTR-Wrist.L\", \"FK-Wrist.L\"], [\"IK-MSTR-C-Wrist.L\", \"FK-Wrist.L\"], [\"IK-UpperArm.L\", \"FK-UpperArm.L\"]]", map_off="[[\"FK-UpperArm.L\", \"IK-UpperArm.L\"], [\"FK-Forearm.L\", \"IK-Forearm.L\"], [\"FK-Wrist.L\", \"IK-Wrist.L\"]]", hide_on="[\"FK-UpperArm.L\", \"FK-Forearm.L\", \"FK-Wrist.L\"]", hide_off="[\"IK-MSTR-C-Wrist.L\", \"IK-POLE-UpperArm.L\", \"IK-MSTR-Wrist.L\"]", frame_start=97, frame_end=200, bones="[\"FK-UpperArm.L\", \"FK-Forearm.L\", \"FK-Wrist.L\"]", prop_bone="PRP-UpperArm.L", prop_id="ik_left_upperarm", ik_pole="IK-POLE-UpperArm.L", fk_first="FK-UpperArm.L", fk_last="FK-Forearm.L")
+		# Allow executing an operator on bone interaction,
+		# based on data stored in the armatures 'gizmo_interaction' custom property.
+		# 	This should be a dictionary structured:
+		# 		op_bl_idname : [ ( [list of bone names], {op_kwargs} ) ]
+		# Whenever any of the bones from one list of bone names is interacted, 
+		# the operator with op_bl_idname is executed, with op_kwargs passed in to it.
+		if 'gizmo_interactions' in armature.data:
+			interaction_data = armature.data['gizmo_interactions'].to_dict()
+			for op_name, op_datas in interaction_data.items():
+				op_category, op_name = op_name.split(".")
+				op_callable = getattr(getattr(bpy.ops, op_category), op_name)
+				for op_data in op_datas:
+					bone_names, op_kwargs = op_data
+					if pb.name in bone_names:
+						op_callable(**op_kwargs)
 
 		return {'RUNNING_MODAL'}
 
