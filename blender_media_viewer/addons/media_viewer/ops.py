@@ -364,8 +364,12 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
 
             # Restore previous filebrowser state.
             filebrowser_state.apply_to_area(area_fb)
-            # if prev_relpath: #TODO: does crash Blender, investigate
-            #     area_fb.spaces.active.select_file(relative_path=prev_relpath)
+
+            # Select previous filepath.
+            if prev_relpath:
+                area_fb.spaces.active.activate_file_by_relative_path(
+                    relative_path=prev_relpath
+                )
 
             # Open timeline
             area_time = opsdata.split_area(
@@ -388,8 +392,11 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
             # Restore previous filebrowser state.
             filebrowser_state.apply_to_area(area_fb)
 
-            # if prev_relpath: #TODO: does crash Blender, investigate
-            #     area_fb.spaces.active.select_file(relative_path=prev_relpath)
+            # Select previous filepath.
+            if prev_relpath:
+                area_fb.spaces.active.activate_file_by_relative_path(
+                    relative_path=prev_relpath
+                )
 
         elif area_fb:
             # Filebrowser needs to be closed.
@@ -522,9 +529,13 @@ class MV_OT_screen_full_area(bpy.types.Operator):
         ctx = opsdata.get_context_for_area(area_media)
         bpy.ops.screen.screen_full_area(ctx, use_hide_panels=True)
 
-        # TODO: does not work, selection not happening
-        # if not context.screen.show_fullscreen and area_media.type == "FILE_BROWSER":
-        #     area_media.spaces.active.select_file(relative_path=prev_relpath)
+        # Select previous filepath if in FILE_BROWSER area.
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
+        if not context.screen.show_fullscreen and area_fb:
+            if prev_relpath:
+                area_fb.spaces.active.activate_file_by_relative_path(
+                    relative_path=prev_relpath
+                )
 
         return {"FINISHED"}
 
