@@ -222,6 +222,18 @@ def register():
             )
         )
 
+        # Full Screen with Hide Panels.
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_screen_full_area.bl_idname,
+                    value="PRESS",
+                    type="SPACE",
+                    ctrl=True,
+                ),
+            )
+        )
         # Next media file.
         kmi = keymap.keymap_items.new(
             MV_OT_next_media_file.bl_idname, value="PRESS", type="RIGHT_ARROW"
