@@ -123,10 +123,13 @@ def fit_timeline_view(context: bpy.types.Context) -> None:
     bpy.ops.action.view_all(ctx)
 
 
-def fit_image_editor_view(context: bpy.types.Context) -> None:
-    area = find_area(context, "IMAGE_EDITOR")
+def fit_image_editor_view(
+    context: bpy.types.Context, area: bpy.types.Area = None
+) -> None:
     if not area:
-        return
+        area = find_area(context, "IMAGE_EDITOR")
+        if not area:
+            return
 
     ctx = get_context_for_area(area)
     bpy.ops.image.view_all(ctx, fit_view=True)

@@ -162,7 +162,6 @@ class MV_OT_load_media_image(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         filepath = Path(self.filepath)
-        can_playback = False
 
         # Stop playback.
         bpy.ops.screen.animation_cancel()
@@ -190,6 +189,13 @@ class MV_OT_load_media_image(bpy.types.Operator):
         image = bpy.data.images.load(file_list[0].as_posix(), check_existing=True)
         image.name = filepath.stem
 
+        # Set active image.
+        area.spaces.active.image = image
+
+        # Fit view, has to be done before setting sequence, otherwise
+        # image won't resize? Weird.
+        opsdata.fit_image_editor_view(context, area=area)
+
         # If sequence should be loaded and sequence actually detected
         # set source to SEQUENCE and correct frame range settings
         if self.load_sequence and len(file_list) > 1:
@@ -205,7 +211,6 @@ class MV_OT_load_media_image(bpy.types.Operator):
             if all([first_frame, last_frame]):
                 context.scene.frame_start = int(first_frame)
                 context.scene.frame_end = int(last_frame)
-                can_playback = True
 
                 # Set playhead frame counter of clicked image.
                 if current_frame:
@@ -216,14 +221,10 @@ class MV_OT_load_media_image(bpy.types.Operator):
         # Set colorspace depending on file extension:
         if file_list[0].suffix == ".exr":
             context.scene.view_settings.view_transform = "Filmic"
+            image.use_view_as_render = True
         else:
             context.scene.view_settings.view_transform = "Standard"
-
-        # Playback.
-        if can_playback and self.playback:
-            pass
-            # TODO: does not seem to trigger playback in image editor
-            # bpy.ops.screen.animation_play()
+            image.use_view_as_render = False
 
         return {"FINISHED"}
 
