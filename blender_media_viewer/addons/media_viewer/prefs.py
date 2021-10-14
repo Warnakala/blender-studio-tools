@@ -34,8 +34,18 @@ def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
 class MV_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
+    view_transform_exr: bpy.props.EnumProperty(
+        items=[("Filmic", "Filmic", ""), ("Standard", "Standard", "")],
+        name="View Transform EXRs",
+        description="Controls which view transform will be set when selecting an EXR image",
+        default="Filmic",
+    )
+
     def draw(self, context: bpy.types.Context) -> None:
-        pass
+        layout = self.layout
+        row = layout.row(align=True)
+
+        row.prop(self, "view_transform")
 
 
 # ---------REGISTER ----------.
