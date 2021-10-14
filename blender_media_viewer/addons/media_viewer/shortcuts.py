@@ -234,28 +234,38 @@ def register():
                 ),
             )
         )
+
         # Next media file.
         kmi = keymap.keymap_items.new(
-            MV_OT_next_media_file.bl_idname, value="PRESS", type="RIGHT_ARROW"
+            MV_OT_next_media_file.bl_idname,
+            value="PRESS",
+            type="RIGHT_ARROW",
+            repeat=True,
         )
         kmi.properties.direction = "RIGHT"
         addon_keymaps.append((keymap, kmi))
 
         kmi = keymap.keymap_items.new(
-            MV_OT_next_media_file.bl_idname, value="PRESS", type="DOWN_ARROW"
+            MV_OT_next_media_file.bl_idname,
+            value="PRESS",
+            type="DOWN_ARROW",
+            repeat=True,
         )
         kmi.properties.direction = "DOWN"
         addon_keymaps.append((keymap, kmi))
 
         # Previous media file.
         kmi = keymap.keymap_items.new(
-            MV_OT_next_media_file.bl_idname, value="PRESS", type="LEFT_ARROW"
+            MV_OT_next_media_file.bl_idname,
+            value="PRESS",
+            type="LEFT_ARROW",
+            repeat=True,
         )
         kmi.properties.direction = "LEFT"
         addon_keymaps.append((keymap, kmi))
 
         kmi = keymap.keymap_items.new(
-            MV_OT_next_media_file.bl_idname, value="PRESS", type="UP_ARROW"
+            MV_OT_next_media_file.bl_idname, value="PRESS", type="UP_ARROW", repeat=True
         )
         kmi.properties.direction = "UP"
         addon_keymaps.append((keymap, kmi))
