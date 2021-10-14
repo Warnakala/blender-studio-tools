@@ -280,6 +280,11 @@ class MoveBoneGizmo(Gizmo):
 			for pb in armature.pose.bones:
 				pb.bone.select = False
 		pb = self.get_pose_bone(context)
+
+		if event.shift and pb.bone.select:
+			pb.bone.select = False
+			return {'FINISHED'}
+
 		pb.bone.select = True
 		armature.data.bones.active = pb.bone
 
