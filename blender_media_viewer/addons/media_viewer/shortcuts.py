@@ -34,6 +34,7 @@ from media_viewer.ops import (
     MV_OT_jump_folder_up,
     MV_OT_animation_play,
     MV_OT_set_fb_display_type,
+    MV_OT_fit_view,
 )
 from media_viewer import opsdata
 from media_viewer.log import LoggerFactory
@@ -330,7 +331,6 @@ def register():
         kmi.properties.display_type = "LIST_VERTICAL"
         addon_keymaps.append((keymap, kmi))
 
-        # Set filebrowser display type.
         kmi = keymap.keymap_items.new(
             MV_OT_set_fb_display_type.bl_idname,
             value="PRESS",
@@ -339,7 +339,6 @@ def register():
         kmi.properties.display_type = "LIST_HORIZONTAL"
         addon_keymaps.append((keymap, kmi))
 
-        # Set filebrowser display type.
         kmi = keymap.keymap_items.new(
             MV_OT_set_fb_display_type.bl_idname,
             value="PRESS",
@@ -347,6 +346,16 @@ def register():
         )
         kmi.properties.display_type = "THUMBNAIL"
         addon_keymaps.append((keymap, kmi))
+
+        # Fit to view.
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_fit_view.bl_idname, value="PRESS", type="SPACE", shift=True
+                ),
+            )
+        )
 
     # Handlers
     # Does neither work on register or on load_post. But when reloading the file it works.....?????

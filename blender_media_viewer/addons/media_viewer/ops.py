@@ -536,6 +536,9 @@ class MV_OT_screen_full_area(bpy.types.Operator):
                 area_fb.spaces.active.activate_file_by_relative_path(
                     relative_path=prev_relpath
                 )
+        if context.screen.show_fullscreen: #TODO: does not work
+            # Fit view.
+            opsdata.fit_view(context, area_media)
 
         return {"FINISHED"}
 
@@ -752,6 +755,27 @@ class MV_OT_set_fb_display_type(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_fit_view(bpy.types.Operator):
+
+    bl_idname = "media_viewer.fit_view"
+    bl_label = "Fit view"
+    bl_description = "Fits the content of the media area to fill all available space"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+
+        # Get media area.
+        area_media = opsdata.find_area(context, active_media_area)
+
+        if not area_media:
+            return {"CANCELLED"}
+
+        # Fit view.
+        opsdata.fit_view(context, area_media)
+
+        return {"FINISHED"}
+
+
 @persistent
 def callback_filename_change(dummy: None):
 
@@ -868,6 +892,7 @@ classes = [
     MV_OT_jump_folder_up,
     MV_OT_animation_play,
     MV_OT_set_fb_display_type,
+    MV_OT_fit_view,
 ]
 
 

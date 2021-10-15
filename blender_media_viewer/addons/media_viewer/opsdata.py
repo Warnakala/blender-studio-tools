@@ -114,10 +114,11 @@ def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.
     return None
 
 
-def fit_timeline_view(context: bpy.types.Context) -> None:
-    area = find_area(context, "DOPESHEET_EDITOR")
+def fit_timeline_view(context: bpy.types.Context, area: bpy.types.Area = None) -> None:
     if not area:
-        return
+        area = find_area(context, "DOPESHEET_EDITOR")
+        if not area:
+            return
 
     ctx = get_context_for_area(area)
     bpy.ops.action.view_all(ctx)
@@ -135,13 +136,23 @@ def fit_image_editor_view(
     bpy.ops.image.view_all(ctx, fit_view=True)
 
 
-def fit_sqe_preview(context: bpy.types.Context) -> None:
-    area = find_area(context, "SEQUENCE_EDITOR")
+def fit_sqe_preview(context: bpy.types.Context, area: bpy.types.Area = None) -> None:
     if not area:
-        return
+        area = find_area(context, "SEQUENCE_EDITOR")
+        if not area:
+            return
 
     ctx = get_context_for_area(area)
     bpy.ops.sequencer.view_all_preview(ctx)
+
+
+def fit_view(context: bpy.types.Context, area: bpy.types.Area) -> None:
+    if area.type == "SEQUENCE_EDITOR":
+        fit_sqe_preview(context, area=area)
+    elif area.type == "IMAGE_EDITOR":
+        fit_image_editor_view(context, area=area)
+    elif area.type == "DOPESHEET_EDITOR":
+        fit_timeline_view(context, area=area)
 
 
 def get_context_for_area(area: bpy.types.Area) -> Dict:
