@@ -719,6 +719,39 @@ class MV_OT_next_media_file(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_set_fb_display_type(bpy.types.Operator):
+
+    bl_idname = "media_viewer.set_fb_display_type"
+    bl_label = "Filebrowser Display Type"
+    bl_description = "Sets the display type of the File Browser"
+
+    display_type: bpy.props.EnumProperty(
+        items=[
+            ("LIST_VERTICAL", "LIST_VERTICAL", ""),
+            ("LIST_HORIZONTAL", "LIST_HORIZONTAL", ""),
+            ("THUMBNAIL", "THUMBNAIL", ""),
+        ],
+        name="Display Type",
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
+
+        if not area_fb:
+            return {"CANCELLED"}
+
+        ctx = opsdata.get_context_for_area(area_fb)
+
+        # Redraw if needed to update params.
+        if not area_fb.spaces.active.params:
+            bpy.ops.wm.redraw_timer(ctx, type="DRAW_WIN_SWAP", iterations=1)
+
+        # Set display type.
+        area_fb.spaces.active.params.display_type = self.display_type
+
+        return {"FINISHED"}
+
+
 @persistent
 def callback_filename_change(dummy: None):
 
@@ -834,6 +867,7 @@ classes = [
     MV_OT_jump_folder_in,
     MV_OT_jump_folder_up,
     MV_OT_animation_play,
+    MV_OT_set_fb_display_type,
 ]
 
 

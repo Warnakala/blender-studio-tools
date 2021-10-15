@@ -33,6 +33,7 @@ from media_viewer.ops import (
     MV_OT_jump_folder_in,
     MV_OT_jump_folder_up,
     MV_OT_animation_play,
+    MV_OT_set_fb_display_type,
 )
 from media_viewer import opsdata
 from media_viewer.log import LoggerFactory
@@ -319,6 +320,34 @@ def register():
                 ),
             )
         )
+
+        # Set filebrowser display type.
+        kmi = keymap.keymap_items.new(
+            MV_OT_set_fb_display_type.bl_idname,
+            value="PRESS",
+            type="ONE",
+        )
+        kmi.properties.display_type = "LIST_VERTICAL"
+        addon_keymaps.append((keymap, kmi))
+
+        # Set filebrowser display type.
+        kmi = keymap.keymap_items.new(
+            MV_OT_set_fb_display_type.bl_idname,
+            value="PRESS",
+            type="TWO",
+        )
+        kmi.properties.display_type = "LIST_HORIZONTAL"
+        addon_keymaps.append((keymap, kmi))
+
+        # Set filebrowser display type.
+        kmi = keymap.keymap_items.new(
+            MV_OT_set_fb_display_type.bl_idname,
+            value="PRESS",
+            type="THREE",
+        )
+        kmi.properties.display_type = "THUMBNAIL"
+        addon_keymaps.append((keymap, kmi))
+
     # Handlers
     # Does neither work on register or on load_post. But when reloading the file it works.....?????
     # bpy.app.handlers.load_post.append(delete_shortcuts_load_post)
