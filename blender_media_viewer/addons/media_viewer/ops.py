@@ -536,7 +536,7 @@ class MV_OT_screen_full_area(bpy.types.Operator):
                 area_fb.spaces.active.activate_file_by_relative_path(
                     relative_path=prev_relpath
                 )
-        if context.screen.show_fullscreen: #TODO: does not work
+        if context.screen.show_fullscreen:  # TODO: does not work
             # Fit view.
             opsdata.fit_view(context, area_media)
 
@@ -776,6 +776,39 @@ class MV_OT_fit_view(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_frame_offset(bpy.types.Operator):
+
+    bl_idname = "media_viewer.frame_offset"
+    bl_label = "Frame Offset"
+    bl_description = "Offsets current frame by delta amount. Wraps around start and end"
+
+    delta: bpy.props.IntProperty(name="Delta", description="Delta to current frame")
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        frame_start = context.scene.frame_start
+        frame_end = context.scene.frame_end
+        frame_current = context.scene.frame_current
+
+        if frame_current not in range(frame_start, frame_end + 1):
+            context.scene.frame_current += self.delta
+            return {"FINISHED"}
+
+        # Frame wrap left.
+        if frame_current + self.delta < frame_start:
+            left_over = (frame_current + self.delta) - frame_start
+            context.scene.frame_current = (frame_end + 1) + left_over
+
+        # Frame wrap right.
+        elif frame_current + self.delta > frame_end:
+            left_over = (frame_current + self.delta) - frame_end
+            context.scene.frame_current = (frame_start - 1) + left_over
+
+        else:
+            context.scene.frame_current += self.delta
+
+        return {"FINISHED"}
+
+
 @persistent
 def callback_filename_change(dummy: None):
 
@@ -893,6 +926,7 @@ classes = [
     MV_OT_animation_play,
     MV_OT_set_fb_display_type,
     MV_OT_fit_view,
+    MV_OT_frame_offset,
 ]
 
 

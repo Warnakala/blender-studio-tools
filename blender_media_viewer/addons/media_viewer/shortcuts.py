@@ -35,6 +35,7 @@ from media_viewer.ops import (
     MV_OT_animation_play,
     MV_OT_set_fb_display_type,
     MV_OT_fit_view,
+    MV_OT_frame_offset,
 )
 from media_viewer import opsdata
 from media_viewer.log import LoggerFactory
@@ -287,13 +288,13 @@ def register():
 
         # Offset current frame.
         kmi = keymap.keymap_items.new(
-            "screen.frame_offset", value="PRESS", type="PERIOD", repeat=True
+            MV_OT_frame_offset.bl_idname, value="PRESS", type="PERIOD", repeat=True
         )
         kmi.properties.delta = 1
         addon_keymaps.append((keymap, kmi))
 
         kmi = keymap.keymap_items.new(
-            "screen.frame_offset", value="PRESS", type="COMMA", repeat=True
+            MV_OT_frame_offset.bl_idname, value="PRESS", type="COMMA", repeat=True
         )
         kmi.properties.delta = -1
         addon_keymaps.append((keymap, kmi))
