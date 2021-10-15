@@ -113,10 +113,17 @@ class MV_OT_load_media_movie(bpy.types.Operator):
         for file in filepaths_import:
             frame_start = opsdata.get_last_strip_frame(context)
             # Create new movie strip.
-            strip = context.scene.sequence_editor.sequences.new_movie(
+            strip_movie = context.scene.sequence_editor.sequences.new_movie(
                 file.stem,
                 file.as_posix(),
-                0,
+                2,
+                frame_start,
+            )
+
+            strip_sound = context.scene.sequence_editor.sequences.new_sound(
+                file.stem,
+                file.as_posix(),
+                1,
                 frame_start,
             )
 
