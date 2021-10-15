@@ -32,6 +32,7 @@ from media_viewer.ops import (
     MV_OT_toggle_fb_region_toolbar,
     MV_OT_jump_folder_in,
     MV_OT_jump_folder_up,
+    MV_OT_animation_play,
 )
 from media_viewer import opsdata
 from media_viewer.log import LoggerFactory
@@ -208,6 +209,18 @@ def register():
                     value="PRESS",
                     type="T",
                     ctrl=True,
+                ),
+            )
+        )
+
+        # Play animation.
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_animation_play.bl_idname,
+                    value="PRESS",
+                    type="SPACE",
                 ),
             )
         )

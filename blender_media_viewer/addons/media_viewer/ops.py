@@ -603,6 +603,26 @@ class MV_OT_jump_folder_in(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_animation_play(bpy.types.Operator):
+
+    bl_idname = "media_viewer.animation_play"
+    bl_label = "Play"
+    bl_description = "Start animation playback"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+        area_media = opsdata.find_area(context, active_media_area)
+
+        if not area_media:
+            return {"CANCELLED"}
+
+        ctx = opsdata.get_context_for_area(area_media)
+
+        bpy.ops.screen.animation_play(ctx)
+
+        return {"FINISHED"}
+
+
 class MV_OT_next_media_file(bpy.types.Operator):
 
     bl_idname = "media_viewer.next_media_file"
@@ -813,6 +833,7 @@ classes = [
     MV_OT_toggle_fb_region_toolbar,
     MV_OT_jump_folder_in,
     MV_OT_jump_folder_up,
+    MV_OT_animation_play,
 ]
 
 
