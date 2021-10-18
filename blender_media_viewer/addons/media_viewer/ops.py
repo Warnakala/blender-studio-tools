@@ -39,6 +39,7 @@ prev_relpath: Optional[str] = None
 prev_dirpath: Path = Path.home()  # TODO: read from json on register
 prev_filepath_list: List[Path] = []
 filebrowser_state: FileBrowserState = FileBrowserState()
+is_fullscreen: bool = False  # TODO: context.screen.show_fullscreen is not updating
 
 
 class MV_OT_load_media_movie(bpy.types.Operator):
@@ -311,13 +312,14 @@ class MV_OT_toggle_timeline(bpy.types.Operator):
         name="Factor that defines space for timeline after area split", default=0.15
     )
 
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        return True
-
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        global active_media_area
+        global is_fullscreen
 
+        # Don't do anything in fullscreen mode.
+        if is_fullscreen:
+            return {"CANCELLED"}
+
+        global active_media_area
         area_media = opsdata.find_area(context, active_media_area)
         area_timeline = opsdata.find_area(context, "DOPESHEET_EDITOR")
 
@@ -357,11 +359,15 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
         name="Factor that defines space for filebrowser after area split", default=0.3
     )
 
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        return True
-
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        global is_fullscreen
+
+        # Don't do anything in fullscreen mode.
+        if is_fullscreen:
+            # Use own is_fullscreen variable as
+            # context.screen.show_fullscreen does not seem to update?
+            return {"CANCELLED"}
+
         global active_media_area
         global filebrowser_state
         global prev_relpath
@@ -554,11 +560,13 @@ class MV_OT_screen_full_area(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         global filebrowser_state
         global prev_relpath
+        global is_fullscreen
 
         # Fullscreen area media.
         area_media = opsdata.find_area(context, active_media_area)
         ctx = opsdata.get_context_for_area(area_media)
         bpy.ops.screen.screen_full_area(ctx, use_hide_panels=True)
+        is_fullscreen = not is_fullscreen
 
         # Select previous filepath if in FILE_BROWSER area.
         area_fb = opsdata.find_area(context, "FILE_BROWSER")
