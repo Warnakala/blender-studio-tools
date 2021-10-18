@@ -619,13 +619,6 @@ class MV_OT_jump_folder_up(bpy.types.Operator):
         ctx = opsdata.get_context_for_area(area_fb)
         bpy.ops.file.parent(ctx)
 
-        # Select last folder if present in last_folder_at_path.
-        current_dir = Path(area_fb.spaces.active.params.directory.decode("utf-8"))
-        if current_dir.as_posix() in last_folder_at_path:
-            area_fb.spaces.active.activate_file_by_relative_path(
-                relative_path=last_folder_at_path[current_dir.as_posix()]
-            )
-
         return {"FINISHED"}
 
 
@@ -652,11 +645,8 @@ class MV_OT_jump_folder_in(bpy.types.Operator):
         current_dir = Path(area_fb.spaces.active.params.directory.decode("utf-8"))
         new_path = current_dir.joinpath(prev_relpath)
 
-        # Jump in to dir and save it to folder history.
+        # Jump in to dir.
         if new_path.exists() and new_path.is_dir():
-            opsdata.add_to_folder_history(
-                last_folder_at_path, current_dir.as_posix(), prev_relpath
-            )
             area_fb.spaces.active.params.directory = new_path.as_posix().encode("utf-8")
 
         return {"FINISHED"}
@@ -896,6 +886,7 @@ def callback_filename_change(dummy: None):
     """
     global prev_relpath
     global prev_dirpath
+    global last_folder_at_path
 
     # Because frame handler runs in area,
     # context has active_file, and selected_files.
@@ -906,11 +897,29 @@ def callback_filename_change(dummy: None):
     selected_files = bpy.context.selected_files
 
     # Save recent directory to config file if direcotry changed.
+    # Save and load from folder history.
     if prev_dirpath != directory:
+
+        # Save recent_dir to config file on disk, to restore it on next
+        # startup.
         opsdata.save_to_json(
             {"recent_dir": directory.as_posix()}, vars.get_config_file()
         )
         logger.info(f"Saved new recent directory: {directory.as_posix()}")
+
+        # Add previously selected folder to folder history.
+        opsdata.add_to_folder_history(
+            last_folder_at_path, prev_dirpath.as_posix(), prev_relpath
+        )
+
+        # Check if current directory has an entry in folder history.
+        # If so select that folder.
+        if directory.as_posix() in last_folder_at_path:
+            area.spaces.active.activate_file_by_relative_path(
+                relative_path=last_folder_at_path[directory.as_posix()]
+            )
+
+        # Update global var prev_dirpath with current directory.
         prev_dirpath = directory
 
     # Early return no active_file:
