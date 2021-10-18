@@ -107,28 +107,48 @@ class MV_OT_load_media_movie(bpy.types.Operator):
             opsdata.del_all_sequences(context)
             filepaths_import.extend(filepath_list)
 
-        # Import sequence.
+        # Check so we don't get index errors later.
+        if not filepath_list:
+            return {"CANCELLED"}
 
-        # Handle movie files.
+        # Import sequences.
         for file in filepaths_import:
             frame_start = opsdata.get_last_strip_frame(context)
             # Create new movie strip.
             strip_movie = context.scene.sequence_editor.sequences.new_movie(
                 file.stem,
                 file.as_posix(),
-                2,
+                3,
                 frame_start,
             )
+            strip_movie.blend_type = "ALPHA_OVER"
 
             strip_sound = context.scene.sequence_editor.sequences.new_sound(
                 file.stem,
                 file.as_posix(),
-                1,
+                2,
                 frame_start,
             )
 
+            strip_color = context.scene.sequence_editor.sequences.new_effect(
+                file.stem,
+                "COLOR",
+                1,
+                frame_start,
+                frame_end=strip_movie.frame_final_end,
+            )
+            strip_color.color = (0, 0, 0)
+
         # Set frame range.
         opsdata.fit_frame_range_to_strips(context)
+
+        # Set scene resolution to max width and height to fit all strips.
+        strips = opsdata.get_movie_strips(context)
+        max_width = max([s.elements[0].orig_width for s in strips])
+        max_height = max([s.elements[0].orig_height for s in strips])
+
+        context.scene.render.resolution_x = max_width
+        context.scene.render.resolution_y = max_height
 
         # Adjust view of timeline to fit all.
         opsdata.fit_timeline_view(context)
@@ -224,6 +244,10 @@ class MV_OT_load_media_image(bpy.types.Operator):
                     context.scene.frame_current = int(current_frame)
 
             area.spaces.active.image_user.frame_duration = 5000
+
+        # Set scene resolution.
+        context.scene.render.resolution_x = image.resolution[0]
+        context.scene.render.resolution_y = image.resolution[1]
 
         # Set colorspace depending on file extension:
         if file_list[0].suffix == ".exr":

@@ -328,6 +328,16 @@ def get_frame_counter(filepath: Path) -> Optional[str]:
     return match.group(0)
 
 
+def get_movie_strips(
+    context: bpy.types.Context,
+) -> List[bpy.types.Sequence]:
+    strips = [
+        s for s in context.scene.sequence_editor.sequences_all if s.type == "MOVIE"
+    ]
+    strips.sort(key=lambda s: (s.frame_final_start, s.channel))
+    return strips
+
+
 def get_loaded_movie_sound_strip_paths(context: bpy.types.Context) -> List[Path]:
     filepath_list = []
     for strip in context.scene.sequence_editor.sequences_all:
