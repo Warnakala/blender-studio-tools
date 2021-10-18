@@ -36,6 +36,7 @@ from media_viewer.ops import (
     MV_OT_set_fb_display_type,
     MV_OT_fit_view,
     MV_OT_frame_offset,
+    MV_OT_toggle_mute_audio,
 )
 from media_viewer import opsdata
 from media_viewer.log import LoggerFactory
@@ -354,6 +355,18 @@ def register():
                 keymap,
                 keymap.keymap_items.new(
                     MV_OT_fit_view.bl_idname, value="PRESS", type="SPACE", shift=True
+                ),
+            )
+        )
+
+        # Mute Audio.
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_toggle_mute_audio.bl_idname,
+                    value="PRESS",
+                    type="M",
                 ),
             )
         )

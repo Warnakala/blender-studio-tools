@@ -40,6 +40,7 @@ prev_dirpath: Path = Path.home()  # TODO: read from json on register
 prev_filepath_list: List[Path] = []
 filebrowser_state: FileBrowserState = FileBrowserState()
 is_fullscreen: bool = False  # TODO: context.screen.show_fullscreen is not updating
+is_muted: bool = False
 
 
 class MV_OT_load_media_movie(bpy.types.Operator):
@@ -815,6 +816,27 @@ class MV_OT_fit_view(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_toggle_mute_audio(bpy.types.Operator):
+
+    bl_idname = "media_viewer.toggle_mute_audio"
+    bl_label = "Mute Audio"
+    bl_description = "Toggles mute of all sounds strips"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global is_muted
+
+        strips = [
+            s for s in context.scene.sequence_editor.sequences_all if s.type == "SOUND"
+        ]
+
+        for strip in strips:
+            strip.mute = not is_muted
+
+        is_muted = not is_muted
+
+        return {"FINISHED"}
+
+
 class MV_OT_frame_offset(bpy.types.Operator):
 
     bl_idname = "media_viewer.frame_offset"
@@ -966,6 +988,7 @@ classes = [
     MV_OT_set_fb_display_type,
     MV_OT_fit_view,
     MV_OT_frame_offset,
+    MV_OT_toggle_mute_audio,
 ]
 
 
