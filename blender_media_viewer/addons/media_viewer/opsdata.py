@@ -22,6 +22,7 @@ import re
 import json
 from pathlib import Path
 from typing import Tuple, Any, List, Union, Dict, Optional
+from collections import OrderedDict
 
 import bpy
 
@@ -349,3 +350,19 @@ def get_loaded_movie_sound_strip_paths(context: bpy.types.Context) -> List[Path]
             continue
 
     return filepath_list
+
+
+def add_to_folder_history(
+    ordered_dict: OrderedDict, key: str, value: Any
+) -> OrderedDict:
+    # If dictionary exceeds length of FOLDER_HISTORY_STEPS make sure to pop first item.
+    if len(ordered_dict) == vars.FOLDER_HISTORY_STEPS:
+        ordered_dict.popitem(last=False)
+
+    # If key is already in dict, make sure to pop it first
+    # So it gets appended at the end.
+    if key in ordered_dict:
+        ordered_dict.pop(key)
+
+    ordered_dict[key] = value
+    return ordered_dict

@@ -21,6 +21,7 @@
 
 from pathlib import Path
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
+from collections import OrderedDict
 
 import bpy
 from bpy.app.handlers import persistent
@@ -41,6 +42,7 @@ prev_filepath_list: List[Path] = []
 filebrowser_state: FileBrowserState = FileBrowserState()
 is_fullscreen: bool = False  # TODO: context.screen.show_fullscreen is not updating
 is_muted: bool = False
+last_folder_at_path: OrderedDict = OrderedDict()
 
 
 class MV_OT_load_media_movie(bpy.types.Operator):
@@ -608,12 +610,21 @@ class MV_OT_jump_folder_up(bpy.types.Operator):
     bl_description = "Jumps one folder up in current File Browser directory"
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        global last_folder_at_path
+
         area_fb = opsdata.find_area(context, "FILE_BROWSER")
         if not area_fb:
             return {"CANCELLED"}
 
         ctx = opsdata.get_context_for_area(area_fb)
         bpy.ops.file.parent(ctx)
+
+        # Select last folder if present in last_folder_at_path.
+        current_dir = Path(area_fb.spaces.active.params.directory.decode("utf-8"))
+        if current_dir.as_posix() in last_folder_at_path:
+            area_fb.spaces.active.activate_file_by_relative_path(
+                relative_path=last_folder_at_path[current_dir.as_posix()]
+            )
 
         return {"FINISHED"}
 
@@ -626,6 +637,7 @@ class MV_OT_jump_folder_in(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         global prev_relpath
+        global last_folder_at_path
 
         area_fb = opsdata.find_area(context, "FILE_BROWSER")
 
@@ -640,7 +652,11 @@ class MV_OT_jump_folder_in(bpy.types.Operator):
         current_dir = Path(area_fb.spaces.active.params.directory.decode("utf-8"))
         new_path = current_dir.joinpath(prev_relpath)
 
+        # Jump in to dir and save it to folder history.
         if new_path.exists() and new_path.is_dir():
+            opsdata.add_to_folder_history(
+                last_folder_at_path, current_dir.as_posix(), prev_relpath
+            )
             area_fb.spaces.active.params.directory = new_path.as_posix().encode("utf-8")
 
         return {"FINISHED"}

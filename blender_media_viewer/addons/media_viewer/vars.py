@@ -95,3 +95,6 @@ EXT_SCRIPT = [".py"]
 def get_config_file() -> Path:
     path = bpy.utils.user_resource("CONFIG", path="media_viewer", create=True)
     return Path(path) / "config.json"
+
+
+FOLDER_HISTORY_STEPS: int = 10
