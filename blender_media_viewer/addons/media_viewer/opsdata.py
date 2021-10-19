@@ -97,7 +97,7 @@ def fit_frame_range_to_strips(
     strips.sort(key=get_sort_tuple)
 
     context.scene.frame_start = strips[0].frame_final_start
-    context.scene.frame_end = strips[-1].frame_final_end
+    context.scene.frame_end = strips[-1].frame_final_end - 1
 
     return (context.scene.frame_start, context.scene.frame_end)
 
