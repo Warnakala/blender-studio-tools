@@ -43,6 +43,7 @@ filebrowser_state: FileBrowserState = FileBrowserState()
 is_fullscreen: bool = False  # TODO: context.screen.show_fullscreen is not updating
 is_muted: bool = False
 last_folder_at_path: OrderedDict = OrderedDict()
+active_bookmark_group_name: str = ""
 
 
 class MV_OT_load_media_movie(bpy.types.Operator):
@@ -573,12 +574,13 @@ class MV_OT_screen_full_area(bpy.types.Operator):
 
         # Select previous filepath if in FILE_BROWSER area.
         area_fb = opsdata.find_area(context, "FILE_BROWSER")
-        if not context.screen.show_fullscreen and area_fb:
+        if not is_fullscreen and area_fb:
             if prev_relpath:
                 area_fb.spaces.active.activate_file_by_relative_path(
                     relative_path=prev_relpath
                 )
-        if context.screen.show_fullscreen:  # TODO: does not work
+
+        if is_fullscreen:
             # Fit view.
             opsdata.fit_view(context, area_media)
 
@@ -648,6 +650,170 @@ class MV_OT_jump_folder_in(bpy.types.Operator):
         # Jump in to dir.
         if new_path.exists() and new_path.is_dir():
             area_fb.spaces.active.params.directory = new_path.as_posix().encode("utf-8")
+
+        return {"FINISHED"}
+
+
+class MV_OT_walk_bookmarks(bpy.types.Operator):
+
+    bl_idname = "media_viewer.walk_bookmarks"
+    bl_label = "Walk Bookmarks"
+    bl_description = "Walk through bookmarks"
+
+    direction: bpy.props.EnumProperty(
+        items=(
+            ("UP", "UP", ""),
+            ("DOWN", "DOWN", ""),
+        ),
+        default="DOWN",
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_bookmark_group_name
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
+        delta = -1 if self.direction == "UP" else 1
+
+        if not area_fb:
+            return {"CANCELLED"}
+
+        if not area_fb.spaces.active.show_region_toolbar:
+            return {"CANCELLED"}
+
+        # Run Cleanup.
+        ctx = opsdata.get_context_for_area(area_fb)
+        bpy.ops.file.bookmark_cleanup(ctx)
+
+        # !!!!!
+        # The following section is the most stupid code in the universe.
+        # !!!!!
+
+        space_fb = area_fb.spaces.active
+        bookmark_group_list: List[Tuple] = [
+            # (space_fb.system_folders, "system_folders_active"),# Is -1 if nothing is active.
+            (space_fb.system_bookmarks, "system_bookmarks_active", "system_bookmarks"),
+            (space_fb.bookmarks, "bookmarks_active", "bookmarks"),
+            (space_fb.recent_folders, "recent_folders_active", "recent_folders"),
+        ]
+        bookmark_group_list_index = 0
+        active_bookmark_group = None
+        active_bookmark_group_index = -1
+        active_bookmark_group_idx_attr_name = ""
+
+        for idx, item in enumerate(bookmark_group_list):
+            bookmark_group, idx_attr_name, bookmark_group_name = item
+
+            # If prev bookmark group was recent folders, ignore other
+            # bookmark groups. This is used to work around the fact that the filebrowser
+            # selects all entries that represent the same folder. So if a bookmark is selected
+            # that also happens to be in the recent folder section it will select both and set
+            # both indexes. With this behavior we would never reach the recent folder section.
+            # Thats why we check here if the active_bookmark_group_name is recent folder so we can
+            # ignore all other selections.
+            if active_bookmark_group_name == "recent_folders":
+                if not bookmark_group_name == active_bookmark_group_name:
+                    continue
+
+            active_index = getattr(space_fb, idx_attr_name)
+            if active_index != -1:
+                active_bookmark_group = bookmark_group
+                active_bookmark_group_index = active_index
+                bookmark_group_list_index = idx
+                active_bookmark_group_idx_attr_name = idx_attr_name
+                break
+
+        # Check if active_groupmark_group has enough items if we jump to the next index.
+        # If not we need to change the active_bookmark_group by choosing the next one on in the
+        # bookmarg_group_list.
+
+        # If nothing is active or selected, activate the first index of the first bookmark group.
+        if not active_bookmark_group:
+            setattr(space_fb, bookmark_group_list[0][1], 0)
+
+        # Catch case jump to next bookmark group.
+        elif (active_bookmark_group_index + delta) > len(
+            active_bookmark_group.items()
+        ) - 1:
+            # Choose next item in bookmark group list.
+            # Start in the front if we have reached the end of the list.
+            if (bookmark_group_list_index + 1) > len(bookmark_group_list) - 1:
+                new_boookmark_group_list_index = 0
+
+            # Otherwise just make one step forward.
+            else:
+                new_boookmark_group_list_index = bookmark_group_list_index + 1
+
+            # Get the new active bookmark group.
+            new_active_bookmark_group = bookmark_group_list[
+                new_boookmark_group_list_index
+            ][0]
+
+            # Get the attr name for set.
+            new_active_bookmark_group_idx_attr_name = bookmark_group_list[
+                new_boookmark_group_list_index
+            ][1]
+            # Update the global active bookmark group name.
+            active_bookmark_group_name = bookmark_group_list[
+                new_boookmark_group_list_index
+            ][2]
+
+            # SET
+            # As we go DOWN the new index in thew new group will be the first one.
+            setattr(space_fb, new_active_bookmark_group_idx_attr_name, 0)
+
+        # Catch case jump to previous bookmark group.
+        elif (active_bookmark_group_index + delta) < 0:
+            # Choose next item in bookmark group list.
+            # Go to the end if we have reached the start of the list.
+            if (bookmark_group_list_index - 1) < 0:
+                new_boookmark_group_list_index = len(bookmark_group_list) - 1
+            # Otherwise just make one step back.
+            else:
+                new_boookmark_group_list_index = bookmark_group_list_index - 1
+
+            # Get the new active bookmark group.
+            new_active_bookmark_group = bookmark_group_list[
+                new_boookmark_group_list_index
+            ][0]
+
+            # Get the attr name for set.
+            new_active_bookmark_group_idx_attr_name = bookmark_group_list[
+                new_boookmark_group_list_index
+            ][1]
+
+            # Update the global active bookmark group name.
+            active_bookmark_group_name = bookmark_group_list[
+                new_boookmark_group_list_index
+            ][2]
+
+            # SET
+            # As we go UP the new index in the new group will be the last one.
+            setattr(
+                space_fb,
+                new_active_bookmark_group_idx_attr_name,
+                len(new_active_bookmark_group.items()) - 1,
+            )
+
+        # Normal down in same bookmark group.
+        elif self.direction == "DOWN":
+            # Easiest case just activate next index in same group.
+            print(f"Same bookmarkgroup next index: {active_bookmark_group_index+delta}")
+            setattr(
+                space_fb,
+                active_bookmark_group_idx_attr_name,
+                (active_bookmark_group_index + delta),
+            )
+
+        # Normal up in same bookmark group.
+        else:
+            # Easiest case just activate previous index in same group.
+            print(
+                f"Same bookmarkgroup previous index: {active_bookmark_group_index+delta}"
+            )
+            setattr(
+                space_fb,
+                active_bookmark_group_idx_attr_name,
+                (active_bookmark_group_index + delta),
+            )
 
         return {"FINISHED"}
 
@@ -1014,6 +1180,7 @@ classes = [
     MV_OT_fit_view,
     MV_OT_frame_offset,
     MV_OT_toggle_mute_audio,
+    MV_OT_walk_bookmarks,
 ]
 
 

@@ -355,6 +355,8 @@ def get_loaded_movie_sound_strip_paths(context: bpy.types.Context) -> List[Path]
 def add_to_folder_history(
     ordered_dict: OrderedDict, key: str, value: Any
 ) -> OrderedDict:
+    if not value:
+        return
     # If dictionary exceeds length of FOLDER_HISTORY_STEPS make sure to pop first item.
     if len(ordered_dict) == vars.FOLDER_HISTORY_STEPS:
         ordered_dict.popitem(last=False)

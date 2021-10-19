@@ -37,6 +37,7 @@ from media_viewer.ops import (
     MV_OT_fit_view,
     MV_OT_frame_offset,
     MV_OT_toggle_mute_audio,
+    MV_OT_walk_bookmarks,
 )
 from media_viewer import opsdata
 from media_viewer.log import LoggerFactory
@@ -283,6 +284,48 @@ def register():
 
         kmi = keymap.keymap_items.new(
             MV_OT_next_media_file.bl_idname, value="PRESS", type="UP_ARROW", repeat=True
+        )
+        kmi.properties.direction = "UP"
+        addon_keymaps.append((keymap, kmi))
+
+        # Walk bookmarks.
+        kmi = keymap.keymap_items.new(
+            MV_OT_walk_bookmarks.bl_idname,
+            value="PRESS",
+            type="DOWN_ARROW",
+            repeat=True,
+            ctrl=True,
+        )
+        kmi.properties.direction = "DOWN"
+        addon_keymaps.append((keymap, kmi))
+
+        # Walk bookmarks.
+        kmi = keymap.keymap_items.new(
+            MV_OT_walk_bookmarks.bl_idname,
+            value="PRESS",
+            type="RIGHT_ARROW",
+            repeat=True,
+            ctrl=True,
+        )
+        kmi.properties.direction = "DOWN"
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            MV_OT_walk_bookmarks.bl_idname,
+            value="PRESS",
+            type="UP_ARROW",
+            repeat=True,
+            ctrl=True,
+        )
+        kmi.properties.direction = "UP"
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            MV_OT_walk_bookmarks.bl_idname,
+            value="PRESS",
+            type="LEFT_ARROW",
+            repeat=True,
+            ctrl=True,
         )
         kmi.properties.direction = "UP"
         addon_keymaps.append((keymap, kmi))
