@@ -1009,6 +1009,20 @@ class MV_OT_toggle_mute_audio(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_quit_blender(bpy.types.Operator):
+
+    bl_idname = "media_viewer.quit_blender"
+    bl_label = "Quit Blender"
+    bl_description = "Quits Blender without confirmation"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Not 100% sure if this makes a lot of sense.
+        # It seems like confirmation dialog does not pop up this way.
+        bpy.ops.wm.quit_blender()
+        return {"FINISHED"}
+
+
 class MV_OT_frame_offset(bpy.types.Operator):
 
     bl_idname = "media_viewer.frame_offset"
@@ -1181,6 +1195,7 @@ classes = [
     MV_OT_frame_offset,
     MV_OT_toggle_mute_audio,
     MV_OT_walk_bookmarks,
+    MV_OT_quit_blender,
 ]
 
 

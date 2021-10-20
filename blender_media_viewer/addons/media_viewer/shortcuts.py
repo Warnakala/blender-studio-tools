@@ -38,6 +38,7 @@ from media_viewer.ops import (
     MV_OT_frame_offset,
     MV_OT_toggle_mute_audio,
     MV_OT_walk_bookmarks,
+    MV_OT_quit_blender,
 )
 from media_viewer import opsdata
 from media_viewer.log import LoggerFactory
@@ -410,6 +411,19 @@ def register():
                     MV_OT_toggle_mute_audio.bl_idname,
                     value="PRESS",
                     type="M",
+                ),
+            )
+        )
+
+        # Quit Blender.
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_quit_blender.bl_idname,
+                    value="PRESS",
+                    type="Q",
+                    ctrl=True,
                 ),
             )
         )
