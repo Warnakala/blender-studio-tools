@@ -162,6 +162,7 @@ def get_context_for_area(area: bpy.types.Area) -> Dict:
             ctx = bpy.context.copy()
             ctx["area"] = area
             ctx["region"] = region
+            ctx["screen"] = area.id_data
             return ctx
     return {}
 

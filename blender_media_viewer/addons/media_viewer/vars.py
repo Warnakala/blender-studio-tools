@@ -98,3 +98,4 @@ def get_config_file() -> Path:
 
 
 FOLDER_HISTORY_STEPS: int = 10
+PAN_VIEW_DELTA: int = 50

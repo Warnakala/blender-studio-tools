@@ -1023,6 +1023,44 @@ class MV_OT_quit_blender(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_pan_media_view(bpy.types.Operator):
+
+    bl_idname = "media_viewer.pan_media_view"
+    bl_label = "Pan Media View"
+    bl_description = "Pans the media view by specified delta"
+
+    deltax: bpy.props.IntProperty(name="Delta X")
+    deltay: bpy.props.IntProperty(name="Delta Y")
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+
+        # Find active media area.
+        # area_media = opsdata.find_area(context, active_media_area)
+        # ctx = opsdata.get_context_for_area(area_media)
+
+        # TODO:
+        # Currently this operator works on the current area it is triggered from.
+        # The goal would be no matter where it is triggerd it always pans
+        # the active media area. So far I could not figure out what else
+        # it needs in the context override.
+
+        ctx=context.copy()
+        active_area = ctx["area"]
+
+        if active_area.type == "IMAGE_EDITOR":
+            bpy.ops.image.view_pan("EXEC_DEFAULT", offset=(self.deltax, self.deltay))
+
+        elif active_area.type == "SEQUENCE_EDITOR":
+            bpy.ops.view2d.pan("EXEC_DEFAULT", deltax=self.deltax, deltay=self.deltay)
+
+        # Reset to default.
+        self.deltay = 0
+        self.deltax = 0
+
+        return {"FINISHED"}
+
+
 class MV_OT_frame_offset(bpy.types.Operator):
 
     bl_idname = "media_viewer.frame_offset"
@@ -1196,6 +1234,7 @@ classes = [
     MV_OT_toggle_mute_audio,
     MV_OT_walk_bookmarks,
     MV_OT_quit_blender,
+    MV_OT_pan_media_view,
 ]
 
 

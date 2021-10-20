@@ -39,8 +39,9 @@ from media_viewer.ops import (
     MV_OT_toggle_mute_audio,
     MV_OT_walk_bookmarks,
     MV_OT_quit_blender,
+    MV_OT_pan_media_view,
 )
-from media_viewer import opsdata
+from media_viewer import opsdata, vars
 from media_viewer.log import LoggerFactory
 
 
@@ -427,6 +428,42 @@ def register():
                 ),
             )
         )
+        # Pan view.
+        kmi = keymap.keymap_items.new(
+            MV_OT_pan_media_view.bl_idname,
+            value="PRESS",
+            type="NUMPAD_4",
+            repeat=True,
+        )
+        kmi.properties.deltax = vars.PAN_VIEW_DELTA
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            MV_OT_pan_media_view.bl_idname,
+            value="PRESS",
+            type="NUMPAD_6",
+            repeat=True,
+        )
+        kmi.properties.deltax = -vars.PAN_VIEW_DELTA
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            MV_OT_pan_media_view.bl_idname,
+            value="PRESS",
+            type="NUMPAD_8",
+            repeat=True,
+        )
+        kmi.properties.deltay = -vars.PAN_VIEW_DELTA
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            MV_OT_pan_media_view.bl_idname,
+            value="PRESS",
+            type="NUMPAD_2",
+            repeat=True,
+        )
+        kmi.properties.deltay = vars.PAN_VIEW_DELTA
+        addon_keymaps.append((keymap, kmi))
 
     # Handlers
     # Does neither work on register or on load_post. But when reloading the file it works.....?????
