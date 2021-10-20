@@ -404,6 +404,17 @@ def register():
             )
         )
 
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_fit_view.bl_idname,
+                    value="PRESS",
+                    type="NUMPAD_PERIOD",
+                ),
+            )
+        )
+
         # Mute Audio.
         addon_keymaps.append(
             (
