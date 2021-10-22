@@ -446,7 +446,7 @@ def register():
             type="NUMPAD_4",
             repeat=True,
         )
-        kmi.properties.deltax = vars.PAN_VIEW_DELTA
+        kmi.properties.deltax = -vars.PAN_VIEW_DELTA
         addon_keymaps.append((keymap, kmi))
 
         kmi = keymap.keymap_items.new(
@@ -455,7 +455,7 @@ def register():
             type="NUMPAD_6",
             repeat=True,
         )
-        kmi.properties.deltax = -vars.PAN_VIEW_DELTA
+        kmi.properties.deltax = vars.PAN_VIEW_DELTA
         addon_keymaps.append((keymap, kmi))
 
         kmi = keymap.keymap_items.new(
@@ -464,7 +464,7 @@ def register():
             type="NUMPAD_8",
             repeat=True,
         )
-        kmi.properties.deltay = -vars.PAN_VIEW_DELTA
+        kmi.properties.deltay = vars.PAN_VIEW_DELTA
         addon_keymaps.append((keymap, kmi))
 
         kmi = keymap.keymap_items.new(
@@ -473,7 +473,7 @@ def register():
             type="NUMPAD_2",
             repeat=True,
         )
-        kmi.properties.deltay = vars.PAN_VIEW_DELTA
+        kmi.properties.deltay = -vars.PAN_VIEW_DELTA
         addon_keymaps.append((keymap, kmi))
 
     # Handlers
