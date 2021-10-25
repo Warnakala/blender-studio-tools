@@ -30,7 +30,7 @@ You can also start Blender directly with an application template with a command 
 
 ## Features
 
-With the **ARROW** keys, **RETURN** and **BACKSPACE** you can quickly navigate the file structure. Selecting a file will automatically place it in the media area and play it back looped. The media-viewer can display videos, single images, image sequences as well as text files. **DOT** and **COMMA** jump to the next or previous frame (wraps around frame range). **SPACE** toggles play and stop.
+With the **ARROW** keys, **RETURN** and **BACKSPACE** you can quickly navigate the file structure. Selecting a file will automatically place it in the media area and play it back looped. The media-viewer can display videos, single images, image sequences as well as text files. **DOT** and **COMMA** jump to the next or previous frame (wraps around frame range). **SPACE** toggles play and stop. Selecting multiple video files with shift will place them all in one timeline after another.
 
 ![](./docs/videos/file_navigation.mp4)
 
