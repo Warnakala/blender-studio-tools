@@ -92,6 +92,7 @@ If you toggle the sidebar of the Filebrowser with **CTRL+T** you can browse the 
 | ------------- |-----------------------------|
 | M             | Toggle Mute Audio           |
 | 1,2,3         | Filebrowser Display Type    |
+| CTRL + Q      | Quits the Application       |
 
 
 ## Development
