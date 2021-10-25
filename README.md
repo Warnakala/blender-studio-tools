@@ -12,9 +12,10 @@ It ships with the media-viewer addon that registers many useful shortcuts and ne
 ## Installation
 Download or clone this repository.
 In the root project folder you will find the 'blender_media_viewer' folder.
-Blender expects Application Templates in this folder:
+Blender expects Application Templates in these folders:
 
 `{BLENDER_USER_SCRIPTS}/startup/bl_app_templates_user`
+
 `{BLENDER_SYSTEM_SCRIPTS}/startup/bl_app_templates_system`
 
 Place the `blender_media_viewer` folder in on of these directories or create a sym link to it. More information on Application Templates can be found [here](https://docs.blender.org/manual/en/latest/advanced/app_templates.html).
