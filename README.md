@@ -86,6 +86,8 @@ If you toggle the sidebar of the Filebrowser with **CTRL+T** you can browse the 
 | NUMPAD 6      | Move media view camera RIGHT|
 | NUMPAD 8      | Move media view camera UP   |
 | NUMPAD 2      | Move media view camera DOWN |
+| NUMPAD +      | Zoom media view camera IN   |
+| NUMPAD -      | Move media view camera OUT  |
 
 **Other**:
 | Key           | Function                    |
