@@ -1062,6 +1062,45 @@ class MV_OT_pan_media_view(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_zoom_media_view(bpy.types.Operator):
+
+    bl_idname = "media_viewer.zoom_media_view"
+    bl_label = "Zoom Media View"
+    bl_description = "Zooms media view in specified direction"
+
+    direction: bpy.props.EnumProperty(items=[("IN", "IN", ""), ("OUT", "OUT", "")])
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+
+        # Find active media area.
+        area_media = opsdata.find_area(context, active_media_area)
+        if not area_media:
+            return {"CANCELLED"}
+
+        if area_media.type == "IMAGE_EDITOR":
+            ctx = opsdata.get_context_for_area(area_media)
+
+            if self.direction == "IN":
+                bpy.ops.image.view_zoom_in(ctx, "EXEC_DEFAULT", location=(0.5, 0.5))
+
+            elif self.direction == "OUT":
+                bpy.ops.image.view_zoom_out(ctx, "EXEC_DEFAULT", location=(0.5, 0.5))
+
+        elif area_media.type == "SEQUENCE_EDITOR":
+            ctx = opsdata.get_context_for_area(area_media, region_type="PREVIEW")
+
+            if self.direction == "IN":
+                bpy.ops.view2d.zoom_in(ctx, "EXEC_DEFAULT")
+            elif self.direction == "OUT":
+                bpy.ops.view2d.zoom_out(ctx, "EXEC_DEFAULT")
+
+        # Redraw Area.
+        area_media.tag_redraw()
+
+        return {"FINISHED"}
+
+
 class MV_OT_frame_offset(bpy.types.Operator):
 
     bl_idname = "media_viewer.frame_offset"
@@ -1236,6 +1275,7 @@ classes = [
     MV_OT_walk_bookmarks,
     MV_OT_quit_blender,
     MV_OT_pan_media_view,
+    MV_OT_zoom_media_view,
 ]
 
 

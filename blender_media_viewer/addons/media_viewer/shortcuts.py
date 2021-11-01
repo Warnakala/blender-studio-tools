@@ -40,6 +40,7 @@ from media_viewer.ops import (
     MV_OT_walk_bookmarks,
     MV_OT_quit_blender,
     MV_OT_pan_media_view,
+    MV_OT_zoom_media_view,
 )
 from media_viewer import opsdata, vars
 from media_viewer.log import LoggerFactory
@@ -474,6 +475,25 @@ def register():
             repeat=True,
         )
         kmi.properties.deltay = -vars.PAN_VIEW_DELTA
+        addon_keymaps.append((keymap, kmi))
+
+        # Zoom view.
+        kmi = keymap.keymap_items.new(
+            MV_OT_zoom_media_view.bl_idname,
+            value="PRESS",
+            type="NUMPAD_PLUS",
+            repeat=True,
+        )
+        kmi.properties.direction = "IN"
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            MV_OT_zoom_media_view.bl_idname,
+            value="PRESS",
+            type="NUMPAD_MINUS",
+            repeat=True,
+        )
+        kmi.properties.direction = "OUT"
         addon_keymaps.append((keymap, kmi))
 
     # Handlers
