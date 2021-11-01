@@ -159,7 +159,13 @@ def fit_view(context: bpy.types.Context, area: bpy.types.Area) -> None:
 def get_context_for_area(area: bpy.types.Area) -> Dict:
     for region in area.regions:
         if region.type == "WINDOW":
-            ctx = bpy.context.copy()
+            ctx = {}
+
+            # In weird cases, e.G mouse over toolbar of filebrowser,
+            # bpy.context.copy is None. Check for that.
+            if bpy.context.copy:
+                ctx = bpy.context.copy()
+
             ctx["area"] = area
             ctx["region"] = region
             ctx["screen"] = area.id_data
