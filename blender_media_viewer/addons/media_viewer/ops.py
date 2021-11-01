@@ -1036,23 +1036,24 @@ class MV_OT_pan_media_view(bpy.types.Operator):
         global active_media_area
 
         # Find active media area.
-        # area_media = opsdata.find_area(context, active_media_area)
-        # ctx = opsdata.get_context_for_area(area_media)
+        area_media = opsdata.find_area(context, active_media_area)
+        if not area_media:
+            return {"CANCELLED"}
 
-        # TODO:
-        # Currently this operator works on the current area it is triggered from.
-        # The goal would be no matter where it is triggerd it always pans
-        # the active media area. So far I could not figure out what else
-        # it needs in the context override.
+        if area_media.type == "IMAGE_EDITOR":
+            ctx = opsdata.get_context_for_area(area_media)
+            bpy.ops.image.view_pan(
+                ctx, "EXEC_DEFAULT", offset=(self.deltax, self.deltay)
+            )
 
-        ctx=context.copy()
-        active_area = ctx["area"]
+        elif area_media.type == "SEQUENCE_EDITOR":
+            ctx = opsdata.get_context_for_area(area_media, region_type="PREVIEW")
+            bpy.ops.view2d.pan(
+                ctx, "EXEC_DEFAULT", deltax=self.deltax, deltay=self.deltay
+            )
 
-        if active_area.type == "IMAGE_EDITOR":
-            bpy.ops.image.view_pan("EXEC_DEFAULT", offset=(self.deltax, self.deltay))
-
-        elif active_area.type == "SEQUENCE_EDITOR":
-            bpy.ops.view2d.pan("EXEC_DEFAULT", deltax=self.deltax, deltay=self.deltay)
+        # Redraw Area.
+        area_media.tag_redraw()
 
         # Reset to default.
         self.deltay = 0

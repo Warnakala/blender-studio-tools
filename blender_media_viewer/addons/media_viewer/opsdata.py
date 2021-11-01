@@ -156,9 +156,9 @@ def fit_view(context: bpy.types.Context, area: bpy.types.Area) -> None:
         fit_timeline_view(context, area=area)
 
 
-def get_context_for_area(area: bpy.types.Area) -> Dict:
+def get_context_for_area(area: bpy.types.Area, region_type="WINDOW") -> Dict:
     for region in area.regions:
-        if region.type == "WINDOW":
+        if region.type == region_type:
             ctx = {}
 
             # In weird cases, e.G mouse over toolbar of filebrowser,
