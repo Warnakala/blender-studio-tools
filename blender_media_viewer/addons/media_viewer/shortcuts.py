@@ -333,7 +333,7 @@ def register():
         kmi.properties.direction = "UP"
         addon_keymaps.append((keymap, kmi))
 
-        # Offset current frame.
+        # Offset current frame delta 1.
         kmi = keymap.keymap_items.new(
             MV_OT_frame_offset.bl_idname, value="PRESS", type="PERIOD", repeat=True
         )
@@ -346,10 +346,18 @@ def register():
         kmi.properties.delta = -1
         addon_keymaps.append((keymap, kmi))
 
-        for km, kmi in addon_keymaps:
-            logger.info(
-                "Registered new hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name
-            )
+        # Offset current frame delta 10.
+        kmi = keymap.keymap_items.new(
+            MV_OT_frame_offset.bl_idname, value="PRESS", type="PERIOD", repeat=True, ctrl=True
+        )
+        kmi.properties.delta = 10
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            MV_OT_frame_offset.bl_idname, value="PRESS", type="COMMA", repeat=True, ctrl=True
+        )
+        kmi.properties.delta = -10
+        addon_keymaps.append((keymap, kmi))
 
         # Jump one folder up.
         addon_keymaps.append(
@@ -495,6 +503,12 @@ def register():
         )
         kmi.properties.direction = "OUT"
         addon_keymaps.append((keymap, kmi))
+
+    # Print new hotkeys.
+    for km, kmi in addon_keymaps:
+        logger.info(
+            "Registered new hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name
+        )
 
     # Handlers
     # Does neither work on register or on load_post. But when reloading the file it works.....?????
