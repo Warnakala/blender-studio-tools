@@ -3,7 +3,7 @@ The blender-media-viewer is a Blender Application Template that makes Blender us
 
 It came to life because we wanted to have a player that could seamlessly browse media files with the arrow keys for our weekly presentations at the studio no matter if they are video, images or image sequences.
 
-One important aspect of the blender-media-viewer is to be able to use it without your mouse. Make sure to read the #shortcuts section.
+One important aspect of the blender-media-viewer is to be able to use it without your mouse. Make sure to read the [shortcuts](#shortcuts) section.
 
 This Application Template reduces the Blender UI to a bare minimum to remove all elements that are not needed. It ships with its own add-on and keymap which add the functionality to make it usable as a media viewer.
 
@@ -39,7 +39,7 @@ You can also start Blender directly with an application template with a command 
 
 As mentioned above an important aspect while developing was to supply functionality and shortcuts to make the blender-media-viewer usable without a mouse.
 
-With the **ARROW** keys, **RETURN** and **BACKSPACE** you can quickly navigate the file structure. Selecting a file will automatically place it in the media area and play it back looped. The media-viewer can display videos, single images, image sequences as well as text files. **DOT** and **COMMA** jump to the next or previous frame (wraps around frame range). If you hold down CTRL it jumps with a delta of 10 for faster scrubbing. **SPACE** toggles play and stop. Selecting multiple video files with shift will place them all in one timeline after another.
+With the **ARROW** keys, **RETURN** and **BACKSPACE** you can quickly navigate the file structure. Selecting a file will automatically place it in the media area and play it back looped. The media-viewer can display videos, single images, image sequences as well as text files. **DOT** and **COMMA** jump to the next or previous frame (wraps around frame range). If you hold down **CTRL** it jumps with a delta of 10 for faster scrubbing. **SPACE** toggles play and stop. Selecting multiple video files with **SHIFT** will place them all in one timeline after another.
 
 ![](./docs/videos/file_navigation.mp4)
 
@@ -48,12 +48,12 @@ You can easily change your screen layout. **T** toggles the Timeline, **B** togg
 ![](./docs/videos/toggle_areas.mp4)
 
 
-You can navigate the media view with your **NUMPAD**. **4,6,2,8** move the camera of the media view, **+** and **-** lets you zoom in and out. With **DOT** or **SHIFT + SPACE** you can fit the media to view.
+You can navigate the media view with your **NUMPAD**. **4,6,2,8** move the camera of the media view, **+** and **-** lets you zoom in and out. With **NUMPAD DOT** or **SHIFT + SPACE** you can fit the media to view.
 
 ![](./docs/videos/screen_navigation.mp4)
 
 
-If you toggle the sidebar of the Filebrowser with **CTRL+T** you can browse the bookmark lists with your ARROW keys while holding down **CTRL**. You can also change the Filebrowser display type with **1,2, 3**. **M** toggles mute audio.
+If you toggle the sidebar of the Filebrowser with **CTRL+T** you can browse the bookmark lists with your **ARROW** keys while holding down **CTRL**. You can also change the Filebrowser display type with **1,2, 3**. **M** toggles mute audio.
 
 ![](./docs/videos/filebrowser_extra.mp4)
 
