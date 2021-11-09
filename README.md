@@ -1,6 +1,11 @@
 # blender-media-viewer
 The blender-media-viewer is a Blender Application Template that makes Blender usable as a Video-Player, Image and Text-Viewer.
-It ships with the media-viewer addon that registers many useful shortcuts and new operators.
+
+It came to life because we wanted to have a player that could seamlessly browse media files with the arrow keys for our weekly presentations at the studio no matter if they are video, images or image sequences.
+
+One important aspect of the blender-media-viewer is to be able to use it without your mouse. Make sure to read the #shortcuts section.
+
+This Application Template reduces the Blender UI to a bare minimum to remove all elements that are not needed. It ships with its own add-on and keymap which add the functionality to make it usable as a media viewer.
 
 ## Table of Contents
 - [Installation](#installation)
@@ -11,14 +16,16 @@ It ships with the media-viewer addon that registers many useful shortcuts and ne
 
 ## Installation
 Download or clone this repository.
-In the root project folder you will find the 'blender_media_viewer' folder.
 Blender expects Application Templates in these folders:
 
 `{BLENDER_USER_SCRIPTS}/startup/bl_app_templates_user`
 
 `{BLENDER_SYSTEM_SCRIPTS}/startup/bl_app_templates_system`
 
-Place the `blender_media_viewer` folder in on of these directories or create a sym link to it. More information on Application Templates can be found [here](https://docs.blender.org/manual/en/latest/advanced/app_templates.html).
+In the root project folder you will find the 'blender_media_viewer' folder.
+Place the `blender_media_viewer` folder in one of these directories or create a sym link to it.
+
+More information on Application Templates can be found [here](https://docs.blender.org/manual/en/latest/advanced/app_templates.html).
 
 ## How to get started
 After installing blender-media-viewer you can start it via the **File->New** menu.
@@ -30,11 +37,13 @@ You can also start Blender directly with an application template with a command 
 
 ## Features
 
-With the **ARROW** keys, **RETURN** and **BACKSPACE** you can quickly navigate the file structure. Selecting a file will automatically place it in the media area and play it back looped. The media-viewer can display videos, single images, image sequences as well as text files. **DOT** and **COMMA** jump to the next or previous frame (wraps around frame range). **SPACE** toggles play and stop. Selecting multiple video files with shift will place them all in one timeline after another.
+As mentioned above an important aspect while developing was to supply functionality and shortcuts to make the blender-media-viewer usable without a mouse.
+
+With the **ARROW** keys, **RETURN** and **BACKSPACE** you can quickly navigate the file structure. Selecting a file will automatically place it in the media area and play it back looped. The media-viewer can display videos, single images, image sequences as well as text files. **DOT** and **COMMA** jump to the next or previous frame (wraps around frame range). If you hold down CTRL it jumps with a delta of 10 for faster scrubbing. **SPACE** toggles play and stop. Selecting multiple video files with shift will place them all in one timeline after another.
 
 ![](./docs/videos/file_navigation.mp4)
 
-You can easily change your screen layout. **T** toggles the Timeline, **B** toggles the Filebrowser, **CTRL+T** toggles the Filebrowser area and with **F** you can fullscreen the media area. Note that the media-viewer remembers the last selected folders and also saves the last path when you close the application.
+You can easily change your screen layout. **T** toggles the Timeline, **B** toggles the Filebrowser, **CTRL+T** toggles the Filebrowser area and with **F** you can fullscreen the media area. Note that the media-viewer remembers the last selected folders or file and also saves the last path when you close the application.
 
 ![](./docs/videos/toggle_areas.mp4)
 
@@ -66,6 +75,8 @@ If you toggle the sidebar of the Filebrowser with **CTRL+T** you can browse the 
 | SPACE         | Toggle Play                    |
 | DOT           | Next frame                     |
 | COMMA         | Previous frame                 |
+| CTRL + DOT    | Jump + 10 frames               |
+| CTRL + COMMA  | Jump -10  frames               |
 
 
 **Areas**:
