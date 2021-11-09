@@ -43,7 +43,7 @@ With the **ARROW** keys, **RETURN** and **BACKSPACE** you can quickly navigate t
 
 ![](./docs/videos/file_navigation.mp4)
 
-You can easily change your screen layout. **T** toggles the Timeline, **B** toggles the Filebrowser, **CTRL+T** toggles the Filebrowser area and with **F** you can fullscreen the media area. Note that the media-viewer remembers the last selected folders or file and also saves the last path when you close the application.
+You can easily change your screen layout. **T** toggles the Timeline, **B** toggles the Filebrowser, **CTRL+B** toggles the Filebrowser area and with **F** you can fullscreen the media area. Note that the media-viewer remembers the last selected folders or file and also saves the last path when you close the application.
 
 ![](./docs/videos/toggle_areas.mp4)
 
@@ -83,8 +83,8 @@ If you toggle the sidebar of the Filebrowser with **CTRL+T** you can browse the 
 | Key           | Function                    |
 | ------------- |-----------------------------|
 | B             | Toggle Filebrowser          |
+| CTRL + B      | Toggle Filebrowser Sidebar  |
 | T             | Toggle Timeline             |
-| CTRL + T      | Toggle Filebrowser Sidebar  |
 | F             | Fullscreen Media Area       |
 
 

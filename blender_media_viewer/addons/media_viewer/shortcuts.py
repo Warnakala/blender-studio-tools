@@ -215,7 +215,7 @@ def register():
                 keymap.keymap_items.new(
                     MV_OT_toggle_fb_region_toolbar.bl_idname,
                     value="PRESS",
-                    type="T",
+                    type="B",
                     ctrl=True,
                 ),
             )
@@ -348,13 +348,21 @@ def register():
 
         # Offset current frame delta 10.
         kmi = keymap.keymap_items.new(
-            MV_OT_frame_offset.bl_idname, value="PRESS", type="PERIOD", repeat=True, ctrl=True
+            MV_OT_frame_offset.bl_idname,
+            value="PRESS",
+            type="PERIOD",
+            repeat=True,
+            ctrl=True,
         )
         kmi.properties.delta = 10
         addon_keymaps.append((keymap, kmi))
 
         kmi = keymap.keymap_items.new(
-            MV_OT_frame_offset.bl_idname, value="PRESS", type="COMMA", repeat=True, ctrl=True
+            MV_OT_frame_offset.bl_idname,
+            value="PRESS",
+            type="COMMA",
+            repeat=True,
+            ctrl=True,
         )
         kmi.properties.delta = -10
         addon_keymaps.append((keymap, kmi))
