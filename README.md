@@ -35,6 +35,10 @@ After installing blender-media-viewer you can start it via the **File->New** men
 You can also start Blender directly with an application template with a command line argument:
 `/path/to/blender --app-template blender_media_viewer`
 
+In this video you will get an overview of what the blender-media-viewer can do.
+
+![](./docs/videos/overview.mp4)
+
 ## Features
 
 As mentioned above an important aspect while developing was to supply functionality and shortcuts to make the blender-media-viewer usable without a mouse.
