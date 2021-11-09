@@ -335,10 +335,15 @@ class MV_OT_toggle_timeline(bpy.types.Operator):
         elif area_media:
             # Media area needs to be splitted.
             # New area needs to be timeline
-            opsdata.split_area(
+            area_timeline = opsdata.split_area(
                 context, area_media, "DOPESHEET_EDITOR", "HORIZONTAL", self.factor
             )
             opsdata.fit_timeline_view(context)
+
+            # Modify timeline area.
+            area_timeline.spaces.active.show_region_header = False
+            # area_timeline.spaces.active.show_region_toolbar = False # TODO: does not exist, expose to PythonAPI
+
             logger.info("Show timeline")
 
         else:
