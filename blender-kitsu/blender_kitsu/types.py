@@ -19,7 +19,6 @@
 # (c) 2021, Blender Foundation - Paul Golter
 
 from __future__ import annotations
-from blender_kitsu.gazu.task import all_task_statuses
 
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Union, Tuple
