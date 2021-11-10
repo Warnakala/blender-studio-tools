@@ -39,7 +39,10 @@ try:
     requests.models.complexjson.dumps = functools.partial(
         json.dumps, cls=CustomJSONEncoder
     )
-    host = "http://gazu.change.serverhost/api"
+    # Set host to "" otherwise requests.Session() takes a long time during Blender startup
+    # Whyever that is.
+    # host = "http://gazu.change.serverhost/api"
+    host = ""
     default_client = create_client(host)
 except:
     print("Warning, running in setup mode!")
