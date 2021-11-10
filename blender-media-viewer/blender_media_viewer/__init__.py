@@ -56,6 +56,7 @@ class AppStateStore(AppOverrideState):
         )
         """
 
+        return []
         return classes
 
     # ----------------
@@ -64,6 +65,7 @@ class AppStateStore(AppOverrideState):
     @staticmethod
     def ui_ignore_classes():
         # What does this do?
+        return ()
         return (
             bpy.types.Header,
             bpy.types.Menu,
@@ -80,7 +82,7 @@ class AppStateStore(AppOverrideState):
 
     @staticmethod
     def ui_ignore_menu(menu_id):
-        return True
+        return False
 
     @staticmethod
     def ui_ignore_label(text):
