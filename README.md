@@ -29,7 +29,13 @@ contactsheet (/contactsheet) is a Blender Add-on to create a contactsheet from s
 render-review (/render-review) is a Bender Add-on to review renders from flamenco with the sequence editor.
 
 ## anim-setup
-anim-setup is a Blender Add-on that automates the setup of animation scenes for the Sprite-Fright project.
+
+anim-setup (/anim-setup) is a Blender Add-on that automates the setup of animation scenes for the Sprite-Fright project.
 
 ## bone-gizmos
-bone-gizmos is a Blender Add-on that attempts to prototype a system for using meshes for the manipulation of armatures.
+
+bone-gizmos (/bone-gizmos) is a Blender Add-on that attempts to prototype a system for using meshes for the manipulation of armatures.
+
+## blender-media-viewer
+
+blender-media-viewer (/blender-media-viewer) is a Blender Application Template that makes Blender usable as a Video-Player, Image and Text-Viewer.
