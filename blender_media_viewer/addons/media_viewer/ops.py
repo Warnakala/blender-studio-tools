@@ -250,6 +250,9 @@ class MV_OT_load_media_image(bpy.types.Operator):
 
             area.spaces.active.image_user.frame_duration = 5000
 
+        # Fit timeline view.
+        opsdata.fit_timeline_view(context)
+
         # Set scene resolution.
         context.scene.render.resolution_x = image.resolution[0]
         context.scene.render.resolution_y = image.resolution[1]
