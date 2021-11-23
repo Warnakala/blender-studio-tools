@@ -15,6 +15,9 @@ This Application Template reduces the Blender UI to a bare minimum to remove all
 - [Development](#development)
 
 ## Installation
+
+**Note: The blender-media-viewer requires at least Blender 3.0!**
+
 Download or clone this repository.
 Blender expects Application Templates in these folders:
 
