@@ -92,12 +92,12 @@ class MoveBoneGizmo(Gizmo):
 
 	def poll(self, context):
 		"""Whether any gizmo logic should be executed or not. This function is not
-		from the API! Call this manually to prevent logic execution.
+		from the API! Call this manually for early exists.
 		"""
 		pb = self.get_pose_bone(context)
-		if not pb: return False
+		if not pb or pb.bone.hide: return False
 		any_visible_layer = any(bl and al for bl, al in zip(pb.bone.layers[:], pb.id_data.data.layers[:]))
-		bone_visible = pb and not pb.bone.hide and any_visible_layer
+		bone_visible = not pb.bone.hide and any_visible_layer
 
 		ret = pb.bone_gizmo.shape_object and bone_visible and pb.enable_bone_gizmo
 		return ret
@@ -147,7 +147,8 @@ class MoveBoneGizmo(Gizmo):
 
 	def draw_shape(self, context, select_id=None):
 		"""Shared drawing logic for selection and color.
-		The actual color seems to be determined deeper, between self.color and self.color_highlight.
+		We do not pass color here; The C functions read the 
+		colors from self.color and self.color_highlight.
 		"""
 
 		ob = self.get_shape_object(context)
@@ -175,6 +176,25 @@ class MoveBoneGizmo(Gizmo):
 		gpu.state.blend_set('NONE')
 		gpu.state.line_width_set(1)
 
+	def get_opacity(self, context):
+		"""Based factors of whether the bone corresponding to this gizmo 
+		is currently selected, and whether the gizmo is being mouse hovered,
+		return the opacity value that is expected to be used for drawing this gizmo.
+		"""
+
+		prefs = context.preferences.addons[__package__].preferences
+		is_selected = self.get_pose_bone(context).bone.select
+		opacity = prefs.widget_alpha
+		if self.is_using_facemap(context) or self.is_using_vgroup(context):
+			opacity = prefs.mesh_alpha
+		
+		if self.is_highlight:
+			opacity += prefs.delta_alpha_highlight
+		elif is_selected:
+			opacity += prefs.delta_alpha_select
+
+		return opacity
+
 	def draw(self, context):
 		"""Called by Blender on every viewport update (including mouse moves).
 		Drawing functions called at this time will draw into the color pass.
@@ -182,6 +202,8 @@ class MoveBoneGizmo(Gizmo):
 		if not self.poll(context):
 			return
 		if self.use_draw_hover and not self.is_highlight:
+			return
+		if self.get_opacity(context) == 0:
 			return
 
 		pb = self.get_pose_bone(context)
@@ -245,15 +267,22 @@ class MoveBoneGizmo(Gizmo):
 		return pb.bone_gizmo
 
 	def update_basis_and_offset_matrix(self, context):
+		"""Set the gizmo matrices self.matrix_basis and self.matrix_offset,
+		to position the gizmo correctly."""
+
 		pb = self.get_pose_bone(context)
 		armature = context.object
 
 		if self.is_using_facemap(context) or self.is_using_vgroup(context):
+			# If there is a face map or vertex group specified:
 			# The gizmo should stick strictly to the vertex group or face map of the shape object.
 			self.matrix_basis = self.get_shape_object(context).matrix_world.copy()
 			self.matrix_offset = Matrix.Identity(4)
 		else:
-			# The gizmo should function as a replacement for the custom shape.
+			# If there is NO face map or vertex group specified:
+			# The gizmo should function as a replacement for the bone's Custom Shape
+			# properties. That means applying the custom shape transformation offsets
+			# and using the custom shape transform bone, if there is one specified.
 			self.matrix_basis = armature.matrix_world.copy()
 
 			display_bone = pb
