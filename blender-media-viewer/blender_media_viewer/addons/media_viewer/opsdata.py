@@ -381,7 +381,7 @@ def update_gp_object_with_filepath(
     gp_obj: bpy.types.GreasePencil, filepath: Path
 ) -> None:
     """
-    Takes input greace pencil object and adds a new layer named after filepath if not existent.
+    Takes input grease pencil object and adds a new layer named after filepath if not existent.
     Sets filepath layer as active and hides all other layers.
     """
     try:
