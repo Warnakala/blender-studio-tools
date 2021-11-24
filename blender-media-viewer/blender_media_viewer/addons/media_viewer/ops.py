@@ -556,6 +556,10 @@ class MV_OT_set_media_area_type(bpy.types.Operator):
         # Change area type.
         area_media.type = self.area_type
 
+        # Set annotate tool as active.
+        ctx = opsdata.get_context_for_area(area_media)
+        bpy.ops.wm.tool_set_by_id(ctx, name="builtin.annotate")
+
         # Update global media area type.
         active_media_area = area_media.type
 
@@ -1239,7 +1243,9 @@ def callback_filename_change(dummy: None):
         if prev_relpath == active_file.relative_path:
             return
 
+        # Set area type.
         bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
+
         # Load media image handles image sequences.
         bpy.ops.media_viewer.load_media_image(filepath=filepath.as_posix())
 
@@ -1249,7 +1255,10 @@ def callback_filename_change(dummy: None):
         if prev_relpath == active_file.relative_path:
             return
 
+        # Set area type.
         bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
+
+        # Load media.
         bpy.ops.media_viewer.load_media_text(filepath=filepath.as_posix())
 
     # Update prev_ variables.
