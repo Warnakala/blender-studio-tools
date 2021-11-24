@@ -41,6 +41,8 @@ from media_viewer.ops import (
     MV_OT_quit_blender,
     MV_OT_pan_media_view,
     MV_OT_zoom_media_view,
+    MV_OT_delete_active_gpencil_frame,
+    MV_OT_delete_all_gpencil_frames,
 )
 from media_viewer import opsdata, vars
 from media_viewer.log import LoggerFactory
@@ -511,6 +513,30 @@ def register():
         )
         kmi.properties.direction = "OUT"
         addon_keymaps.append((keymap, kmi))
+
+        # Greace Pencil.
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_delete_active_gpencil_frame.bl_idname,
+                    value="PRESS",
+                    type="X",
+                ),
+            )
+        )
+
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_delete_all_gpencil_frames.bl_idname,
+                    value="PRESS",
+                    type="X",
+                    alt=True,
+                ),
+            )
+        )
 
     # Print new hotkeys.
     for km, kmi in addon_keymaps:

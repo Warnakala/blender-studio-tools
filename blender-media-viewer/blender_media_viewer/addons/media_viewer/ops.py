@@ -1180,6 +1180,53 @@ class MV_OT_frame_offset(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_delete_active_gpencil_frame(bpy.types.Operator):
+
+    bl_idname = "media_viewer.delete_active_gpencil_frame"
+    bl_label = "Delete Active Grease Pencil frame"
+    bl_description = "Deletes the active frame of the active Grease Pencil layer"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+        try:
+            # Little hack to get the right grease pencil object.
+            # In startup.blend we made sure that the gp objects are named after
+            # the area type.
+            gp_obj = bpy.data.grease_pencils[active_media_area]
+        except KeyError:
+            return {"CANCELLED"}
+
+        # Get active layer and remove active frame.
+        active_layer = gp_obj.layers.active
+        if active_layer.active_frame:
+            active_layer.frames.remove(active_layer.active_frame)
+
+        return {"FINISHED"}
+
+
+class MV_OT_delete_all_gpencil_frames(bpy.types.Operator):
+
+    bl_idname = "media_viewer.delete_all_gpencil_frames"
+    bl_label = "Delete all Grease Pencil frames"
+    bl_description = "Deletes all the frames of the active Grease Pencil layer"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+        try:
+            # Little hack to get the right grease pencil object.
+            # In startup.blend we made sure that the gp objects are named after
+            # the area type.
+            gp_obj = bpy.data.grease_pencils[active_media_area]
+        except KeyError:
+            return {"CANCELLED"}
+
+        # Delete all frames of active layer.
+        for i in reversed(range(len(gp_obj.layers.active.frames))):
+            gp_obj.layers.active.frames.remove(gp_obj.layers.active.frames[i])
+
+        return {"FINISHED"}
+
+
 @persistent
 def callback_filename_change(dummy: None):
 
@@ -1327,6 +1374,8 @@ classes = [
     MV_OT_quit_blender,
     MV_OT_pan_media_view,
     MV_OT_zoom_media_view,
+    MV_OT_delete_active_gpencil_frame,
+    MV_OT_delete_all_gpencil_frames,
 ]
 
 
