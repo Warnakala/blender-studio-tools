@@ -234,12 +234,14 @@ class MV_OT_load_media_image(bpy.types.Operator):
 
             image.source = "SEQUENCE"
 
+            # Get frame counters from filepaths.
             first_frame = opsdata.get_frame_counter(file_list[0])
             last_frame = opsdata.get_frame_counter(file_list[-1])
             current_frame = opsdata.get_frame_counter(filepath)
 
             logger.info("Detected image sequence (%s - %s)", first_frame, last_frame)
 
+            # Only if we found valid frame counters we will set the frame range.
             if all([first_frame, last_frame]):
                 context.scene.frame_start = int(first_frame)
                 context.scene.frame_end = int(last_frame)
@@ -249,6 +251,12 @@ class MV_OT_load_media_image(bpy.types.Operator):
                     context.scene.frame_current = int(current_frame)
 
             area.spaces.active.image_user.frame_duration = 5000
+
+        else:
+            # Set frame range to 1.
+            context.scene.frame_start = 1
+            context.scene.frame_end = 1
+            context.scene.frame_current = 1
 
         # Fit timeline view.
         opsdata.fit_timeline_view(context)
