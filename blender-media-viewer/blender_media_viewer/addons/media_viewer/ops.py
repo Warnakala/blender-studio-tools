@@ -561,6 +561,12 @@ class MV_OT_set_media_area_type(bpy.types.Operator):
         ctx = opsdata.get_context_for_area(area_media)
         bpy.ops.wm.tool_set_by_id(ctx, name="builtin.annotate")
 
+        # Disable region header, if available.
+        try:
+            area_media.spaces.active.show_region_header = False
+        except:
+            pass
+
         # Update global media area type.
         active_media_area = area_media.type
 
