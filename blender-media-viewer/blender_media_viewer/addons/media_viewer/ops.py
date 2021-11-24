@@ -159,6 +159,20 @@ class MV_OT_load_media_movie(bpy.types.Operator):
         opsdata.fit_timeline_view(context)
         opsdata.fit_sqe_preview(context)
 
+        # Update annotation layer.
+        # For now let annotation system only work if user selects single
+        # movie file. TODO: change layer dynamically when reaching new clip
+
+        # startup.blend contains this layer.
+        gp_obj = bpy.data.grease_pencils["SEQUENCE_EDITOR"]
+
+        if len(filepath_list) == 1:
+            opsdata.update_gp_object_with_filepath(gp_obj, filepath_list[0])
+        else:
+            # Hide all gpencil layers.
+            for layer in gp_obj.layers:
+                layer.annotation_hide = True
+
         # Set playhead to start of scene.
         context.scene.frame_current = context.scene.frame_start
 
@@ -272,6 +286,11 @@ class MV_OT_load_media_image(bpy.types.Operator):
         else:
             context.scene.view_settings.view_transform = "Standard"
             image.use_view_as_render = False
+
+        # Update annotation layer.
+        # startup.blend contains this layer.
+        gp_obj = bpy.data.grease_pencils["IMAGE_EDITOR"]
+        opsdata.update_gp_object_with_filepath(gp_obj, filepath)
 
         return {"FINISHED"}
 

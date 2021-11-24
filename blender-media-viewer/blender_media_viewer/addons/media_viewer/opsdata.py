@@ -375,3 +375,29 @@ def add_to_folder_history(
 
     ordered_dict[key] = value
     return ordered_dict
+
+
+def update_gp_object_with_filepath(
+    gp_obj: bpy.types.GreasePencil, filepath: Path
+) -> None:
+    """
+    Takes input greace pencil object and adds a new layer named after filepath if not existent.
+    Sets filepath layer as active and hides all other layers.
+    """
+    try:
+        gp_obj.layers[filepath.as_posix()]
+
+    except KeyError:
+        # Create new layer with filename.
+        gp_obj.layers.new(filepath.as_posix(), set_active=True)
+
+    # Get index of existing layer and set as active.
+    gp_index = gp_obj.layers.find(filepath.as_posix())
+    gp_obj.layers.active_index = gp_index
+    gp_obj.layers[gp_index].annotation_hide = False
+
+    # Hide all other layers.
+    for idx in range(len(gp_obj.layers)):
+        if idx == gp_index:
+            continue
+        gp_obj.layers[idx].annotation_hide = True
