@@ -584,20 +584,15 @@ class MV_OT_set_media_area_type(bpy.types.Operator):
         # Change area type.
         area_media.type = self.area_type
 
-        # Set annotate tool as active.
-        ctx = opsdata.get_context_for_area(area_media)
-        bpy.ops.wm.tool_set_by_id(ctx, name="builtin.annotate")
-
-        # Disable region header, if available.
-        try:
-            area_media.spaces.active.show_region_header = False
-        except:
-            pass
-
         # Update global media area type.
         active_media_area = area_media.type
 
+        # Set annotate tool as active.
+        if area_media.type in ["SEQUENCE_EDITOR", "IMAGE_EDITOR"]:
+            bpy.ops.wm.tool_set_by_id({"area": area_media}, name="builtin.annotate")
+
         logger.info(f"Changed active media area to: {area_media.type}")
+
         return {"FINISHED"}
 
 
