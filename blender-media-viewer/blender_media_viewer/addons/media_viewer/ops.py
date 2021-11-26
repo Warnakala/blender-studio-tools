@@ -1226,8 +1226,7 @@ class MV_OT_render_review(bpy.types.Operator):
     bl_idname = "media_viewer.render_review"
     bl_label = "Render Review"
     bl_description = (
-        "Makes an openGL render of the active media file. "
-        "Includes all annotations."
+        "Makes an openGL render of the active media file. Includes all annotations."
     )
 
     @classmethod
@@ -1248,20 +1247,21 @@ class MV_OT_render_review(bpy.types.Operator):
         # Easy case, we just make an OpenGL render.
         if area_media.type == "SEQUENCE_EDITOR":
 
-                # Set output settings for movie.
-                opsdata.set_render_settings_movie(context, output_path)
+            # Set output settings for movie.
+            opsdata.set_render_settings_movie(context, output_path)
 
-                # Ensure folder exists.
-                output_path.parent.mkdir(parents=True, exist_ok=True)
+            # Ensure folder exists.
+            output_path.parent.mkdir(parents=True, exist_ok=True)
 
-                # Make opengl render.
-                bpy.ops.render.opengl(animation=True, sequencer=True)
+            # Make opengl render.
+            bpy.ops.render.opengl(animation=True, sequencer=True)
 
         # Is image editor.
         elif area_media.type == "IMAGE_EDITOR":
-            self.report({"WARNING"}, "Rendering review out of Image Editor not supported yet")
+            self.report(
+                {"WARNING"}, "Rendering review out of Image Editor not supported yet"
+            )
             return {"CANCELLED"}
-
 
         self.report({"INFO"}, "Rendering review out of Image Editor not supported yet")
         return {"FINISHED"}
@@ -1416,7 +1416,7 @@ classes = [
     MV_OT_zoom_media_view,
     MV_OT_delete_active_gpencil_frame,
     MV_OT_delete_all_gpencil_frames,
-    MV_OT_render_review
+    MV_OT_render_review,
 ]
 
 
