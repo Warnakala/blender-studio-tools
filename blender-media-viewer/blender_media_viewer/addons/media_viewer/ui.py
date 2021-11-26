@@ -5,6 +5,7 @@ import bpy
 from media_viewer.ops import (
     MV_OT_delete_all_gpencil_frames,
     MV_OT_delete_active_gpencil_frame,
+    MV_OT_render_review,
 )
 
 
@@ -19,6 +20,15 @@ def MV_TOPBAR_media_viewer(self: Any, context: bpy.types.Context) -> None:
             MV_OT_delete_active_gpencil_frame.bl_idname, text="", icon="REMOVE"
         )
         layout.operator(MV_OT_delete_all_gpencil_frames.bl_idname, text="", icon="X")
+
+    layout.separator()
+    layout.separator()
+    layout.separator()
+    layout.separator()
+    layout.separator()
+    layout.separator()
+    layout.prop(context.window_manager.media_viewer, "review_output_dir")
+    layout.operator(MV_OT_render_review.bl_idname, icon="RESTRICT_RENDER_OFF", text="")
 
 
 # ----------------REGISTER--------------.

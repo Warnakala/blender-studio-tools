@@ -19,7 +19,7 @@
 
 import bpy
 
-from media_viewer import vars, opsdata, ops, log, shortcuts, ui
+from media_viewer import vars, props, opsdata, ops, log, shortcuts, ui
 
 from media_viewer.log import LoggerFactory
 
@@ -44,6 +44,7 @@ if _need_reload:
     import importlib
 
     vars = importlib.reload(vars)
+    props = importlib.reload(props)
     opsdata = importlib.reload(opsdata)
     log = importlib.reload(log)
     ops = importlib.reload(ops)
@@ -52,6 +53,7 @@ if _need_reload:
 
 
 def register():
+    props.register()
     ops.register()
     shortcuts.register()
     ui.register()
@@ -61,6 +63,7 @@ def unregister():
     ui.unregister()
     ops.unregister()
     shortcuts.unregister()
+    props.unregister()
 
 
 if __name__ == "__main__":

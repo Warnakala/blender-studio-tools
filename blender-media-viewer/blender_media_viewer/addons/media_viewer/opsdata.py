@@ -23,6 +23,7 @@ import json
 from pathlib import Path
 from typing import Tuple, Any, List, Union, Dict, Optional
 from collections import OrderedDict
+from datetime import datetime
 
 import bpy
 
@@ -30,7 +31,6 @@ from media_viewer import vars
 from media_viewer.log import LoggerFactory
 
 # MEDIA VIEWER
-
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -401,3 +401,40 @@ def update_gp_object_with_filepath(
         if idx == gp_index:
             continue
         gp_obj.layers[idx].annotation_hide = True
+
+
+def get_review_output_path(output_dir: Path, media_filepath: Path) -> Path:
+    """
+    Returns an output path inside of review output dir. The filename will have current time
+    included as suffix so we always have a unique name.
+    """
+    now = datetime.now()
+    split = str(now).split(" ")
+
+    # Gives: 2021-11-27
+    time_main = split[0]
+
+    # Gives: 105243 (HourMinuteSecond)
+    time_suffix = split[1].split(".")[0].replace(":", "")
+
+    filename = media_filepath.stem.replace(" ", "_")
+    output_name = f"{filename}_review_{time_main}_{time_suffix}"
+
+    return output_dir.joinpath(output_name)
+
+
+def set_render_settings_movie(context: bpy.types.Context, output_path: Path) -> None:
+    rd = context.scene.render
+
+    # Format render settings.
+    rd.resolution_percentage = 100
+    rd.image_settings.file_format = "FFMPEG"
+    rd.ffmpeg.constant_rate_factor = "MEDIUM"
+    rd.ffmpeg.codec = "H264"
+    rd.ffmpeg.format = "MPEG4"
+    rd.ffmpeg.audio_codec = "AAC"
+
+    # Scene settings.
+    context.scene.use_preview_range = False
+
+    rd.filepath = output_path.as_posix()

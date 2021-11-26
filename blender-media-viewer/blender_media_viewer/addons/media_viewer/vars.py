@@ -23,6 +23,8 @@ import bpy
 
 PATTERN_FRAME_COUNTER = r"\d+$"
 
+REVIEW_OUTPUT_DIR = Path.home().joinpath("blender-media-viewer")
+
 EXT_MOVIE = [
     ".avi",
     ".flc",

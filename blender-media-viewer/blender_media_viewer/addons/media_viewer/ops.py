@@ -1222,6 +1222,51 @@ class MV_OT_delete_all_gpencil_frames(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_render_review(bpy.types.Operator):
+    bl_idname = "media_viewer.render_review"
+    bl_label = "Render Review"
+    bl_description = (
+        "Makes an openGL render of the active media file. "
+        "Includes all annotations."
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        global active_media_area
+        return bool(active_media_area in ["SEQUENCE_EDITOR"])
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global prev_relpath  # Is relative path to prev_dirpath.
+        global prev_dirpath
+        global active_media_area
+
+        media_filepath = Path(prev_dirpath).joinpath(prev_relpath)
+        review_output_dir = Path(context.window_manager.media_viewer.review_output_dir)
+        output_path = opsdata.get_review_output_path(review_output_dir, media_filepath)
+        area_media = opsdata.find_area(context, active_media_area)
+
+        # Easy case, we just make an OpenGL render.
+        if area_media.type == "SEQUENCE_EDITOR":
+
+                # Set output settings for movie.
+                opsdata.set_render_settings_movie(context, output_path)
+
+                # Ensure folder exists.
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Make opengl render.
+                bpy.ops.render.opengl(animation=True, sequencer=True)
+
+        # Is image editor.
+        elif area_media.type == "IMAGE_EDITOR":
+            self.report({"WARNING"}, "Rendering review out of Image Editor not supported yet")
+            return {"CANCELLED"}
+
+
+        self.report({"INFO"}, "Rendering review out of Image Editor not supported yet")
+        return {"FINISHED"}
+
+
 @persistent
 def callback_filename_change(dummy: None):
 
@@ -1371,6 +1416,7 @@ classes = [
     MV_OT_zoom_media_view,
     MV_OT_delete_active_gpencil_frame,
     MV_OT_delete_all_gpencil_frames,
+    MV_OT_render_review
 ]
 
 
