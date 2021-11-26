@@ -46,6 +46,12 @@ last_folder_at_path: OrderedDict = OrderedDict()
 active_bookmark_group_name: str = ""
 
 
+def get_prev_path() -> Path:
+    global prev_relpath
+    global prev_dirpath
+    return Path(prev_dirpath).joinpath(prev_relpath)
+
+
 class MV_OT_load_media_movie(bpy.types.Operator):
 
     bl_idname = "media_viewer.load_media_movie"
@@ -922,7 +928,7 @@ class MV_OT_next_media_file(bpy.types.Operator):
 
         # If previous filepath, get index of that and take next index.
         else:
-            prev_filepath_abs = Path(prev_dirpath).joinpath(prev_relpath)
+            prev_filepath_abs = get_prev_path()
             try:
                 index = file_list.index(prev_filepath_abs)
             except ValueError:
@@ -1239,7 +1245,7 @@ class MV_OT_render_review(bpy.types.Operator):
         global prev_dirpath
         global active_media_area
 
-        media_filepath = Path(prev_dirpath).joinpath(prev_relpath)
+        media_filepath = get_prev_path()
         review_output_dir = Path(context.window_manager.media_viewer.review_output_dir)
         output_path = opsdata.get_review_output_path(review_output_dir, media_filepath)
         area_media = opsdata.find_area(context, active_media_area)

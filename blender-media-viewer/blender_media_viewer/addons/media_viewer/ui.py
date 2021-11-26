@@ -22,7 +22,7 @@ def MV_TOPBAR_media_viewer(self: Any, context: bpy.types.Context) -> None:
     # rendering them.
     if gpl and len(ops.prev_filepath_list) <= 1:
         layout.label(text="Annotation")
-        layout.prop(gpl, "color", text="")
+        layout.prop(gpl, "color", icon_only=True)
 
         layout.operator(
             MV_OT_delete_active_gpencil_frame.bl_idname, text="", icon="REMOVE"
@@ -35,10 +35,33 @@ def MV_TOPBAR_media_viewer(self: Any, context: bpy.types.Context) -> None:
         layout.separator()
         layout.separator()
         layout.separator()
-        layout.prop(context.window_manager.media_viewer, "review_output_dir")
+        layout.label(text="Render Review")
+        layout.prop(context.window_manager.media_viewer, "review_output_dir", text="")
         layout.operator(
             MV_OT_render_review.bl_idname, icon="RESTRICT_RENDER_OFF", text=""
         )
+
+
+def MV_TOPBAR_draw_exr_options(self: Any, context: bpy.types.Context) -> None:
+    layout = self.layout
+
+    layout.separator()
+    layout.separator()
+    layout.separator()
+    layout.separator()
+    layout.separator()
+    layout.separator()
+
+    sima = context.space_data
+    ima = sima.image
+    iuser = sima.image_user
+
+    if ima:
+        # draw options.
+        layout.prop(sima, "display_channels", icon_only=True)
+
+        # layers.
+        layout.template_image_layers(ima, iuser)
 
 
 # ----------------REGISTER--------------.
@@ -54,6 +77,7 @@ def register():
     # Append header draw handler.
     bpy.types.SEQUENCER_HT_header.append(MV_TOPBAR_media_viewer)
     bpy.types.IMAGE_HT_header.append(MV_TOPBAR_media_viewer)
+    bpy.types.IMAGE_HT_header.append(MV_TOPBAR_draw_exr_options)
 
 
 def unregister():
@@ -61,6 +85,7 @@ def unregister():
     # Remove header draw handler.
     bpy.types.SEQUENCER_HT_header.remove(MV_TOPBAR_media_viewer)
     bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_media_viewer)
+    bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_draw_exr_options)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
