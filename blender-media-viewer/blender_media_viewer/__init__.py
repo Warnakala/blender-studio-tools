@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8-80 compliant>
+import os
 
 import bpy
 import bl_app_override
@@ -33,28 +34,27 @@ class AppStateStore(AppOverrideState):
     def class_ignore():
         classes = []
 
-        classes.extend(
-            bl_app_override.class_filter(
-                bpy.types.Header,
-            ),
-        )
-        classes.extend(
-            bl_app_override.class_filter(
-                bpy.types.Operator,
-            ),
-        )
-        classes.extend(
-            bl_app_override.class_filter(
-                bpy.types.Menu,
-            ),
-        )
-        """
-        classes.extend(
-            bl_app_override.class_filter(
-                bpy.types.Panel,
-            ),
-        )
-        """
+        # I found I actually only need to override a couple of headers
+        # and then the media-viewer already looks like it needs to look.
+        # I had troubles using this:
+
+        # cls = bl_app_override.class_filter(
+        #         bpy.types.Header,
+        #         blacklist={"TOPBAR_HT_upper_bar", "..."}
+        #     ),
+
+        # As this made it impossible to append a new draw handler after that
+        # to the headers....
+
+        # Mr. Hackerman.
+        # Overrides draw function of header to just return None
+        # That way we clear all these header globally and can replace
+        # them with our custom draw function
+        bpy.types.TOPBAR_HT_upper_bar.draw = lambda self, context: None
+        bpy.types.STATUSBAR_HT_header.draw = lambda self, context: None
+        bpy.types.IMAGE_HT_header.draw = lambda self, context: None
+        bpy.types.SEQUENCER_HT_header.draw = lambda self, context: None
+        bpy.types.TEXT_HT_header.draw = lambda self, context: None
 
         return classes
 
@@ -64,11 +64,7 @@ class AppStateStore(AppOverrideState):
     @staticmethod
     def ui_ignore_classes():
         # What does this do?
-        return (
-            bpy.types.Header,
-            bpy.types.Menu,
-            # bpy.types.Panel,
-        )
+        return ()
 
     @staticmethod
     def ui_ignore_operator(op_id):
@@ -91,8 +87,6 @@ class AppStateStore(AppOverrideState):
 
     @staticmethod
     def addon_paths():
-        import os
-
         return (os.path.normpath(os.path.join(os.path.dirname(__file__), "addons")),)
 
     @staticmethod
