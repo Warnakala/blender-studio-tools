@@ -228,7 +228,8 @@ class MV_OT_load_media_image(bpy.types.Operator):
             logger.error("Failed to load image media. No Image Editor area available.")
             return {"CANCELLED"}
 
-        # Delete all images.
+        # Delete all images. #TODO: caching system? Keeping images might
+        # make reloading of previous images faster
         opsdata.del_all_images()
 
         if self.load_sequence:
@@ -1248,6 +1249,8 @@ class MV_OT_render_review(bpy.types.Operator):
         media_filepath = get_prev_path()
         review_output_dir = Path(context.window_manager.media_viewer.review_output_dir)
         output_path = opsdata.get_review_output_path(review_output_dir, media_filepath)
+        # Overwrite suffix to be .mp4.
+        output_path = output_path.parent.joinpath(f"{output_path.stem}.mp4")
         area_media = opsdata.find_area(context, active_media_area)
 
         # Easy case, we just make an OpenGL render.
@@ -1262,14 +1265,6 @@ class MV_OT_render_review(bpy.types.Operator):
             # Make opengl render.
             bpy.ops.render.opengl(animation=True, sequencer=True)
 
-        # Is image editor.
-        elif area_media.type == "IMAGE_EDITOR":
-            self.report(
-                {"WARNING"}, "Rendering review out of Image Editor not supported yet"
-            )
-            return {"CANCELLED"}
-
-        self.report({"INFO"}, "Rendering review out of Image Editor not supported yet")
         return {"FINISHED"}
 
 
