@@ -418,7 +418,7 @@ def get_review_output_path(output_dir: Path, media_filepath: Path) -> Path:
     time_suffix = split[1].split(".")[0].replace(":", "")
 
     filename = media_filepath.stem.replace(" ", "_")
-    output_name = f"{filename}_review_{time_main}_{time_suffix}"
+    output_name = f"{filename}_review_{time_main}_{time_suffix}{media_filepath.suffix}"
 
     return output_dir.joinpath(output_name)
 
