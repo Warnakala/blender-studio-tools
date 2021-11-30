@@ -9,8 +9,19 @@ from media_viewer.ops import (
 )
 from media_viewer import ops
 
+from media_viewer.gpu_ops import MV_OT_render_img_with_annotation
 
-def MV_TOPBAR_media_viewer(self: Any, context: bpy.types.Context) -> None:
+
+def draw_seperators(layout: bpy.types.UILayout) -> None:
+    layout.separator()
+    layout.separator()
+    layout.separator()
+    layout.separator()
+    layout.separator()
+    layout.separator()
+
+
+def MV_TOPBAR_base(self: Any, context: bpy.types.Context) -> None:
     layout = self.layout
     gpl = context.active_annotation_layer
 
@@ -29,28 +40,30 @@ def MV_TOPBAR_media_viewer(self: Any, context: bpy.types.Context) -> None:
         )
         layout.operator(MV_OT_delete_all_gpencil_frames.bl_idname, text="", icon="X")
 
-        layout.separator()
-        layout.separator()
-        layout.separator()
-        layout.separator()
-        layout.separator()
-        layout.separator()
+        draw_seperators(layout)
+
         layout.label(text="Render Review")
         layout.prop(context.window_manager.media_viewer, "review_output_dir", text="")
-        layout.operator(
-            MV_OT_render_review.bl_idname, icon="RESTRICT_RENDER_OFF", text=""
-        )
 
 
-def MV_TOPBAR_draw_exr_options(self: Any, context: bpy.types.Context) -> None:
+def MV_TOPBAR_sequencer(self: Any, context: bpy.types.Context) -> None:
     layout = self.layout
 
-    layout.separator()
-    layout.separator()
-    layout.separator()
-    layout.separator()
-    layout.separator()
-    layout.separator()
+    # Render review sequence editor operator.
+    layout.operator(MV_OT_render_review.bl_idname, icon="RESTRICT_RENDER_OFF", text="")
+
+
+def MV_TOPBAR_image_editor(self: Any, context: bpy.types.Context) -> None:
+    layout = self.layout
+
+    # Render review image editor operator.
+    layout.operator(
+        MV_OT_render_img_with_annotation.bl_idname,
+        icon="RESTRICT_RENDER_OFF",
+        text="",
+    )
+
+    draw_seperators(layout)
 
     sima = context.space_data
     ima = sima.image
@@ -75,17 +88,21 @@ def register():
         bpy.utils.register_class(cls)
 
     # Append header draw handler.
-    bpy.types.SEQUENCER_HT_header.append(MV_TOPBAR_media_viewer)
-    bpy.types.IMAGE_HT_header.append(MV_TOPBAR_media_viewer)
-    bpy.types.IMAGE_HT_header.append(MV_TOPBAR_draw_exr_options)
+    bpy.types.SEQUENCER_HT_header.append(MV_TOPBAR_base)
+    bpy.types.SEQUENCER_HT_header.append(MV_TOPBAR_sequencer)
+
+    bpy.types.IMAGE_HT_header.append(MV_TOPBAR_base)
+    bpy.types.IMAGE_HT_header.append(MV_TOPBAR_image_editor)
 
 
 def unregister():
 
     # Remove header draw handler.
-    bpy.types.SEQUENCER_HT_header.remove(MV_TOPBAR_media_viewer)
-    bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_media_viewer)
-    bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_draw_exr_options)
+    bpy.types.SEQUENCER_HT_header.remove(MV_TOPBAR_base)
+    bpy.types.SEQUENCER_HT_header.remove(MV_TOPBAR_sequencer)
+
+    bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_base)
+    bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_image_editor)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
