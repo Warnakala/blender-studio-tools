@@ -76,7 +76,12 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
         # Load image in to an OpenGL texture, will give us image.bindcode that we will later use
         # in gpu_extras.presets.draw_texture_2d()
         # Note: Colors read from the texture will be in scene linear color space
-        image.gl_load(frame=0)  # TODO: Image sequence
+        pass_idx = area.spaces.active.image_user.multilayer_pass
+        layer_idx = area.spaces.active.image_user.multilayer_layer
+        print(f"Loading image (layer: {layer_idx}, pass: {pass_idx}")
+        image.gl_load(
+            frame=0, layer_idx=layer_idx, pass_idx=pass_idx
+        )  # TODO: Image sequence
 
         # Create new image datablack to save our newly composited image
         # (source image + annotation) to.
