@@ -212,6 +212,9 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
             # Set new_image.pixels to the composited buffer.
             new_image.pixels = [v for v in buffer]
 
+        # Free image
+        image.gl_free()
+
         return new_image
 
 
