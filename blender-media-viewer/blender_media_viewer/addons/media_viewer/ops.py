@@ -263,12 +263,12 @@ class MV_OT_load_media_image(bpy.types.Operator):
 
             logger.info("Detected image sequence (%s - %s)", first_frame, last_frame)
 
-                context.scene.frame_start = int(first_frame)
-                context.scene.frame_end = int(last_frame)
+            context.scene.frame_start = int(first_frame)
+            context.scene.frame_end = int(last_frame)
 
-                # Set playhead frame counter of clicked image.
-                if current_frame:
-                    context.scene.frame_current = int(current_frame)
+            # Set playhead frame counter of clicked image.
+            if current_frame:
+                context.scene.frame_current = int(current_frame)
 
             area.spaces.active.image_user.frame_duration = 5000
 
@@ -1234,6 +1234,11 @@ class MV_OT_render_review(bpy.types.Operator):
     bl_description = (
         "Makes an openGL render of the active media file. Includes all annotations."
     )
+    render_sequence: bpy.props.BoolProperty(
+        name="Render Sequence",
+        description="Controls if entire movie strip should be rendered or only a single image",
+        default=True,
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1245,11 +1250,15 @@ class MV_OT_render_review(bpy.types.Operator):
         global prev_dirpath
         global active_media_area
 
+        current_frame = context.scene.frame_current
         media_filepath = get_prev_path()
         review_output_dir = Path(context.window_manager.media_viewer.review_output_dir)
-        output_path = opsdata.get_review_output_path(review_output_dir, media_filepath)
+        output_path: Path = opsdata.get_review_output_path(
+            review_output_dir, media_filepath
+        )
         # Overwrite suffix to be .mp4.
-        output_path = output_path.parent.joinpath(f"{output_path.stem}.mp4")
+        ext = ".mp4" if self.render_sequence else ".jpg"
+        output_path = output_path.parent.joinpath(f"{output_path.stem}{ext}")
         area_media = opsdata.find_area(context, active_media_area)
 
         # Easy case, we just make an OpenGL render.
@@ -1262,8 +1271,21 @@ class MV_OT_render_review(bpy.types.Operator):
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Make opengl render.
-            bpy.ops.render.opengl(animation=True, sequencer=True)
+            bpy.ops.render.opengl(animation=self.render_sequence, sequencer=True)
 
+            # If not render_sequence we have to save the image manually from Render Result.
+            if not self.render_sequence:
+                try:
+                    image = bpy.data.images["Render Result"]
+                except KeyError:
+                    logger.error("Didn't find 'Render Result' in bpy.data.images")
+                    return {"CANCELLED"}
+                else:
+                    image.save_render(output_path.as_posix())
+
+        # Restore current frame.
+        context.scene.frame_current = current_frame
+        bpy.ops.wm.redraw_timer({"area": area_media}, type="DRAW_WIN_SWAP", iterations=1)
         return {"FINISHED"}
 
 
