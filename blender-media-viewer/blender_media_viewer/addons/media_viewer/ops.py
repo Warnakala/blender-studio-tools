@@ -255,15 +255,14 @@ class MV_OT_load_media_image(bpy.types.Operator):
 
             image.source = "SEQUENCE"
 
-            # Get frame counters from filepaths.
+            # Get frame counters from filepaths. Will always work because
+            # we already check for image sequence len. Check: opsdata.get_image_sequence
             first_frame = opsdata.get_frame_counter(file_list[0])
             last_frame = opsdata.get_frame_counter(file_list[-1])
             current_frame = opsdata.get_frame_counter(filepath)
 
             logger.info("Detected image sequence (%s - %s)", first_frame, last_frame)
 
-            # Only if we found valid frame counters we will set the frame range.
-            if all([first_frame, last_frame]):
                 context.scene.frame_start = int(first_frame)
                 context.scene.frame_end = int(last_frame)
 
