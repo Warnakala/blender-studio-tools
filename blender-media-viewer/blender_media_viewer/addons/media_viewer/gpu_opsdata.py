@@ -170,8 +170,36 @@ class GPDrawerBuiltInShader:
         batch.draw(self.shader)
 
 
+def get_active_gpframe(
+    gplayer: bpy.types.GPencilLayer, frame: int
+) -> Optional[bpy.types.GPencilFrame]:
+
+    if not gplayer.frames:
+        return None
+
+    frames = [(f.frame_number, f) for f in gplayer.frames]
+    frames.sort(key=lambda x: x[0])
+
+    # Catch case frame is before first, return None.
+    if frame < frames[0][0]:
+        return None
+
+    # Catch case frame is after last, return last.
+    if frame >= frames[-1][0]:
+        return frames[-1][1]
+
+    # If we reach this point, return the next gpframe to the left.
+    for idx, tup in enumerate(frames):
+        frame_number, gp_frame = tup
+        range_active = range(frame_number, frames[idx + 1][0])
+
+        if frame in range_active:
+            return gp_frame
+
+
 def draw_callback(
-    gp_drawer: Union[GPDrawerBuiltInShader, GPDrawerCustomShader]
+    gp_drawer: Union[GPDrawerBuiltInShader, GPDrawerCustomShader],
+    frame: int,
 ) -> None:
 
     # Runs every time redraw is triggered.
@@ -179,8 +207,9 @@ def draw_callback(
     gplayer = get_active_gp_layer()
     if not gplayer:
         return
-
-    active_frame = gplayer.active_frame
+    # Seem like this gp_layer.active_frame does not update when looping over all frames
+    # get the active gp frame manually.
+    active_frame = get_active_gpframe(gplayer, frame)
 
     if not active_frame:
         return

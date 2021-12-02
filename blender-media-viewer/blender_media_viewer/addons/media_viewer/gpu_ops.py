@@ -13,14 +13,21 @@ from media_viewer.log import LoggerFactory
 
 logger = LoggerFactory.getLogger(name=__name__)
 
+GP_DRAWER = gpu_opsdata.GPDrawerCustomShader()
+
 
 class MV_OT_render_img_with_annotation(bpy.types.Operator):
 
     bl_idname = "media_viewer.render_img_with_annotation"
-    bl_label = "Render Image with Annotation"
+    bl_label = "Render Image with Annotations"
     bl_description = (
-        "Renders out active image with annotations on top"
-        "Uses custom openGL rendering"
+        "Renders out active image in Image Editor with annotations on top. "
+        "Uses custom openGL rendering pipeline"
+    )
+    render_sequence: bpy.props.BoolProperty(
+        name="Render Sequence",
+        description="Controls if entire image sequence should be rendered or only a single image",
+        default=True,
     )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -35,15 +42,13 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
         image: bpy.types.Image = area.spaces.active.image
         width = int(image.size[0])
         height = int(image.size[1])
-
-        # Get output path for rendering.
         media_filepath = Path(bpy.path.abspath(image.filepath))
         review_output_dir = Path(context.window_manager.media_viewer.review_output_dir)
-        output_path: Path = opsdata.get_review_output_path(
-            review_output_dir, media_filepath
+        # Create new image datablack to save our newly composited image
+        # (source image + annotation) to.
+        new_image = bpy.data.images.new(
+            f"{image.name}_annotated", width, height, float_buffer=True
         )
-        # Overwrite suffix to be .jpg.
-        output_path = output_path.parent.joinpath(f"{output_path.stem}.jpg")
 
         # Reading image dimensions is not supported for multilayer EXRs
         # https://developer.blender.org/T53768
@@ -53,15 +58,12 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
         # Edit: This workaround does not work because of:
         # https://developer.blender.org/T54314
         # The workaround of the workaround would be to write out the image and then
-        # read the resolution of the jpg.
+        # read the resolution of the jpg. This assumes each frame has same dimension.
         if (
             Path(image.filepath).suffix == ".exr"
         ):  # Could also be: image.file_format == "OPEN_EXR"
             if image.type == "MULTILAYER":  # Single layer is: IMAGE
-
-                tmp_res_path = output_path.parent.joinpath(
-                    f"{output_path.stem}_tmp.jpg"
-                )
+                tmp_res_path: Path = review_output_dir.joinpath("check_resolution.jpg")
                 image.save_render(tmp_res_path.as_posix())
                 tmp_image = bpy.data.images.load(tmp_res_path.as_posix())
 
@@ -73,20 +75,76 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
                 bpy.data.images.remove(tmp_image)
                 tmp_res_path.unlink(missing_ok=True)
 
+        # Process sequence.
+        if self.render_sequence:
+            file_list = opsdata.get_image_sequence(media_filepath)
+            frames = range(context.scene.frame_start, context.scene.frame_end + 1)
+
+            # Get an dir with timestamp inside out the review output dir.
+            output_dir: Path = opsdata.get_review_output_path(
+                review_output_dir, media_filepath, get_sequence_dir_only=True
+            )
+
+            for idx, frame in enumerate(frames):
+                # Make sure to switch frame.
+                # Here we assume that the frame range is the same as in image.
+                # This is insured by MV_OT_load_media_image, that makes sure of that.
+
+                # That means we can use the current frame as it represents the
+                # actual frame counter in the file.
+                frame_counter = frame
+
+                # If frame out of bound left take first frame.
+                if frame < frames[0]:
+                    frame_counter = frames[0]
+                # If frame out of bound right take last frame.
+                elif frame > frames[-1]:
+                    frame_counter = frames[-1]
+
+                output_path = output_dir.joinpath(f"{file_list[idx].stem}.jpg")
+
+                render = self.render_image_editor_in_image_datablock(
+                    area, new_image, frame_counter
+                )
+
+                # TODO: Error on multilayer exrs: Could not acquire buffer from image.
+                render.save_render(output_path.as_posix())
+                print(f"Saved image to {output_path.as_posix()}")
+
+        # Single image.
+        else:
+            output_path = opsdata.get_review_output_path(
+                review_output_dir, media_filepath
+            )
+            render = self.render_image_editor_in_image_datablock(
+                area, new_image, context.scene.frame_current
+            )
+            render.save_render(output_path.as_posix())
+            print(f"Saved image to {output_path.as_posix()}")
+
+        return {"FINISHED"}
+
+    def render_image_editor_in_image_datablock(
+        self, area: bpy.types.Area, new_image: bpy.types.Image, frame: int
+    ) -> bpy.types.Image:
+
+        global GP_DRAWER
+
+        # Get active image, layer and pass.
+        image = area.spaces.active.image
+        layer_idx = area.spaces.active.image_user.multilayer_layer
+        pass_idx = area.spaces.active.image_user.multilayer_pass
+        width = int(new_image.size[0])
+        height = int(new_image.size[1])
+
         # Load image in to an OpenGL texture, will give us image.bindcode that we will later use
         # in gpu_extras.presets.draw_texture_2d()
         # Note: Colors read from the texture will be in scene linear color space
-        pass_idx = area.spaces.active.image_user.multilayer_pass
-        layer_idx = area.spaces.active.image_user.multilayer_layer
-        print(f"Loading image (layer: {layer_idx}, pass: {pass_idx}")
+        # Here frame does not refer to timeline frame but to area.spaces.active.image_user.frame_current
         image.gl_load(
-            frame=0, layer_idx=layer_idx, pass_idx=pass_idx
-        )  # TODO: Image sequence
-
-        # Create new image datablack to save our newly composited image
-        # (source image + annotation) to.
-        new_image = bpy.data.images.new(
-            f"{image.name}_annotated", width, height, float_buffer=True
+            frame=frame,
+            layer_index=layer_idx,
+            pass_index=pass_idx,
         )
 
         # Create a Buffer on GPU that will be used to first render the image into,
@@ -98,8 +156,6 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
         # the format="RGBA16F" which solves most of the banding.
         gpu_texture = gpu.types.GPUTexture((width, height), format="RGBA16F")
         frame_buffer = gpu.types.GPUFrameBuffer(color_slots={"texture": gpu_texture})
-
-        # TODO: always writes out first layer unaffected from what is selected in the image editor
 
         with frame_buffer.bind():
 
@@ -127,8 +183,7 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
                 gpu_extras.presets.draw_texture_2d(image.bindcode, (0, 0), 1, 1)
 
                 # Draw grease pencil over it.
-                gp_drawer = gpu_opsdata.GPDrawerCustomShader()
-                gpu_opsdata.draw_callback(gp_drawer)
+                gpu_opsdata.draw_callback(GP_DRAWER, frame=frame)
 
             # Create the buffer with dimensions: r, g, b, a (width * height * 4)
             # Make sure that we use bgl.GL_FLOAT as this solves the colorspace issue
@@ -141,20 +196,7 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
             # Set new_image.pixels to the composited buffer.
             new_image.pixels = [v for v in buffer]
 
-            # Save image to disk.
-            # TODO: colorspace seems to be slightly off
-            # if Path(image.filepath).suffix == ".exr":
-            #     )
-            #     # new_image.use_view_as_render = True
-            #     area.spaces.active.image = image
-            # else:
-            #      new_image.save_render(output_path)
-
-            new_image.save_render(output_path.as_posix())
-
-        print(f"Saved new image({width}:{height}) to {output_path.as_posix()}")
-
-        return {"FINISHED"}
+        return new_image
 
 
 # ---------REGISTER ----------.

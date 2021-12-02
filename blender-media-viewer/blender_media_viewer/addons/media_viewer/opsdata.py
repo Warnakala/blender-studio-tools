@@ -403,7 +403,9 @@ def update_gp_object_with_filepath(
         gp_obj.layers[idx].annotation_hide = True
 
 
-def get_review_output_path(output_dir: Path, media_filepath: Path) -> Path:
+def get_review_output_path(
+    output_dir: Path, media_filepath: Path, get_sequence_dir_only: bool = False
+) -> Path:
     """
     Returns an output path inside of review output dir. The filename will have current time
     included as suffix so we always have a unique name.
@@ -418,7 +420,13 @@ def get_review_output_path(output_dir: Path, media_filepath: Path) -> Path:
     time_suffix = split[1].split(".")[0].replace(":", "")
 
     filename = media_filepath.stem.replace(" ", "_")
-    output_name = f"{filename}_review_{time_main}_{time_suffix}{media_filepath.suffix}"
+
+    if not get_sequence_dir_only:
+        output_name = (
+            f"{filename}_review_{time_main}_{time_suffix}{media_filepath.suffix}"
+        )
+    else:
+        output_name = f"{filename}_review_{time_main}_{time_suffix}"
 
     return output_dir.joinpath(output_name)
 

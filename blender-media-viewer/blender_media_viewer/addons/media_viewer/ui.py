@@ -59,9 +59,14 @@ def MV_TOPBAR_image_editor(self: Any, context: bpy.types.Context) -> None:
     # Render review image editor operator.
     layout.operator(
         MV_OT_render_img_with_annotation.bl_idname,
-        icon="RESTRICT_RENDER_OFF",
+        icon="RENDERLAYERS",
         text="",
-    )
+    ).render_sequence = True
+    layout.operator(
+        MV_OT_render_img_with_annotation.bl_idname,
+        icon="IMAGE_RGB_ALPHA",
+        text="",
+    ).render_sequence = False
 
     draw_seperators(layout)
 
