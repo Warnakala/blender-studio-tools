@@ -44,11 +44,6 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
         height = int(image.size[1])
         media_filepath = Path(bpy.path.abspath(image.filepath))
         review_output_dir = Path(context.window_manager.media_viewer.review_output_dir)
-        # Create new image datablack to save our newly composited image
-        # (source image + annotation) to.
-        new_image = bpy.data.images.new(
-            f"{image.name}_annotated", width, height, float_buffer=True
-        )
 
         # Reading image dimensions is not supported for multilayer EXRs
         # https://developer.blender.org/T53768
@@ -74,6 +69,13 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
                 # Delete image again.
                 bpy.data.images.remove(tmp_image)
                 tmp_res_path.unlink(missing_ok=True)
+
+        # Create new image datablack to save our newly composited image
+        # (source image + annotation) to.
+        new_image = bpy.data.images.new(
+            f"{image.name}_annotated", width, height, float_buffer=True
+        )
+        print(f"Created image datablock: {new_image.name}({width}x{height})")
 
         file_list = opsdata.get_image_sequence(media_filepath)
         frames = range(context.scene.frame_start, context.scene.frame_end + 1)
@@ -124,7 +126,7 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
                     frame_counter = frames[-1]
             # If not part of image sequence take frame 0
             else:
-                frame_counter = 0
+                frame_counter = frame
 
             output_path = opsdata.get_review_output_path(
                 review_output_dir, media_filepath
