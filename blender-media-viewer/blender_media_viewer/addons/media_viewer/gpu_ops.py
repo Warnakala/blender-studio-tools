@@ -75,11 +75,11 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
                 bpy.data.images.remove(tmp_image)
                 tmp_res_path.unlink(missing_ok=True)
 
+        file_list = opsdata.get_image_sequence(media_filepath)
+        frames = range(context.scene.frame_start, context.scene.frame_end + 1)
+
         # Process sequence.
         if self.render_sequence:
-            file_list = opsdata.get_image_sequence(media_filepath)
-            frames = range(context.scene.frame_start, context.scene.frame_end + 1)
-
             # Get an dir with timestamp inside out the review output dir.
             output_dir: Path = opsdata.get_review_output_path(
                 review_output_dir, media_filepath, get_sequence_dir_only=True
@@ -113,11 +113,25 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
 
         # Single image.
         else:
+            frame = context.scene.frame_current
+            # Means we have an image sequence loaded but want to render out current frame.
+            if len(file_list) > 1:
+                # If frame out of bound left take first frame.
+                if frame < frames[0]:
+                    frame_counter = frames[0]
+                # If frame out of bound right take last frame.
+                elif frame > frames[-1]:
+                    frame_counter = frames[-1]
+            # If not part of image sequence take frame 0
+            else:
+                frame_counter = 0
+
             output_path = opsdata.get_review_output_path(
                 review_output_dir, media_filepath
             )
+            output_path = output_path.parent.joinpath(f"{output_path.stem}.jpg")
             render = self.render_image_editor_in_image_datablock(
-                area, new_image, context.scene.frame_current
+                area, new_image, frame_counter
             )
             render.save_render(output_path.as_posix())
             print(f"Saved image to {output_path.as_posix()}")
