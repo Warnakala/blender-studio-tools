@@ -104,7 +104,8 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
                     frame_counter = frames[-1]
 
                 output_path = output_dir.joinpath(f"{file_list[idx].stem}.jpg")
-
+                print("Loading frame counter: " + str(frame_counter))
+                print(f"{area.spaces.active.image_user.frame_duration}")
                 render = self.render_image_editor_in_image_datablock(
                     area, new_image, frame_counter
                 )
@@ -116,6 +117,7 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
         # Single image.
         else:
             frame = context.scene.frame_current
+            frame_counter = frame
             # Means we have an image sequence loaded but want to render out current frame.
             if len(file_list) > 1:
                 # If frame out of bound left take first frame.
@@ -128,6 +130,8 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
             else:
                 frame_counter = frame
 
+            print("Loading frame counter: " + str(frame_counter))
+            print(f"{area.spaces.active.image_user.frame_duration}")
             output_path = opsdata.get_review_output_path(
                 review_output_dir, media_filepath
             )
