@@ -1245,7 +1245,7 @@ class MV_OT_render_review(bpy.types.Operator):
     bl_idname = "media_viewer.render_review"
     bl_label = "Render Review"
     bl_description = (
-        "Makes an openGL render of the active media file. Includes all annotations."
+        "Makes an openGL render of the active media file. Includes all annotations"
     )
     render_sequence: bpy.props.BoolProperty(
         name="Render Sequence",
@@ -1304,11 +1304,12 @@ class MV_OT_render_review(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class MV_OT_load_media(bpy.types.Operator):
-    bl_idname = "media_viewer.load_media"
-    bl_label = "Load Media"
+class MV_OT_init_with_media_paths(bpy.types.Operator):
+    bl_idname = "media_viewer.init_with_media_paths"
+    bl_label = "Initialize with media paths"
     bl_description = (
-        "Based on input filepath list load media and automatically setup area type"
+        "Based on input filepath list jumps to right directory "
+        "and select active file defined by active_file_idx"
     )
     # This enables us to pass a list of items to the operator input.
     # The list apparently needs to be a list of dictionaries [Dict["name": key]]
@@ -1318,14 +1319,10 @@ class MV_OT_load_media(bpy.types.Operator):
         description="List of filepaths to import in to Sequence Editor",
     )
     active_file_idx: bpy.props.IntProperty(
-        name="Index of active file in files list", default=1, min=0
+        name="Index of active file in files list", default=0, min=0
     )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        global active_relpath
-        global prev_relpath  # Is relative path to prev_dirpath.
-        global prev_filepath_list
-
         # No files input nothing to load.
         if not self.files:
             return {"CANCELLED"}
@@ -1335,60 +1332,26 @@ class MV_OT_load_media(bpy.types.Operator):
 
         # Get active filepath.
         try:
-            filepath = filepath_list[self.active_file_idx]
+            _active_filepath = filepath_list[self.active_file_idx]
         except IndexError:
             # active_file_idx is out of range
             return {"CANCELLED"}
 
-        # Execute load media op.
-        if opsdata.is_movie(filepath):
-            # Check if active filepath list grew bigger compared to the previous.
-            # If so that means, user added more files to existing selection.
-            # That means we append the new files to the sequence editor.
-            # If the selection shrinked we clear out all media before loading
-            # new files
+        # Find active media area.
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
 
-            # Selection did not change, early return.
-            if (
-                len(filepath_list) == len(prev_filepath_list)
-                and prev_relpath == active_relpath
-            ):
-                return {"CANCELLED"}
+        if not area_fb:
+            return {"CANCELLED"}
 
-            append = False
-            if len(filepath_list) > len(prev_filepath_list):
-                append = True
+        # Update File Browser directory.
+        area_fb.spaces.active.params.directory = (
+            _active_filepath.parent.as_posix().encode("utf-8")
+        )
 
-            bpy.ops.media_viewer.set_media_area_type(area_type="SEQUENCE_EDITOR")
-            # Operator expects List[Dict] because of collection property.
-            bpy.ops.media_viewer.load_media_movie(
-                files=[{"name": f.as_posix()} for f in filepath_list], append=append
-            )
-
-        elif opsdata.is_image(filepath):
-
-            # Early return filename did not change.
-            if prev_relpath == active_relpath:
-                return {"CANCELLED"}
-
-            # Set area type.
-            bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
-
-            # Load media image handles image sequences.
-            bpy.ops.media_viewer.load_media_image(filepath=filepath.as_posix())
-
-        elif opsdata.is_text(filepath) or opsdata.is_script(filepath):
-
-            # Early return filename did not change.
-            if prev_relpath == active_relpath:
-                return {"CANCELLED"}
-
-            # Set area type.
-            bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
-
-            # Load media.
-            bpy.ops.media_viewer.load_media_text(filepath=filepath.as_posix())
-
+        # Select file.
+        area_fb.spaces.active.activate_file_by_relative_path(
+            relative_path=_active_filepath.name
+        )
         return {"FINISHED"}
 
 
@@ -1460,30 +1423,61 @@ def callback_filename_change(dummy: None):
     if not selected_files:
         selected_files.append(active_file)
 
-    # Selected files is ordered hierachily.
-    # The active file has no particular order in that.
-    # For that reason media_viewer.load_media has an active_file_idx parameter,
-    # that represents the active file in the files_dict list
-    try:
-        active_file_idx = selected_files.index(active_file)
-    except ValueError:
-        # Can happen when you have an existing selection, deselect item, select it and deselect it.
-        # TODO: good idea to return in this case?
-        return
-
     # Update global active filepath list.
     active_filepath_list.clear()
     active_filepath_list.extend(
         [directory.joinpath(Path(file.relative_path)) for file in selected_files]
     )
+    active_filepath = get_active_path()
 
-    # Assemble Path data structures.
-    files_dict = [{"name": f.as_posix()} for f in active_filepath_list]
+    # Execute load media op.
+    if opsdata.is_movie(active_filepath):
+        # Check if active filepath list grew bigger compared to the previous.
+        # If so that means, user added more files to existing selection.
+        # That means we append the new files to the sequence editor.
+        # If the selection shrinked we clear out all media before loading
+        # new files
 
-    # Call the load media operator that will check the file extensions and
-    # responds accordingly. The operator compare active_filepath_list
-    # and prev_filepath_list.
-    bpy.ops.media_viewer.load_media(files=files_dict, active_file_idx=active_file_idx)
+        # Selection did not change, early return.
+        if (
+            len(active_filepath_list) == len(prev_filepath_list)
+            and prev_relpath == active_relpath
+        ):
+            return None
+
+        append = False
+        if len(active_filepath_list) > len(prev_filepath_list):
+            append = True
+
+        bpy.ops.media_viewer.set_media_area_type(area_type="SEQUENCE_EDITOR")
+        # Operator expects List[Dict] because of collection property.
+        bpy.ops.media_viewer.load_media_movie(
+            files=[{"name": f.as_posix()} for f in active_filepath_list], append=append
+        )
+
+    elif opsdata.is_image(active_filepath):
+
+        # Early return filename did not change.
+        if prev_relpath == active_relpath:
+            return None
+
+        # Set area type.
+        bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
+
+        # Load media image handles image sequences.
+        bpy.ops.media_viewer.load_media_image(filepath=active_filepath.as_posix())
+
+    elif opsdata.is_text(active_filepath) or opsdata.is_script(active_filepath):
+
+        # Early return filename did not change.
+        if prev_relpath == active_relpath:
+            return None
+
+        # Set area type.
+        bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
+
+        # Load media.
+        bpy.ops.media_viewer.load_media_text(filepath=active_filepath.as_posix())
 
     # Update prev_ variables.
     prev_relpath = active_relpath
@@ -1495,7 +1489,6 @@ def callback_filename_change(dummy: None):
 
 
 classes = [
-    MV_OT_load_media,
     MV_OT_load_media_movie,
     MV_OT_load_media_image,
     MV_OT_toggle_timeline,
@@ -1521,6 +1514,7 @@ classes = [
     MV_OT_delete_active_gpencil_frame,
     MV_OT_delete_all_gpencil_frames,
     MV_OT_render_review,
+    MV_OT_init_with_media_paths,
 ]
 
 

@@ -18,6 +18,9 @@
 
 # <pep8-80 compliant>
 import os
+import sys
+from pathlib import Path
+from typing import List, Dict, Union, Any, Optional
 
 import bpy
 import bl_app_override
@@ -104,16 +107,60 @@ def handler_set_template_defaults(_):
     bpy.ops.media_viewer.set_template_defaults()
 
 
+init_filepaths: List[Path] = []
+
+
+def init_with_mediapaths(_):
+    global init_filepaths
+    # Assemble Path data structure that works for operator.
+    files_dict = [{"name": f.as_posix()} for f in init_filepaths]
+    bpy.ops.media_viewer.init_with_media_paths(files=files_dict, active_file_idx=0)
+
+
 app_state = AppStateStore()
+active_load_post_handlers = []
 
 
 def register():
+    global init_filepaths
+
     print("Template Register", __file__)
     app_state.setup()
 
     # Handler.
     bpy.app.handlers.load_post.append(handler_load_recent_directory)
     bpy.app.handlers.load_post.append(handler_set_template_defaults)
+    active_load_post_handlers[:] = (
+        handler_load_recent_directory,
+        handler_set_template_defaults,
+    )
+
+    # Check if blender-media-viewer was started from commandline with filepaths
+    # after '--'.
+    # In this case that means user wants to open media with blender-media-viewer.
+    # To achieve this we collect all valid existent filepaths after -- and
+    # update the global init_filepaths list. We then register the init_with_mediapaths
+    # load post handler that reads that variable.
+
+    # Check cli input.
+    argv = sys.argv
+    if "--" not in argv:
+        return
+    else:
+        # Collect all arguments after -- which should represent
+        # individual filepaths.
+        ddash_idx = argv.index("--")
+        filepaths: List[Path] = []
+        for idx in range(ddash_idx + 1, len(argv)):
+            p = Path(argv[idx])
+            # Only use if filepath that exists.
+            if p.exists() and p.is_file():
+                filepaths.append(p)
+
+        if filepaths:
+            init_filepaths.extend(filepaths)
+            bpy.app.handlers.load_post.append(init_with_mediapaths)
+            active_load_post_handlers.append(init_with_mediapaths)
 
 
 def unregister():
@@ -121,5 +168,5 @@ def unregister():
     app_state.teardown()
 
     # Handler.
-    bpy.app.handlers.load_post.remove(handler_load_recent_directory)
-    bpy.app.handlers.load_post.remove(handler_set_template_defaults)
+    for handler in reversed(active_load_post_handlers):
+        bpy.app.handlers.load_post.remove(handler)
