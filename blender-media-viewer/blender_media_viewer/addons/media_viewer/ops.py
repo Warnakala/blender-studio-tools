@@ -22,6 +22,7 @@
 from pathlib import Path
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
 from collections import OrderedDict
+from copy import copy, deepcopy
 
 import bpy
 from bpy.app.handlers import persistent
@@ -36,9 +37,15 @@ logger = LoggerFactory.getLogger(name=__name__)
 active_media_area = "SEQUENCE_EDITOR"
 
 # Global variables for frame handler to check previous value.
-prev_relpath: Optional[str] = None
 prev_dirpath: Path = Path.home()  # TODO: read from json on register
+prev_relpath: Optional[str] = None
 prev_filepath_list: List[Path] = []
+
+active_dirpath: Path = Path.home()
+active_relpath: Optional[str] = None
+active_filepath_list: List[Path] = []
+
+
 filebrowser_state: FileBrowserState = FileBrowserState()
 is_fullscreen: bool = False  # TODO: context.screen.show_fullscreen is not updating
 is_muted: bool = False
@@ -50,6 +57,12 @@ def get_prev_path() -> Path:
     global prev_relpath
     global prev_dirpath
     return Path(prev_dirpath).joinpath(prev_relpath)
+
+
+def get_active_path() -> Path:
+    global active_dirpath
+    global active_relpath
+    return Path(active_dirpath).joinpath(active_relpath)
 
 
 class MV_OT_load_media_movie(bpy.types.Operator):
@@ -1285,7 +1298,97 @@ class MV_OT_render_review(bpy.types.Operator):
 
         # Restore current frame.
         context.scene.frame_current = current_frame
-        bpy.ops.wm.redraw_timer({"area": area_media}, type="DRAW_WIN_SWAP", iterations=1)
+        bpy.ops.wm.redraw_timer(
+            {"area": area_media}, type="DRAW_WIN_SWAP", iterations=1
+        )
+        return {"FINISHED"}
+
+
+class MV_OT_load_media(bpy.types.Operator):
+    bl_idname = "media_viewer.load_media"
+    bl_label = "Load Media"
+    bl_description = (
+        "Based on input filepath list load media and automatically setup area type"
+    )
+    # This enables us to pass a list of items to the operator input.
+    # The list apparently needs to be a list of dictionaries [Dict["name": key]]
+    # This operator expects the 'name' key to be the full path.
+    files: bpy.props.CollectionProperty(
+        type=bpy.types.OperatorFileListElement,
+        description="List of filepaths to import in to Sequence Editor",
+    )
+    active_file_idx: bpy.props.IntProperty(
+        name="Index of active file in files list", default=1, min=0
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_relpath
+        global prev_relpath  # Is relative path to prev_dirpath.
+        global prev_filepath_list
+
+        # No files input nothing to load.
+        if not self.files:
+            return {"CANCELLED"}
+
+        # Name key is full path.
+        filepath_list: List[Path] = [Path(f.name) for f in self.files]
+
+        # Get active filepath.
+        try:
+            filepath = filepath_list[self.active_file_idx]
+        except IndexError:
+            # active_file_idx is out of range
+            return {"CANCELLED"}
+
+        # Execute load media op.
+        if opsdata.is_movie(filepath):
+            # Check if active filepath list grew bigger compared to the previous.
+            # If so that means, user added more files to existing selection.
+            # That means we append the new files to the sequence editor.
+            # If the selection shrinked we clear out all media before loading
+            # new files
+
+            # Selection did not change, early return.
+            if (
+                len(filepath_list) == len(prev_filepath_list)
+                and prev_relpath == active_relpath
+            ):
+                return {"CANCELLED"}
+
+            append = False
+            if len(filepath_list) > len(prev_filepath_list):
+                append = True
+
+            bpy.ops.media_viewer.set_media_area_type(area_type="SEQUENCE_EDITOR")
+            # Operator expects List[Dict] because of collection property.
+            bpy.ops.media_viewer.load_media_movie(
+                files=[{"name": f.as_posix()} for f in filepath_list], append=append
+            )
+
+        elif opsdata.is_image(filepath):
+
+            # Early return filename did not change.
+            if prev_relpath == active_relpath:
+                return {"CANCELLED"}
+
+            # Set area type.
+            bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
+
+            # Load media image handles image sequences.
+            bpy.ops.media_viewer.load_media_image(filepath=filepath.as_posix())
+
+        elif opsdata.is_text(filepath) or opsdata.is_script(filepath):
+
+            # Early return filename did not change.
+            if prev_relpath == active_relpath:
+                return {"CANCELLED"}
+
+            # Set area type.
+            bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
+
+            # Load media.
+            bpy.ops.media_viewer.load_media_text(filepath=filepath.as_posix())
+
         return {"FINISHED"}
 
 
@@ -1297,28 +1400,39 @@ def callback_filename_change(dummy: None):
     area gets redrawn. This handles the dynamic loading of the selected media and
     saves filebrowser directory on window manager to restore it on area toggling.
     """
-    global prev_relpath
-    global prev_dirpath
-    global last_folder_at_path
+    # Read only.
+    global last_folder_at_path  # :List[Path]
+
+    # Will be overwritten.
+    global active_relpath  # :Optional[str]
+    global active_dirpath  # :Path
+    global active_filepath_list  # :List[Path]
+    global prev_relpath  # :Optional[str]
+    global prev_dirpath  # :Path
+    global prev_filepath_list  # :List[Path]
 
     # Because frame handler runs in area,
     # context has active_file, and selected_files.
     area = bpy.context.area
-    params = area.spaces.active.params
-    directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
     active_file = bpy.context.active_file  # Can be None.
     selected_files = bpy.context.selected_files
+    params = area.spaces.active.params
+    directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
+
+    # Update globals.
+    active_dirpath = directory
+    active_relpath = active_file.relative_path if active_file else None
 
     # Save recent directory to config file if direcotry changed.
     # Save and load from folder history.
-    if prev_dirpath != directory:
+    if prev_dirpath != active_dirpath:
 
         # Save recent_dir to config file on disk, to restore it on next
         # startup.
         opsdata.save_to_json(
-            {"recent_dir": directory.as_posix()}, vars.get_config_file()
+            {"recent_dir": active_dirpath.as_posix()}, vars.get_config_file()
         )
-        logger.info(f"Saved new recent directory: {directory.as_posix()}")
+        logger.info(f"Saved new recent directory: {active_dirpath.as_posix()}")
 
         # Add previously selected folder to folder history.
         opsdata.add_to_folder_history(
@@ -1327,13 +1441,13 @@ def callback_filename_change(dummy: None):
 
         # Check if current directory has an entry in folder history.
         # If so select that folder.
-        if directory.as_posix() in last_folder_at_path:
+        if active_dirpath.as_posix() in last_folder_at_path:
             area.spaces.active.activate_file_by_relative_path(
-                relative_path=last_folder_at_path[directory.as_posix()]
+                relative_path=last_folder_at_path[active_dirpath.as_posix()]
             )
 
         # Update global var prev_dirpath with current directory.
-        prev_dirpath = directory
+        prev_dirpath = active_dirpath
 
     # Early return no active_file:
     if not active_file:
@@ -1346,74 +1460,42 @@ def callback_filename_change(dummy: None):
     if not selected_files:
         selected_files.append(active_file)
 
-    # print(active_file)
-    # print(selected_files)
+    # Selected files is ordered hierachily.
+    # The active file has no particular order in that.
+    # For that reason media_viewer.load_media has an active_file_idx parameter,
+    # that represents the active file in the files_dict list
+    try:
+        active_file_idx = selected_files.index(active_file)
+    except ValueError:
+        # Can happen when you have an existing selection, deselect item, select it and deselect it.
+        # TODO: good idea to return in this case?
+        return
+
+    # Update global active filepath list.
+    active_filepath_list.clear()
+    active_filepath_list.extend(
+        [directory.joinpath(Path(file.relative_path)) for file in selected_files]
+    )
 
     # Assemble Path data structures.
-    filepath = directory.joinpath(Path(active_file.relative_path))
-    filepath_list: List[Path] = [
-        directory.joinpath(Path(file.relative_path)) for file in selected_files
-    ]
+    files_dict = [{"name": f.as_posix()} for f in active_filepath_list]
 
-    # Execute load media op.
-    if opsdata.is_movie(filepath):
-        # Check if active filepath list grew bigger compared to the previous.
-        # If so that means, user added more files to existing selection.
-        # That means we append the new files to the sequence editor.
-        # If the selection shrinked we clear out all media before loading
-        # new files
-
-        # Selection did not change, early return.
-        if (
-            len(filepath_list) == len(prev_filepath_list)
-            and prev_relpath == active_file.relative_path
-        ):
-            return
-
-        append = False
-        if len(filepath_list) > len(prev_filepath_list):
-            append = True
-
-        bpy.ops.media_viewer.set_media_area_type(area_type="SEQUENCE_EDITOR")
-        # Operator expects List[Dict] because of collection property.
-        bpy.ops.media_viewer.load_media_movie(
-            files=[{"name": f.as_posix()} for f in filepath_list], append=append
-        )
-
-    elif opsdata.is_image(filepath):
-
-        # Early return filename did not change.
-        if prev_relpath == active_file.relative_path:
-            return
-
-        # Set area type.
-        bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
-
-        # Load media image handles image sequences.
-        bpy.ops.media_viewer.load_media_image(filepath=filepath.as_posix())
-
-    elif opsdata.is_text(filepath) or opsdata.is_script(filepath):
-
-        # Early return filename did not change.
-        if prev_relpath == active_file.relative_path:
-            return
-
-        # Set area type.
-        bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
-
-        # Load media.
-        bpy.ops.media_viewer.load_media_text(filepath=filepath.as_posix())
+    # Call the load media operator that will check the file extensions and
+    # responds accordingly. The operator compare active_filepath_list
+    # and prev_filepath_list.
+    bpy.ops.media_viewer.load_media(files=files_dict, active_file_idx=active_file_idx)
 
     # Update prev_ variables.
-    prev_relpath = active_file.relative_path
+    prev_relpath = active_relpath
     prev_filepath_list.clear()
-    prev_filepath_list.extend(filepath_list)
+    prev_filepath_list.extend(copy(active_filepath_list))
 
 
 # ----------------REGISTER--------------.
 
 
 classes = [
+    MV_OT_load_media,
     MV_OT_load_media_movie,
     MV_OT_load_media_image,
     MV_OT_toggle_timeline,
@@ -1446,7 +1528,6 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # Handlers.
     bpy.types.SpaceFileBrowser.draw_handler_add(
         callback_filename_change, (None,), "WINDOW", "POST_PIXEL"
     )
