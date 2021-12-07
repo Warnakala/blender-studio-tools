@@ -110,8 +110,11 @@ def handler_set_template_defaults(_):
 init_filepaths: List[Path] = []
 
 
+@persistent  # Is needed.
 def init_with_mediapaths(_):
     global init_filepaths
+    print("Initializing media-viewer with filepaths:")
+    print("\n".join([f.as_posix() for f in init_filepaths]))
     # Assemble Path data structure that works for operator.
     files_dict = [{"name": f.as_posix()} for f in init_filepaths]
     bpy.ops.media_viewer.init_with_media_paths(files=files_dict, active_file_idx=0)
