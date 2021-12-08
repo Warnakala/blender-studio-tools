@@ -16,13 +16,15 @@ logger = LoggerFactory.getLogger(name=__name__)
 GP_DRAWER = gpu_opsdata.GPDrawerCustomShader()
 
 
-class MV_OT_render_img_with_annotation(bpy.types.Operator):
+class MV_OT_render_review_img_editor(bpy.types.Operator):
 
-    bl_idname = "media_viewer.render_img_with_annotation"
+    bl_idname = "media_viewer.render_review_img_editor"
     bl_label = "Render Image with Annotations"
     bl_description = (
         "Renders out active image in Image Editor with annotations on top. "
-        "Uses custom openGL rendering pipeline"
+        "Uses custom openGL rendering pipeline. "
+        "Saves image in review_output_path with timestamp. "
+        "Can render out whole image sequence (in subfolder) or single image only. "
     )
     render_sequence: bpy.props.BoolProperty(
         name="Render Sequence",
@@ -104,8 +106,8 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
                     frame_counter = frames[-1]
 
                 output_path = output_dir.joinpath(f"{file_list[idx].stem}.jpg")
-                print("Loading frame counter: " + str(frame_counter))
-                print(f"{area.spaces.active.image_user.frame_duration}")
+                # print("Loading frame counter: " + str(frame_counter))
+                # print(f"{area.spaces.active.image_user.frame_duration}")
                 render = self.render_image_editor_in_image_datablock(
                     area, new_image, frame_counter
                 )
@@ -130,8 +132,8 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
             else:
                 frame_counter = frame
 
-            print("Loading frame counter: " + str(frame_counter))
-            print(f"{area.spaces.active.image_user.frame_duration}")
+            # print("Loading frame counter: " + str(frame_counter))
+            # print(f"{area.spaces.active.image_user.frame_duration}")
             output_path = opsdata.get_review_output_path(
                 review_output_dir, media_filepath
             )
@@ -224,7 +226,7 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
 
 # ---------REGISTER ----------.
 
-classes = [MV_OT_render_img_with_annotation]
+classes = [MV_OT_render_review_img_editor]
 
 
 def register():

@@ -5,11 +5,11 @@ import bpy
 from media_viewer.ops import (
     MV_OT_delete_all_gpencil_frames,
     MV_OT_delete_active_gpencil_frame,
-    MV_OT_render_review,
+    MV_OT_render_review_sqe_editor,
 )
 from media_viewer import ops
 
-from media_viewer.gpu_ops import MV_OT_render_img_with_annotation
+from media_viewer.gpu_ops import MV_OT_render_review_img_editor
 
 
 def draw_seperators(layout: bpy.types.UILayout) -> None:
@@ -51,10 +51,10 @@ def MV_TOPBAR_sequencer(self: Any, context: bpy.types.Context) -> None:
 
     # Render review sequence editor operator.
     layout.operator(
-        MV_OT_render_review.bl_idname, icon="RENDER_ANIMATION", text=""
+        MV_OT_render_review_sqe_editor.bl_idname, icon="RENDER_ANIMATION", text=""
     ).render_sequence = True
     layout.operator(
-        MV_OT_render_review.bl_idname, icon="IMAGE_RGB_ALPHA", text=""
+        MV_OT_render_review_sqe_editor.bl_idname, icon="IMAGE_RGB_ALPHA", text=""
     ).render_sequence = False
 
 
@@ -63,12 +63,12 @@ def MV_TOPBAR_image_editor(self: Any, context: bpy.types.Context) -> None:
 
     # Render review image editor operator.
     layout.operator(
-        MV_OT_render_img_with_annotation.bl_idname,
+        MV_OT_render_review_img_editor.bl_idname,
         icon="RENDERLAYERS",
         text="",
     ).render_sequence = True
     layout.operator(
-        MV_OT_render_img_with_annotation.bl_idname,
+        MV_OT_render_review_img_editor.bl_idname,
         icon="IMAGE_RGB_ALPHA",
         text="",
     ).render_sequence = False

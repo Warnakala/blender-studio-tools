@@ -1241,11 +1241,13 @@ class MV_OT_delete_all_gpencil_frames(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class MV_OT_render_review(bpy.types.Operator):
-    bl_idname = "media_viewer.render_review"
+class MV_OT_render_review_sqe_editor(bpy.types.Operator):
+    bl_idname = "media_viewer.render_review_sqe_editor"
     bl_label = "Render Review"
     bl_description = (
-        "Makes an openGL render of the active media file. Includes all annotations"
+        "Makes an openGL render of the Sequence Editor. Includes all annotations"
+        "Saves file to review_output_path with timestamp. Can render .mp4 of whole"
+        "movie strip or single image"
     )
     render_sequence: bpy.props.BoolProperty(
         name="Render Sequence",
@@ -1513,7 +1515,7 @@ classes = [
     MV_OT_zoom_media_view,
     MV_OT_delete_active_gpencil_frame,
     MV_OT_delete_all_gpencil_frames,
-    MV_OT_render_review,
+    MV_OT_render_review_sqe_editor,
     MV_OT_init_with_media_paths,
 ]
 
