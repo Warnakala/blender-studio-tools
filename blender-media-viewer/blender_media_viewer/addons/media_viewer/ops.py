@@ -22,7 +22,7 @@
 from pathlib import Path
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
 from collections import OrderedDict
-from copy import copy, deepcopy
+from copy import copy
 
 import bpy
 from bpy.app.handlers import persistent
@@ -1241,6 +1241,26 @@ class MV_OT_delete_all_gpencil_frames(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_insert_empty_gpencil_frame(bpy.types.Operator):
+
+    bl_idname = "media_viewer.insert_empty_gpencil_frame"
+    bl_label = "Insert Empty GPencil Frame"
+    bl_description = "Inserts an empty GPencil frame at current frame"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+
+        # Get active grease pencil layer.
+        # startup.blend contains this layer.
+        gp_obj = bpy.data.grease_pencils[active_media_area]
+        active_layer = gp_obj.layers[gp_obj.layers.active_index]
+
+        # Insert new frame.
+        active_layer.frames.new(context.scene.frame_current)
+
+        return {"FINISHED"}
+
+
 class MV_OT_render_review_sqe_editor(bpy.types.Operator):
     bl_idname = "media_viewer.render_review_sqe_editor"
     bl_label = "Render Review"
@@ -1595,6 +1615,7 @@ classes = [
     MV_OT_render_review_sqe_editor,
     MV_OT_init_with_media_paths,
     MV_OT_export_annotation_data_to_3dcam,
+    MV_OT_insert_empty_gpencil_frame,
 ]
 
 

@@ -44,7 +44,7 @@ class MV_OT_render_review_img_editor(bpy.types.Operator):
         "Renders out active image in Image Editor with annotations on top. "
         "Uses custom openGL rendering pipeline. "
         "Saves image in review_output_path with timestamp. "
-        "Can render out whole image sequence (in subfolder) or single image only. "
+        "Can render out whole image sequence (in subfolder) or single image only"
     )
     render_sequence: bpy.props.BoolProperty(
         name="Render Sequence",

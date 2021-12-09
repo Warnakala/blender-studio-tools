@@ -7,6 +7,7 @@ from media_viewer.ops import (
     MV_OT_delete_active_gpencil_frame,
     MV_OT_render_review_sqe_editor,
     MV_OT_export_annotation_data_to_3dcam,
+    MV_OT_insert_empty_gpencil_frame,
 )
 from media_viewer import ops
 
@@ -36,10 +37,13 @@ def MV_TOPBAR_base(self: Any, context: bpy.types.Context) -> None:
         layout.label(text="Annotation")
         layout.prop(gpl, "color", icon_only=True)
 
+        layout.operator(MV_OT_insert_empty_gpencil_frame.bl_idname, text="", icon="ADD")
         layout.operator(
             MV_OT_delete_active_gpencil_frame.bl_idname, text="", icon="REMOVE"
         )
-        layout.operator(MV_OT_delete_all_gpencil_frames.bl_idname, text="", icon="X")
+        layout.operator(
+            MV_OT_delete_all_gpencil_frames.bl_idname, text="", icon="TRASH"
+        )
 
         draw_seperators(layout)
 
