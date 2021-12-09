@@ -27,7 +27,7 @@ from copy import copy, deepcopy
 import bpy
 from bpy.app.handlers import persistent
 
-from media_viewer import opsdata, vars
+from media_viewer import opsdata, vars, gp_opsdata
 from media_viewer.log import LoggerFactory
 from media_viewer.states import FileBrowserState
 
@@ -1357,6 +1357,83 @@ class MV_OT_init_with_media_paths(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_export_annotation_data_to_3dcam(bpy.types.Operator):
+    bl_idname = "media_viewer.export_annotation_data_to_3dcam"
+    bl_label = "Export review to 3D Cam"
+    bl_description = (
+        "Exports the annotation data in to a blend file. "
+        "Converts coordinates of each stroke point. "
+        "That way the annotation can be viewed directly in a 3D Camera "
+        "that has the same resolution as review media"
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        global active_media_area
+        return bool(active_media_area in ["SEQUENCE_EDITOR", "IMAGE_EDITOR"])
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area  # :str
+
+        resolution = (
+            bpy.context.scene.render.resolution_x,
+            bpy.context.scene.render.resolution_y,
+        )
+        # Check function docstrings for more info.
+        v_translate = gp_opsdata.get_translation_vector_to_3dview(
+            resolution, active_media_area
+        )
+        v_scale = gp_opsdata.get_scale_vector_to_3dview(resolution, active_media_area)
+
+        media_filepath = get_prev_path()
+        review_output_dir = Path(context.window_manager.media_viewer.review_output_dir)
+        output_path: Path = opsdata.get_review_output_path(
+            review_output_dir, media_filepath
+        )
+        output_path = output_path.parent.joinpath(f"{output_path.stem}.blend")
+
+        # Get active greace pencil layer.
+        # startup.blend contains this layer.
+        gp_obj = bpy.data.grease_pencils[active_media_area]
+
+        # Copy grease pencil object.
+        gp_obj_export = gp_obj.copy()
+        gp_obj_export.name = "REVIEW"
+
+        # Delete not needed layers.
+        active_layer = gp_obj_export.layers[gp_obj_export.layers.active_index]
+        for layer in gp_obj_export.layers:
+            if layer == active_layer:
+                continue
+            gp_obj_export.layers.remove(layer)
+
+        # Transform each point coordinate of the gpobj so they can be imported
+        # in a 3D_CAMERA_VIEW (That has the same resolution) as the review media and
+        # matches perfectly.
+        gp_obj_export = gp_opsdata.gplayer_sqe_to_3d(
+            gp_obj_export, v_translate, v_scale
+        )
+
+        # Create empty library blend file.
+        # Write grease pencil data in to it.
+        bpy.data.libraries.write(
+            output_path.as_posix(),
+            {gp_obj_export},
+            path_remap="RELATIVE",
+            fake_user=True,
+            compress=False,
+        )
+
+        print(
+            f"Exported annotation datablock ({gp_obj_export.name}) to: {output_path.as_posix()}"
+        )
+
+        # Delete convert grease pencil object.
+        bpy.data.grease_pencils.remove(gp_obj_export)
+
+        return {"CANCELLED"}
+
+
 @persistent
 def callback_filename_change(dummy: None):
 
@@ -1517,6 +1594,7 @@ classes = [
     MV_OT_delete_all_gpencil_frames,
     MV_OT_render_review_sqe_editor,
     MV_OT_init_with_media_paths,
+    MV_OT_export_annotation_data_to_3dcam,
 ]
 
 

@@ -6,6 +6,7 @@ from media_viewer.ops import (
     MV_OT_delete_all_gpencil_frames,
     MV_OT_delete_active_gpencil_frame,
     MV_OT_render_review_sqe_editor,
+    MV_OT_export_annotation_data_to_3dcam,
 )
 from media_viewer import ops
 
@@ -56,6 +57,9 @@ def MV_TOPBAR_sequencer(self: Any, context: bpy.types.Context) -> None:
     layout.operator(
         MV_OT_render_review_sqe_editor.bl_idname, icon="IMAGE_RGB_ALPHA", text=""
     ).render_sequence = False
+    layout.operator(
+        MV_OT_export_annotation_data_to_3dcam.bl_idname, icon="EXPORT", text=""
+    )
 
 
 def MV_TOPBAR_image_editor(self: Any, context: bpy.types.Context) -> None:
@@ -72,6 +76,9 @@ def MV_TOPBAR_image_editor(self: Any, context: bpy.types.Context) -> None:
         icon="IMAGE_RGB_ALPHA",
         text="",
     ).render_sequence = False
+    layout.operator(
+        MV_OT_export_annotation_data_to_3dcam.bl_idname, icon="EXPORT", text=""
+    )
 
     draw_seperators(layout)
 
