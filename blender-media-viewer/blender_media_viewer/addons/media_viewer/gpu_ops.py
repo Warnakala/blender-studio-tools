@@ -110,7 +110,11 @@ class MV_OT_render_review_img_editor(bpy.types.Operator):
             )
 
             for idx, frame in enumerate(frames):
-                # Make sure to switch frame.
+
+                # Calling this every frame to update UI results in same picture
+                # for all frames?
+                # bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
+
                 # Here we assume that the frame range is the same as in image.
                 # This is insured by MV_OT_load_media_image, that makes sure of that.
 
@@ -183,6 +187,10 @@ class MV_OT_render_review_img_editor(bpy.types.Operator):
         # in gpu_extras.presets.draw_texture_2d()
         # Note: Colors read from the texture will be in scene linear color space
         # Here frame does not refer to timeline frame but to area.spaces.active.image_user.frame_current
+
+        # Call gl.free() first otherwise first rendered out image will always
+        # be current frame and not frame= argument.
+        image.gl_free()
         image.gl_load(
             frame=frame,
             layer_index=layer_idx,
@@ -237,9 +245,6 @@ class MV_OT_render_review_img_editor(bpy.types.Operator):
             # new_image.scale(width, height) does not seem to do a difference?
             # Set new_image.pixels to the composited buffer.
             new_image.pixels = [v for v in buffer]
-
-        # Free image
-        image.gl_free()
 
         return new_image
 
