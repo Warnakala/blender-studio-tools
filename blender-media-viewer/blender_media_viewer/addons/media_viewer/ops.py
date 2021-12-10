@@ -1274,6 +1274,12 @@ class MV_OT_render_review_sqe_editor(bpy.types.Operator):
         description="Controls if entire movie strip should be rendered or only a single image",
         default=True,
     )
+    sequence_file_type: bpy.props.EnumProperty(
+        name="File Format",
+        items=[("IMAGE", "IMAGE", ""), ("MOVIE", "MOVIE", "")],
+        default="MOVIE",
+        description="Only works when render_sequence is enabled. Controls if output should be a .mp4 or a jpg sequence",
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -1285,38 +1291,60 @@ class MV_OT_render_review_sqe_editor(bpy.types.Operator):
         global prev_dirpath
         global active_media_area
 
+        # Verify area.
+        area_media = opsdata.find_area(context, active_media_area)
+        if area_media.type != "SEQUENCE_EDITOR":
+            return {"CANCELLED"}
+
         current_frame = context.scene.frame_current
-        media_filepath = get_prev_path()
+        media_filepath = get_active_path()
         review_output_dir = Path(context.window_manager.media_viewer.review_output_dir)
         output_path: Path = opsdata.get_review_output_path(
             review_output_dir, media_filepath
         )
-        # Overwrite suffix to be .mp4.
-        ext = ".mp4" if self.render_sequence else ".jpg"
-        output_path = output_path.parent.joinpath(f"{output_path.stem}{ext}")
-        area_media = opsdata.find_area(context, active_media_area)
+        # If sequence and file type MOVIE
+        if self.render_sequence and self.sequence_file_type == "MOVIE":
 
-        # Easy case, we just make an OpenGL render.
-        if area_media.type == "SEQUENCE_EDITOR":
+            # Overwrite suffix to be .mp4.
+            ext = ".mp4"
+            output_path = output_path.parent.joinpath(f"{output_path.stem}{ext}")
 
             # Set output settings for movie.
             opsdata.set_render_settings_movie(context, output_path)
 
-            # Ensure folder exists.
-            output_path.parent.mkdir(parents=True, exist_ok=True)
+        # If sequence and file type MOVIE
+        elif self.render_sequence and self.sequence_file_type == "IMAGE":
+            output_dir: Path = opsdata.get_review_output_path(
+                review_output_dir, media_filepath, get_sequence_dir_only=True
+            )
+            filename = f"{media_filepath.stem}_######.jpg"
+            output_path = output_dir.joinpath(filename)
 
-            # Make opengl render.
-            bpy.ops.render.opengl(animation=self.render_sequence, sequencer=True)
+            # Set output settings for movie.
+            opsdata.set_render_settings_image_sequence(context, output_path)
 
-            # If not render_sequence we have to save the image manually from Render Result.
-            if not self.render_sequence:
-                try:
-                    image = bpy.data.images["Render Result"]
-                except KeyError:
-                    logger.error("Didn't find 'Render Result' in bpy.data.images")
-                    return {"CANCELLED"}
-                else:
-                    image.save_render(output_path.as_posix())
+        # If single image
+        else:
+            # Overwrite suffix to be .mp4.
+            ext = ".jpg"
+            output_path = output_path.parent.joinpath(f"{output_path.stem}{ext}")
+
+        # Ensure folder exists.
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Make opengl render.
+        # If animation is False, it will render in bpy.data.images["Render Result"]
+        bpy.ops.render.opengl(animation=self.render_sequence, sequencer=True)
+
+        # If not render_sequence we have to save the image manually from Render Result.
+        if not self.render_sequence:
+            try:
+                image = bpy.data.images["Render Result"]
+            except KeyError:
+                logger.error("Didn't find 'Render Result' in bpy.data.images")
+                return {"CANCELLED"}
+            else:
+                image.save_render(output_path.as_posix())
 
         # Restore current frame.
         context.scene.frame_current = current_frame

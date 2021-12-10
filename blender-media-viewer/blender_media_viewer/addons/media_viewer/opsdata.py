@@ -446,3 +446,20 @@ def set_render_settings_movie(context: bpy.types.Context, output_path: Path) -> 
     context.scene.use_preview_range = False
 
     rd.filepath = output_path.as_posix()
+
+
+def set_render_settings_image_sequence(
+    context: bpy.types.Context, output_path: Path
+) -> None:
+    rd = context.scene.render
+
+    # Format render settings.
+    rd.resolution_percentage = 100
+    rd.image_settings.file_format = "JPEG"
+    rd.image_settings.color_mode = "RGB"
+    rd.image_settings.quality = 90
+
+    # Scene settings.
+    context.scene.use_preview_range = False
+
+    rd.filepath = output_path.as_posix()

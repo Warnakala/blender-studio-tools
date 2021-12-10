@@ -55,12 +55,26 @@ def MV_TOPBAR_sequencer(self: Any, context: bpy.types.Context) -> None:
     layout = self.layout
 
     # Render review sequence editor operator.
-    layout.operator(
+    # Movie
+    op = layout.operator(
         MV_OT_render_review_sqe_editor.bl_idname, icon="RENDER_ANIMATION", text=""
-    ).render_sequence = True
-    layout.operator(
+    )
+    op.render_sequence = True
+    op.sequence_file_type = "MOVIE"
+
+    # Image Sequence
+    op = layout.operator(
+        MV_OT_render_review_sqe_editor.bl_idname, icon="RENDERLAYERS", text=""
+    )
+    op.render_sequence = True
+    op.sequence_file_type = "IMAGE"
+
+    # Single Image
+    op = layout.operator(
         MV_OT_render_review_sqe_editor.bl_idname, icon="IMAGE_RGB_ALPHA", text=""
     ).render_sequence = False
+
+    # Export to 3D Cam
     layout.operator(
         MV_OT_export_annotation_data_to_3dcam.bl_idname, icon="EXPORT", text=""
     )
