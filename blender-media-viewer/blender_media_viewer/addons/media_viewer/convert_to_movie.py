@@ -122,7 +122,7 @@ for f in filepath_list[1:]:
 
 # Set frame range.
 bpy.context.scene.frame_start = start_frame
-bpy.context.scene.frame_end = strip.frame_final_end
+bpy.context.scene.frame_end = strip.frame_final_end - 1
 
 # Set render settings.
 bpy.context.scene.render.filepath = output_path.as_posix()
