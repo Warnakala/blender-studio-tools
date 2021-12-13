@@ -43,6 +43,7 @@ from media_viewer.ops import (
     MV_OT_zoom_media_view,
     MV_OT_delete_active_gpencil_frame,
     MV_OT_delete_all_gpencil_frames,
+    MV_OT_render_review_area_aware,
 )
 from media_viewer import opsdata, vars
 from media_viewer.log import LoggerFactory
@@ -537,6 +538,24 @@ def register():
                 ),
             )
         )
+
+        # Render F12 / CTRL+F12
+        kmi = keymap.keymap_items.new(
+            MV_OT_render_review_area_aware.bl_idname,
+            value="PRESS",
+            type="F12",
+        )
+        kmi.properties.render_sequence = True
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            MV_OT_render_review_area_aware.bl_idname,
+            value="PRESS",
+            type="F12",
+            ctrl=True,
+        )
+        kmi.properties.render_sequence = False
+        addon_keymaps.append((keymap, kmi))
 
     # Print new hotkeys.
     for km, kmi in addon_keymaps:

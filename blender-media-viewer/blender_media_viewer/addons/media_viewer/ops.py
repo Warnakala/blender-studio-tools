@@ -1527,6 +1527,46 @@ class MV_OT_convert_image_seq_to_movie(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_render_review_area_aware(bpy.types.Operator):
+    """
+    Only used to overwrite default F12 / CTRL+F12 shortcuts
+    """
+    bl_idname = "media_viewer.render_review_area_aware"
+    bl_label = "Render Review"
+    bl_description = (
+        "Checks the active media area and then either calls: "
+        "bpy.ops.media_viewer.render_review_sqe_editor or "
+        "bpy.ops.media_viewer.render_review_img_editor"
+    )
+    render_sequence: bpy.props.BoolProperty(
+        name="Render Sequence",
+        description="Controls if entire movie strip should be rendered or only a single image",
+        default=True,
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+
+        # Get this property here, as we need to check everytime user
+        # uses shortcut.
+        sequence_file_type = context.window_manager.media_viewer.sequence_file_type
+
+        if active_media_area == "SEQUENCE_EDITOR":
+            return bpy.ops.media_viewer.render_review_sqe_editor(
+                render_sequence=self.render_sequence,
+                sequence_file_type=sequence_file_type,
+            )
+
+        elif active_media_area == "IMAGE_EDITOR":
+            return bpy.ops.media_viewer.render_review_img_editor(
+                render_sequence=self.render_sequence,
+                sequence_file_type=sequence_file_type,
+            )
+
+        else:
+            return {"CANCELLED"}
+
+
 @persistent
 def callback_filename_change(dummy: None):
 
@@ -1690,6 +1730,7 @@ classes = [
     MV_OT_export_annotation_data_to_3dcam,
     MV_OT_insert_empty_gpencil_frame,
     MV_OT_convert_image_seq_to_movie,
+    MV_OT_render_review_area_aware,
 ]
 
 
