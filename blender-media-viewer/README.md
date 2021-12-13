@@ -1,7 +1,7 @@
 # blender-media-viewer
-The blender-media-viewer is a Blender Application Template that makes Blender usable as a Video-Player, Image and Text-Viewer.
+The blender-media-viewer is a Blender Application Template that makes Blender usable as a Video-Player, Image and Text-Viewer and Review tool.
 
-It came to life because we wanted to have a player that could seamlessly browse media files with the arrow keys for our weekly presentations at the studio no matter if they are video, images or image sequences.
+It came to life because we wanted to have a player that could seamlessly browse media files with the arrow keys for our weekly presentations at the studio no matter if they are video, images or image sequences. It became apparent that having review tools fit well in the scope of this project, so they got added.
 
 One important aspect of the blender-media-viewer is to be able to use it without your mouse. Make sure to read the [shortcuts](#shortcuts) section.
 
@@ -42,7 +42,7 @@ In this video you will get an overview of what the blender-media-viewer can do.
 
 ![](./docs/videos/overview.mp4)
 
-## Features
+## Viewing and Navigation
 
 As mentioned above an important aspect while developing was to supply functionality and shortcuts to make the blender-media-viewer usable without a mouse.
 
@@ -64,6 +64,65 @@ If you toggle the sidebar of the Filebrowser with **CTRL+T** you can browse the 
 
 ![](./docs/videos/filebrowser_extra.mp4)
 
+## Review
+
+#### Annotation tools
+
+![image info](./docs/images/media_viewer_review.jpg)
+
+The blender-media-viewer comes with a set of review tools. You will find them in the top bar of the media view.
+
+![image info](./docs/images/media_view_topbar.jpg)
+
+The annotation tool is by default the active one so you can just start to draw on top of the media.
+The shortcuts for the annotation tool are the same as in default Blender.
+
+Each media file will have it's own annotation layer and it will be loaded once you select the media file.
+That means the blender-media-viewer will always create a new annotation layer for a media file that was not annotated before.
+
+You can adjust the layer color on the top left.
+
+Next to the color you will see some buttons:
+
+- The **+** button creates a new empty frame. This is useful when you want to make an annotation last until a specific frame.
+And after that frame it should be empty. The default behavior is that the annotation will be visible from its creation frame
+to the next annotation frame.
+
+- The **-** button deletes the **active** annotation frame.
+
+- The **TRASHCAN** button deletes all annotation frames for the active layer (current media file).
+
+#### Rendering the Review
+
+In the setting popover on the top right you can specify a review output directory. In this folder the annotated media will be exported.
+The filenames will include a timestamp so you won't overwrite any previous reviews of the same media.
+You can export single images, image sequences and .mp4s.
+Single images and .mp4s will just be exported in the review output directory directly.
+For image sequence a subfolder will be created that also has the timestamp included.
+
+> **_NOTE_**: Because the image editor has not a built in operator to render out an image **including** the annotations, the media-viewer uses a custom python openGL rendering pipeline for images and image sequences. This approach is not very fast but enables us to even annotate multilayer EXRs and write out any layer we want.
+
+There are 4 different export operators:
+
+- **Render Review as Single Image**: (Single image icon): Exports current frame as .jpg.
+
+- **Render Review as Image Sequence**: (Multiple image icon): Exports media file as .jpg sequence in subfolder.
+
+- **Render Review as Movie file**: (Movie icon) Exports media file as .mp4.
+
+You might have noticed the **EXPORT** icon on the most right. This is the last export operator.
+It exports a **.blend** file that contains a grease pencil datablock that can be loaded in the 3D View as active annotation.
+
+Why is this useful?
+Consider this example:
+
+Animator animates a shot and sends playblast to review. Supervisors draws notes and exports the annotation with this operator.
+The animator can load the annotation directly in their 3D camera and see the annotations live.
+
+
+> **_NOTE_**: The camera needs to have the same resolution as the reviewed media.
+
+Because the 3D Camera View has different coordinate system the **Export review to 3D cam** operator convert the coordinates of each stroke point.
 
 ## Shortcuts
 
@@ -106,6 +165,15 @@ If you toggle the sidebar of the Filebrowser with **CTRL+T** you can browse the 
 | NUMPAD 2      | Move media view camera DOWN |
 | NUMPAD +      | Zoom media view camera IN   |
 | NUMPAD -      | Move media view camera OUT  |
+
+
+**Annotation Tool**:
+| Key (while draw) | Function                    |
+| ---------------- |-----------------------------|
+| CTRL             | Erase                       |
+| SHIFT            | Lazy Mouse                  |
+| ALT              | Line Mode                   |
+| SHIFT + ALT + D  | Draw Polygon Tool           |
 
 **Other**:
 | Key           | Function                    |
