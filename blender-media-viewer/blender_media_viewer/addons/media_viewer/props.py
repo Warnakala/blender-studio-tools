@@ -40,6 +40,15 @@ class MV_property_group(bpy.types.PropertyGroup):
         subtype="DIR_PATH",
         default=vars.REVIEW_OUTPUT_DIR.as_posix(),
     )
+    sequence_file_type: bpy.props.EnumProperty(
+        name="File Format",
+        items=[
+            ("MOVIE", "MOVIE", "Creates mp4 file"),
+            ("IMAGE", "IMAGE", "Creates image sequence in subfolder"),
+        ],
+        default="MOVIE",
+        description="Controls if sequence output should be a .mp4 or a jpg sequence",
+    )
 
 
 # ----------------REGISTER--------------.

@@ -24,7 +24,7 @@ def draw_seperators(layout: bpy.types.UILayout) -> None:
 
 
 def MV_TOPBAR_base(self: Any, context: bpy.types.Context) -> None:
-    layout = self.layout
+    layout: bpy.types.UILayout = self.layout
     gpl = context.active_annotation_layer
 
     # Only show annotation settings if there is an actual layer
@@ -34,101 +34,117 @@ def MV_TOPBAR_base(self: Any, context: bpy.types.Context) -> None:
     # annotation layers are linked to one media file, so we also can't support
     # rendering them.
     if gpl and len(ops.prev_filepath_list) <= 1:
-        layout.label(text="Annotation")
-        layout.prop(gpl, "color", icon_only=True)
+        row = layout.row(align=True)
+        row.prop(gpl, "color", icon_only=True)
 
-        layout.operator(MV_OT_insert_empty_gpencil_frame.bl_idname, text="", icon="ADD")
-        layout.operator(
+        row.operator(MV_OT_insert_empty_gpencil_frame.bl_idname, text="", icon="ADD")
+        row.operator(
             MV_OT_delete_active_gpencil_frame.bl_idname, text="", icon="REMOVE"
         )
-        layout.operator(
-            MV_OT_delete_all_gpencil_frames.bl_idname, text="", icon="TRASH"
-        )
-
-        draw_seperators(layout)
-
-        layout.label(text="Render Review")
-        layout.prop(context.window_manager.media_viewer, "review_output_dir", text="")
+        row.operator(MV_OT_delete_all_gpencil_frames.bl_idname, text="", icon="TRASH")
 
 
 def MV_TOPBAR_sequencer(self: Any, context: bpy.types.Context) -> None:
-    layout = self.layout
+    layout: bpy.types.UILayout = self.layout
+    row = layout.row(align=True)
+
+    seq_file_type = context.window_manager.media_viewer.sequence_file_type
 
     # Render review sequence editor operator.
     # Movie
-    op = layout.operator(
+    op = row.operator(
         MV_OT_render_review_sqe_editor.bl_idname, icon="RENDER_ANIMATION", text=""
     )
     op.render_sequence = True
-    op.sequence_file_type = "MOVIE"
-
-    # Image Sequence
-    op = layout.operator(
-        MV_OT_render_review_sqe_editor.bl_idname, icon="RENDERLAYERS", text=""
-    )
-    op.render_sequence = True
-    op.sequence_file_type = "IMAGE"
+    op.sequence_file_type = seq_file_type
 
     # Single Image
-    op = layout.operator(
+    op = row.operator(
         MV_OT_render_review_sqe_editor.bl_idname, icon="IMAGE_RGB_ALPHA", text=""
     ).render_sequence = False
 
+    # TODO: Add proper pipeline support before exposing this.
     # Export to 3D Cam
-    layout.operator(
-        MV_OT_export_annotation_data_to_3dcam.bl_idname, icon="EXPORT", text=""
-    )
+    # row.operator(
+    #     MV_OT_export_annotation_data_to_3dcam.bl_idname, icon="EXPORT", text=""
+    # )
 
 
 def MV_TOPBAR_image_editor(self: Any, context: bpy.types.Context) -> None:
-    layout = self.layout
+    layout: bpy.types.UILayout = self.layout
+    row = layout.row(align=True)
+
+    seq_file_type = context.window_manager.media_viewer.sequence_file_type
 
     # Render review image editor operator.
     # Movie
-    op = layout.operator(
+    op = row.operator(
         MV_OT_render_review_img_editor.bl_idname, icon="RENDER_ANIMATION", text=""
     )
     op.render_sequence = True
-    op.sequence_file_type = "MOVIE"
-
-    # Image Sequence
-    op = layout.operator(
-        MV_OT_render_review_img_editor.bl_idname,
-        icon="RENDERLAYERS",
-        text="",
-    )
-    op.render_sequence = True
-    op.sequence_file_type = "IMAGE"
+    op.sequence_file_type = seq_file_type
 
     # Single Image.
-    layout.operator(
+    row.operator(
         MV_OT_render_review_img_editor.bl_idname,
         icon="IMAGE_RGB_ALPHA",
         text="",
     ).render_sequence = False
 
+    # TODO: Add proper pipeline support before exposing this.
     # Export to 3D Cam
-    layout.operator(
-        MV_OT_export_annotation_data_to_3dcam.bl_idname, icon="EXPORT", text=""
-    )
-
-    draw_seperators(layout)
+    # row.operator(
+    #     MV_OT_export_annotation_data_to_3dcam.bl_idname, icon="EXPORT", text=""
+    # )
 
     sima = context.space_data
     ima = sima.image
     iuser = sima.image_user
 
     if ima:
+        layout.separator_spacer()
+        row = layout.row(align=True)
         # draw options.
-        layout.prop(sima, "display_channels", icon_only=True)
+        row.prop(sima, "display_channels", icon_only=True)
 
         # layers.
-        layout.template_image_layers(ima, iuser)
+        row.template_image_layers(ima, iuser)
+
+
+class MV_PT_review_settings(bpy.types.Panel):
+
+    bl_label = "Review Settings"
+    bl_space_type = "IMAGE_EDITOR"
+    bl_region_type = "HEADER"
+    bl_ui_units_x = 12
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+
+        # Review Output dir.
+        layout.row().label(text="Output Directory")
+        layout.row().prop(
+            context.window_manager.media_viewer, "review_output_dir", text=""
+        )
+
+        # Sequence File Type.
+        layout.row().label(text="Sequence File Type")
+        layout.row().prop(
+            context.window_manager.media_viewer,
+            "sequence_file_type",
+            expand=True,
+        )
+
+
+def MV_TOPBAR_settings(self: Any, context: bpy.types.Context) -> None:
+    layout: bpy.types.UILayout = self.layout
+    layout.separator_spacer()
+    layout.popover(panel="MV_PT_review_settings", icon="PREFERENCES", text="")
 
 
 # ----------------REGISTER--------------.
 
-classes = []
+classes = [MV_PT_review_settings]
 
 
 def register():
@@ -139,9 +155,11 @@ def register():
     # Append header draw handler.
     bpy.types.SEQUENCER_HT_header.append(MV_TOPBAR_base)
     bpy.types.SEQUENCER_HT_header.append(MV_TOPBAR_sequencer)
+    bpy.types.SEQUENCER_HT_header.append(MV_TOPBAR_settings)
 
     bpy.types.IMAGE_HT_header.append(MV_TOPBAR_base)
     bpy.types.IMAGE_HT_header.append(MV_TOPBAR_image_editor)
+    bpy.types.IMAGE_HT_header.append(MV_TOPBAR_settings)
 
 
 def unregister():
