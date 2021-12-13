@@ -1345,12 +1345,13 @@ class MV_OT_render_review_sqe_editor(bpy.types.Operator):
                 return {"CANCELLED"}
             else:
                 image.save_render(output_path.as_posix())
+                print(f"Saved image to: {output_path.as_posix()}")
+        else:
+            print(f"Saved movie to: {output_path.as_posix()}")
 
         # Restore current frame.
         context.scene.frame_current = current_frame
-        bpy.ops.wm.redraw_timer(
-            {"area": area_media}, type="DRAW_WIN_SWAP", iterations=1
-        )
+
         return {"FINISHED"}
 
 
