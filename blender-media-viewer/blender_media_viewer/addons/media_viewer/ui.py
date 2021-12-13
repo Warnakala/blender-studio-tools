@@ -84,16 +84,30 @@ def MV_TOPBAR_image_editor(self: Any, context: bpy.types.Context) -> None:
     layout = self.layout
 
     # Render review image editor operator.
-    layout.operator(
+    # Movie
+    op = layout.operator(
+        MV_OT_render_review_img_editor.bl_idname, icon="RENDER_ANIMATION", text=""
+    )
+    op.render_sequence = True
+    op.sequence_file_type = "MOVIE"
+
+    # Image Sequence
+    op = layout.operator(
         MV_OT_render_review_img_editor.bl_idname,
         icon="RENDERLAYERS",
         text="",
-    ).render_sequence = True
+    )
+    op.render_sequence = True
+    op.sequence_file_type = "IMAGE"
+
+    # Single Image.
     layout.operator(
         MV_OT_render_review_img_editor.bl_idname,
         icon="IMAGE_RGB_ALPHA",
         text="",
     ).render_sequence = False
+
+    # Export to 3D Cam
     layout.operator(
         MV_OT_export_annotation_data_to_3dcam.bl_idname, icon="EXPORT", text=""
     )

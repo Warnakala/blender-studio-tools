@@ -18,7 +18,7 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
-
+import subprocess
 from pathlib import Path
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
 from collections import OrderedDict
@@ -1482,6 +1482,50 @@ class MV_OT_export_annotation_data_to_3dcam(bpy.types.Operator):
         return {"CANCELLED"}
 
 
+class MV_OT_convert_image_seq_to_movie(bpy.types.Operator):
+    bl_idname = "media_viewer.convert_image_seq_to_movie"
+    bl_label = "Convert Image Sequence to Movie"
+    bl_description = (
+        "Opens a new Blender instance in the background"
+        "that converts the input image sequence in to a movie file."
+        "Movie file will be saved one folder up with same name as parent folder"
+    )
+    filepath: bpy.props.StringProperty(
+        name="Filepath",
+        description="Filepath to file that is part of image sequence",
+        subtype="FILE_PATH",
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        if not self.filepath:
+            return {"CANCELLED"}
+
+        filepath = Path(self.filepath)
+        script_path: Path = vars.TO_MOVIE_SCRIPT_PATH
+        blender_exec = Path(bpy.path.abspath(bpy.app.binary_path))
+
+        # Will be one level up, name of folder with .mp4 extension.
+        output_path = filepath.parent.parent.joinpath(f"{filepath.parent.name}.mp4")
+
+        if not filepath.exists():
+            return {"CANCELLED"}
+
+        filepath_list = opsdata.get_image_sequence(filepath)
+
+        if len(filepath_list) <= 1:
+            # Found no image sequence
+            return {"CANCELLED"}
+
+        cmd_str = f"{blender_exec.as_posix()} -b --factory-startup -P {script_path.as_posix()} -- {filepath.as_posix()} {output_path.as_posix()}"
+        popen = subprocess.Popen(
+            cmd_str, shell=True, cwd=Path(__file__).parent.as_posix()
+        )
+        popen.wait()
+
+        return {"FINISHED"}
+
+
 @persistent
 def callback_filename_change(dummy: None):
 
@@ -1644,6 +1688,7 @@ classes = [
     MV_OT_init_with_media_paths,
     MV_OT_export_annotation_data_to_3dcam,
     MV_OT_insert_empty_gpencil_frame,
+    MV_OT_convert_image_seq_to_movie,
 ]
 
 

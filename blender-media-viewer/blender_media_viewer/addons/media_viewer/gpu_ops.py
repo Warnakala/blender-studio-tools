@@ -52,6 +52,13 @@ class MV_OT_render_review_img_editor(bpy.types.Operator):
         default=True,
     )
 
+    sequence_file_type: bpy.props.EnumProperty(
+        name="File Format",
+        items=[("IMAGE", "IMAGE", ""), ("MOVIE", "MOVIE", "")],
+        default="IMAGE",
+        description="Only works when render_sequence is enabled. Controls if output should be a .mp4 or a jpg sequence",
+    )
+
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # Check if image editor area available.
@@ -108,7 +115,6 @@ class MV_OT_render_review_img_editor(bpy.types.Operator):
             output_dir: Path = opsdata.get_review_output_path(
                 review_output_dir, media_filepath, get_sequence_dir_only=True
             )
-
             for idx, frame in enumerate(frames):
 
                 # Calling this every frame to update UI results in same picture
@@ -140,6 +146,14 @@ class MV_OT_render_review_img_editor(bpy.types.Operator):
                 render.save_render(output_path.as_posix())
                 print(f"Saved image to {output_path.as_posix()}")
 
+            if self.sequence_file_type == "MOVIE":
+                # If sequence file type is set to movie execute this operator.
+                # This will open a new Blender instance in the background and convert
+                # the image sequence to a mp4.
+                bpy.ops.media_viewer.convert_image_seq_to_movie(
+                    filepath=output_dir.joinpath(f"{file_list[0].stem}.jpg").as_posix()
+                )
+
         # Single image.
         else:
             frame = context.scene.frame_current
@@ -168,6 +182,8 @@ class MV_OT_render_review_img_editor(bpy.types.Operator):
             render.save_render(output_path.as_posix())
             print(f"Saved image to {output_path.as_posix()}")
 
+        # Free image and return.
+        image.gl_free()
         return {"FINISHED"}
 
     def render_image_editor_in_image_datablock(

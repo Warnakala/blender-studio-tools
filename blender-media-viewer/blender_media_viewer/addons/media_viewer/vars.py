@@ -25,6 +25,10 @@ PATTERN_FRAME_COUNTER = r"\d+$"
 
 REVIEW_OUTPUT_DIR = Path.home().joinpath("blender-media-viewer")
 
+BLENDER_EXEC = Path(bpy.app.binary_path)
+
+TO_MOVIE_SCRIPT_PATH = Path(__file__).parent.joinpath("convert_to_movie.py")
+
 EXT_MOVIE = [
     ".avi",
     ".flc",
