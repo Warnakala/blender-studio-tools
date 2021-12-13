@@ -545,7 +545,7 @@ def register():
             value="PRESS",
             type="F12",
         )
-        kmi.properties.render_sequence = True
+        kmi.properties.render_sequence = False
         addon_keymaps.append((keymap, kmi))
 
         kmi = keymap.keymap_items.new(
@@ -554,7 +554,7 @@ def register():
             type="F12",
             ctrl=True,
         )
-        kmi.properties.render_sequence = False
+        kmi.properties.render_sequence = True
         addon_keymaps.append((keymap, kmi))
 
     # Print new hotkeys.

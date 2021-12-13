@@ -99,9 +99,9 @@ This can be easily done with the Render buttons next to the annotation operators
 
 There are 2 different export operators:
 
-- **Render Review as Sequence**: (Movie icon) Exports media file as .mp4 or .jpg sequence, depending on settings (shortcut: **F12**).
+- **Render Review as Sequence**: (Movie icon) Exports media file as .mp4 or .jpg sequence, depending on settings (shortcut: **CTRL + F12**).
 
-- **Render Review as Single Image**: (Single image icon): Exports current frame as .jpg (shortcut: **CTRL + F12**)
+- **Render Review as Single Image**: (Single image icon): Exports current frame as .jpg (shortcut: **F12**)
 
 
 In the setting popover on the top right you can specify a couple of options to customize the export.
@@ -116,21 +116,6 @@ Single images and .mp4s will just be exported in the review output directory dir
 For image sequence a subfolder will be created that also has the timestamp included.
 
 > **_NOTE_**: Because the image editor has not a built in operator to render out an image **including** the annotations, the media-viewer uses a custom python openGL rendering pipeline for images and image sequences. This approach is not very fast but enables us to even annotate multilayer EXRs and write out any layer we want.
-
-
-<!-- You might have noticed the **EXPORT** icon on the most right. This is the last export operator.
-It exports a **.blend** file that contains a grease pencil datablock that can be loaded in the 3D View as active annotation.
-
-Why is this useful?
-Consider this example:
-
-Animator animates a shot and sends playblast to review. Supervisors draws notes and exports the annotation with this operator.
-The animator can load the annotation directly in their 3D camera and see the annotations live.
-
-
-> **_NOTE_**: The camera needs to have the same resolution as the reviewed media.
-
-Because the 3D Camera View has different coordinate system the **Export review to 3D cam** operator convert the coordinates of each stroke point. -->
 
 ## Shortcuts
 
