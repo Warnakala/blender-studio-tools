@@ -94,7 +94,22 @@ to the next annotation frame.
 
 #### Rendering the Review
 
-In the setting popover on the top right you can specify a review output directory. In this folder the annotated media will be exported.
+No matter if you are viewing images or video files you can export them including your annotations.
+This can be easily done with the Render buttons next to the annotation operators.
+
+There are 2 different export operators:
+
+- **Render Review as Sequence**: (Movie icon) Exports media file as .mp4 or .jpg sequence, depending on settings (shortcut: **F12**).
+
+- **Render Review as Single Image**: (Single image icon): Exports current frame as .jpg (shortcut: **CTRL + F12**)
+
+
+In the setting popover on the top right you can specify a couple of options to customize the export.
+
+- **Review Output Directory**: A folder path in which the annotated media will be exported.
+- **Sequence File Type**: Controls if the render review as sequence operator should create a movie file (.mp4) or an image sequence (.jpg) in a subfolder.
+
+
 The filenames will include a timestamp so you won't overwrite any previous reviews of the same media.
 You can export single images, image sequences and .mp4s.
 Single images and .mp4s will just be exported in the review output directory directly.
@@ -102,15 +117,8 @@ For image sequence a subfolder will be created that also has the timestamp inclu
 
 > **_NOTE_**: Because the image editor has not a built in operator to render out an image **including** the annotations, the media-viewer uses a custom python openGL rendering pipeline for images and image sequences. This approach is not very fast but enables us to even annotate multilayer EXRs and write out any layer we want.
 
-There are 4 different export operators:
 
-- **Render Review as Single Image**: (Single image icon): Exports current frame as .jpg.
-
-- **Render Review as Image Sequence**: (Multiple image icon): Exports media file as .jpg sequence in subfolder.
-
-- **Render Review as Movie file**: (Movie icon) Exports media file as .mp4.
-
-You might have noticed the **EXPORT** icon on the most right. This is the last export operator.
+<!-- You might have noticed the **EXPORT** icon on the most right. This is the last export operator.
 It exports a **.blend** file that contains a grease pencil datablock that can be loaded in the 3D View as active annotation.
 
 Why is this useful?
@@ -122,7 +130,7 @@ The animator can load the annotation directly in their 3D camera and see the ann
 
 > **_NOTE_**: The camera needs to have the same resolution as the reviewed media.
 
-Because the 3D Camera View has different coordinate system the **Export review to 3D cam** operator convert the coordinates of each stroke point.
+Because the 3D Camera View has different coordinate system the **Export review to 3D cam** operator convert the coordinates of each stroke point. -->
 
 ## Shortcuts
 
@@ -174,6 +182,13 @@ Because the 3D Camera View has different coordinate system the **Export review t
 | SHIFT            | Lazy Mouse                  |
 | ALT              | Line Mode                   |
 | SHIFT + ALT + D  | Draw Polygon Tool           |
+
+
+**Review**:
+| Key              | Function                    |
+| ---------------- |-----------------------------|
+| F12              | Render Review Image         |
+| CTRL + F12       | Render Review Sequence      |
 
 **Other**:
 | Key           | Function                    |
