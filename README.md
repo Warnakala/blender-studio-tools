@@ -39,3 +39,7 @@ bone-gizmos (/bone-gizmos) is a Blender Add-on that attempts to prototype a syst
 ## blender-media-viewer
 
 blender-media-viewer (/blender-media-viewer) is a Blender Application Template that makes Blender usable as a Video-Player, Image and Text-Viewer.
+
+## grease-converter
+
+grease-converter (/grease-converter) is a Blender Add-on that can convert annotations to grease pencil objects and vise versa.
