@@ -1,5 +1,5 @@
 import bpy
-from .ops import GC_OT_convert_to_grease_pencil
+from .ops import GC_OT_convert_to_grease_pencil, GC_OT_convert_to_annotation
 
 class GC_PT_3dview(bpy.types.Panel):
     bl_category = "Grease Converter"
@@ -10,9 +10,16 @@ class GC_PT_3dview(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
 
-        row = layout.row(align=True)
+        box = layout.box()
+        box.label(text="Active Annotation", icon="OUTLINER_DATA_GREASEPENCIL")
+        row = box.row(align=True)
         row.operator(GC_OT_convert_to_grease_pencil.bl_idname)
 
+        if issubclass(bpy.types.GreasePencil, type(context.active_object.data)):
+            box = layout.box()
+            box.label(text="Grease Pencil", icon="OUTLINER_OB_GREASEPENCIL")
+            row = box.row(align=True)
+            row.operator(GC_OT_convert_to_annotation.bl_idname)
 
 # ---------REGISTER ----------.
 

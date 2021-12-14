@@ -43,7 +43,8 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(True)
+        annotation: bpy.types.GreasePencil = context.annotation_data
+        return bool(annotation)
 
     def execute(self, context: bpy.types.Context):
         annotation: bpy.types.GreasePencil = context.annotation_data
@@ -52,7 +53,7 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
             logging.error("No active annotation found")
             return {"CANCELLED"}
 
-        obj_name = f"{annotation.name}_convert"
+        obj_name = f"{annotation.name}_convert_to_gpencil"
         gp: bpy.types.GreasePencil = bpy.data.grease_pencils.new(obj_name)
         copy_attributes_by_name(annotation, gp)
 
@@ -71,10 +72,8 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
             # Set factor to 1 otherwise tint_color takes no effect.
             layer.tint_factor = 1
 
-            # Represents stroke thickness.
             # Needs to be roughly half of annotation thickness to match.
             layer.line_change = layer.thickness
-
 
             for aframe in alayer.frames:
                 aframe: bpy.types.GPencilFrame
@@ -109,11 +108,79 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
         context.scene.collection.objects.link(obj)
         return {"FINISHED"}
 
+def new_annotation() -> bpy.types.GreasePencil:
+    existing = list(bpy.data.grease_pencils)
+    bpy.ops.gpencil.annotation_add()
+    for gp in bpy.data.grease_pencils:
+        if gp not in existing:
+            return gp
+
+class GC_OT_convert_to_annotation(bpy.types.Operator):
+    bl_idname = "grease_converter.convert_to_annotation"
+    bl_label = "Convert to Annotation"
+    bl_description = (
+        "Converts Grease Pencil Object to Annotation"
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        gp = context.active_object
+        return all(gp, issubclass(bpy.types.GreasePencil, type(context.active_object.data)))
+
+    def execute(self, context: bpy.types.Context):
+        gp = context.active_object.data #Must be GPencil Obj because of poll.
+        obj_name = f"{gp.name}_convert_to_annotation"
+        annotation: bpy.types.GreasePencil = new_annotation()
+
+
+        copy_attributes_by_name(gp, annotation)
+        annotation.name = obj_name
+
+
+        for glayer in gp.layers:
+
+            # Create new layer.
+            layer = annotation.layers.new(glayer.info)
+            copy_attributes_by_name(glayer, layer)
+
+            # For some reason on GPencil obj this is 'tint_color'
+            layer.color = (lin2srgb(glayer.tint_color[0]), lin2srgb(glayer.tint_color[1]), lin2srgb(glayer.tint_color[2]))
+
+            # Represents stroke thickness.
+            layer.thickness = glayer.line_change
+
+            for gframe in glayer.frames:
+                gframe: bpy.types.GPencilFrame
+
+                # Create new frame.
+                frame = layer.frames.new(gframe.frame_number)
+                copy_attributes_by_name(gframe, frame)
+
+                for gstroke in gframe.strokes:
+                    gstroke: bpy.types.GPencilStroke
+
+                    # Create new stroke.
+                    stroke: bpy.types.GPencilStroke = frame.strokes.new()
+                    copy_attributes_by_name(gstroke, stroke)
+
+                    for idx, gpoint in enumerate(gstroke.points):
+                        gpoint: bpy.types.GPencilStrokePoint
+
+                        # Create new point.
+                        stroke.points.add(1, pressure=gpoint.pressure, strength=gpoint.strength)
+                        point: bpy.types.GPencilStrokePoint = stroke.points[idx]
+
+                        # Set point coordinates.
+                        copy_attributes_by_name(gpoint, point)
+
+        return {"FINISHED"}
+
 
 # ---------REGISTER ----------.
 
 classes = [
-    GC_OT_convert_to_grease_pencil
+    GC_OT_convert_to_grease_pencil,
+    GC_OT_convert_to_annotation
 ]
 
 def register():
