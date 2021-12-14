@@ -1,4 +1,3 @@
-import math
 import logging
 
 import bpy
@@ -74,7 +73,7 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
 
             # Represents stroke thickness.
             # Needs to be roughly half of annotation thickness to match.
-            layer.line_change = math.floor(layer.thickness /2)
+            layer.line_change = layer.thickness
 
 
             for aframe in alayer.frames:
@@ -90,6 +89,7 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
                     # Create new stroke.
                     stroke: bpy.types.GPencilStroke = frame.strokes.new()
                     copy_attributes_by_name(astroke, stroke)
+                    stroke.line_width = 1 # Otherwise will collide layer.line_change
 
                     for idx, apoint in enumerate(astroke.points):
                         apoint: bpy.types.GPencilStrokePoint
