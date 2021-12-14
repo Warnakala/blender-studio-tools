@@ -2,6 +2,7 @@ import logging
 from typing import Set, Union, Any, List
 
 import bpy
+from mathutils import Vector
 
 logger = logging.getLogger("grease_converter")
 
@@ -194,7 +195,31 @@ class GC_OT_convert_to_annotation(bpy.types.Operator):
                         # Add global coordinates of object
                         point.co += obj.matrix_world.translation
 
-        return {"FINISHED"}
+            return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        obj: bpy.types.Object = context.active_object
+
+        if not obj:
+            return {"CANCELLED"}
+
+        # Check if object has any non default roatation or scale values.
+        if (
+            any([any(obj.rotation_euler), any(obj.scale - Vector((1, 1, 1)))])
+            or obj.parent
+        ):
+            return context.window_manager.invoke_props_dialog(self, width=300)
+        else:
+            return self.execute(context)
+
+    def draw(self, context: bpy.types.Context) -> None:
+        obj: bpy.types.Object = context.active_object
+        layout = self.layout
+
+        if any([any(obj.rotation_euler), any(obj.scale - Vector((1, 1, 1)))]):
+            layout.label(text="Object tranformations are not applied", icon="ERROR")
+        if obj.parent:
+            layout.label(text="Object has a parent", icon="ERROR")
 
 
 # ---------REGISTER ----------.
