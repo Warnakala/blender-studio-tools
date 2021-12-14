@@ -1,4 +1,5 @@
 import logging
+from typing import Set, Union, Any, List
 
 import bpy
 
@@ -47,7 +48,7 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
         annotation: bpy.types.GreasePencil = context.annotation_data
         return bool(annotation)
 
-    def execute(self, context: bpy.types.Context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         annotation: bpy.types.GreasePencil = context.annotation_data
 
         if not annotation:
@@ -81,14 +82,12 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
             layer.line_change = layer.thickness
 
             for aframe in alayer.frames:
-                aframe: bpy.types.GPencilFrame
 
                 # Create new frame.
                 frame = layer.frames.new(aframe.frame_number)
                 copy_attributes_by_name(aframe, frame)
 
                 for astroke in aframe.strokes:
-                    astroke: bpy.types.GPencilStroke
 
                     # Create new stroke.
                     stroke: bpy.types.GPencilStroke = frame.strokes.new()
@@ -96,7 +95,6 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
                     stroke.line_width = 1  # Otherwise will collide layer.line_change
 
                     for idx, apoint in enumerate(astroke.points):
-                        apoint: bpy.types.GPencilStrokePoint
 
                         # Create new point.
                         stroke.points.add(
@@ -136,7 +134,7 @@ class GC_OT_convert_to_annotation(bpy.types.Operator):
             [gp, issubclass(bpy.types.GreasePencil, type(context.active_object.data))]
         )
 
-    def execute(self, context: bpy.types.Context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         gp = context.active_object.data  # Must be GPencil Obj because of poll.
         obj_name = f"{gp.name}_convert_to_annotation"
         annotation: bpy.types.GreasePencil = new_annotation()
@@ -161,21 +159,18 @@ class GC_OT_convert_to_annotation(bpy.types.Operator):
             layer.thickness = glayer.line_change
 
             for gframe in glayer.frames:
-                gframe: bpy.types.GPencilFrame
 
                 # Create new frame.
                 frame = layer.frames.new(gframe.frame_number)
                 copy_attributes_by_name(gframe, frame)
 
                 for gstroke in gframe.strokes:
-                    gstroke: bpy.types.GPencilStroke
 
                     # Create new stroke.
                     stroke: bpy.types.GPencilStroke = frame.strokes.new()
                     copy_attributes_by_name(gstroke, stroke)
 
                     for idx, gpoint in enumerate(gstroke.points):
-                        gpoint: bpy.types.GPencilStrokePoint
 
                         # Create new point.
                         stroke.points.add(

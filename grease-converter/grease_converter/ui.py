@@ -1,4 +1,5 @@
 import bpy
+from typing import Any, Union, Set, List
 from .ops import GC_OT_convert_to_grease_pencil, GC_OT_convert_to_annotation
 
 
@@ -23,14 +24,14 @@ class GC_PT_3dview(bpy.types.Panel):
             row.operator(GC_OT_convert_to_annotation.bl_idname)
 
 
-def menu_draw_convert_to_annotation(self, context: bpy.types.Context) -> None:
+def menu_draw_convert_to_annotation(self: Any, context: bpy.types.Context) -> None:
     if not GC_OT_convert_to_annotation.poll(context):
         return None
     layout = self.layout
     layout.operator(GC_OT_convert_to_annotation.bl_idname, icon="STROKE")
 
 
-def menu_draw_convert_to_grease_pencil(self, context: bpy.types.Context) -> None:
+def menu_draw_convert_to_grease_pencil(self: Any, context: bpy.types.Context) -> None:
     if not GC_OT_convert_to_grease_pencil.poll(context):
         return None
     layout = self.layout
@@ -41,7 +42,7 @@ def menu_draw_convert_to_grease_pencil(self, context: bpy.types.Context) -> None
 
 # ---------REGISTER ----------.
 
-classes = []
+classes: List[Any] = []
 
 
 def register():
