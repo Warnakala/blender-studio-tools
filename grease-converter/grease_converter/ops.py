@@ -125,7 +125,7 @@ class GC_OT_convert_to_annotation(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         gp = context.active_object
-        return all(gp, issubclass(bpy.types.GreasePencil, type(context.active_object.data)))
+        return all([gp, issubclass(bpy.types.GreasePencil, type(context.active_object.data))])
 
     def execute(self, context: bpy.types.Context):
         gp = context.active_object.data #Must be GPencil Obj because of poll.
