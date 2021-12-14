@@ -31,10 +31,7 @@ bl_info = {
     "category": "Grease Pencil",
 }
 
-from . import (
-    ops,
-    ui
-)
+from . import ops, ui
 
 _need_reload = "ops" in locals()
 
@@ -49,10 +46,11 @@ def register():
     ops.register()
     ui.register()
 
+
 def unregister():
     ui.unregister()
     ops.unregister()
 
+
 if __name__ == "__main__":
     register()
-

@@ -4,6 +4,7 @@ import bpy
 
 logger = logging.getLogger("grease_converter")
 
+
 def srgb2lin(s: float) -> float:
     if s <= 0.0404482362771082:
         lin = s / 12.92
@@ -19,8 +20,9 @@ def lin2srgb(lin: float) -> float:
         s = 12.92 * lin
     return s
 
+
 def copy_attributes_by_name(source, target):
-    ignore=["rna_type", "name"]
+    ignore = ["rna_type", "name"]
     for key in source.bl_rna.properties.keys():
         if key in ignore:
             continue
@@ -34,12 +36,11 @@ def copy_attributes_by_name(source, target):
             else:
                 print(f"Set {str(target)}.{key}={value}")
 
+
 class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
     bl_idname = "grease_converter.convert_to_grease_pencil"
     bl_label = "Convert to Grease Pencil"
-    bl_description = (
-        "Converts Annotation to Grease Pencil Object"
-    )
+    bl_description = "Converts Annotation to Grease Pencil Object"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -67,7 +68,11 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
             copy_attributes_by_name(alayer, layer)
 
             # For some reason on GPencil obj this is 'tint_color'
-            layer.tint_color = (srgb2lin(alayer.color[0]), srgb2lin(alayer.color[1]), srgb2lin(alayer.color[2]))
+            layer.tint_color = (
+                srgb2lin(alayer.color[0]),
+                srgb2lin(alayer.color[1]),
+                srgb2lin(alayer.color[2]),
+            )
 
             # Set factor to 1 otherwise tint_color takes no effect.
             layer.tint_factor = 1
@@ -88,25 +93,28 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
                     # Create new stroke.
                     stroke: bpy.types.GPencilStroke = frame.strokes.new()
                     copy_attributes_by_name(astroke, stroke)
-                    stroke.line_width = 1 # Otherwise will collide layer.line_change
+                    stroke.line_width = 1  # Otherwise will collide layer.line_change
 
                     for idx, apoint in enumerate(astroke.points):
                         apoint: bpy.types.GPencilStrokePoint
 
                         # Create new point.
-                        stroke.points.add(1, pressure=apoint.pressure, strength=apoint.strength)
+                        stroke.points.add(
+                            1, pressure=apoint.pressure, strength=apoint.strength
+                        )
                         point: bpy.types.GPencilStrokePoint = stroke.points[idx]
 
                         # Set point coordinates.
                         # point.co = apoint.co
                         copy_attributes_by_name(apoint, point)
 
-        #Create Object that holds gpencil data.
+        # Create Object that holds gpencil data.
         obj: bpy.types.Object = bpy.data.objects.new(obj_name, gp)
 
         # Link object in scene.
         context.scene.collection.objects.link(obj)
         return {"FINISHED"}
+
 
 def new_annotation() -> bpy.types.GreasePencil:
     existing = list(bpy.data.grease_pencils)
@@ -115,27 +123,26 @@ def new_annotation() -> bpy.types.GreasePencil:
         if gp not in existing:
             return gp
 
+
 class GC_OT_convert_to_annotation(bpy.types.Operator):
     bl_idname = "grease_converter.convert_to_annotation"
     bl_label = "Convert to Annotation"
-    bl_description = (
-        "Converts Grease Pencil Object to Annotation"
-    )
+    bl_description = "Converts Grease Pencil Object to Annotation"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         gp = context.active_object
-        return all([gp, issubclass(bpy.types.GreasePencil, type(context.active_object.data))])
+        return all(
+            [gp, issubclass(bpy.types.GreasePencil, type(context.active_object.data))]
+        )
 
     def execute(self, context: bpy.types.Context):
-        gp = context.active_object.data #Must be GPencil Obj because of poll.
+        gp = context.active_object.data  # Must be GPencil Obj because of poll.
         obj_name = f"{gp.name}_convert_to_annotation"
         annotation: bpy.types.GreasePencil = new_annotation()
 
-
         copy_attributes_by_name(gp, annotation)
         annotation.name = obj_name
-
 
         for glayer in gp.layers:
 
@@ -144,7 +151,11 @@ class GC_OT_convert_to_annotation(bpy.types.Operator):
             copy_attributes_by_name(glayer, layer)
 
             # For some reason on GPencil obj this is 'tint_color'
-            layer.color = (lin2srgb(glayer.tint_color[0]), lin2srgb(glayer.tint_color[1]), lin2srgb(glayer.tint_color[2]))
+            layer.color = (
+                lin2srgb(glayer.tint_color[0]),
+                lin2srgb(glayer.tint_color[1]),
+                lin2srgb(glayer.tint_color[2]),
+            )
 
             # Represents stroke thickness.
             layer.thickness = glayer.line_change
@@ -167,7 +178,9 @@ class GC_OT_convert_to_annotation(bpy.types.Operator):
                         gpoint: bpy.types.GPencilStrokePoint
 
                         # Create new point.
-                        stroke.points.add(1, pressure=gpoint.pressure, strength=gpoint.strength)
+                        stroke.points.add(
+                            1, pressure=gpoint.pressure, strength=gpoint.strength
+                        )
                         point: bpy.types.GPencilStrokePoint = stroke.points[idx]
 
                         # Set point coordinates.
@@ -178,10 +191,8 @@ class GC_OT_convert_to_annotation(bpy.types.Operator):
 
 # ---------REGISTER ----------.
 
-classes = [
-    GC_OT_convert_to_grease_pencil,
-    GC_OT_convert_to_annotation
-]
+classes = [GC_OT_convert_to_grease_pencil, GC_OT_convert_to_annotation]
+
 
 def register():
     for cls in classes:
@@ -191,5 +202,3 @@ def register():
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-
-
