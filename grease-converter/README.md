@@ -18,7 +18,7 @@ After the add-on is installed you have 2 new operators available.
     - Located in the 3DView Header -> Object -> Convert
     - Active objects needs to be grease pencil object. Will convert it to Annotation Grease Pencil Object. Uses Tint Color and Stroke Thickness attribute found in the Adjustments Panel for final annotation color and stroke thickness. (Annotations are a simple version of GreasePencil and only support **one* color and stoke thickness per layer)
     - <img src="./docs/images/adjustments_panel.jpg" alt="drawing" width="300"/>
-
+    - >**Note**: If the grease pencil object has it's transforms not applied or a parent you will be prompted with a warning as these are not taken in to account yet
 
 ## Development
 In the project root you will find a `pyproject.toml` and `peotry.lock` file.
