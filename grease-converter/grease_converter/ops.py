@@ -1,11 +1,119 @@
+import math
+import logging
+
 import bpy
 
+logger = logging.getLogger("grease_converter")
 
+def srgb2lin(s: float) -> float:
+    if s <= 0.0404482362771082:
+        lin = s / 12.92
+    else:
+        lin = pow(((s + 0.055) / 1.055), 2.4)
+    return lin
+
+
+def lin2srgb(lin: float) -> float:
+    if lin > 0.0031308:
+        s = 1.055 * (pow(lin, (1.0 / 2.4))) - 0.055
+    else:
+        s = 12.92 * lin
+    return s
+
+def copy_attributes_by_name(source, target):
+    ignore=["rna_type", "name"]
+    for key in source.bl_rna.properties.keys():
+        if key in ignore:
+            continue
+        if hasattr(target, key):
+            value = getattr(source, key)
+            try:
+                setattr(target, key, value)
+            except:
+                print(f"Failed to set {target}.{key} = {value}")
+
+            else:
+                print(f"Set {str(target)}.{key}={value}")
+
+class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
+    bl_idname = "grease_converter.convert_to_grease_pencil"
+    bl_label = "Convert to Grease Pencil"
+    bl_description = (
+        "Converts Annotation to Grease Pencil Object"
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(True)
+
+    def execute(self, context: bpy.types.Context):
+        annotation: bpy.types.GreasePencil = context.annotation_data
+
+        if not annotation:
+            logging.error("No active annotation found")
+            return {"CANCELLED"}
+
+        obj_name = f"{annotation.name}_convert"
+        gp: bpy.types.GreasePencil = bpy.data.grease_pencils.new(obj_name)
+        copy_attributes_by_name(annotation, gp)
+
+        # This is how annoation behaves even tough its set to "WORLDSPACE"?
+        gp.stroke_thickness_space = "SCREENSPACE"
+
+        for alayer in annotation.layers:
+
+            # Create new layer.
+            layer = gp.layers.new(alayer.info)
+            copy_attributes_by_name(alayer, layer)
+
+            # For some reason on GPencil obj this is 'tint_color'
+            layer.tint_color = (srgb2lin(alayer.color[0]), srgb2lin(alayer.color[1]), srgb2lin(alayer.color[2]))
+
+            # Set factor to 1 otherwise tint_color takes no effect.
+            layer.tint_factor = 1
+
+            # Represents stroke thickness.
+            # Needs to be roughly half of annotation thickness to match.
+            layer.line_change = math.floor(layer.thickness /2)
+
+
+            for aframe in alayer.frames:
+                aframe: bpy.types.GPencilFrame
+
+                # Create new frame.
+                frame = layer.frames.new(aframe.frame_number)
+                copy_attributes_by_name(aframe, frame)
+
+                for astroke in aframe.strokes:
+                    astroke: bpy.types.GPencilStroke
+
+                    # Create new stroke.
+                    stroke: bpy.types.GPencilStroke = frame.strokes.new()
+                    copy_attributes_by_name(astroke, stroke)
+
+                    for idx, apoint in enumerate(astroke.points):
+                        apoint: bpy.types.GPencilStrokePoint
+
+                        # Create new point.
+                        stroke.points.add(1, pressure=apoint.pressure, strength=apoint.strength)
+                        point: bpy.types.GPencilStrokePoint = stroke.points[idx]
+
+                        # Set point coordinates.
+                        # point.co = apoint.co
+                        copy_attributes_by_name(apoint, point)
+
+        #Create Object that holds gpencil data.
+        obj: bpy.types.Object = bpy.data.objects.new(obj_name, gp)
+
+        # Link object in scene.
+        context.scene.collection.objects.link(obj)
+        return {"FINISHED"}
 
 
 # ---------REGISTER ----------.
 
 classes = [
+    GC_OT_convert_to_grease_pencil
 ]
 
 def register():
