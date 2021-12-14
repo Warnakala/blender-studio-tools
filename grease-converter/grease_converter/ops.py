@@ -57,6 +57,11 @@ class GC_OT_convert_to_grease_pencil(bpy.types.Operator):
 
         obj_name = f"{annotation.name}_convert_to_gpencil"
         gp: bpy.types.GreasePencil = bpy.data.grease_pencils.new(obj_name)
+
+        # Remove Default layer.
+        if len(gp.layers) == 1:
+            gp.layers.remove(gp.layers[0])
+
         copy_attributes_by_name(annotation, gp)
 
         # This is how annoation behaves even tough its set to "WORLDSPACE"?
@@ -138,6 +143,10 @@ class GC_OT_convert_to_annotation(bpy.types.Operator):
         gp = context.active_object.data  # Must be GPencil Obj because of poll.
         obj_name = f"{gp.name}_convert_to_annotation"
         annotation: bpy.types.GreasePencil = new_annotation()
+
+        # Remove Default layer.
+        if len(annotation.layers) == 1:
+            annotation.layers.remove(annotation.layers[0])
 
         copy_attributes_by_name(gp, annotation)
         annotation.name = obj_name
