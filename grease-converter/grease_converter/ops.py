@@ -140,7 +140,8 @@ class GC_OT_convert_to_annotation(bpy.types.Operator):
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        gp = context.active_object.data  # Must be GPencil Obj because of poll.
+        obj = context.active_object
+        gp = obj.data  # Must be GPencil Obj because of poll.
         obj_name = f"{gp.name}_convert_to_annotation"
         annotation: bpy.types.GreasePencil = new_annotation()
 
@@ -189,6 +190,9 @@ class GC_OT_convert_to_annotation(bpy.types.Operator):
 
                         # Set point coordinates.
                         copy_attributes_by_name(gpoint, point)
+
+                        # Add global coordinates of object
+                        point.co += obj.matrix_world.translation
 
         return {"FINISHED"}
 
