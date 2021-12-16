@@ -108,7 +108,31 @@ def draw_text(region_name: str):
 
 
 
+# This function is copied from: "https://github.com/ubisoft/videotracks"
+def get_region_at_xy(
+    context: bpy.types.Context, x: int, y: int
+) -> Optional[Tuple[bpy.types.Region, bpy.types.Area]]:
+    """
+    :param context:
+    :param x:
+    :param y:
+    :return: the region and the area containing this region
+    """
+    for area in context.screen.areas:
+        for region in area.regions:
+            if (
+                region.x <= x < region.width + region.x
+                and region.y <= y < region.height + region.y
+            ):
+                return region, area
+
+    return None, None
+
+
+# The way this operator adds draw handlers and runs in modal mode is
+# inspired by: "https://github.com/ubisoft/videotracks"
 class MV_OT_toggle_header(bpy.types.Operator):
+
     bl_idname = "media_viewer.toggle_header"
     bl_label = "Toggle Header"
     # bl_options = {"REGISTER", "INTERNAL"}
@@ -177,6 +201,7 @@ class MV_OT_toggle_header(bpy.types.Operator):
 
         region, _ = get_region_at_xy(context, event.mouse_x, event.mouse_y)
         if region is not None:
+            # Check if mouse is over our button.
             print(f"Region: {region.type}")
             return {"PASS_THROUGH"}
             # return {"RUNNING_MODAL"}
