@@ -20,7 +20,7 @@
 
 import subprocess
 from pathlib import Path
-from typing import Set, Union, Optional, List, Dict, Any, Tuple
+from typing import Set, Union, Optional, List, Dict, Any, Tuple, Callable
 from collections import OrderedDict
 from copy import copy
 
@@ -34,7 +34,8 @@ from media_viewer.states import FileBrowserState
 logger = LoggerFactory.getLogger(name=__name__)
 
 # Global variables
-active_media_area = "SEQUENCE_EDITOR"
+active_media_area: str = "SEQUENCE_EDITOR"
+active_media_area_obj: bpy.types.Area = None  # Is initialized by init_active_media_area_obj()  # TODO: replace finding active media area with this global area obj
 
 # Global variables for frame handler to check previous value.
 prev_dirpath: Path = Path.home()  # TODO: read from json on register
@@ -586,6 +587,7 @@ class MV_OT_set_media_area_type(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         global active_media_area
+        global active_media_area_obj
 
         # Find active media area.
         area_media = opsdata.find_area(context, active_media_area)
@@ -605,6 +607,7 @@ class MV_OT_set_media_area_type(bpy.types.Operator):
 
         # Update global media area type.
         active_media_area = area_media.type
+        active_media_area_obj = area_media
 
         # Set annotate tool as active.
         if area_media.type in ["SEQUENCE_EDITOR", "IMAGE_EDITOR"]:
@@ -625,9 +628,13 @@ class MV_OT_screen_full_area(bpy.types.Operator):
         global filebrowser_state
         global prev_relpath
         global is_fullscreen
+        global active_media_area
+        global active_media_area_obj
 
         # Fullscreen area media.
         area_media = opsdata.find_area(context, active_media_area)
+
+        # active_media_area_obj = area_media
         ctx = opsdata.get_context_for_area(area_media)
         bpy.ops.screen.screen_full_area(ctx, use_hide_panels=True)
         is_fullscreen = not is_fullscreen
@@ -1531,6 +1538,7 @@ class MV_OT_render_review_area_aware(bpy.types.Operator):
     """
     Only used to overwrite default F12 / CTRL+F12 shortcuts
     """
+
     bl_idname = "media_viewer.render_review_area_aware"
     bl_label = "Render Review"
     bl_description = (
@@ -1565,6 +1573,13 @@ class MV_OT_render_review_area_aware(bpy.types.Operator):
 
         else:
             return {"CANCELLED"}
+
+
+@persistent
+def init_active_media_area_obj(dummy: None):
+    global active_media_area_obj
+    global active_media_area
+    active_media_area_obj = opsdata.find_area(bpy.context, active_media_area)
 
 
 @persistent
@@ -1699,6 +1714,8 @@ def callback_filename_change(dummy: None):
 
 # ----------------REGISTER--------------.
 
+load_post_handler: List[Callable] = []
+fb_draw_handler: List[Callable] = []
 
 classes = [
     MV_OT_load_media_movie,
@@ -1738,14 +1755,24 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.SpaceFileBrowser.draw_handler_add(
-        callback_filename_change, (None,), "WINDOW", "POST_PIXEL"
+    # Append handlers.
+    load_post_handler.append(
+        bpy.app.handlers.load_post.append(init_active_media_area_obj)
+    )
+    fb_draw_handler.append(
+        bpy.types.SpaceFileBrowser.draw_handler_add(
+            callback_filename_change, (None,), "WINDOW", "POST_PIXEL"
+        )
     )
 
 
 def unregister():
+    # Remove handlers.
+    for handler in fb_draw_handler:
+        bpy.types.SpaceFileBrowser.draw_handler_remove(fb_draw_handler, "WINDOW")
+
+    for handler in load_post_handler:
+        bpy.app.load_post.remove(handler)
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-
-    # Handlers.
-    bpy.types.SpaceFileBrowser.draw_handler_remove(callback_filename_change, "WINDOW")

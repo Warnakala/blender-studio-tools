@@ -107,7 +107,6 @@ def draw_text(region_name: str):
     blf.draw(font_id, "Test")
 
 
-
 # This function is copied from: "https://github.com/ubisoft/videotracks"
 def get_region_at_xy(
     context: bpy.types.Context, x: int, y: int
@@ -120,13 +119,50 @@ def get_region_at_xy(
     """
     for area in context.screen.areas:
         for region in area.regions:
-            if (
-                region.x <= x < region.width + region.x
-                and region.y <= y < region.height + region.y
-            ):
+            if is_mouse_in_region(region, x, y):
                 return region, area
 
     return None, None
+
+
+def is_mouse_in_region(region: bpy.types.Region, x: int, y: int) -> bool:
+    if (
+        region.x <= x < region.width + region.x
+        and region.y <= y < region.height + region.y
+    ):
+        return True
+    return False
+
+
+def is_mouse_in_region_rect(
+    region: bpy.types.Region, rectangle: Tuple[Int2, Int2, Int2, Int2], x: int, y: int
+) -> bool:
+    # [top_left, top_right, bot_left, bot_right]
+    width = rectangle[1][0] - rectangle[0][0]
+    height = rectangle[0][1] - rectangle[2][1]
+
+    # To global screen coordinates.
+    top_left = (region.x + rectangle[0][0], region.y + rectangle[0][1])
+
+    top_right = (top_left[0] + width, top_left[1])
+    bot_left = (top_left[0], top_left[1] - height)
+    bot_right = (top_left[0] + width, top_left[1] - height)
+
+    # print(f"RECT: {top_left[0], top_left[1]} WIDTH: {width} HEIGHT: {height})")
+    # print(f"MICE: {x, y}")
+
+    if top_left[0] <= x <= top_right[0] and bot_left[1] <= y <= top_left[1]:
+        return True
+    return False
+
+
+def get_region_of_area(
+    area: bpy.types.Area, region_type: str
+) -> Optional[bpy.types.Region]:
+    for region in area.regions:
+        if region.type == region_type:
+            return region
+    return None
 
 
 # The way this operator adds draw handlers and runs in modal mode is
@@ -152,10 +188,32 @@ class MV_OT_toggle_header(bpy.types.Operator):
             "SEQUENCE_EDITOR": bpy.types.SpaceSequenceEditor,
         }
 
+        # Define variables to control our rectangle.
+        self.btn_offset_y = -5
+        self.btn_offset_x = 10
+        self.btn_width = 30
+        self.btn_height = 30
+        self.btn_coordinates: List[Int2, Int2, Int2, Int2] = []
+
+        # Shader
+        self.shader = gpu.shader.from_builtin("2D_UNIFORM_COLOR")
+
+    def get_btn_coordinates(
+        self, region: bpy.types.Region
+    ) -> Tuple[Int2, Int2, Int2, Int2]:
+        # Define top left coordinate which will be our referenc point for other points.
+        top_left = (0 + self.btn_offset_x, region.height + self.btn_offset_y)
+
+        top_right = (top_left[0] + self.btn_width, top_left[1])
+        bot_left = (top_left[0], top_left[1] - self.btn_height)
+        bot_right = (top_left[0] + self.btn_width, top_left[1] - self.btn_height)
+
+        return (top_left, top_right, bot_left, bot_right)
+
     def draw(self, context: bpy.types.Context) -> None:
 
         # Get active media area.
-        area = opsdata.find_area(context, ops.active_media_area)
+        area = ops.active_media_area_obj
         if not area:
             return
 
@@ -168,43 +226,23 @@ class MV_OT_toggle_header(bpy.types.Operator):
         region = get_region_by_name(area, region_name)
         if not region:
             return
-
-        # Define variables to control our rectangle.
-        offset_y = -5
-        offset_x = 10
-        width = 30
-        height = 30
         # print(f"X: {region.x} Y: {region.y} WIDTH: {region.width} HEIGHT: {region.height}")
 
-        # Define top left coordinate which will be our referenc point for other points.
-        top_left = (0 + offset_x, region.height + offset_y)
-
-        top_right = (top_left[0] + width, top_left[1])
-        bot_left = (top_left[0], top_left[1] - height)
-        bot_right = (top_left[0] + width, top_left[1] - height)
-
-        coordinates = [top_left, top_right, bot_left, bot_right]
+        # Get button coordinates.
+        coordinates = self.get_btn_coordinates(region)
+        self.btn_coordinates.clear()
+        self.btn_coordinates.extend(list(coordinates))
 
         # Get shader, create batch, and draw it.
-        shader = gpu.shader.from_builtin("2D_UNIFORM_COLOR")
         batch = batch_for_shader(
-            shader,
+            self.shader,
             "TRIS",
             {"pos": coordinates},
             indices=((0, 1, 2), (2, 1, 3)),  # (2, 1, 3)
         )
-        batch.draw(shader)
+        batch.draw(self.shader)
 
     def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
-        for area in context.screen.areas:
-            area.tag_redraw()
-
-        region, _ = get_region_at_xy(context, event.mouse_x, event.mouse_y)
-        if region is not None:
-            # Check if mouse is over our button.
-            print(f"Region: {region.type}")
-            return {"PASS_THROUGH"}
-            # return {"RUNNING_MODAL"}
 
         # If cancel remove draw handler.
         if self.should_cancel():
@@ -220,6 +258,44 @@ class MV_OT_toggle_header(bpy.types.Operator):
 
             return {"CANCELLED"}
 
+        # Redraw areas, otherwise button flickers.
+        for area in context.screen.areas:
+            area.tag_redraw()
+
+        area = ops.active_media_area_obj
+        if not area:
+            return {"PASS_THROUGH"}
+
+        # We don't need it for the text editor.
+        if area.type not in self._areas_to_process:
+            return {"PASS_THROUGH"}
+
+        region = get_region_of_area(area, self._area_region_dict[area.type])
+        if not region:
+            return {"PASS_THROUGH"}
+
+        # Check if mouse is in active_media_area.
+        if not is_mouse_in_region(region, event.mouse_x, event.mouse_y):
+            return {"PASS_THROUGH"}
+
+        # At this point mouse is in right region, now we check if its above our button.
+        if not self.btn_coordinates:
+            return {"PASS_THROUGH"}
+
+        if not is_mouse_in_region_rect(
+            region, self.btn_coordinates, event.mouse_x, event.mouse_y
+        ):
+            return {"PASS_THROUGH"}
+
+        # If user clicks on the rectangle with leftmouse button, toggle header.
+        if event.type == "LEFTMOUSE":
+            if event.value == "PRESS":
+                area.spaces.active.show_region_header = (
+                    not area.spaces.active.show_region_header
+                )
+            return {"PASS_THROUGH"}
+
+        # return {"RUNNING_MODAL"}
         return {"PASS_THROUGH"}
 
     def should_cancel(self) -> bool:
@@ -247,9 +323,9 @@ def load_post_start_toggle_header(_) -> None:
     bpy.ops.media_viewer.toggle_header("INVOKE_DEFAULT")
 
 
-load_post_handler: List[Callable] = []
 # ----------------REGISTER--------------.
 
+load_post_handler: List[Callable] = []
 classes = [MV_OT_toggle_header]
 
 
