@@ -27,6 +27,7 @@ from media_viewer import (
     ui,
     gpu_opsdata,
     gpu_ops,
+    draw,
 )
 
 from media_viewer.log import LoggerFactory
@@ -60,6 +61,7 @@ if _need_reload:
     ui = importlib.reload(ui)
     gpu_opsdata = importlib.reload(gpu_opsdata)
     gpu_ops = importlib.reload(gpu_ops)
+    draw = importlib.reload(draw)
 
 
 def register():
@@ -69,9 +71,11 @@ def register():
     # gpu_opsdata.register()
     gpu_ops.register()
     ui.register()
+    draw.register()
 
 
 def unregister():
+    draw.unregister()
     ui.unregister()
     ops.unregister()
     gpu_ops.unregister()
