@@ -49,6 +49,11 @@ class MV_property_group(bpy.types.PropertyGroup):
         default="MOVIE",
         description="Controls if sequence output should be a .mp4 or a jpg sequence",
     )
+    draw_header_toggle = bpy.props.BoolProperty(
+        name="Draw Header Toggle",
+        description="Controls if custom openGL header toggle should be drawn",
+        default=True,
+    )
 
 
 # ----------------REGISTER--------------.
