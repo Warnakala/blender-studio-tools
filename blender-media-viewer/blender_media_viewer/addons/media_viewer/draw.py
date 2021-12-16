@@ -165,6 +165,28 @@ def get_region_of_area(
     return None
 
 
+def scale_rectangle_center(
+    rectangle: Tuple[Int2, Int2, Int2, Int2], factor: float
+) -> Tuple[Int2, Int2, Int2, Int2]:
+    """
+    ! not working yet
+    """
+    # [top_left, top_right, bot_left, bot_right]
+    width = rectangle[1][0] - rectangle[0][0]
+    height = rectangle[0][1] - rectangle[2][1]
+    center = (int(rectangle[0][0] + width / 2), int(rectangle[0][1] - height / 2))
+
+    rectangle_s: List[Int2, Int2, Int2, Int2] = []
+    for point in rectangle:
+        new_point = (
+            center[0] + (factor * (point[0] - center[0])),
+            center[1] + (factor * (point[1] - center[1])),
+        )
+        rectangle_s.append(new_point)
+
+    return rectangle_s
+
+
 # The way this operator adds draw handlers and runs in modal mode is
 # inspired by: "https://github.com/ubisoft/videotracks"
 class MV_OT_toggle_header(bpy.types.Operator):
@@ -191,8 +213,8 @@ class MV_OT_toggle_header(bpy.types.Operator):
         # Define variables to control our rectangle.
         self.btn_offset_y = -5
         self.btn_offset_x = 10
-        self.btn_width = 30
-        self.btn_height = 30
+        self.btn_width = 24
+        self.btn_height = 12
         self.btn_coordinates: List[Int2, Int2, Int2, Int2] = []
 
         # Shader
@@ -210,36 +232,55 @@ class MV_OT_toggle_header(bpy.types.Operator):
 
         return (top_left, top_right, bot_left, bot_right)
 
-    def _draw_widget(self):
+    def _draw_widget(
+        self, btn_coordinates: Tuple[Int2, Int2, Int2, Int2], area: bpy.types.Area
+    ) -> None:
+
+        if not btn_coordinates:
+            return
 
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glLineWidth(0)
 
         # Draw rectangle.
         # Bind the shader object. Required to be able to change uniforms of this shader.
-        self.shader.bind()
-        self.shader.uniform_float("color", (0.2, 0.2, 0.2, 0.7))
-        batch = batch_for_shader(
-            self.shader,
-            "TRIS",
-            {"pos": self.btn_coordinates},
-            indices=((0, 1, 2), (2, 1, 3)),  # (2, 1, 3)
-        )
-        batch.draw(self.shader)
+        # self.shader.bind()
+        # self.shader.uniform_float("color", (0.2, 0.2, 0.2, 1))
+        # batch = batch_for_shader(
+        #     self.shader,
+        #     "TRIS",
+        #     {"pos": btn_coordinates},
+        #     indices=((0, 1, 2), (2, 1, 3)),  # (2, 1, 3)
+        # )
+        # batch.draw(self.shader)
 
         bgl.glLineWidth(3)
         self.shader.bind()
-        self.shader.uniform_float("color", (0.8, 0.8, 0.8, 1))
-        cord_center = (
-            self.btn_coordinates[0][0] + self.btn_width / 2,
-            self.btn_coordinates[0][1] - self.btn_height / 2,
-        )
-        line_pos = (
-            self.btn_coordinates[0],
-            cord_center,
-            cord_center,
-            self.btn_coordinates[1],
-        )
+        self.shader.uniform_float("color", (0.8, 0.8, 0.8, 0.8))
+        # Draw arrow pointing up.
+        if area.spaces.active.show_region_header:
+            cord_center = (
+                btn_coordinates[0][0] + self.btn_width / 2,
+                btn_coordinates[0][1],
+            )
+            line_pos = (
+                btn_coordinates[2],
+                cord_center,
+                cord_center,
+                btn_coordinates[3],
+            )
+        # Draw arrow pointing down.
+        else:
+            cord_center = (
+                btn_coordinates[0][0] + self.btn_width / 2,
+                btn_coordinates[0][1] - self.btn_height,
+            )
+            line_pos = (
+                btn_coordinates[0],
+                cord_center,
+                cord_center,
+                btn_coordinates[1],
+            )
         line_batch = batch_for_shader(self.shader, "LINES", {"pos": line_pos})
         line_batch.draw(self.shader)
 
@@ -266,7 +307,8 @@ class MV_OT_toggle_header(bpy.types.Operator):
         self.btn_coordinates.clear()
         self.btn_coordinates.extend(list(coordinates))
 
-        self._draw_widget()
+        # btn_coordinates_s = scale_rectangle_center(coordinates, 0.7)
+        self._draw_widget(coordinates, area)
 
     def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
 
