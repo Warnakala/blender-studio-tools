@@ -210,6 +210,39 @@ class MV_OT_toggle_header(bpy.types.Operator):
 
         return (top_left, top_right, bot_left, bot_right)
 
+    def _draw_widget(self):
+
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glLineWidth(0)
+
+        # Draw rectangle.
+        # Bind the shader object. Required to be able to change uniforms of this shader.
+        self.shader.bind()
+        self.shader.uniform_float("color", (0.2, 0.2, 0.2, 0.7))
+        batch = batch_for_shader(
+            self.shader,
+            "TRIS",
+            {"pos": self.btn_coordinates},
+            indices=((0, 1, 2), (2, 1, 3)),  # (2, 1, 3)
+        )
+        batch.draw(self.shader)
+
+        bgl.glLineWidth(3)
+        self.shader.bind()
+        self.shader.uniform_float("color", (0.8, 0.8, 0.8, 1))
+        cord_center = (
+            self.btn_coordinates[0][0] + self.btn_width / 2,
+            self.btn_coordinates[0][1] - self.btn_height / 2,
+        )
+        line_pos = (
+            self.btn_coordinates[0],
+            cord_center,
+            cord_center,
+            self.btn_coordinates[1],
+        )
+        line_batch = batch_for_shader(self.shader, "LINES", {"pos": line_pos})
+        line_batch.draw(self.shader)
+
     def draw(self, context: bpy.types.Context) -> None:
 
         # Get active media area.
@@ -233,14 +266,7 @@ class MV_OT_toggle_header(bpy.types.Operator):
         self.btn_coordinates.clear()
         self.btn_coordinates.extend(list(coordinates))
 
-        # Get shader, create batch, and draw it.
-        batch = batch_for_shader(
-            self.shader,
-            "TRIS",
-            {"pos": coordinates},
-            indices=((0, 1, 2), (2, 1, 3)),  # (2, 1, 3)
-        )
-        batch.draw(self.shader)
+        self._draw_widget()
 
     def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
 
