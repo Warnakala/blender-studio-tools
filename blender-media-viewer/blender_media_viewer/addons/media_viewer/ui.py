@@ -8,6 +8,7 @@ from media_viewer.ops import (
     MV_OT_render_review_sqe_editor,
     MV_OT_export_annotation_data_to_3dcam,
     MV_OT_insert_empty_gpencil_frame,
+    MV_OT_quit_blender,
 )
 from media_viewer import ops
 
@@ -142,9 +143,27 @@ def MV_TOPBAR_settings(self: Any, context: bpy.types.Context) -> None:
     layout.popover(panel="MV_PT_review_settings", icon="PREFERENCES", text="")
 
 
+def MV_TOPBAR_upper_bar(self: Any, context: bpy.types.Context) -> None:
+    layout: bpy.types.UILayout = self.layout
+    row = layout.row(align=True)
+    row.operator("wm.quit_blender", text="Quit", icon="QUIT")
+
+
+def MV_TOPBAR_MT_file_menu_draw(self: Any, context: bpy.types.Context) -> None:
+    self.layout.menu("MV_TOPBAR_MT_file_menu")
+
+
+class MV_TOPBAR_MT_file_menu(bpy.types.Menu):
+    bl_idname = "MV_TOPBAR_MT_file_menu"
+    bl_label = "File"
+
+    def draw(self, context: bpy.types.Context) -> None:
+        MV_TOPBAR_upper_bar(self, context)
+
+
 # ----------------REGISTER--------------.
 
-classes = [MV_PT_review_settings]
+classes = [MV_PT_review_settings, MV_TOPBAR_MT_file_menu]
 
 
 def register():
@@ -161,15 +180,22 @@ def register():
     bpy.types.IMAGE_HT_header.append(MV_TOPBAR_image_editor)
     bpy.types.IMAGE_HT_header.append(MV_TOPBAR_settings)
 
+    # bpy.types.TOPBAR_HT_upper_bar.append(MV_TOPBAR_upper_bar) #TODO: appears twice in header?
+    # bpy.types.TOPBAR_MT_editor_menus.append(MV_TOPBAR_MT_file_menu_draw) #TODO: does not show up?
+
 
 def unregister():
 
     # Remove header draw handler.
     bpy.types.SEQUENCER_HT_header.remove(MV_TOPBAR_base)
     bpy.types.SEQUENCER_HT_header.remove(MV_TOPBAR_sequencer)
+    bpy.types.SEQUENCER_HT_header.remove(MV_TOPBAR_settings)
 
     bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_base)
     bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_image_editor)
+    bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_settings)
+
+    # bpy.types.TOPBAR_HT_upper_bar.remove(MV_TOPBAR_upper_bar)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
