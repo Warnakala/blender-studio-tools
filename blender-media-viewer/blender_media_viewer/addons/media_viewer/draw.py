@@ -393,45 +393,45 @@ def load_post_start_toggle_header(_) -> None:
 
 # ----------------REGISTER--------------.
 
-load_post_handler: List[Callable] = []
+load_post_handler: List[Callable] = [load_post_start_toggle_header]
 classes = [MV_OT_toggle_header]
-
+draw_handlers_img: List[Callable] = []
+draw_handlers_sqe: List[Callable] = []
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    load_post_handler.clear()
-    load_post_handler.append(
+    for handler in load_post_handler:
         bpy.app.handlers.load_post.append(load_post_start_toggle_header)
-    )
 
-    # bpy.types.SpaceSequenceEditor.draw_handler_add(
+    # draw_handlers_sqe.append(bpy.types.SpaceSequenceEditor.draw_handler_add(
     #     draw_text, (REGION_NAME,), REGION_NAME, "POST_PIXEL"
-    # )
-    # bpy.types.SpaceImageEditor.draw_handler_add(
-    #     draw_text, (REGION_NAME_IMG,), REGION_NAME_IMG, "POST_PIXEL"
-    # )
+    # ))
 
-    # bpy.types.SpaceSequenceEditor.draw_handler_add(
+    # draw_handlers_img.append(bpy.types.SpaceImageEditor.draw_handler_add(
+    #     draw_text, (REGION_NAME_IMG,), REGION_NAME_IMG, "POST_PIXEL"
+    # ))
+
+    # draw_handlers_sqe.append(bpy.types.SpaceSequenceEditor.draw_handler_add(
     #     draw_toggle, (REGION_NAME,), REGION_NAME, "POST_PIXEL"
-    # )
-    # bpy.types.SpaceImageEditor.draw_handler_add(
+    # ))
+    # draw_handlers_img.append(bpy.types.SpaceImageEditor.draw_handler_add(
     #     draw_toggle, (REGION_NAME_IMG,), REGION_NAME_IMG, "POST_PIXEL"
-    # )
+    # ))
 
 
 def unregister():
 
+    # Remove handlers.
+    for handler in draw_handlers_img:
+        bpy.types.SpaceImageEditor.draw_handler_remove(handler, REGION_NAME_IMG)
+
+    for handler in draw_handlers_sqe:
+        bpy.types.SpaceSequenceEditor.draw_handler_remove(handler, REGION_NAME)
+
     for handler in load_post_handler:
         bpy.app.handlers.load_post.remove(handler)
-    load_post_handler.clear()
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-
-    # bpy.types.SpaceSequenceEditor.draw_handler_remove(draw_text, "PREVIEW")
-    # bpy.types.SpaceImageEditor.draw_handler_remove(draw_text, REGION_NAME_IMG)
-
-    # bpy.types.SpaceSequenceEditor.draw_handler_remove(draw_toggle, "PREVIEW")
-    # bpy.types.SpaceImageEditor.draw_handler_remove(draw_toggle, REGION_NAME_IMG)

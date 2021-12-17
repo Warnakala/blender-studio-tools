@@ -1713,10 +1713,6 @@ def callback_filename_change(dummy: None):
 
 
 # ----------------REGISTER--------------.
-
-load_post_handler: List[Callable] = []
-fb_draw_handler: List[Callable] = []
-
 classes = [
     MV_OT_load_media_movie,
     MV_OT_load_media_image,
@@ -1749,17 +1745,15 @@ classes = [
     MV_OT_convert_image_seq_to_movie,
     MV_OT_render_review_area_aware,
 ]
-
+draw_handlers_fb: List[Callable] = []
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
     # Append handlers.
-    load_post_handler.append(
-        bpy.app.handlers.load_post.append(init_active_media_area_obj)
-    )
-    fb_draw_handler.append(
+    bpy.app.handlers.load_post.append(init_active_media_area_obj)
+    draw_handlers_fb.append(
         bpy.types.SpaceFileBrowser.draw_handler_add(
             callback_filename_change, (None,), "WINDOW", "POST_PIXEL"
         )
@@ -1767,12 +1761,12 @@ def register():
 
 
 def unregister():
-    # Remove handlers.
-    for handler in fb_draw_handler:
-        bpy.types.SpaceFileBrowser.draw_handler_remove(fb_draw_handler, "WINDOW")
 
-    for handler in load_post_handler:
-        bpy.app.load_post.remove(handler)
+    # Remove handlers.
+    for handler in draw_handlers_fb:
+        bpy.types.SpaceFileBrowser.draw_handler_remove(handler, "WINDOW")
+
+    bpy.app.handlers.load_post.remove(init_active_media_area_obj)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
