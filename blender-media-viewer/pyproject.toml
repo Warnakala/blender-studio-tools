@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "blender-video-player"
+name = "blender-media-viewer"
 version = "0.1.0"
 description = ""
 authors = ["Paul Golter <paul@blender.org>"]
