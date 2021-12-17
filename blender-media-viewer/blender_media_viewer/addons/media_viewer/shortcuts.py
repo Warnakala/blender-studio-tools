@@ -571,8 +571,12 @@ def register():
 def unregister_keymaps():
     global addon_keymaps
     for km, kmi in addon_keymaps:
-        km.keymap_items.remove(kmi)
-        logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
+        try:
+            km.keymap_items.remove(kmi)
+            logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
+        except ReferenceError:
+            # Happens when you press CTRL+Q, I guess this means that this keymap item is already removed?
+            pass
     addon_keymaps.clear()
 
 
