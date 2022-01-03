@@ -24,6 +24,15 @@ def draw_seperators(layout: bpy.types.UILayout) -> None:
     layout.separator()
 
 
+def get_sequence_icon(context: bpy.types.Context) -> str:
+    seq_file_type = context.window_manager.media_viewer.sequence_file_type
+    if seq_file_type == "MOVIE":
+        return "RENDER_ANIMATION"
+
+    # seq_file_type == "IMAGE":
+    return "RENDERLAYERS"
+
+
 def MV_TOPBAR_base(self: Any, context: bpy.types.Context) -> None:
     layout: bpy.types.UILayout = self.layout
     gpl = context.active_annotation_layer
@@ -54,7 +63,9 @@ def MV_TOPBAR_sequencer(self: Any, context: bpy.types.Context) -> None:
     # Render review sequence editor operator.
     # Movie
     op = row.operator(
-        MV_OT_render_review_sqe_editor.bl_idname, icon="RENDER_ANIMATION", text=""
+        MV_OT_render_review_sqe_editor.bl_idname,
+        icon=get_sequence_icon(context),
+        text="",
     )
     op.render_sequence = True
     op.sequence_file_type = seq_file_type
@@ -80,7 +91,9 @@ def MV_TOPBAR_image_editor(self: Any, context: bpy.types.Context) -> None:
     # Render review image editor operator.
     # Movie
     op = row.operator(
-        MV_OT_render_review_img_editor.bl_idname, icon="RENDER_ANIMATION", text=""
+        MV_OT_render_review_img_editor.bl_idname,
+        icon=get_sequence_icon(context),
+        text="",
     )
     op.render_sequence = True
     op.sequence_file_type = seq_file_type
