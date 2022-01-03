@@ -242,9 +242,11 @@ class MV_OT_load_media_image(bpy.types.Operator):
             logger.error("Failed to load image media. No Image Editor area available.")
             return {"CANCELLED"}
 
-        # Delete all images. #TODO: caching system? Keeping images might
-        # make reloading of previous images faster
-        opsdata.del_all_images()
+        # Delete all images. Keeping images might
+        # make reloading of previous images faster?
+        # ! Turns out del_all_images crashes Blender in DEBUG build.
+        # Is reported here: https://developer.blender.org/T94599
+        # opsdata.del_all_images()
 
         if self.load_sequence:
             # Detect image sequence.
@@ -1746,6 +1748,7 @@ classes = [
     MV_OT_render_review_area_aware,
 ]
 draw_handlers_fb: List[Callable] = []
+
 
 def register():
     for cls in classes:
