@@ -29,6 +29,11 @@ from bl_app_override.helpers import AppOverrideState
 from bpy.app.handlers import persistent
 
 
+def draw_left_override(self, context: bpy.types.Context):
+    layout: bpy.types.UILayout = self.layout
+    bpy.types.TOPBAR_MT_editor_menus.draw_collapsible(context, layout)
+
+
 class AppStateStore(AppOverrideState):
     # Just provides data & callbacks for AppOverrideState
     __slots__ = ()
@@ -53,12 +58,18 @@ class AppStateStore(AppOverrideState):
         # Overrides draw function of header to just return None
         # That way we clear all these header globally and can replace
         # them with our custom draw function
-        bpy.types.TOPBAR_HT_upper_bar.draw = lambda self, context: None
         bpy.types.STATUSBAR_HT_header.draw = lambda self, context: None
         bpy.types.IMAGE_HT_header.draw = lambda self, context: None
         bpy.types.SEQUENCER_HT_header.draw = lambda self, context: None
         bpy.types.TEXT_HT_header.draw = lambda self, context: None
 
+        # TOPBAR_HT_upper_bar.draw calls draw_left and draw_right
+        # we will override those individually. We don't need draw_right anymore.
+        # But for draw_left we only want it to draw TOPBAR_MT_editor_menus.draw, which is
+        # why we override it with draw_left_override.
+        bpy.types.TOPBAR_HT_upper_bar.draw_left = draw_left_override
+        bpy.types.TOPBAR_HT_upper_bar.draw_right = lambda self, context: None
+        bpy.types.TOPBAR_MT_editor_menus.draw = lambda self, context: None
         return classes
 
     # ----------------

@@ -193,8 +193,9 @@ def register():
     bpy.types.IMAGE_HT_header.append(MV_TOPBAR_image_editor)
     bpy.types.IMAGE_HT_header.append(MV_TOPBAR_settings)
 
-    # bpy.types.TOPBAR_HT_upper_bar.append(MV_TOPBAR_upper_bar) #TODO: appears twice in header?
-    # bpy.types.TOPBAR_MT_editor_menus.append(MV_TOPBAR_MT_file_menu_draw) #TODO: does not show up?
+    # We have to use TOPBAR_MT_editor_menus instead of TOPBAR_HT_upper_bar
+    # Appended item appears twice otherwise.
+    bpy.types.TOPBAR_MT_editor_menus.append(MV_TOPBAR_MT_file_menu_draw)
 
 
 def unregister():
@@ -208,7 +209,7 @@ def unregister():
     bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_image_editor)
     bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_settings)
 
-    # bpy.types.TOPBAR_HT_upper_bar.remove(MV_TOPBAR_upper_bar)
+    bpy.types.TOPBAR_MT_editor_menus.remove(MV_TOPBAR_MT_file_menu_draw)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
