@@ -1,4 +1,18 @@
-from typing import List, Dict, Tuple, Union, Any, Optional, Set, Callable
+from __future__ import annotations
+from typing import (
+    List,
+    Dict,
+    Tuple,
+    Union,
+    Any,
+    Optional,
+    Set,
+    Callable,
+    Generator,
+    Iterable,
+)
+from enum import Enum
+from copy import copy
 
 import bpy
 import gpu
@@ -134,28 +148,6 @@ def is_mouse_in_region(region: bpy.types.Region, x: int, y: int) -> bool:
     return False
 
 
-def is_mouse_in_region_rect(
-    region: bpy.types.Region, rectangle: Tuple[Int2, Int2, Int2, Int2], x: int, y: int
-) -> bool:
-    # [top_left, top_right, bot_left, bot_right]
-    width = rectangle[1][0] - rectangle[0][0]
-    height = rectangle[0][1] - rectangle[2][1]
-
-    # To global screen coordinates.
-    top_left = (region.x + rectangle[0][0], region.y + rectangle[0][1])
-
-    top_right = (top_left[0] + width, top_left[1])
-    bot_left = (top_left[0], top_left[1] - height)
-    bot_right = (top_left[0] + width, top_left[1] - height)
-
-    # print(f"RECT: {top_left[0], top_left[1]} WIDTH: {width} HEIGHT: {height})")
-    # print(f"MICE: {x, y}")
-
-    if top_left[0] <= x <= top_right[0] and bot_left[1] <= y <= top_left[1]:
-        return True
-    return False
-
-
 def get_region_of_area(
     area: bpy.types.Area, region_type: str
 ) -> Optional[bpy.types.Region]:
@@ -165,26 +157,296 @@ def get_region_of_area(
     return None
 
 
-def scale_rectangle_center(
-    rectangle: Tuple[Int2, Int2, Int2, Int2], factor: float
-) -> Tuple[Int2, Int2, Int2, Int2]:
-    """
-    ! not working yet
-    """
-    # [top_left, top_right, bot_left, bot_right]
-    width = rectangle[1][0] - rectangle[0][0]
-    height = rectangle[0][1] - rectangle[2][1]
-    center = (int(rectangle[0][0] + width / 2), int(rectangle[0][1] - height / 2))
+def points_to_int2(points: Iterable[Point]) -> Tuple[Int2]:
+    l = [p.as_tuple() for p in points]
+    return tuple(l)
 
-    rectangle_s: List[Int2, Int2, Int2, Int2] = []
-    for point in rectangle:
-        new_point = (
-            center[0] + (factor * (point[0] - center[0])),
-            center[1] + (factor * (point[1] - center[1])),
+class Point:
+
+    """
+    Class that represents a point with 2 coordinates.
+
+    #TODO: support indexing and interating in future.
+    """
+
+    def __init__(self, x: int, y: int):
+        self._x = int(x)
+        self._y = int(y)
+
+    @property
+    def x(self) -> int:
+        return self._x
+
+    @property
+    def y(self) -> int:
+        return self._y
+
+    def as_tuple(self) -> Int2:
+        return self._coords
+
+    @property
+    def _coords(self) -> Int2:
+        return (self.x, self.y)
+
+    def __add__(self, other: Point):
+        return Point(self.x + other.x, self.y + other.y)
+
+    def __iadd__(self, other: Point):
+        self.x + other.x
+        self.y + other.y
+        return self
+
+    def __sub__(self, other: Point):
+        return Point(self.x - other.x, self.y - other.y)
+
+    def __isub__(self, other: Point):
+        self.x - other.x
+        self.y - other.y
+        return self
+
+    def __repr__(self) -> str:
+        return f"Point(x: {self.x}, y: {self.y})"
+
+    def __iter__(self):
+        for i in self._coords:
+            yield i
+
+    def __getitem__(self, i):
+        return self._coords[i]
+
+    def __len__(self):
+        return 2
+
+
+class RectCoords:
+    """
+    Class that represents the coordinates of a Rectangle.
+    Instances of this class are returned by the Rectangle class.
+    The individual coordinate can be retrieved with (top_left, top_right, bot_left, bot_right)..
+    RectCoordinates work as region coordinates, that means 0,0 is bottom left.
+    """
+
+    def __init__(
+        self, top_left: Point, top_right: Point, bot_left: Point, bot_right: Point
+    ):
+        ## Thats how region coordinates work for openGL:
+        """
+        (0,region.height,0)----(region.width,region.height,0)
+        |                      |
+        |                      |
+        |                      |
+        (0,0,0)----------------(region.width,0,0)
+        """
+        self._top_left = top_left
+        self._top_right = top_right
+        self._bot_left = bot_left
+        self._bot_right = bot_right
+        self._width = top_right.x - top_left.x
+        self._height = top_left.y - bot_left.y
+
+    @property
+    def top_left(self) -> Point:
+        return self._top_left
+
+    @property
+    def top_right(self) -> Point:
+        return self._top_right
+
+    @property
+    def bot_left(self) -> Point:
+        return self._bot_left
+
+    @property
+    def bot_right(self) -> Point:
+        return self._bot_right
+
+    @property
+    def position(self) -> Point:
+        return self.top_left
+
+    @property
+    def center(self) -> Point:
+        center_x = int(self.top_left.x + (0.5 * self._width))
+        center_y = int(self.top_left.y - (0.5 * self._height))
+
+        return Point(center_x, center_y)
+
+    @property
+    def _coords(self) -> Tuple[Point, Point, Point, Point]:
+        return (self.top_left, self.top_right, self.bot_left, self.bot_right)
+
+    def apply_padding(self, value: int) -> None:
+        self._top_left = self._top_left - Point(value, -value)
+        self._top_right = self._top_right + Point(value, value)
+        self._bot_left = self._bot_left - Point(value, value)
+        self._bot_right = self._bot_right + Point(value, -value)
+
+    def is_over(self, point: Point) -> bool:
+        if (
+            self.top_left.x <= point.x <= self.top_right.x
+            and self.bot_left.y <= point.y <= self.top_left.y
+        ):
+            return True
+        return False
+
+    def __repr__(self) -> str:
+        return (
+            f"TopLeft({self.top_left.x},{self.top_left.y}), "
+            f"TopRight({self.top_right.x},{self.top_right.y}), "
+            f"BotLeft({self.bot_left.x},{self.bot_left.y}), "
+            f"BotRight({self.bot_right.x},{self.bot_right.y})"
         )
-        rectangle_s.append(new_point)
 
-    return rectangle_s
+    def __iter__(self):
+        for point in self._coords:
+            yield point
+
+    def __getitem__(self, i):
+        return self._coords[i]
+
+    def __len__(self):
+        return 4
+
+    def __copy__(self):
+        return RectCoords(self.top_left, self.top_right, self.bot_left, self.bot_right)
+
+
+class Button:
+    def __init__(
+        self,
+        width: int,
+        height: int,
+        x: int = 0,
+        y: int = 0,
+    ):
+        self._width = width
+        self._height = height
+        self._x = x
+        self._y = y
+
+    @property
+    def width(self) -> int:
+        return self._width
+
+    @property
+    def height(self) -> int:
+        return self._height
+
+    # Local coordinates.
+    def get_coords(self) -> RectCoords:
+        top_left = Point(self._x, self._y)
+        top_right = Point(top_left.x + self.width, top_left.y)
+        bot_left = Point(top_left.x, top_left.y - self.height)
+        bot_right = Point(top_left.x + self.width, top_left.y - self.height)
+        return RectCoords(top_left, top_right, bot_left, bot_right)
+
+    # Region coordinates.
+    def get_region_coords(self, region: bpy.types.Region) -> RectCoords:
+        top_left = Point(self._x, region.height + self._y)
+        top_right = Point(top_left.x + self.width, top_left.y)
+        bot_left = Point(top_left.x, top_left.y - self.height)
+        bot_right = Point(top_left.x + self.width, top_left.y - self.height)
+        return RectCoords(top_left, top_right, bot_left, bot_right)
+
+    # Global coordinates.
+    def get_global_coords(self, region: bpy.types.Region) -> RectCoords:
+        global_x = region.x + self._x
+        global_y = region.y + self._y
+        global_top_left = Point(global_x, region.height + global_y)
+        global_top_right = Point(global_top_left.x + self.width, global_top_left.y)
+        global_bot_left = Point(global_top_left.x, global_top_left.y - self.height)
+        global_bot_right = Point(
+            global_top_left.x + self.width, global_top_left.y - self.height
+        )
+        return RectCoords(
+            global_top_left, global_top_right, global_bot_left, global_bot_right
+        )
+
+    def __repr__(self) -> str:
+        coords = self.get_coords()
+        return (
+            f"Pos({coords.top_left.x},{coords.top_left.y}), "
+            f"Width({self.width}), "
+            f"Height({self.height}), "
+        )
+
+
+class ButtonDrawer:
+    def __init__(
+        self,
+    ):
+        self._shader = gpu.shader.from_builtin("2D_UNIFORM_COLOR")
+        self.draw_arrow = True
+        self.draw_rect = False
+        self._arrow_direction = "UP"
+
+    @property
+    def arrow_direction(self):
+        return self._arrow_direction
+
+    @arrow_direction.setter
+    def arrow_direction(self, direction: str):
+        if direction not in ["UP", "DOWN"]:
+            raise ValueError("Direction must be either 'UP', 'DOWN'")
+
+        self._arrow_direction = direction
+
+    @property
+    def shader(self):
+        return self._shader
+
+    def draw_button(
+        self, button: Button, region: bpy.types.Region, color: Float4
+    ) -> None:
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glLineWidth(0)
+        coords = button.get_region_coords(region)
+
+        # Draw rectangle.
+        # Bind the shader object. Required to be able to change uniforms of this shader.
+        if self.draw_rect:
+            self.shader.bind()
+            color_dimmed = [c * 0.4 for c in color]
+            self.shader.uniform_float("color", color_dimmed)
+            batch = batch_for_shader(
+                self.shader,
+                "TRIS",
+                {"pos": coords},
+                indices=((0, 1, 2), (2, 1, 3)),  # (2, 1, 3)
+            )
+            batch.draw(self.shader)
+
+        if self.draw_arrow:
+            # Draw arrow pointing up.
+            if self.arrow_direction == "UP":
+                cord_center = Point(coords.center.x, coords.top_left.y)
+                line_pos = (
+                    coords.bot_left,
+                    cord_center,
+                    cord_center,
+                    coords.bot_right,
+                )
+
+            # Draw arrow pointing down.
+            elif self.arrow_direction == "DOWN":
+                cord_center = Point(coords.center.x, coords.bot_left.y)
+                line_pos = (
+                    coords.top_left,
+                    cord_center,
+                    cord_center,
+                    coords.top_right,
+                )
+
+            else:
+                return
+
+            # Create line batch and draw it.
+            bgl.glLineWidth(3)
+            self._shader.bind()
+            self._shader.uniform_float("color", color)
+            # print(f"Drawing points: {line_pos}")
+            line_batch = batch_for_shader(self._shader, "LINES", {"pos": line_pos})
+            line_batch.draw(self._shader)
 
 
 # The way this operator adds draw handlers and runs in modal mode is
@@ -211,78 +473,13 @@ class MV_OT_toggle_header(bpy.types.Operator):
         }
 
         # Define variables to control our rectangle.
-        self.btn_offset_y = -5
-        self.btn_offset_x = 10
-        self.btn_width = 24
-        self.btn_height = 12
-        self.btn_coordinates: List[Int2, Int2, Int2, Int2] = []
-
-        # Shader
-        self.shader = gpu.shader.from_builtin("2D_UNIFORM_COLOR")
-
-    def get_btn_coordinates(
-        self, region: bpy.types.Region
-    ) -> Tuple[Int2, Int2, Int2, Int2]:
-        # Define top left coordinate which will be our referenc point for other points.
-        top_left = (0 + self.btn_offset_x, region.height + self.btn_offset_y)
-
-        top_right = (top_left[0] + self.btn_width, top_left[1])
-        bot_left = (top_left[0], top_left[1] - self.btn_height)
-        bot_right = (top_left[0] + self.btn_width, top_left[1] - self.btn_height)
-
-        return (top_left, top_right, bot_left, bot_right)
-
-    def _draw_widget(
-        self, btn_coordinates: Tuple[Int2, Int2, Int2, Int2], area: bpy.types.Area
-    ) -> None:
-
-        if not btn_coordinates:
-            return
-
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glLineWidth(0)
-
-        # Draw rectangle.
-        # Bind the shader object. Required to be able to change uniforms of this shader.
-        # self.shader.bind()
-        # self.shader.uniform_float("color", (0.2, 0.2, 0.2, 1))
-        # batch = batch_for_shader(
-        #     self.shader,
-        #     "TRIS",
-        #     {"pos": btn_coordinates},
-        #     indices=((0, 1, 2), (2, 1, 3)),  # (2, 1, 3)
-        # )
-        # batch.draw(self.shader)
-
-        bgl.glLineWidth(3)
-        self.shader.bind()
-        self.shader.uniform_float("color", (0.8, 0.8, 0.8, 0.8))
-        # Draw arrow pointing up.
-        if area.spaces.active.show_region_header:
-            cord_center = (
-                btn_coordinates[0][0] + self.btn_width / 2,
-                btn_coordinates[0][1],
-            )
-            line_pos = (
-                btn_coordinates[2],
-                cord_center,
-                cord_center,
-                btn_coordinates[3],
-            )
-        # Draw arrow pointing down.
-        else:
-            cord_center = (
-                btn_coordinates[0][0] + self.btn_width / 2,
-                btn_coordinates[0][1] - self.btn_height,
-            )
-            line_pos = (
-                btn_coordinates[0],
-                cord_center,
-                cord_center,
-                btn_coordinates[1],
-            )
-        line_batch = batch_for_shader(self.shader, "LINES", {"pos": line_pos})
-        line_batch.draw(self.shader)
+        btn_offset_y = -5
+        btn_offset_x = 10
+        btn_width = 24
+        btn_height = 12
+        self.button = Button(btn_width, btn_height, btn_offset_x, btn_offset_y)
+        self.btn_drawer = ButtonDrawer()
+        # self.btn_drawer.draw_rect = True
 
     def draw(self, context: bpy.types.Context) -> None:
 
@@ -302,13 +499,14 @@ class MV_OT_toggle_header(bpy.types.Operator):
             return
         # print(f"X: {region.x} Y: {region.y} WIDTH: {region.width} HEIGHT: {region.height}")
 
-        # Get button coordinates.
-        coordinates = self.get_btn_coordinates(region)
-        self.btn_coordinates.clear()
-        self.btn_coordinates.extend(list(coordinates))
+        # Set arrow direction depending on region header state.
+        if area.spaces.active.show_region_header:
+            self.btn_drawer.arrow_direction = "UP"
+        else:
+            self.btn_drawer.arrow_direction = "DOWN"
 
-        # btn_coordinates_s = scale_rectangle_center(coordinates, 0.7)
-        self._draw_widget(coordinates, area)
+        # Draw button.
+        self.btn_drawer.draw_button(self.button, region, (0.8, 0.8, 0.8, 0.9))
 
     def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
 
@@ -346,13 +544,11 @@ class MV_OT_toggle_header(bpy.types.Operator):
         if not is_mouse_in_region(region, event.mouse_x, event.mouse_y):
             return {"PASS_THROUGH"}
 
-        # At this point mouse is in right region, now we check if its above our button.
-        if not self.btn_coordinates:
-            return {"PASS_THROUGH"}
-
-        if not is_mouse_in_region_rect(
-            region, self.btn_coordinates, event.mouse_x, event.mouse_y
-        ):
+        # Check if mouse is in collision region.
+        # Apply some padding to make it easier clickable.
+        collision_rect = self.button.get_global_coords(region)
+        collision_rect.apply_padding(10)
+        if not collision_rect.is_over(Point(event.mouse_x, event.mouse_y)):
             return {"PASS_THROUGH"}
 
         # If user clicks on the rectangle with leftmouse button, toggle header.
@@ -397,6 +593,7 @@ load_post_handler: List[Callable] = [load_post_start_toggle_header]
 classes = [MV_OT_toggle_header]
 draw_handlers_img: List[Callable] = []
 draw_handlers_sqe: List[Callable] = []
+
 
 def register():
     for cls in classes:
