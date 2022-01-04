@@ -557,9 +557,10 @@ class MV_OT_toggle_header(bpy.types.Operator):
                 area.spaces.active.show_region_header = (
                     not area.spaces.active.show_region_header
                 )
-            return {"PASS_THROUGH"}
 
-        # return {"RUNNING_MODAL"}
+            # If clicked return running modal, otherwise we also draw on media area.
+            return {"RUNNING_MODAL"}
+
         return {"PASS_THROUGH"}
 
     def should_cancel(self) -> bool:
