@@ -412,6 +412,13 @@ class OBJECT_OT_PoseKey_Save(Operator, OperatorWithWarning, SaveAndRestoreState)
 		adjust.value = 1
 		storage_ob.active_shape_key_index = 2
 
+		# Fix material assignments in case any material slots are linked to the 
+		# object instead of the mesh.
+		for i, ms in enumerate(rigged_ob.material_slots):
+			if ms.link == 'OBJECT':
+				storage_ob.material_slots[i].link = 'OBJECT'
+				storage_ob.material_slots[i].material = ms.material
+
 		# Set the target shape to be the evaluated mesh.
 		for target_v, eval_v in zip(target.data, rigged_ob_eval_mesh.vertices):
 			target_v.co = eval_v.co
