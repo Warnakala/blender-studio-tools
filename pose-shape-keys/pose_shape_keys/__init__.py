@@ -37,12 +37,6 @@ from . import ui_list
 from . import reset_rig
 from . import symmetrize_shape_key
 
-"""TODO:
-Would it make sense to only enable the Pose Keys panel when there is a deforming modifier present?
-Otherwise it could just show a red sentence explaining why there's nothing there.
-Pushing should early exit and fail when object is not in view layer!
-"""
-
 # Each module can have register() and unregister() functions and a list of classes to register called "registry".
 modules = [
 	ui
@@ -58,6 +52,7 @@ class PoseShapeKeysPrefs(AddonPreferences):
 	show_shape_key_info: BoolProperty(
 		name = "Reveal Shape Key Properties"
 		,description = "Show and edit the properties of the corresponding shape key"
+		,default = True
 	)
 	no_warning: BoolProperty(
 		name = "No Warning"

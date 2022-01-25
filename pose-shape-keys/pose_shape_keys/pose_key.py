@@ -42,7 +42,7 @@ class PoseShapeKeyTarget(PropertyGroup):
 	)
 	mirror_x: BoolProperty(
 		name = "Mirror X"
-		,description = "Mirror the shape key on the X axis when applying the shape to this shape key"
+		,description = "Mirror the shape key on the X axis when applying the stored shape to this shape key"
 		,default = False
 	)
 
@@ -312,26 +312,14 @@ def verify_pose(context):
 	if not pose_key:
 		return False
 
-	# No shape keys to push into
-	any_target_keys = False
-	for target_shape in pose_key.target_shapes:
-		if target_shape.key_block != None:
-			any_target_keys = True
-			break
-	if not any_target_keys:
-		return False
-
-	# An action is specified but not active on the armature
 	arm_ob = get_deforming_armature(ob)
-	if not arm_ob:
-		return True
-	if pose_key.action and not arm_ob.animation_data:
+
+	# Action must exist and match.
+	if not pose_key.action:
 		return False
-	if arm_ob.animation_data.action != pose_key.action:
+	elif not arm_ob.animation_data or arm_ob.animation_data.action != pose_key.action:
 		return False
-	
-	# An action is specified but frame number mismatches
-	if pose_key.action and pose_key.frame != context.scene.frame_current:
+	elif pose_key.frame != context.scene.frame_current:
 		return False
 
 	return True
@@ -347,9 +335,10 @@ class OBJECT_OT_PoseKey_Save(Operator, OperatorWithWarning, SaveAndRestoreState)
 	def poll(cls, context):
 
 		ob = context.object
-		# No storage object to read from
+		# We can guess the action and frame number
+		arm_ob = get_deforming_armature(ob)
 		pose_key = get_active_pose_key(ob)
-		if pose_key and not pose_key.storage_object:
+		if pose_key and not pose_key.storage_object and arm_ob.animation_data and arm_ob.animation_data.action:
 			return True
 		return verify_pose(context)
 
@@ -450,7 +439,18 @@ class OBJECT_OT_PoseKey_Push(Operator, OperatorWithWarning, SaveAndRestoreState)
 
 	@classmethod
 	def poll(cls, context):
-		return verify_pose(context)
+		pose_matches = verify_pose(context)
+		if not pose_matches:
+			return False
+
+		# No shape keys to push into
+		ob = context.object
+		pose_key = get_active_pose_key(ob)
+		for target_shape in pose_key.target_shapes:
+			if target_shape.key_block:
+				return True
+
+		return False
 
 	def get_warning_text(self, context):
 		ob = context.object
@@ -590,7 +590,7 @@ class OBJECT_OT_PoseKey_Place_Objects_In_Grid(Operator):
 	"""Place the storage objects in a grid above this object"""
 
 	bl_idname = "object.posekey_object_grid"
-	bl_label = "Place Objects In Grid"
+	bl_label = "Place ALL Storage Objects in a Grid"
 	bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
 	@staticmethod

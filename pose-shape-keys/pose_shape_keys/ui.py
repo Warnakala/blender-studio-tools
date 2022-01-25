@@ -110,36 +110,44 @@ class MESH_PT_pose_keys(Panel):
 		idx = context.object.data.active_pose_key_index
 		active_posekey = context.object.data.pose_keys[idx]
 
-		if active_posekey.storage_object:
-			row = layout.row()
-			row.prop(active_posekey, 'storage_object')
-			row.operator('object.posekey_jump_to_storage', text="", icon='LOOP_FORWARDS')
-			row.operator('object.posekey_save', text="", icon="FILE_TICK")
-		else:
-			layout.operator('object.posekey_save', text="Store Evaluated Mesh", icon="FILE_TICK")
 		col = layout.column(align=True)
 		col.prop(active_posekey, 'action')
 		if active_posekey.action:
 			col.prop(active_posekey, 'frame')
 
+		if active_posekey.storage_object:
+			row = layout.row()
+			row.prop(active_posekey, 'storage_object')
+			row.operator('object.posekey_jump_to_storage', text="", icon='RESTRICT_SELECT_OFF')
+		else:
+			layout.operator('object.posekey_set_pose', text="Set Pose", icon="ARMATURE_DATA")
+			layout.operator('object.posekey_save', text="Store Evaluated Mesh", icon="FILE_TICK")
+			return
+
 		layout.separator()
 		col = layout.column(align=True)
 		col.operator('object.posekey_set_pose', text="Set Pose", icon="ARMATURE_DATA")
-		col.operator('object.posekey_push', text="Push To Shape Keys", icon="IMPORT")
+		col.separator()
+
+		row = col.row()
+		row.operator('object.posekey_save', text="Overwrite Storage Object", icon="FILE_TICK")
+		row.operator('object.posekey_push', text="Overwrite Shape Keys", icon="IMPORT")
 
 class MESH_PT_shape_key_subpanel(Panel):
 	bl_space_type = 'PROPERTIES'
 	bl_region_type = 'WINDOW'
 	bl_context = 'data'
 	bl_options = {'DEFAULT_CLOSED'}
-	bl_label = "Shape Keys"
+	bl_label = "Shape Key Slots"
 	bl_parent_id = "MESH_PT_pose_keys"
 
 	@classmethod
 	def poll(cls, context):
-		return context.object.data.shape_key_ui_type == 'POSE_KEYS' \
-			and len(context.object.data.pose_keys) > 0 \
-			and ob_has_armature_mod(context.object)
+		ob = context.object
+		return ob.data.shape_key_ui_type == 'POSE_KEYS' \
+			and len(ob.data.pose_keys) > 0 \
+			and ob.data.pose_keys[ob.data.active_pose_key_index].storage_object \
+			and ob_has_armature_mod(ob)
 
 	def draw(self, context):
 		ob = context.object
@@ -151,8 +159,6 @@ class MESH_PT_shape_key_subpanel(Panel):
 
 		idx = context.object.data.active_pose_key_index
 		active_posekey = context.object.data.pose_keys[idx]
-
-		layout.operator('object.posekey_normalize', icon='NORMALIZE_FCURVES')
 
 		draw_ui_list(
 			layout
@@ -196,7 +202,9 @@ class MESH_MT_pose_key_utils(Menu):
 
 	def draw(self, context):
 		layout = self.layout
-		layout.operator('object.posekey_object_grid')
+		layout.operator('object.posekey_object_grid', icon='LIGHTPROBE_GRID')
+		layout.operator('object.posekey_normalize', icon='NORMALIZE_FCURVES')
+
 
 registry = [
 	CK_UL_pose_keys
