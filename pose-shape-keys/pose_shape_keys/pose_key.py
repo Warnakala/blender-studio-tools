@@ -317,9 +317,9 @@ def verify_pose(context):
 	# Action must exist and match.
 	if not pose_key.action:
 		return False
-	elif not arm_ob.animation_data or arm_ob.animation_data.action != pose_key.action:
+	if not arm_ob.animation_data or arm_ob.animation_data.action != pose_key.action:
 		return False
-	elif pose_key.frame != context.scene.frame_current:
+	if pose_key.frame != context.scene.frame_current:
 		return False
 
 	return True
@@ -338,7 +338,7 @@ class OBJECT_OT_PoseKey_Save(Operator, OperatorWithWarning, SaveAndRestoreState)
 		# We can guess the action and frame number
 		arm_ob = get_deforming_armature(ob)
 		pose_key = get_active_pose_key(ob)
-		if pose_key and not pose_key.storage_object and arm_ob.animation_data and arm_ob.animation_data.action:
+		if pose_key and not pose_key.storage_object and not pose_key.action and arm_ob.animation_data and arm_ob.animation_data.action:
 			return True
 		return verify_pose(context)
 
@@ -359,6 +359,7 @@ class OBJECT_OT_PoseKey_Save(Operator, OperatorWithWarning, SaveAndRestoreState)
 
 		pose_key = rigged_ob.data.pose_keys[rigged_ob.data.active_pose_key_index]
 		storage_ob = pose_key.storage_object
+		already_existed = storage_ob != None
 		self.disable_non_deform_modifiers(storage_ob, rigged_ob)
 
 		depsgraph = context.evaluated_depsgraph_get()
@@ -369,7 +370,7 @@ class OBJECT_OT_PoseKey_Save(Operator, OperatorWithWarning, SaveAndRestoreState)
 		storage_ob_mesh = bpy.data.meshes.new_from_object(rigged_ob)
 		storage_ob_mesh.name = storage_ob_name
 
-		if not storage_ob:
+		if not already_existed:
 			storage_ob = bpy.data.objects.new(storage_ob_name, storage_ob_mesh)
 			context.scene.collection.objects.link(storage_ob)
 			pose_key.storage_object = storage_ob
@@ -420,8 +421,8 @@ class OBJECT_OT_PoseKey_Save(Operator, OperatorWithWarning, SaveAndRestoreState)
 
 		self.restore_non_deform_modifiers(storage_ob, rigged_ob)
 
-		# If new shape is visible, set it as active.
-		if storage_ob.visible_get():
+		# If new shape is visible and it already existed, set it as active.
+		if already_existed and storage_ob.visible_get():
 			bpy.ops.object.mode_set(mode='OBJECT')
 			bpy.ops.object.select_all(action='DESELECT')
 			context.view_layer.objects.active = storage_ob
