@@ -115,6 +115,12 @@ class MV_OT_render_review_img_editor(bpy.types.Operator):
             output_dir: Path = opsdata.get_review_output_path(
                 review_output_dir, media_filepath, get_sequence_dir_only=True
             )
+
+            # TODO: As soon as patch is submitted that adds these parameters
+            # to image.save_render() to fix Could not acquire buffer from image.
+            # layer_index = area.spaces.active.image_user.multilayer_layer
+            # pass_index = area.spaces.active.image_user.multilayer_pass
+
             for idx, frame in enumerate(frames):
 
                 # Calling this every frame to update UI results in same picture
