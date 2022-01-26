@@ -258,6 +258,18 @@ class OperatorWithWarning:
 	def get_warning_text(self, context):
 		raise NotImplemented
 
+def set_pose_of_active_pose_key(context):
+	bpy.ops.object.posekey_reset_rig()
+
+	rigged_ob = context.object
+	pose_key = rigged_ob.data.pose_keys[rigged_ob.data.active_pose_key_index]
+
+	arm_ob = get_deforming_armature(rigged_ob)
+	if pose_key.action:
+		# Set Action and Frame to get the right pose
+		arm_ob.animation_data.action = pose_key.action
+		context.scene.frame_current = pose_key.frame
+
 class OBJECT_OT_PoseKey_Set_Pose(Operator):
 	"""Set the rig pose to the specified action and frame (Reset any other posing)"""
 
@@ -282,17 +294,7 @@ class OBJECT_OT_PoseKey_Set_Pose(Operator):
 		return True
 
 	def execute(self, context):
-		bpy.ops.object.posekey_reset_rig()
-
-		rigged_ob = context.object
-		pose_key = rigged_ob.data.pose_keys[rigged_ob.data.active_pose_key_index]
-
-		arm_ob = get_deforming_armature(rigged_ob)
-		if pose_key.action:
-			# Set Action and Frame to get the right pose
-			arm_ob.animation_data.action = pose_key.action
-			context.scene.frame_current = pose_key.frame
-
+		set_pose_of_active_pose_key(context)
 		return {'FINISHED'}
 
 def get_active_pose_key(ob):
@@ -466,18 +468,32 @@ class OBJECT_OT_PoseKey_Push(Operator, OperatorWithWarning, SaveAndRestoreState)
 		into the shape stored in the PoseShapeKey.
 		"""
 
+		self.save_state(context)
+
+		try:
+			self.push_active_pose_key(context, set_pose=False)
+		except:
+			return {'CANCELLED'}
+
+		self.restore_state(context)
+
+		return {'FINISHED'}
+
+	def push_active_pose_key(self, context, set_pose=False):
+		depsgraph = context.evaluated_depsgraph_get()
+		scene = context.scene
+
 		rigged_ob = context.object
+
 		pose_key = rigged_ob.data.pose_keys[rigged_ob.data.active_pose_key_index]
 
 		storage_object = pose_key.storage_object
 		if storage_object.name not in context.view_layer.objects:
-			self.report({'ERROR'}, "Storage object must be in view layer.")
-			return {'CANCELLED'}
+			self.report({'ERROR'}, 'Storage object "{storage_object.name}" must be in view layer!')
+			raise Exception
 
-		self.save_state(context)
-
-		depsgraph = context.evaluated_depsgraph_get()
-		scene = context.scene
+		if set_pose:
+			set_pose_of_active_pose_key(context)
 
 		# The Pose Key stores the vertex positions of a previous evaluated mesh.
 		# This, and the current vertex positions of the mesh are subtracted
@@ -524,10 +540,36 @@ class OBJECT_OT_PoseKey_Push(Operator, OperatorWithWarning, SaveAndRestoreState)
 
 		rigged_ob.crazyspace_eval_clear()
 
-		self.restore_state(context)
-
 		if len(storage_eval_verts) != len(rigged_eval_verts):
-			self.report({'WARNING'}, f"Mismatching topology: Stored shape had {len(storage_eval_verts)} vertices instead of {len(rigged_eval_verts)}")
+			self.report({'WARNING'}, f'Mismatching topology: Stored shape "{pose_key.storage_object.name}" had {len(storage_eval_verts)} vertices instead of {len(rigged_eval_verts)}')
+
+class OBJECT_OT_PoseKey_Push_All(Operator, OperatorWithWarning, SaveAndRestoreState):
+	"""Go through all Pose Keys, set their pose and overwrite the shape keys to match the storage object shapes"""
+
+	bl_idname = "object.posekey_push_all"
+	bl_label = "Push ALL Pose Keys into Shape Keys"
+	bl_options = {'UNDO', 'REGISTER'}
+
+	@classmethod
+	def poll(cls, context):
+		ob = context.object
+		if not ob or ob.type != 'MESH':
+			return False
+		return len(ob.data.pose_keys) > 0
+
+	def get_warning_text(self, context):
+		ob = context.object
+		target_shape_names = []
+		for pk in ob.data.pose_keys:
+			target_shape_names.extend( [t.name for t in pk.target_shapes if t] )
+		return "This will overwrite the following Shape Keys: \n    " + "\n    ".join(target_shape_names) +"\n Are you sure?"
+
+	def execute(self, context):
+		rigged_ob = context.object
+		for i, pk in enumerate(rigged_ob.data.pose_keys):
+			rigged_ob.data.active_pose_key_index = i
+			bpy.ops.object.posekey_set_pose()
+			bpy.ops.object.posekey_push()
 
 		return {'FINISHED'}
 
@@ -539,26 +581,24 @@ class OBJECT_OT_PoseKey_Normalize(Operator, OperatorWithWarning):
 	bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
 	@staticmethod
-	def get_affected_vertex_group_names(context) -> List[str]:
-		ob = context.object
-		pose_key = ob.data.pose_keys[ob.data.active_pose_key_index]
+	def get_affected_vertex_group_names(object: Object) -> List[str]:
+		pose_key = object.data.pose_keys[object.data.active_pose_key_index]
 
 		vg_names = []
 		for target_shape in pose_key.target_shapes:
 			kb = target_shape.key_block
 			if not kb: continue
-			if kb.vertex_group and kb.vertex_group in ob.vertex_groups:
+			if kb.vertex_group and kb.vertex_group in object.vertex_groups:
 				vg_names.append(kb.vertex_group)
 		
 		return vg_names
 
 	@classmethod
 	def poll(cls, context):
-		return cls.get_affected_vertex_group_names(context)
+		return cls.get_affected_vertex_group_names(context.object)
 
 	def get_warning_text(self, context):
-		ob = context.object
-		vg_names = self.get_affected_vertex_group_names(context)
+		vg_names = self.get_affected_vertex_group_names(context.object)
 		return "The weights of these vertex groups will add up to 1.0 for each vertex:\n    " + "\n    ".join(vg_names) +"\n Are you sure?"
 
 	@staticmethod
@@ -582,8 +622,8 @@ class OBJECT_OT_PoseKey_Normalize(Operator, OperatorWithWarning):
 					pass
 
 	def execute(self, context):
-		vg_names = self.get_affected_vertex_group_names(context)
 		ob = context.object
+		vg_names = self.get_affected_vertex_group_names(ob)
 		self.normalize_vgroups(ob, [ob.vertex_groups[vg_name] for vg_name in vg_names])
 		return {'FINISHED'}
 
@@ -669,6 +709,7 @@ registry = [
 	,OBJECT_OT_PoseKey_Save
 	,OBJECT_OT_PoseKey_Set_Pose
 	,OBJECT_OT_PoseKey_Push
+	,OBJECT_OT_PoseKey_Push_All
 	,OBJECT_OT_Create_ShapeKey_For_Pose
 	,OBJECT_OT_PoseKey_Normalize
 	,OBJECT_OT_PoseKey_Place_Objects_In_Grid

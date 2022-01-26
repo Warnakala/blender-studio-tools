@@ -203,6 +203,7 @@ class MESH_MT_pose_key_utils(Menu):
 	def draw(self, context):
 		layout = self.layout
 		layout.operator('object.posekey_object_grid', icon='LIGHTPROBE_GRID')
+		layout.operator('object.posekey_push_all', icon='WORLD')
 		layout.operator('object.posekey_normalize', icon='NORMALIZE_FCURVES')
 
 
