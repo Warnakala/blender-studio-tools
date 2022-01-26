@@ -23,6 +23,7 @@ import json
 from pathlib import Path
 from typing import Tuple, Any, List, Union, Dict, Optional
 from collections import OrderedDict
+from datetime import datetime
 
 import bpy
 
@@ -30,7 +31,6 @@ from media_viewer import vars
 from media_viewer.log import LoggerFactory
 
 # MEDIA VIEWER
-
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -375,3 +375,91 @@ def add_to_folder_history(
 
     ordered_dict[key] = value
     return ordered_dict
+
+
+def update_gp_object_with_filepath(
+    gp_obj: bpy.types.GreasePencil, filepath: Path
+) -> None:
+    """
+    Takes input grease pencil object and adds a new layer named after filepath if not existent.
+    Sets filepath layer as active and hides all other layers.
+    """
+    try:
+        gp_obj.layers[filepath.as_posix()]
+
+    except KeyError:
+        # Create new layer with filename.
+        gp_obj.layers.new(filepath.as_posix(), set_active=True)
+
+    # Get index of existing layer and set as active.
+    gp_index = gp_obj.layers.find(filepath.as_posix())
+    gp_obj.layers.active_index = gp_index
+    gp_obj.layers[gp_index].annotation_hide = False
+
+    # Hide all other layers.
+    for idx in range(len(gp_obj.layers)):
+        if idx == gp_index:
+            continue
+        gp_obj.layers[idx].annotation_hide = True
+
+
+def get_review_output_path(
+    output_dir: Path, media_filepath: Path, get_sequence_dir_only: bool = False
+) -> Path:
+    """
+    Returns an output path inside of review output dir. The filename will have current time
+    included as suffix so we always have a unique name.
+    """
+    now = datetime.now()
+    split = str(now).split(" ")
+
+    # Gives: 2021-11-27
+    time_main = split[0]
+
+    # Gives: 105243 (HourMinuteSecond)
+    time_suffix = split[1].split(".")[0].replace(":", "")
+
+    filename = media_filepath.stem.replace(" ", "_")
+
+    if not get_sequence_dir_only:
+        output_name = (
+            f"{filename}_review_{time_main}_{time_suffix}{media_filepath.suffix}"
+        )
+    else:
+        output_name = f"{filename}_review_{time_main}_{time_suffix}"
+
+    return output_dir.joinpath(output_name)
+
+
+def set_render_settings_movie(context: bpy.types.Context, output_path: Path) -> None:
+    rd = context.scene.render
+
+    # Format render settings.
+    rd.resolution_percentage = 100
+    rd.image_settings.file_format = "FFMPEG"
+    rd.ffmpeg.constant_rate_factor = "MEDIUM"
+    rd.ffmpeg.codec = "H264"
+    rd.ffmpeg.format = "MPEG4"
+    rd.ffmpeg.audio_codec = "AAC"
+
+    # Scene settings.
+    context.scene.use_preview_range = False
+
+    rd.filepath = output_path.as_posix()
+
+
+def set_render_settings_image_sequence(
+    context: bpy.types.Context, output_path: Path
+) -> None:
+    rd = context.scene.render
+
+    # Format render settings.
+    rd.resolution_percentage = 100
+    rd.image_settings.file_format = "JPEG"
+    rd.image_settings.color_mode = "RGB"
+    rd.image_settings.quality = 90
+
+    # Scene settings.
+    context.scene.use_preview_range = False
+
+    rd.filepath = output_path.as_posix()

@@ -1,7 +1,7 @@
 # blender-media-viewer
-The blender-media-viewer is a Blender Application Template that makes Blender usable as a Video-Player, Image and Text-Viewer.
+The blender-media-viewer is a Blender Application Template that makes Blender usable as a Video-Player, Image and Text-Viewer and Review tool.
 
-It came to life because we wanted to have a player that could seamlessly browse media files with the arrow keys for our weekly presentations at the studio no matter if they are video, images or image sequences.
+It came to life because we wanted to have a player that could seamlessly browse media files with the arrow keys for our weekly presentations at the studio no matter if they are video, images or image sequences. It became apparent that having review tools fit well in the scope of this project, so they got added.
 
 One important aspect of the blender-media-viewer is to be able to use it without your mouse. Make sure to read the [shortcuts](#shortcuts) section.
 
@@ -42,7 +42,7 @@ In this video you will get an overview of what the blender-media-viewer can do.
 
 ![](./docs/videos/overview.mp4)
 
-## Features
+## Viewing and Navigation
 
 As mentioned above an important aspect while developing was to supply functionality and shortcuts to make the blender-media-viewer usable without a mouse.
 
@@ -64,6 +64,58 @@ If you toggle the sidebar of the Filebrowser with **CTRL+T** you can browse the 
 
 ![](./docs/videos/filebrowser_extra.mp4)
 
+## Review
+
+#### Annotation tools
+
+![image info](./docs/images/media_viewer_review.jpg)
+
+The blender-media-viewer comes with a set of review tools. You will find them in the top bar of the media view.
+
+![image info](./docs/images/media_view_topbar.jpg)
+
+The annotation tool is by default the active one so you can just start to draw on top of the media.
+The shortcuts for the annotation tool are the same as in default Blender.
+
+Each media file will have it's own annotation layer and it will be loaded once you select the media file.
+That means the blender-media-viewer will always create a new annotation layer for a media file that was not annotated before.
+
+You can adjust the layer color on the top left.
+
+Next to the color you will see some buttons:
+
+- The **+** button creates a new empty frame. This is useful when you want to make an annotation last until a specific frame.
+And after that frame it should be empty. The default behavior is that the annotation will be visible from its creation frame
+to the next annotation frame.
+
+- The **-** button deletes the **active** annotation frame.
+
+- The **TRASHCAN** button deletes all annotation frames for the active layer (current media file).
+
+#### Rendering the Review
+
+No matter if you are viewing images or video files you can export them including your annotations.
+This can be easily done with the Render buttons next to the annotation operators.
+
+There are 2 different export operators:
+
+- **Render Review as Sequence**: (Movie icon) Exports media file as .mp4 or .jpg sequence, depending on settings (shortcut: **CTRL + F12**).
+
+- **Render Review as Single Image**: (Single image icon): Exports current frame as .jpg (shortcut: **F12**)
+
+
+In the setting popover on the top right you can specify a couple of options to customize the export.
+
+- **Review Output Directory**: A folder path in which the annotated media will be exported.
+- **Sequence File Type**: Controls if the render review as sequence operator should create a movie file (.mp4) or an image sequence (.jpg) in a subfolder.
+
+
+The filenames will include a timestamp so you won't overwrite any previous reviews of the same media.
+You can export single images, image sequences and .mp4s.
+Single images and .mp4s will just be exported in the review output directory directly.
+For image sequence a subfolder will be created that also has the timestamp included.
+
+> **_NOTE_**: Because the image editor has not a built in operator to render out an image **including** the annotations, the media-viewer uses a custom python openGL rendering pipeline for images and image sequences. This approach is not very fast but enables us to even annotate multilayer EXRs and write out any layer we want.
 
 ## Shortcuts
 
@@ -106,6 +158,22 @@ If you toggle the sidebar of the Filebrowser with **CTRL+T** you can browse the 
 | NUMPAD 2      | Move media view camera DOWN |
 | NUMPAD +      | Zoom media view camera IN   |
 | NUMPAD -      | Move media view camera OUT  |
+
+
+**Annotation Tool**:
+| Key (while draw) | Function                    |
+| ---------------- |-----------------------------|
+| CTRL             | Erase                       |
+| SHIFT            | Lazy Mouse                  |
+| ALT              | Line Mode                   |
+| SHIFT + ALT + D  | Draw Polygon Tool           |
+
+
+**Review**:
+| Key              | Function                    |
+| ---------------- |-----------------------------|
+| F12              | Render Review Image         |
+| CTRL + F12       | Render Review Sequence      |
 
 **Other**:
 | Key           | Function                    |

@@ -41,6 +41,9 @@ from media_viewer.ops import (
     MV_OT_quit_blender,
     MV_OT_pan_media_view,
     MV_OT_zoom_media_view,
+    MV_OT_delete_active_gpencil_frame,
+    MV_OT_delete_all_gpencil_frames,
+    MV_OT_render_review_area_aware,
 )
 from media_viewer import opsdata, vars
 from media_viewer.log import LoggerFactory
@@ -512,6 +515,48 @@ def register():
         kmi.properties.direction = "OUT"
         addon_keymaps.append((keymap, kmi))
 
+        # Greace Pencil.
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_delete_active_gpencil_frame.bl_idname,
+                    value="PRESS",
+                    type="X",
+                ),
+            )
+        )
+
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_delete_all_gpencil_frames.bl_idname,
+                    value="PRESS",
+                    type="X",
+                    alt=True,
+                ),
+            )
+        )
+
+        # Render F12 / CTRL+F12
+        kmi = keymap.keymap_items.new(
+            MV_OT_render_review_area_aware.bl_idname,
+            value="PRESS",
+            type="F12",
+        )
+        kmi.properties.render_sequence = False
+        addon_keymaps.append((keymap, kmi))
+
+        kmi = keymap.keymap_items.new(
+            MV_OT_render_review_area_aware.bl_idname,
+            value="PRESS",
+            type="F12",
+            ctrl=True,
+        )
+        kmi.properties.render_sequence = True
+        addon_keymaps.append((keymap, kmi))
+
     # Print new hotkeys.
     for km, kmi in addon_keymaps:
         logger.info(
@@ -526,8 +571,12 @@ def register():
 def unregister_keymaps():
     global addon_keymaps
     for km, kmi in addon_keymaps:
-        km.keymap_items.remove(kmi)
-        logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
+        try:
+            km.keymap_items.remove(kmi)
+            logger.info("Remove  hotkey: %s : %s", kmi.type, kmi.properties.bl_rna.name)
+        except ReferenceError:
+            # Happens when you press CTRL+Q, I guess this means that this keymap item is already removed?
+            pass
     addon_keymaps.clear()
 
 

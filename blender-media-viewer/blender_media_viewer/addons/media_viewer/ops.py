@@ -18,32 +18,52 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
-
+import subprocess
 from pathlib import Path
-from typing import Set, Union, Optional, List, Dict, Any, Tuple
+from typing import Set, Union, Optional, List, Dict, Any, Tuple, Callable
 from collections import OrderedDict
+from copy import copy
 
 import bpy
 from bpy.app.handlers import persistent
 
-from media_viewer import opsdata, vars
+from media_viewer import opsdata, vars, gp_opsdata
 from media_viewer.log import LoggerFactory
 from media_viewer.states import FileBrowserState
 
 logger = LoggerFactory.getLogger(name=__name__)
 
 # Global variables
-active_media_area = "SEQUENCE_EDITOR"
+active_media_area: str = "SEQUENCE_EDITOR"
+active_media_area_obj: bpy.types.Area = None  # Is initialized by init_active_media_area_obj()  # TODO: replace finding active media area with this global area obj
 
 # Global variables for frame handler to check previous value.
-prev_relpath: Optional[str] = None
 prev_dirpath: Path = Path.home()  # TODO: read from json on register
+prev_relpath: Optional[str] = None
 prev_filepath_list: List[Path] = []
+
+active_dirpath: Path = Path.home()
+active_relpath: Optional[str] = None
+active_filepath_list: List[Path] = []
+
+
 filebrowser_state: FileBrowserState = FileBrowserState()
 is_fullscreen: bool = False  # TODO: context.screen.show_fullscreen is not updating
 is_muted: bool = False
 last_folder_at_path: OrderedDict = OrderedDict()
 active_bookmark_group_name: str = ""
+
+
+def get_prev_path() -> Path:
+    global prev_relpath
+    global prev_dirpath
+    return Path(prev_dirpath).joinpath(prev_relpath)
+
+
+def get_active_path() -> Path:
+    global active_dirpath
+    global active_relpath
+    return Path(active_dirpath).joinpath(active_relpath)
 
 
 class MV_OT_load_media_movie(bpy.types.Operator):
@@ -159,6 +179,20 @@ class MV_OT_load_media_movie(bpy.types.Operator):
         opsdata.fit_timeline_view(context)
         opsdata.fit_sqe_preview(context)
 
+        # Update annotation layer.
+        # For now let annotation system only work if user selects single
+        # movie file. TODO: change layer dynamically when reaching new clip
+
+        # startup.blend contains this layer.
+        gp_obj = bpy.data.grease_pencils["SEQUENCE_EDITOR"]
+
+        if len(filepath_list) == 1:
+            opsdata.update_gp_object_with_filepath(gp_obj, filepath_list[0])
+        else:
+            # Hide all gpencil layers.
+            for layer in gp_obj.layers:
+                layer.annotation_hide = True
+
         # Set playhead to start of scene.
         context.scene.frame_current = context.scene.frame_start
 
@@ -208,8 +242,11 @@ class MV_OT_load_media_image(bpy.types.Operator):
             logger.error("Failed to load image media. No Image Editor area available.")
             return {"CANCELLED"}
 
-        # Delete all images.
-        opsdata.del_all_images()
+        # Delete all images. Keeping images might
+        # make reloading of previous images faster?
+        # ! Turns out del_all_images crashes Blender in DEBUG build.
+        # Is reported here: https://developer.blender.org/T94599
+        # opsdata.del_all_images()
 
         if self.load_sequence:
             # Detect image sequence.
@@ -234,21 +271,28 @@ class MV_OT_load_media_image(bpy.types.Operator):
 
             image.source = "SEQUENCE"
 
+            # Get frame counters from filepaths. Will always work because
+            # we already check for image sequence len. Check: opsdata.get_image_sequence
             first_frame = opsdata.get_frame_counter(file_list[0])
             last_frame = opsdata.get_frame_counter(file_list[-1])
             current_frame = opsdata.get_frame_counter(filepath)
 
             logger.info("Detected image sequence (%s - %s)", first_frame, last_frame)
 
-            if all([first_frame, last_frame]):
-                context.scene.frame_start = int(first_frame)
-                context.scene.frame_end = int(last_frame)
+            context.scene.frame_start = int(first_frame)
+            context.scene.frame_end = int(last_frame)
 
-                # Set playhead frame counter of clicked image.
-                if current_frame:
-                    context.scene.frame_current = int(current_frame)
+            # Set playhead frame counter of clicked image.
+            if current_frame:
+                context.scene.frame_current = int(current_frame)
 
             area.spaces.active.image_user.frame_duration = 5000
+
+        else:
+            # Set frame range to 1.
+            context.scene.frame_start = 1
+            context.scene.frame_end = 1
+            context.scene.frame_current = 1
 
         # Fit timeline view.
         opsdata.fit_timeline_view(context)
@@ -264,6 +308,11 @@ class MV_OT_load_media_image(bpy.types.Operator):
         else:
             context.scene.view_settings.view_transform = "Standard"
             image.use_view_as_render = False
+
+        # Update annotation layer.
+        # startup.blend contains this layer.
+        gp_obj = bpy.data.grease_pencils["IMAGE_EDITOR"]
+        opsdata.update_gp_object_with_filepath(gp_obj, filepath)
 
         return {"FINISHED"}
 
@@ -508,6 +557,7 @@ class MV_OT_set_template_defaults(bpy.types.Operator):
         context.preferences.view.show_playback_fps = False
         context.preferences.view.show_view_name = False
         context.preferences.view.show_object_info = False
+        context.preferences.view.show_navigate_ui = False
 
         # Dedicated apps settings.
         apps = context.preferences.apps
@@ -539,6 +589,7 @@ class MV_OT_set_media_area_type(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         global active_media_area
+        global active_media_area_obj
 
         # Find active media area.
         area_media = opsdata.find_area(context, active_media_area)
@@ -558,8 +609,14 @@ class MV_OT_set_media_area_type(bpy.types.Operator):
 
         # Update global media area type.
         active_media_area = area_media.type
+        active_media_area_obj = area_media
+
+        # Set annotate tool as active.
+        if area_media.type in ["SEQUENCE_EDITOR", "IMAGE_EDITOR"]:
+            bpy.ops.wm.tool_set_by_id({"area": area_media}, name="builtin.annotate")
 
         logger.info(f"Changed active media area to: {area_media.type}")
+
         return {"FINISHED"}
 
 
@@ -573,9 +630,13 @@ class MV_OT_screen_full_area(bpy.types.Operator):
         global filebrowser_state
         global prev_relpath
         global is_fullscreen
+        global active_media_area
+        global active_media_area_obj
 
         # Fullscreen area media.
         area_media = opsdata.find_area(context, active_media_area)
+
+        # active_media_area_obj = area_media
         ctx = opsdata.get_context_for_area(area_media)
         bpy.ops.screen.screen_full_area(ctx, use_hide_panels=True)
         is_fullscreen = not is_fullscreen
@@ -889,7 +950,7 @@ class MV_OT_next_media_file(bpy.types.Operator):
 
         # If previous filepath, get index of that and take next index.
         else:
-            prev_filepath_abs = Path(prev_dirpath).joinpath(prev_relpath)
+            prev_filepath_abs = get_prev_path()
             try:
                 index = file_list.index(prev_filepath_abs)
             except ValueError:
@@ -1142,6 +1203,387 @@ class MV_OT_frame_offset(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MV_OT_delete_active_gpencil_frame(bpy.types.Operator):
+
+    bl_idname = "media_viewer.delete_active_gpencil_frame"
+    bl_label = "Delete Active Grease Pencil frame"
+    bl_description = "Deletes the active frame of the active Grease Pencil layer"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+        try:
+            # Little hack to get the right grease pencil object.
+            # In startup.blend we made sure that the gp objects are named after
+            # the area type.
+            gp_obj = bpy.data.grease_pencils[active_media_area]
+        except KeyError:
+            return {"CANCELLED"}
+
+        # Get active layer and remove active frame.
+        active_layer = gp_obj.layers.active
+        if active_layer.active_frame:
+            active_layer.frames.remove(active_layer.active_frame)
+
+        return {"FINISHED"}
+
+
+class MV_OT_delete_all_gpencil_frames(bpy.types.Operator):
+
+    bl_idname = "media_viewer.delete_all_gpencil_frames"
+    bl_label = "Delete all Grease Pencil frames"
+    bl_description = "Deletes all the frames of the active Grease Pencil layer"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+        try:
+            # Little hack to get the right grease pencil object.
+            # In startup.blend we made sure that the gp objects are named after
+            # the area type.
+            gp_obj = bpy.data.grease_pencils[active_media_area]
+        except KeyError:
+            return {"CANCELLED"}
+
+        # Delete all frames of active layer.
+        for i in reversed(range(len(gp_obj.layers.active.frames))):
+            gp_obj.layers.active.frames.remove(gp_obj.layers.active.frames[i])
+
+        return {"FINISHED"}
+
+
+class MV_OT_insert_empty_gpencil_frame(bpy.types.Operator):
+
+    bl_idname = "media_viewer.insert_empty_gpencil_frame"
+    bl_label = "Insert Empty GPencil Frame"
+    bl_description = "Inserts an empty GPencil frame at current frame"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+
+        # Get active grease pencil layer.
+        # startup.blend contains this layer.
+        gp_obj = bpy.data.grease_pencils[active_media_area]
+        active_layer = gp_obj.layers[gp_obj.layers.active_index]
+
+        # Insert new frame.
+        active_layer.frames.new(context.scene.frame_current)
+
+        return {"FINISHED"}
+
+
+class MV_OT_render_review_sqe_editor(bpy.types.Operator):
+    bl_idname = "media_viewer.render_review_sqe_editor"
+    bl_label = "Render Review"
+    bl_description = (
+        "Makes an openGL render of the Sequence Editor. Includes all annotations"
+        "Saves file to review_output_path with timestamp. Can render .mp4 of whole"
+        "movie strip or single image"
+    )
+    render_sequence: bpy.props.BoolProperty(
+        name="Render Sequence",
+        description="Controls if entire movie strip should be rendered or only a single image",
+        default=True,
+    )
+    sequence_file_type: bpy.props.EnumProperty(
+        name="File Format",
+        items=[("IMAGE", "IMAGE", ""), ("MOVIE", "MOVIE", "")],
+        default="MOVIE",
+        description="Only works when render_sequence is enabled. Controls if output should be a .mp4 or a jpg sequence",
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        global active_media_area
+        return bool(active_media_area in ["SEQUENCE_EDITOR"])
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global prev_relpath  # Is relative path to prev_dirpath.
+        global prev_dirpath
+        global active_media_area
+
+        # Verify area.
+        area_media = opsdata.find_area(context, active_media_area)
+        if area_media.type != "SEQUENCE_EDITOR":
+            return {"CANCELLED"}
+
+        current_frame = context.scene.frame_current
+        media_filepath = get_active_path()
+        review_output_dir = Path(context.window_manager.media_viewer.review_output_dir)
+        output_path: Path = opsdata.get_review_output_path(
+            review_output_dir, media_filepath
+        )
+        # If sequence and file type MOVIE
+        if self.render_sequence and self.sequence_file_type == "MOVIE":
+
+            # Overwrite suffix to be .mp4.
+            ext = ".mp4"
+            output_path = output_path.parent.joinpath(f"{output_path.stem}{ext}")
+
+            # Set output settings for movie.
+            opsdata.set_render_settings_movie(context, output_path)
+
+        # If sequence and file type MOVIE
+        elif self.render_sequence and self.sequence_file_type == "IMAGE":
+            output_dir: Path = opsdata.get_review_output_path(
+                review_output_dir, media_filepath, get_sequence_dir_only=True
+            )
+            filename = f"{media_filepath.stem}_######.jpg"
+            output_path = output_dir.joinpath(filename)
+
+            # Set output settings for movie.
+            opsdata.set_render_settings_image_sequence(context, output_path)
+
+        # If single image
+        else:
+            # Overwrite suffix to be .mp4.
+            ext = ".jpg"
+            output_path = output_path.parent.joinpath(f"{output_path.stem}{ext}")
+
+        # Ensure folder exists.
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Make opengl render.
+        # If animation is False, it will render in bpy.data.images["Render Result"]
+        bpy.ops.render.opengl(animation=self.render_sequence, sequencer=True)
+
+        # If not render_sequence we have to save the image manually from Render Result.
+        if not self.render_sequence:
+            try:
+                image = bpy.data.images["Render Result"]
+            except KeyError:
+                logger.error("Didn't find 'Render Result' in bpy.data.images")
+                return {"CANCELLED"}
+            else:
+                image.save_render(output_path.as_posix())
+                print(f"Saved image to: {output_path.as_posix()}")
+        else:
+            print(f"Saved movie to: {output_path.as_posix()}")
+
+        # Restore current frame.
+        context.scene.frame_current = current_frame
+
+        return {"FINISHED"}
+
+
+class MV_OT_init_with_media_paths(bpy.types.Operator):
+    bl_idname = "media_viewer.init_with_media_paths"
+    bl_label = "Initialize with media paths"
+    bl_description = (
+        "Based on input filepath list jumps to right directory "
+        "and select active file defined by active_file_idx"
+    )
+    # This enables us to pass a list of items to the operator input.
+    # The list apparently needs to be a list of dictionaries [Dict["name": key]]
+    # This operator expects the 'name' key to be the full path.
+    files: bpy.props.CollectionProperty(
+        type=bpy.types.OperatorFileListElement,
+        description="List of filepaths to import in to Sequence Editor",
+    )
+    active_file_idx: bpy.props.IntProperty(
+        name="Index of active file in files list", default=0, min=0
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        # No files input nothing to load.
+        if not self.files:
+            return {"CANCELLED"}
+
+        # Name key is full path.
+        filepath_list: List[Path] = [Path(f.name) for f in self.files]
+
+        # Get active filepath.
+        try:
+            _active_filepath = filepath_list[self.active_file_idx]
+        except IndexError:
+            # active_file_idx is out of range
+            return {"CANCELLED"}
+
+        # Find active media area.
+        area_fb = opsdata.find_area(context, "FILE_BROWSER")
+
+        if not area_fb:
+            return {"CANCELLED"}
+
+        # Update File Browser directory.
+        area_fb.spaces.active.params.directory = (
+            _active_filepath.parent.as_posix().encode("utf-8")
+        )
+
+        # Select file.
+        area_fb.spaces.active.activate_file_by_relative_path(
+            relative_path=_active_filepath.name
+        )
+        return {"FINISHED"}
+
+
+class MV_OT_export_annotation_data_to_3dcam(bpy.types.Operator):
+    bl_idname = "media_viewer.export_annotation_data_to_3dcam"
+    bl_label = "Export review to 3D Cam"
+    bl_description = (
+        "Exports the annotation data in to a blend file. "
+        "Converts coordinates of each stroke point. "
+        "That way the annotation can be viewed directly in a 3D Camera "
+        "that has the same resolution as review media"
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        global active_media_area
+        return bool(active_media_area in ["SEQUENCE_EDITOR", "IMAGE_EDITOR"])
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area  # :str
+
+        resolution = (
+            bpy.context.scene.render.resolution_x,
+            bpy.context.scene.render.resolution_y,
+        )
+        # Check function docstrings for more info.
+        v_translate = gp_opsdata.get_translation_vector_to_3dview(
+            resolution, active_media_area
+        )
+        v_scale = gp_opsdata.get_scale_vector_to_3dview(resolution, active_media_area)
+
+        media_filepath = get_prev_path()
+        review_output_dir = Path(context.window_manager.media_viewer.review_output_dir)
+        output_path: Path = opsdata.get_review_output_path(
+            review_output_dir, media_filepath
+        )
+        output_path = output_path.parent.joinpath(f"{output_path.stem}.blend")
+
+        # Get active greace pencil layer.
+        # startup.blend contains this layer.
+        gp_obj = bpy.data.grease_pencils[active_media_area]
+
+        # Copy grease pencil object.
+        gp_obj_export = gp_obj.copy()
+        gp_obj_export.name = "REVIEW"
+
+        # Delete not needed layers.
+        active_layer = gp_obj_export.layers[gp_obj_export.layers.active_index]
+        for layer in gp_obj_export.layers:
+            if layer == active_layer:
+                continue
+            gp_obj_export.layers.remove(layer)
+
+        # Transform each point coordinate of the gpobj so they can be imported
+        # in a 3D_CAMERA_VIEW (That has the same resolution) as the review media and
+        # matches perfectly.
+        gp_obj_export = gp_opsdata.gplayer_sqe_to_3d(
+            gp_obj_export, v_translate, v_scale
+        )
+
+        # Create empty library blend file.
+        # Write grease pencil data in to it.
+        bpy.data.libraries.write(
+            output_path.as_posix(),
+            {gp_obj_export},
+            path_remap="RELATIVE",
+            fake_user=True,
+            compress=False,
+        )
+
+        print(
+            f"Exported annotation datablock ({gp_obj_export.name}) to: {output_path.as_posix()}"
+        )
+
+        # Delete convert grease pencil object.
+        bpy.data.grease_pencils.remove(gp_obj_export)
+
+        return {"CANCELLED"}
+
+
+class MV_OT_convert_image_seq_to_movie(bpy.types.Operator):
+    bl_idname = "media_viewer.convert_image_seq_to_movie"
+    bl_label = "Convert Image Sequence to Movie"
+    bl_description = (
+        "Opens a new Blender instance in the background"
+        "that converts the input image sequence in to a movie file."
+        "Movie file will be saved one folder up with same name as parent folder"
+    )
+    filepath: bpy.props.StringProperty(
+        name="Filepath",
+        description="Filepath to file that is part of image sequence",
+        subtype="FILE_PATH",
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        if not self.filepath:
+            return {"CANCELLED"}
+
+        filepath = Path(self.filepath)
+        script_path: Path = vars.TO_MOVIE_SCRIPT_PATH
+        blender_exec = Path(bpy.path.abspath(bpy.app.binary_path))
+
+        # Will be one level up, name of folder with .mp4 extension.
+        output_path = filepath.parent.parent.joinpath(f"{filepath.parent.name}.mp4")
+
+        if not filepath.exists():
+            return {"CANCELLED"}
+
+        filepath_list = opsdata.get_image_sequence(filepath)
+
+        if len(filepath_list) <= 1:
+            # Found no image sequence
+            return {"CANCELLED"}
+
+        cmd_str = f"{blender_exec.as_posix()} -b --factory-startup -P {script_path.as_posix()} -- {filepath.as_posix()} {output_path.as_posix()}"
+        popen = subprocess.Popen(
+            cmd_str, shell=True, cwd=Path(__file__).parent.as_posix()
+        )
+        popen.wait()
+
+        return {"FINISHED"}
+
+
+class MV_OT_render_review_area_aware(bpy.types.Operator):
+    """
+    Only used to overwrite default F12 / CTRL+F12 shortcuts
+    """
+
+    bl_idname = "media_viewer.render_review_area_aware"
+    bl_label = "Render Review"
+    bl_description = (
+        "Checks the active media area and then either calls: "
+        "bpy.ops.media_viewer.render_review_sqe_editor or "
+        "bpy.ops.media_viewer.render_review_img_editor"
+    )
+    render_sequence: bpy.props.BoolProperty(
+        name="Render Sequence",
+        description="Controls if entire movie strip should be rendered or only a single image",
+        default=True,
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+
+        # Get this property here, as we need to check everytime user
+        # uses shortcut.
+        sequence_file_type = context.window_manager.media_viewer.sequence_file_type
+
+        if active_media_area == "SEQUENCE_EDITOR":
+            return bpy.ops.media_viewer.render_review_sqe_editor(
+                render_sequence=self.render_sequence,
+                sequence_file_type=sequence_file_type,
+            )
+
+        elif active_media_area == "IMAGE_EDITOR":
+            return bpy.ops.media_viewer.render_review_img_editor(
+                render_sequence=self.render_sequence,
+                sequence_file_type=sequence_file_type,
+            )
+
+        else:
+            return {"CANCELLED"}
+
+
+@persistent
+def init_active_media_area_obj(dummy: None):
+    global active_media_area_obj
+    global active_media_area
+    active_media_area_obj = opsdata.find_area(bpy.context, active_media_area)
+
+
 @persistent
 def callback_filename_change(dummy: None):
 
@@ -1150,28 +1592,39 @@ def callback_filename_change(dummy: None):
     area gets redrawn. This handles the dynamic loading of the selected media and
     saves filebrowser directory on window manager to restore it on area toggling.
     """
-    global prev_relpath
-    global prev_dirpath
-    global last_folder_at_path
+    # Read only.
+    global last_folder_at_path  # :List[Path]
+
+    # Will be overwritten.
+    global active_relpath  # :Optional[str]
+    global active_dirpath  # :Path
+    global active_filepath_list  # :List[Path]
+    global prev_relpath  # :Optional[str]
+    global prev_dirpath  # :Path
+    global prev_filepath_list  # :List[Path]
 
     # Because frame handler runs in area,
     # context has active_file, and selected_files.
     area = bpy.context.area
-    params = area.spaces.active.params
-    directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
     active_file = bpy.context.active_file  # Can be None.
     selected_files = bpy.context.selected_files
+    params = area.spaces.active.params
+    directory = Path(bpy.path.abspath(params.directory.decode("utf-8")))
+
+    # Update globals.
+    active_dirpath = directory
+    active_relpath = active_file.relative_path if active_file else None
 
     # Save recent directory to config file if direcotry changed.
     # Save and load from folder history.
-    if prev_dirpath != directory:
+    if prev_dirpath != active_dirpath:
 
         # Save recent_dir to config file on disk, to restore it on next
         # startup.
         opsdata.save_to_json(
-            {"recent_dir": directory.as_posix()}, vars.get_config_file()
+            {"recent_dir": active_dirpath.as_posix()}, vars.get_config_file()
         )
-        logger.info(f"Saved new recent directory: {directory.as_posix()}")
+        logger.info(f"Saved new recent directory: {active_dirpath.as_posix()}")
 
         # Add previously selected folder to folder history.
         opsdata.add_to_folder_history(
@@ -1180,13 +1633,13 @@ def callback_filename_change(dummy: None):
 
         # Check if current directory has an entry in folder history.
         # If so select that folder.
-        if directory.as_posix() in last_folder_at_path:
+        if active_dirpath.as_posix() in last_folder_at_path:
             area.spaces.active.activate_file_by_relative_path(
-                relative_path=last_folder_at_path[directory.as_posix()]
+                relative_path=last_folder_at_path[active_dirpath.as_posix()]
             )
 
         # Update global var prev_dirpath with current directory.
-        prev_dirpath = directory
+        prev_dirpath = active_dirpath
 
     # Early return no active_file:
     if not active_file:
@@ -1199,17 +1652,15 @@ def callback_filename_change(dummy: None):
     if not selected_files:
         selected_files.append(active_file)
 
-    # print(active_file)
-    # print(selected_files)
-
-    # Assemble Path data structures.
-    filepath = directory.joinpath(Path(active_file.relative_path))
-    filepath_list: List[Path] = [
-        directory.joinpath(Path(file.relative_path)) for file in selected_files
-    ]
+    # Update global active filepath list.
+    active_filepath_list.clear()
+    active_filepath_list.extend(
+        [directory.joinpath(Path(file.relative_path)) for file in selected_files]
+    )
+    active_filepath = get_active_path()
 
     # Execute load media op.
-    if opsdata.is_movie(filepath):
+    if opsdata.is_movie(active_filepath):
         # Check if active filepath list grew bigger compared to the previous.
         # If so that means, user added more files to existing selection.
         # That means we append the new files to the sequence editor.
@@ -1218,49 +1669,52 @@ def callback_filename_change(dummy: None):
 
         # Selection did not change, early return.
         if (
-            len(filepath_list) == len(prev_filepath_list)
-            and prev_relpath == active_file.relative_path
+            len(active_filepath_list) == len(prev_filepath_list)
+            and prev_relpath == active_relpath
         ):
-            return
+            return None
 
         append = False
-        if len(filepath_list) > len(prev_filepath_list):
+        if len(active_filepath_list) > len(prev_filepath_list):
             append = True
 
         bpy.ops.media_viewer.set_media_area_type(area_type="SEQUENCE_EDITOR")
         # Operator expects List[Dict] because of collection property.
         bpy.ops.media_viewer.load_media_movie(
-            files=[{"name": f.as_posix()} for f in filepath_list], append=append
+            files=[{"name": f.as_posix()} for f in active_filepath_list], append=append
         )
 
-    elif opsdata.is_image(filepath):
+    elif opsdata.is_image(active_filepath):
 
         # Early return filename did not change.
-        if prev_relpath == active_file.relative_path:
-            return
+        if prev_relpath == active_relpath:
+            return None
 
+        # Set area type.
         bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
-        # Load media image handles image sequences.
-        bpy.ops.media_viewer.load_media_image(filepath=filepath.as_posix())
 
-    elif opsdata.is_text(filepath) or opsdata.is_script(filepath):
+        # Load media image handles image sequences.
+        bpy.ops.media_viewer.load_media_image(filepath=active_filepath.as_posix())
+
+    elif opsdata.is_text(active_filepath) or opsdata.is_script(active_filepath):
 
         # Early return filename did not change.
-        if prev_relpath == active_file.relative_path:
-            return
+        if prev_relpath == active_relpath:
+            return None
 
+        # Set area type.
         bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
-        bpy.ops.media_viewer.load_media_text(filepath=filepath.as_posix())
+
+        # Load media.
+        bpy.ops.media_viewer.load_media_text(filepath=active_filepath.as_posix())
 
     # Update prev_ variables.
-    prev_relpath = active_file.relative_path
+    prev_relpath = active_relpath
     prev_filepath_list.clear()
-    prev_filepath_list.extend(filepath_list)
+    prev_filepath_list.extend(copy(active_filepath_list))
 
 
 # ----------------REGISTER--------------.
-
-
 classes = [
     MV_OT_load_media_movie,
     MV_OT_load_media_image,
@@ -1284,22 +1738,38 @@ classes = [
     MV_OT_quit_blender,
     MV_OT_pan_media_view,
     MV_OT_zoom_media_view,
+    MV_OT_delete_active_gpencil_frame,
+    MV_OT_delete_all_gpencil_frames,
+    MV_OT_render_review_sqe_editor,
+    MV_OT_init_with_media_paths,
+    MV_OT_export_annotation_data_to_3dcam,
+    MV_OT_insert_empty_gpencil_frame,
+    MV_OT_convert_image_seq_to_movie,
+    MV_OT_render_review_area_aware,
 ]
+draw_handlers_fb: List[Callable] = []
 
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # Handlers.
-    bpy.types.SpaceFileBrowser.draw_handler_add(
-        callback_filename_change, (None,), "WINDOW", "POST_PIXEL"
+    # Append handlers.
+    bpy.app.handlers.load_post.append(init_active_media_area_obj)
+    draw_handlers_fb.append(
+        bpy.types.SpaceFileBrowser.draw_handler_add(
+            callback_filename_change, (None,), "WINDOW", "POST_PIXEL"
+        )
     )
 
 
 def unregister():
+
+    # Remove handlers.
+    for handler in draw_handlers_fb:
+        bpy.types.SpaceFileBrowser.draw_handler_remove(handler, "WINDOW")
+
+    bpy.app.handlers.load_post.remove(init_active_media_area_obj)
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-
-    # Handlers.
-    bpy.types.SpaceFileBrowser.draw_handler_remove(callback_filename_change, "WINDOW")
