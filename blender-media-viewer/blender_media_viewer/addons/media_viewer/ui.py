@@ -166,6 +166,10 @@ def MV_TOPBAR_MT_file_menu_draw(self: Any, context: bpy.types.Context) -> None:
     self.layout.menu("MV_TOPBAR_MT_file_menu")
 
 
+def MV_TOPBAR_MT_window_menu_draw(self: Any, context: bpy.types.Context) -> None:
+    self.layout.menu("MV_TOPBAR_MT_window_menu")
+
+
 class MV_TOPBAR_MT_file_menu(bpy.types.Menu):
     bl_idname = "MV_TOPBAR_MT_file_menu"
     bl_label = "File"
@@ -174,9 +178,19 @@ class MV_TOPBAR_MT_file_menu(bpy.types.Menu):
         MV_TOPBAR_upper_bar(self, context)
 
 
+class MV_TOPBAR_MT_window_menu(bpy.types.Menu):
+    bl_idname = "MV_TOPBAR_MT_window_menu"
+    bl_label = "Window"
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+        row = layout.row(align=True)
+        row.operator("wm.window_fullscreen_toggle", icon="FULLSCREEN_ENTER")
+
+
 # ----------------REGISTER--------------.
 
-classes = [MV_PT_review_settings, MV_TOPBAR_MT_file_menu]
+classes = [MV_PT_review_settings, MV_TOPBAR_MT_file_menu, MV_TOPBAR_MT_window_menu]
 
 
 def register():
@@ -196,6 +210,7 @@ def register():
     # We have to use TOPBAR_MT_editor_menus instead of TOPBAR_HT_upper_bar
     # Appended item appears twice otherwise.
     bpy.types.TOPBAR_MT_editor_menus.append(MV_TOPBAR_MT_file_menu_draw)
+    bpy.types.TOPBAR_MT_editor_menus.append(MV_TOPBAR_MT_window_menu_draw)
 
 
 def unregister():
@@ -210,6 +225,7 @@ def unregister():
     bpy.types.IMAGE_HT_header.remove(MV_TOPBAR_settings)
 
     bpy.types.TOPBAR_MT_editor_menus.remove(MV_TOPBAR_MT_file_menu_draw)
+    bpy.types.TOPBAR_MT_editor_menus.remove(MV_TOPBAR_MT_window_menu_draw)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
