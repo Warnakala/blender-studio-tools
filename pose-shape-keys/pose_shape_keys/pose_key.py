@@ -647,12 +647,16 @@ class OBJECT_OT_PoseKey_Place_Objects_In_Grid(Operator):
 
 	@staticmethod
 	def place_objects_in_grid(context, objs: List[Object]):
-		dimensions = context.object.dimensions.copy() * Vector((1.2, 1.2, 1.2))
+		x = max([o.dimensions.x for o in objs])
+		y = max([o.dimensions.y for o in objs])
+		z = max([o.dimensions.z for o in objs])
+		scalar =  1.2
+		dimensions = Vector((x * scalar, y * scalar, z * scalar))
 
 		grid_rows = round(sqrt(len(objs)))
 		for i, ob in enumerate(objs):
 			col_i = (i % grid_rows) - int(grid_rows / 2)
-			row_i = int(i / grid_rows) + 1.2
+			row_i = int(i / grid_rows) + scalar
 			offset = Vector((col_i * dimensions.x, 0, row_i * dimensions.z))
 			ob.location = context.object.location + offset
 
