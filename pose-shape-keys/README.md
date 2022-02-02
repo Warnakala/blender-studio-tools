@@ -1,6 +1,7 @@
 
 This addon lets you create shape keys that blend already deformed meshes into a specific shape.
 
+
 ## Basic Workflow:
 - Create a pose whose deformation you want to correct. A pose is defined as an Action and a frame number.
 - Create a Pose Key on the deformed mesh. Assign the action and the frame number.
