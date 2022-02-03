@@ -24,15 +24,15 @@ from dataclasses import asdict, dataclass, field
 from typing import Optional, Dict, List
 
 
-def check_area(area: bpy.types.Area) -> None:
-    if area.type != "FILE_BROWSER":
-        raise ValueError(f"Area is of type {area.type}. Expected FILE_BROWSER.")
+def is_area_of_type(area: bpy.types.Area, type: str) -> None:
+    if area.type != type:
+        raise ValueError(f"Area is of type {area.type}. Expected {type}.")
 
 
 class FileBrowserState:
     def __init__(self, area: Optional[bpy.types.Area] = None):
         if area:
-            check_area(area)
+            is_area_of_type(area, "FILE_BROWSER")
             self.space_data = SpaceData.from_area(area)
             self.params = FbParams.from_area(area)
         else:
@@ -44,6 +44,19 @@ class FileBrowserState:
         self.params.apply_to_area(area)
 
 
+class TimelineState:
+    def __init__(self, area: Optional[bpy.types.Area] = None):
+        if area:
+            is_area_of_type(area, "DOPESHEET_EDITOR")
+            self.space_data = SpaceData.from_area(area)
+        else:
+            self.space_data = SpaceData()
+            self.space_data.show_region_ui = False
+
+    def apply_to_area(self, area: bpy.types.Area) -> None:
+        self.space_data.apply_to_area(area)
+
+
 @dataclass
 class SpaceData:
     show_region_header: bool = False
@@ -53,9 +66,6 @@ class SpaceData:
 
     @classmethod
     def from_area(cls, area: bpy.types.Area) -> SpaceData:
-
-        check_area(area)
-
         data_dict = asdict(cls())
         space = area.spaces.active
 
@@ -66,8 +76,6 @@ class SpaceData:
         return cls(**data_dict)
 
     def apply_to_area(self, area: bpy.types.Area) -> None:
-        check_area(area)
-
         data_dict = asdict(self)
         space = area.spaces.active
 
@@ -98,7 +106,7 @@ class FbParams:
 
     @classmethod
     def from_area(cls, area: bpy.types.Area) -> FbParams:
-        check_area(area)
+        is_area_of_type(area, "FILE_BROWSER")
 
         data_dict = asdict(cls())
         params = area.spaces.active.params
@@ -115,7 +123,7 @@ class FbParams:
         return cls(**data_dict)
 
     def apply_to_area(self, area: bpy.types.Area) -> None:
-        check_area(area)
+        is_area_of_type(area, "FILE_BROWSER")
 
         data_dict = asdict(self)
         params = area.spaces.active.params

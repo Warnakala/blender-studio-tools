@@ -29,7 +29,7 @@ from bpy.app.handlers import persistent
 
 from media_viewer import opsdata, vars, gp_opsdata
 from media_viewer.log import LoggerFactory
-from media_viewer.states import FileBrowserState
+from media_viewer.states import FileBrowserState, TimelineState
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -48,6 +48,7 @@ active_filepath_list: List[Path] = []
 
 
 filebrowser_state: FileBrowserState = FileBrowserState()
+timeline_state: TimelineState = TimelineState()
 is_fullscreen: bool = False  # TODO: context.screen.show_fullscreen is not updating
 is_muted: bool = False
 last_folder_at_path: OrderedDict = OrderedDict()
@@ -370,6 +371,7 @@ class MV_OT_toggle_timeline(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         global is_fullscreen
+        global timeline_state
 
         # Don't do anything in fullscreen mode.
         if is_fullscreen:
@@ -381,6 +383,7 @@ class MV_OT_toggle_timeline(bpy.types.Operator):
 
         if area_timeline:
             # Timeline needs to be closed.
+            timeline_state = TimelineState(area=area_timeline)
             opsdata.close_area(area_timeline)
             logger.info("Hide timeline")
 
@@ -392,8 +395,8 @@ class MV_OT_toggle_timeline(bpy.types.Operator):
             )
             opsdata.fit_timeline_view(context)
 
-            # Modify timeline area.
-            area_timeline.spaces.active.show_region_header = False
+            # Restore Timeline State.
+            timeline_state.apply_to_area(area_timeline)
             # area_timeline.spaces.active.show_region_toolbar = False # TODO: does not exist, expose to PythonAPI
 
             logger.info("Show timeline")
@@ -469,11 +472,12 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
                     relative_path=prev_relpath
                 )
 
-            # Open timeline
+            # Open timeline.
             area_time = opsdata.split_area(
                 ctx, area_media, "DOPESHEET_EDITOR", "HORIZONTAL", self.factor_timeline
             )
-
+            # Restore timeline state.
+            timeline_state.apply_to_area(area_time)
             logger.info("Show filebrowser")
 
         elif not area_fb:
