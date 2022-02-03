@@ -169,8 +169,8 @@ class MV_OT_load_media_movie(bpy.types.Operator):
 
         # Set scene resolution to max width and height to fit all strips.
         strips = opsdata.get_movie_strips(context)
-        max_width = max([s.elements[0].orig_width for s in strips])
-        max_height = max([s.elements[0].orig_height for s in strips])
+        max_width = int(max([s.elements[0].orig_width for s in strips]))
+        max_height = int(max([s.elements[0].orig_height for s in strips]))
 
         context.scene.render.resolution_x = max_width
         context.scene.render.resolution_y = max_height
@@ -298,8 +298,8 @@ class MV_OT_load_media_image(bpy.types.Operator):
         opsdata.fit_timeline_view(context)
 
         # Set scene resolution.
-        context.scene.render.resolution_x = image.resolution[0]
-        context.scene.render.resolution_y = image.resolution[1]
+        context.scene.render.resolution_x = int(image.resolution[0])
+        context.scene.render.resolution_y = int(image.resolution[1])
 
         # Set colorspace depending on file extension:
         if file_list[0].suffix == ".exr":
