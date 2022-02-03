@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "crazy_shape_keys"
+name = "pose-shape-keys"
 version = "0.1.0"
 description = ""
 authors = ["Demeter Dzadik <demeter@blender.studio>"]
