@@ -103,6 +103,7 @@ class MV_OT_load_media_movie(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         frame_start = context.scene.frame_start
+        imported_strips: List[bpy.types.Sequence] = []
 
         # print([f.name for f in self.files])
 
@@ -148,6 +149,7 @@ class MV_OT_load_media_movie(bpy.types.Operator):
                 frame_start,
             )
             strip_movie.blend_type = "ALPHA_OVER"
+            imported_strips.append(strip_movie)
 
             strip_sound = context.scene.sequence_editor.sequences.new_sound(
                 file.stem,
@@ -175,6 +177,11 @@ class MV_OT_load_media_movie(bpy.types.Operator):
 
         context.scene.render.resolution_x = max_width
         context.scene.render.resolution_y = max_height
+
+        # Set FPS.
+        if imported_strips:
+            # Use fps from last selected strip.
+            context.scene.render.fps = int(imported_strips[-1].elements[0].orig_fps)
 
         # Adjust view of timeline to fit all.
         opsdata.fit_timeline_view(context)

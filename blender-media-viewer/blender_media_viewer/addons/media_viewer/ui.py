@@ -149,6 +149,19 @@ class MV_PT_review_settings(bpy.types.Panel):
             expand=True,
         )
 
+        # FPS.
+        layout.row().prop(
+            context.scene.render,
+            "fps",
+        )
+
+        # Display Settings.
+        layout.row().label(text="Display Settings")
+        layout.row().prop(
+            context.preferences.view,
+            "show_playback_fps",
+        )
+
 
 def MV_TOPBAR_settings(self: Any, context: bpy.types.Context) -> None:
     layout: bpy.types.UILayout = self.layout
