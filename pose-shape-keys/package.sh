@@ -1,4 +1,8 @@
 #!/bin/bash
+# This script can be used to quickly package the content of the project folder
+# in to a zip file. It will append the version string at the end.
+# Before packaging it will remove all __pycache__ folders.
+# Useful for uploading it as a static asset on studio.blender.org
 
 # Grab project version with poetry.
 VERSION=$(poetry version -s)
