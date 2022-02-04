@@ -489,7 +489,7 @@ class OBJECT_OT_PoseKey_Push(Operator, OperatorWithWarning, SaveAndRestoreState)
 
 		storage_object = pose_key.storage_object
 		if storage_object.name not in context.view_layer.objects:
-			self.report({'ERROR'}, 'Storage object "{storage_object.name}" must be in view layer!')
+			self.report({'ERROR'}, f'Storage object "{storage_object.name}" must be in view layer!')
 			raise Exception
 
 		if set_pose:
