@@ -1588,6 +1588,32 @@ class MV_OT_render_review_area_aware(bpy.types.Operator):
             return {"CANCELLED"}
 
 
+class MV_OT_flip_media_view(bpy.types.Operator):
+    bl_idname = "media_viewer.flip_media_view"
+    bl_label = "Flip Media View"
+    bl_description = "Flips the media view horizontally"
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global active_media_area
+        area = opsdata.find_area(bpy.context, active_media_area)
+
+        #TODO: flip annotation layer as well.
+
+        if active_media_area == "SEQUENCE_EDITOR":
+            for strip in context.scene.sequence_editor.sequences_all:
+                if hasattr(strip, "use_flip_x"):
+                    strip.use_flip_x = not strip.use_flip_x
+
+        elif active_media_area == "IMAGE_EDITOR":
+            ctx = opsdata.get_context_for_area(area)
+            bpy.ops.image.flip(ctx, use_flip_x=True)
+
+        else:
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+
 @persistent
 def init_active_media_area_obj(dummy: None):
     global active_media_area_obj
@@ -1757,6 +1783,7 @@ classes = [
     MV_OT_insert_empty_gpencil_frame,
     MV_OT_convert_image_seq_to_movie,
     MV_OT_render_review_area_aware,
+    MV_OT_flip_media_view,
 ]
 draw_handlers_fb: List[Callable] = []
 
