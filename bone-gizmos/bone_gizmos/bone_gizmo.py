@@ -313,6 +313,9 @@ class MoveBoneGizmo(Gizmo):
 		if event.shift and pb.bone.select:
 			pb.bone.select = False
 			return {'FINISHED'}
+		if event.shift and not pb.bone.select:
+			pb.bone.select = True
+			return {'FINISHED'}
 
 		pb.bone.select = True
 		armature.data.bones.active = pb.bone
