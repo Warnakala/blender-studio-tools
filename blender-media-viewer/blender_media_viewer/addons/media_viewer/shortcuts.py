@@ -44,6 +44,7 @@ from media_viewer.ops import (
     MV_OT_delete_active_gpencil_frame,
     MV_OT_delete_all_gpencil_frames,
     MV_OT_render_review_area_aware,
+    MV_OT_flip_media_view,
 )
 from media_viewer import opsdata, vars
 from media_viewer.log import LoggerFactory
@@ -556,6 +557,16 @@ def register():
         )
         kmi.properties.render_sequence = True
         addon_keymaps.append((keymap, kmi))
+
+        # Flip media view.
+        addon_keymaps.append(
+            (
+                keymap,
+                keymap.keymap_items.new(
+                    MV_OT_flip_media_view.bl_idname, value="PRESS", type="M", ctrl=True
+                ),
+            )
+        )
 
     # Print new hotkeys.
     for km, kmi in addon_keymaps:

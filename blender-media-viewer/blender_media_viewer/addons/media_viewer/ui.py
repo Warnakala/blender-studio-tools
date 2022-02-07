@@ -9,6 +9,7 @@ from media_viewer.ops import (
     MV_OT_export_annotation_data_to_3dcam,
     MV_OT_insert_empty_gpencil_frame,
     MV_OT_quit_blender,
+    MV_OT_flip_media_view,
 )
 from media_viewer import ops
 
@@ -81,6 +82,10 @@ def MV_TOPBAR_sequencer(self: Any, context: bpy.types.Context) -> None:
     #     MV_OT_export_annotation_data_to_3dcam.bl_idname, icon="EXPORT", text=""
     # )
 
+    # Flip media view.
+    row = layout.row(align=True)
+    row.operator(MV_OT_flip_media_view.bl_idname, icon="ARROW_LEFTRIGHT", text="")
+
 
 def MV_TOPBAR_image_editor(self: Any, context: bpy.types.Context) -> None:
     layout: bpy.types.UILayout = self.layout
@@ -110,6 +115,10 @@ def MV_TOPBAR_image_editor(self: Any, context: bpy.types.Context) -> None:
     # row.operator(
     #     MV_OT_export_annotation_data_to_3dcam.bl_idname, icon="EXPORT", text=""
     # )
+
+    # Flip media view.
+    row = layout.row(align=True)
+    row.operator(MV_OT_flip_media_view.bl_idname, icon="ARROW_LEFTRIGHT", text="")
 
     sima = context.space_data
     ima = sima.image
