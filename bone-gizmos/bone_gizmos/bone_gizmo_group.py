@@ -59,6 +59,8 @@ def mb_refresh_single_gizmo_shape(gizmo_group, bone_name):
 	"""Re-calculate a gizmo's vertex indicies. This is expensive, so it should
 	be called sparingly."""
 	context = bpy.context
+	if not context.object or context.object.type != 'ARMATURE' or context.object.mode != 'POSE':
+		return
 	gizmo = gizmo_group.widgets[bone_name]
 	gizmo.init_shape(context)
 

@@ -48,10 +48,10 @@ class MoveBoneGizmo(Gizmo):
 	def init_shape(self, context):
 		"""Should be called by the GizmoGroup, after it assigns the neccessary 
 		__slots__ properties to properly initialize this Gizmo."""
-		props = self.get_props(context)
-
 		if not self.poll(context):
 			return
+
+		props = self.get_props(context)
 
 		if self.is_using_vgroup(context):
 			self.load_shape_vertex_group(self.get_shape_object(context), props.vertex_group_name)
