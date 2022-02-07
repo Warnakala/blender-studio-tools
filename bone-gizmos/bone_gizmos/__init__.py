@@ -40,7 +40,7 @@ class BoneGizmoPreferences(AddonPreferences):
 	widget_alpha: FloatProperty(
 		name = "Widget Gizmo Opacity"
 		,description = "Opacity of unselected gizmos when they are NOT defined by a vertex group or face map"
-		,min = 0.0
+		,min = 0.1
 		,max = 1.0
 		,default = 0.5
 		,subtype = 'FACTOR'
@@ -48,17 +48,17 @@ class BoneGizmoPreferences(AddonPreferences):
 	delta_alpha_select: FloatProperty(
 		name = "Gizmo Selected Opacity Delta"
 		,description = "Added Mesh Gizmo opacity when selected"
-		,min = -1.0
-		,max = 1.0
-		,default = 0.5
+		,min = 0.0
+		,max = 0.5
+		,default = 0.2
 		,subtype = 'FACTOR'
 	)
 	delta_alpha_highlight: FloatProperty(
 		name = "Gizmo Highlighted Opacity Delta"
 		,description = "Added Mesh Gizmo opacity when highlighted"
-		,min = -1.0
-		,max = 1.0
-		,default = 0.8
+		,min = 0.0
+		,max = 0.5
+		,default = 0.1
 		,subtype = 'FACTOR'
 	)
 

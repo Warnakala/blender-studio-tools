@@ -84,11 +84,11 @@ class MoveBoneGizmo(Gizmo):
 		if self.is_using_facemap(context) or self.is_using_vgroup(context):
 			self.alpha_unselected = prefs.mesh_alpha
 			self.alpha_selected = prefs.mesh_alpha + prefs.delta_alpha_select
-			self.alpha_highlight = min(0.999, prefs.mesh_alpha + prefs.delta_alpha_highlight)
+			self.alpha_highlight = min(0.999, self.alpha_selected + prefs.delta_alpha_highlight)
 		else:
 			self.alpha_unselected = prefs.widget_alpha
 			self.alpha_selected = prefs.widget_alpha + prefs.delta_alpha_select
-			self.alpha_highlight = min(0.999, prefs.widget_alpha + prefs.delta_alpha_highlight)
+			self.alpha_highlight = min(0.999, self.alpha_selected + prefs.delta_alpha_highlight)
 
 	def poll(self, context):
 		"""Whether any gizmo logic should be executed or not. This function is not
