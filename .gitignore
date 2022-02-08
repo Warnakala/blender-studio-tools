@@ -110,3 +110,6 @@ ENV/
 
 #local tests
 tests/local*
+
+# Production Config Dir.
+production_config/*
