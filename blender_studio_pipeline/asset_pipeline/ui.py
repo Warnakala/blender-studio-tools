@@ -34,6 +34,21 @@ class BSP_ASSET_main_panel:
 
 class BSP_ASSET_PT_vi3d_asset_pipeline(BSP_ASSET_main_panel, bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
+
+        layout: bpy.types.UILayout = self.layout
+
+        # If no asset collection set, display warning.
+        if not context.scene.bsp_asset.asset_collection:
+            layout.row().label(text="Initialize Asset Collection", icon="ERROR")
+            return
+
+        # Display Asset Collection.
+        layout.row().prop(
+            context.scene.bsp_asset.asset_collection.bsp_asset,
+            "displ_entity_name",
+            text="Asset",
+        )
+
         return
 
 
