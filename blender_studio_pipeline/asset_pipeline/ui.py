@@ -22,6 +22,8 @@ from typing import List, Dict, Union, Any, Set, Optional
 
 import bpy
 
+from .ops import BSP_ASSET_init_asset_collection
+
 
 class BSP_ASSET_main_panel:
     bl_category = "Asset Pipeline"
@@ -42,7 +44,13 @@ class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
 
     def draw(self, context: bpy.types.Context) -> None:
         layout: bpy.types.UILayout = self.layout
-        layout.row().label(text="Test")
+
+        row = layout.row(align=True)
+        row.prop(context.scene.bsp_asset, "asset_collection", text="")
+
+        row = layout.row(align=True)
+        row.operator(BSP_ASSET_init_asset_collection.bl_idname)
+
         return
 
 

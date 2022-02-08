@@ -17,10 +17,16 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+
+import logging
+
 from typing import List, Dict, Union, Any, Set, Optional
 from pathlib import Path
 
 import bpy
+import blender_kitsu.cache
+
+logger = logging.getLogger(__name__)
 
 
 class BSP_ASSET_init_asset_collection(bpy.types.Operator):
@@ -31,7 +37,22 @@ class BSP_ASSET_init_asset_collection(bpy.types.Operator):
         "This fills out the required metadata properties. "
     )
 
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        asset_coll = context.scene.bsp_asset.asset_collection
+        return bool(blender_kitsu.cache.asset_active_get() and asset_coll)
+
     def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Get active asset and asset collection.
+        asset = blender_kitsu.cache.asset_active_get()
+        asset_coll: bpy.types.Collection = context.scene.bsp_asset.asset_collection
+
+        # Set Asset Collection attributes.
+        asset_coll.bsp_asset.entity_id = asset.id
+        asset_coll.bsp_asset.entity_name = asset.name
+
+        logger.info(f"Initiated Collection: {asset_coll.name} as Asset: {asset.name}")
         return {"FINISHED"}
 
 
