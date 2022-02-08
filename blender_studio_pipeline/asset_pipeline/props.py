@@ -27,16 +27,31 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     Collection Properties for Blender Studio Asset Collections
     """
 
+    is_asset: bpy.props.BoolProperty(
+        name="Is Asset",
+        default=False,
+        description="Controls if this Collection is recognized as an official Asset",
+    )
+
     entity_name: bpy.props.StringProperty(name="Asset Name")  # type: ignore
     entity_id: bpy.props.StringProperty(name="Asset ID")  # type: ignore
-
-    displ_entity_name: bpy.props.StringProperty(name="Asset Name", get=lambda self: self.entity_name)  # type: ignore
-    displ_entity_id: bpy.props.StringProperty(name="Asset ID", get=lambda self: self.entity_id)  # type: ignore
 
     version: bpy.props.StringProperty(name="Asset Version")  # type: ignore
     project_id: bpy.props.StringProperty(name="Project ID")  # type: ignore
 
     rig: bpy.props.PointerProperty(type=bpy.types.Armature, name="Rig")  # type: ignore
+
+    # Display properties that can't be set by User in UI.
+    displ_entity_name: bpy.props.StringProperty(name="Asset Name", get=lambda self: self.entity_name)  # type: ignore
+    displ_entity_id: bpy.props.StringProperty(name="Asset ID", get=lambda self: self.entity_id)  # type: ignore
+
+    def clear(self) -> None:
+        self.is_asset = False
+        self.entity_name = ""
+        self.entity_id = ""
+        self.version = ""
+        self.project_id = ""
+        self.rig = None
 
 
 class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
@@ -44,7 +59,19 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
     Scene Properties for Asset Pipeline
     """
 
+    # Gets set by BSP_ASSET_init_asset_collection
     asset_collection: bpy.props.PointerProperty(type=bpy.types.Collection)  # type: ignore
+
+    # Display properties that can't be set by User in UI.
+    displ_asset_collection: bpy.props.StringProperty(name="Asset Collection", get=lambda self: self.asset_collection.name)  # type: ignore
+
+    # There should only be one asset_collection per working task.
+    # We don't want that the User can directly set the tasks Asset Collection.
+    # The tmp_asset_collection property is used for the
+    # BSP_ASSET_init_asset_collection operator to know what Collection it should initialize as Asset Collection.
+    # This logic prevents having multiple Asset Collection per scene and forces user to clear the Asset Collection
+    # before initializing another one.
+    tmp_asset_collection: bpy.props.PointerProperty(type=bpy.types.Collection)  # type: ignore
 
 
 # ----------------REGISTER--------------.

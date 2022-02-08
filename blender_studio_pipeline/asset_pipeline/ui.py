@@ -22,7 +22,7 @@ from typing import List, Dict, Union, Any, Set, Optional
 
 import bpy
 
-from .ops import BSP_ASSET_init_asset_collection
+from .ops import BSP_ASSET_init_asset_collection, BSP_ASSET_clear_asset_collection
 
 
 class BSP_ASSET_main_panel:
@@ -45,11 +45,14 @@ class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
         layout: bpy.types.UILayout = self.layout
 
-        row = layout.row(align=True)
-        row.prop(context.scene.bsp_asset, "asset_collection", text="")
-
-        row = layout.row(align=True)
-        row.operator(BSP_ASSET_init_asset_collection.bl_idname)
+        if not context.scene.bsp_asset.asset_collection:
+            layout.row().prop(context.scene.bsp_asset, "tmp_asset_collection", text="")
+            layout.row().operator(BSP_ASSET_init_asset_collection.bl_idname)
+        else:
+            layout.row().prop(
+                context.scene.bsp_asset, "displ_asset_collection", text=""
+            )
+            layout.row().operator(BSP_ASSET_clear_asset_collection.bl_idname)
 
         return
 
@@ -62,7 +65,10 @@ class BSP_ASSET_PT_collection_asset_properties(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.collection != context.scene.collection
+        coll = context.collection
+        return (
+            context.collection != context.scene.collection and coll.bsp_asset.is_asset
+        )
 
     def draw(self, context: bpy.types.Context) -> None:
         layout: bpy.types.UILayout = self.layout
