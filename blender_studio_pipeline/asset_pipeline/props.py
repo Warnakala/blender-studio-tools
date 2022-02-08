@@ -24,7 +24,7 @@ import bpy
 
 class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     """
-    Blender Studio Asset Collection Properties
+    Collection Properties for Blender Studio Asset Collections
     """
 
     entity_name: bpy.props.StringProperty(name="Asset Name")  # type: ignore
@@ -36,19 +36,31 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     rig: bpy.props.PointerProperty(type=bpy.types.Armature)  # type: ignore
 
 
+class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
+    """
+    Scene Properties for Asset Pipeline
+    """
+
+    asset_collection: bpy.props.PointerProperty(type=bpy.types.Collection)  # type: ignore
+
+
 # ----------------REGISTER--------------.
 
-classes = [BSP_ASSET_asset_collection]
+classes = [BSP_ASSET_asset_collection, BSP_ASSET_scene_properties]
 
 
 def register() -> None:
-
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # Asset Collection Properties.
+    # Collection Asset Pipeline Properties.
     bpy.types.Collection.bsp_asset = bpy.props.PointerProperty(
         type=BSP_ASSET_asset_collection
+    )
+
+    # Scene Asset Pipeline Properties.
+    bpy.types.Scene.bsp_asset = bpy.props.PointerProperty(
+        type=BSP_ASSET_scene_properties
     )
 
 
