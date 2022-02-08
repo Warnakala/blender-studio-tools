@@ -23,9 +23,32 @@ from typing import List, Dict, Union, Any, Set, Optional
 import bpy
 
 
+class BSP_ASSET_main_panel:
+    bl_category = "Asset Pipeline"
+    bl_label = "Asset Pipeline"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+
+
+class BSP_ASSET_PT_vi3d_asset_pipeline(BSP_ASSET_main_panel, bpy.types.Panel):
+    def draw(self, context: bpy.types.Context) -> None:
+        return
+
+
+class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
+
+    bl_label = "Asset Colllection"
+    bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+        layout.row().label(text="Test")
+        return
+
+
 # ----------------REGISTER--------------.
 
-classes = []
+classes = [BSP_ASSET_PT_vi3d_asset_pipeline, BSP_ASSET_PT_vi3d_asset_collection]
 
 
 def register() -> None:
