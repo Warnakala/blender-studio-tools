@@ -8,3 +8,7 @@ def redraw_ui() -> None:
     for screen in bpy.data.screens:
         for area in screen.areas:
             area.tag_redraw()
+
+
+def get_addon_prefs() -> bpy.types.AddonPreferences:
+    return bpy.context.preferences.addons[__package__]

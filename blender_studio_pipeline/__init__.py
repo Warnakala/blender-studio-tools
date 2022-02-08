@@ -22,7 +22,7 @@ import logging
 
 import bpy
 
-from . import asset_pipeline
+from . import asset_pipeline, util, prefs
 
 bl_info = {
     "name": "Blender Studio Pipeline",
@@ -44,6 +44,8 @@ _need_reload = "asset_pipeline" in locals()
 if _need_reload:
     import importlib
 
+    prefs = importlib.reload(prefs)
+    util = importlib.reload(util)
     asset_pipeline.reload()
 
 
@@ -51,8 +53,10 @@ if _need_reload:
 
 
 def register() -> None:
+    prefs.register()
     asset_pipeline.register()
 
 
 def unregister() -> None:
+    prefs.unregister()
     asset_pipeline.unregister()

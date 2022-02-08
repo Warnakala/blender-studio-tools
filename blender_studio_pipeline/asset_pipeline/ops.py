@@ -26,7 +26,7 @@ from pathlib import Path
 import bpy
 import blender_kitsu.cache
 
-from . import util
+from .. import util
 
 logger = logging.getLogger(__name__)
 
