@@ -17,42 +17,34 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
-
-import logging
+from typing import List, Dict, Union, Any, Set, Optional
+from pathlib import Path
 
 import bpy
 
-from . import asset_pipeline
 
-bl_info = {
-    "name": "Blender Studio Pipeline",
-    "author": "Paul Golter",
-    "description": "Blender Studio Pipeline Add-on",
-    "blender": (3, 1, 0),
-    "version": (0, 1, 0),
-    "location": "View3D",
-    "warning": "",
-    "doc_url": "",
-    "tracker_url": "",
-    "category": "Generic",
-}
+class BSP_ASSET_init_asset_collection(bpy.types.Operator):
+    bl_idname = "bsp_asset.init_asset_collection"
+    bl_label = "Init Asset Collection"
+    bl_description = (
+        "Initializes a Collection as a Studio Asset Collection. "
+        "This fills out the required metadata properties. "
+    )
 
-logger = logging.getLogger(__name__)
-
-_need_reload = "asset_pipeline" in locals()
-
-if _need_reload:
-    import importlib
-
-    asset_pipeline.reload()
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        return {"FINISHED"}
 
 
 # ----------------REGISTER--------------.
 
+classes = [BSP_ASSET_init_asset_collection]
+
 
 def register() -> None:
-    asset_pipeline.register()
+    for cls in classes:
+        bpy.utils.register_class(cls)
 
 
 def unregister() -> None:
-    asset_pipeline.unregister()
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)

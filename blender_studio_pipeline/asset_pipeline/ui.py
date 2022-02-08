@@ -17,42 +17,22 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
-
-import logging
+from pathlib import Path
+from typing import List, Dict, Union, Any, Set, Optional
 
 import bpy
-
-from . import asset_pipeline
-
-bl_info = {
-    "name": "Blender Studio Pipeline",
-    "author": "Paul Golter",
-    "description": "Blender Studio Pipeline Add-on",
-    "blender": (3, 1, 0),
-    "version": (0, 1, 0),
-    "location": "View3D",
-    "warning": "",
-    "doc_url": "",
-    "tracker_url": "",
-    "category": "Generic",
-}
-
-logger = logging.getLogger(__name__)
-
-_need_reload = "asset_pipeline" in locals()
-
-if _need_reload:
-    import importlib
-
-    asset_pipeline.reload()
 
 
 # ----------------REGISTER--------------.
 
+classes = []
+
 
 def register() -> None:
-    asset_pipeline.register()
+    for cls in classes:
+        bpy.utils.register_class(cls)
 
 
 def unregister() -> None:
-    asset_pipeline.unregister()
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
