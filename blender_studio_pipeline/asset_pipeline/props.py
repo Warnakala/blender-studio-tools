@@ -73,6 +73,8 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
     # before initializing another one.
     tmp_asset_collection: bpy.props.PointerProperty(type=bpy.types.Collection)  # type: ignore
 
+    is_publish_in_progress: bpy.props.BoolProperty()  # type: ignore
+
 
 # ----------------REGISTER--------------.
 

@@ -98,9 +98,58 @@ class BSP_ASSET_clear_asset_collection(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BSP_ASSET_start_publish(bpy.types.Operator):
+    bl_idname = "bsp_asset.start_publish"
+    bl_label = "Start Publish"
+    bl_description = "Starts publish of the Asset Collection"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        asset_coll = context.scene.bsp_asset.asset_collection
+        return bool(asset_coll and not context.scene.bsp_asset.is_publish_in_progress)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        asset_coll = context.scene.bsp_asset.asset_collection
+
+        # Update properties.
+        context.scene.bsp_asset.is_publish_in_progress = True
+
+        # Redraw UI.
+        util.redraw_ui()
+
+        return {"FINISHED"}
+
+
+class BSP_ASSET_abort_publish(bpy.types.Operator):
+    bl_idname = "bsp_asset.abort_publish"
+    bl_label = "Abort Publish"
+    bl_description = "Aborts publish of the Asset Collection"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        asset_coll = context.scene.bsp_asset.asset_collection
+        return bool(asset_coll and context.scene.bsp_asset.is_publish_in_progress)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        asset_coll = context.scene.bsp_asset.asset_collection
+
+        # Update properties.
+        context.scene.bsp_asset.is_publish_in_progress = False
+
+        # Redraw UI.
+        util.redraw_ui()
+
+        return {"FINISHED"}
+
+
 # ----------------REGISTER--------------.
 
-classes = [BSP_ASSET_init_asset_collection, BSP_ASSET_clear_asset_collection]
+classes = [
+    BSP_ASSET_init_asset_collection,
+    BSP_ASSET_clear_asset_collection,
+    BSP_ASSET_start_publish,
+    BSP_ASSET_abort_publish,
+]
 
 
 def register() -> None:
