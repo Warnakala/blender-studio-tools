@@ -6,6 +6,9 @@ import gpu
 
 from .shapes import MeshShape3D
 
+# Let's fucking do it.
+is_interacting = False
+
 class MoveBoneGizmo(Gizmo):
 	"""In order to avoid re-implementing logic for transforming bones with 
 	mouse movements, this gizmo instead binds its offset value to the
@@ -94,6 +97,11 @@ class MoveBoneGizmo(Gizmo):
 		"""Whether any gizmo logic should be executed or not. This function is not
 		from the API! Call this manually for early exists.
 		"""
+
+		global is_interacting
+		if is_interacting:
+			return False
+
 		pb = self.get_pose_bone(context)
 		if not pb or pb.bone.hide: return False
 		any_visible_layer = any(bl and al for bl, al in zip(pb.bone.layers[:], pb.id_data.data.layers[:]))
@@ -323,6 +331,9 @@ class MoveBoneGizmo(Gizmo):
 			pb.bone.select = True
 			return {'FINISHED'}
 
+		global is_interacting
+		is_interacting = True
+
 		pb.bone.select = True
 		armature.data.bones.active = pb.bone
 
@@ -345,6 +356,8 @@ class MoveBoneGizmo(Gizmo):
 		return {'RUNNING_MODAL'}
 
 	def exit(self, context, cancel):
+		global is_interacting
+		is_interacting = False
 		return
 
 	def modal(self, context, event, tweak):

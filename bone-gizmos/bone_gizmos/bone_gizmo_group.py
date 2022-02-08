@@ -19,8 +19,13 @@ def mb_ensure_gizmos_on_active_armature(gizmo_group):
 	obj = context.object
 
 	for pose_bone in obj.pose.bones:
-		if pose_bone.enable_bone_gizmo and pose_bone.name not in gizmo_group.widgets:
-			gizmo = gizmo_group.create_gizmo(context, pose_bone)
+		try:
+			if pose_bone.enable_bone_gizmo and pose_bone.name not in gizmo_group.widgets:
+				gizmo = gizmo_group.create_gizmo(context, pose_bone)
+		except ReferenceError:
+			# StructRNA of type BoneGizmoGroup has been removed.
+			# TODO: Not sure when this happens.
+			pass
 
 def mb_refresh_all_gizmo_colors(gizmo_group):
 	"""Keep Gizmo colors in sync with addon preferences."""
