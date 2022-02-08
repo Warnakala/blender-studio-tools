@@ -54,9 +54,33 @@ class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
         return
 
 
+class BSP_ASSET_PT_collection_asset_properties(bpy.types.Panel):
+    bl_label = "Asset Properties"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "collection"
+
+    @classmethod
+    def poll(cls, context):
+        return context.collection != context.scene.collection
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+        coll = context.collection
+
+        layout.row().prop(coll.bsp_asset, "displ_entity_name")
+        layout.row().prop(coll.bsp_asset, "displ_entity_id")
+
+        layout.row().prop(coll.bsp_asset, "rig")
+
+
 # ----------------REGISTER--------------.
 
-classes = [BSP_ASSET_PT_vi3d_asset_pipeline, BSP_ASSET_PT_vi3d_asset_collection]
+classes = [
+    BSP_ASSET_PT_vi3d_asset_pipeline,
+    BSP_ASSET_PT_vi3d_asset_collection,
+    BSP_ASSET_PT_collection_asset_properties,
+]
 
 
 def register() -> None:

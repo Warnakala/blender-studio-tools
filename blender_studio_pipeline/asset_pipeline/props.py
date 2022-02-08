@@ -30,10 +30,13 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     entity_name: bpy.props.StringProperty(name="Asset Name")  # type: ignore
     entity_id: bpy.props.StringProperty(name="Asset ID")  # type: ignore
 
+    displ_entity_name: bpy.props.StringProperty(name="Asset Name", get=lambda self: self.entity_name)  # type: ignore
+    displ_entity_id: bpy.props.StringProperty(name="Asset ID", get=lambda self: self.entity_id)  # type: ignore
+
     version: bpy.props.StringProperty(name="Asset Version")  # type: ignore
     project_id: bpy.props.StringProperty(name="Project ID")  # type: ignore
 
-    rig: bpy.props.PointerProperty(type=bpy.types.Armature)  # type: ignore
+    rig: bpy.props.PointerProperty(type=bpy.types.Armature, name="Rig")  # type: ignore
 
 
 class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
