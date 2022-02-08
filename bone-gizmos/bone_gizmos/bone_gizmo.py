@@ -1,10 +1,10 @@
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector, Euler
 from bpy.types import Gizmo, Object
 import numpy as np
 import gpu
 
-from .shapes import Circle2D, Cross2D, MeshShape3D
+from .shapes import MeshShape3D
 
 class MoveBoneGizmo(Gizmo):
 	"""In order to avoid re-implementing logic for transforming bones with 
@@ -289,19 +289,25 @@ class MoveBoneGizmo(Gizmo):
 			if pb.custom_shape_transform:
 				display_bone = pb.custom_shape_transform
 
-			loc, rot, scale = display_bone.matrix.to_translation(), display_bone.matrix.to_euler(), display_bone.matrix.to_scale()
-			if pb.use_custom_shape_bone_size:
-				scale *= display_bone.length
+			bone_mat = display_bone.matrix.copy()
 
-			bone_matrix = Matrix.LocRotScale(loc, rot, scale)
+			trans_mat = Matrix.Translation(pb.custom_shape_translation)
 
-			custom_shape_offset = Matrix.LocRotScale(
-				pb.custom_shape_translation, 
-				pb.custom_shape_rotation_euler, 
-				pb.custom_shape_scale_xyz
-			)
+			rot = Euler((pb.custom_shape_rotation_euler.x, pb.custom_shape_rotation_euler.y, pb.custom_shape_rotation_euler.z), 'XYZ')
+			rot_mat = rot.to_matrix().to_4x4()
 
-			self.matrix_offset = bone_matrix @ custom_shape_offset
+			display_scale = pb.custom_shape_scale_xyz.copy()
+			if display_bone.use_custom_shape_bone_size:
+				display_scale *= display_bone.length
+
+			scale_mat_x = Matrix.Scale(display_scale.x, 4, (1, 0, 0))
+			scale_mat_y = Matrix.Scale(display_scale.y, 4, (0, 1, 0))
+			scale_mat_z = Matrix.Scale(display_scale.z, 4, (0, 0, 1))
+			scale_mat = scale_mat_x @ scale_mat_y @ scale_mat_z
+
+			final_mat = bone_mat @ trans_mat @ rot_mat @ scale_mat
+
+			self.matrix_offset = final_mat
 
 	def invoke(self, context, event):
 		armature = context.object
