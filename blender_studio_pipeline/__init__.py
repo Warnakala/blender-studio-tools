@@ -38,16 +38,21 @@ bl_info = {
 }
 
 logger = logging.getLogger(__name__)
-
 _need_reload = "asset_pipeline" in locals()
 
-if _need_reload:
+
+def reload():
     import importlib
 
-    prefs = importlib.reload(prefs)
-    util = importlib.reload(util)
+    global prefs
+    global util
+    importlib.reload(prefs)
+    importlib.reload(util)
     asset_pipeline.reload()
 
+
+if _need_reload:
+    reload()
 
 # ----------------REGISTER--------------.
 
