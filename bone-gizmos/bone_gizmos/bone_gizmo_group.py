@@ -39,6 +39,8 @@ def mb_refresh_single_gizmo(gizmo_group, bone_name):
 	"""Refresh Gizmo behaviour settings. This should be called when the user changes
 	the Gizmo settings in the Properties editor.
 	"""
+	if not gizmo_group:
+		return
 	context = bpy.context
 	pose_bone = context.object.pose.bones.get(bone_name)
 	gizmo_props = pose_bone.bone_gizmo

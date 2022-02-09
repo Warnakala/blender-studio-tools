@@ -107,7 +107,7 @@ class MoveBoneGizmo(Gizmo):
 		any_visible_layer = any(bl and al for bl, al in zip(pb.bone.layers[:], pb.id_data.data.layers[:]))
 		bone_visible = not pb.bone.hide and any_visible_layer
 
-		ret = pb.bone_gizmo.shape_object and bone_visible and pb.enable_bone_gizmo
+		ret = self.get_shape_object(context) and bone_visible and pb.enable_bone_gizmo
 		return ret
 
 	def load_shape_vertex_group(self, obj, v_grp: str, weight_threshold=0.2):
@@ -264,8 +264,10 @@ class MoveBoneGizmo(Gizmo):
 		"""
 		pb = self.get_pose_bone(context)
 		if not pb: return
-		ret = pb.bone_gizmo.shape_object
-		return ret
+		ob = pb.bone_gizmo.shape_object
+		if not ob:
+			ob = pb.custom_shape 
+		return ob
 
 	def get_props(self, context):
 		"""Use this context-based getter rather than any direct mean of referencing
