@@ -329,6 +329,7 @@ class MoveBoneGizmo(Gizmo):
 			return {'FINISHED'}
 		if event.shift and not pb.bone.select:
 			pb.bone.select = True
+			armature.data.bones.active = pb.bone
 			return {'FINISHED'}
 
 		global is_interacting
