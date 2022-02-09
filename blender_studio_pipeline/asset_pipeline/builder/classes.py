@@ -17,35 +17,27 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
-import importlib
+import logging
 
-from . import props, ops, ui, builder, api
+from typing import List, Dict, Union, Any, Set, Optional
 
+from pathlib import Path
 
-# ----------------REGISTER--------------.
+from .task_layer import TaskLayer
 
-
-def reload() -> None:
-    global builder
-    global props
-    global ops
-    global ui
-    global api
-
-    builder.reload()
-    props = importlib.reload(props)
-    ops = importlib.reload(ops)
-    ui = importlib.reload(ui)
-    api = importlib.reload(api)
+logger = logging.getLogger(__name__)
 
 
-def register() -> None:
-    props.register()
-    ops.register()
-    ui.register()
+class ProcessPair:
+    """
+    Simple Class that stores a logically connected source and a target path.
+    """
+
+    def __init__(self, source: Path, target: Path) -> None:
+        self.source = source
+        self.target = target
 
 
-def unregister() -> None:
-    ui.unregister()
-    ops.unregister()
-    props.unregister()
+class AssetAssembly:
+    def __init__(self):
+        self.task_layer: List[TaskLayer] = []

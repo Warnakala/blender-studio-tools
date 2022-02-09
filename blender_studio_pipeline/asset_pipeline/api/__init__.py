@@ -17,35 +17,8 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
-import importlib
-
-from . import props, ops, ui, builder, api
-
-
-# ----------------REGISTER--------------.
+from ..builder.context import BuildContext
+from ..builder.task_layer import TaskLayer
 
 
-def reload() -> None:
-    global builder
-    global props
-    global ops
-    global ui
-    global api
-
-    builder.reload()
-    props = importlib.reload(props)
-    ops = importlib.reload(ops)
-    ui = importlib.reload(ui)
-    api = importlib.reload(api)
-
-
-def register() -> None:
-    props.register()
-    ops.register()
-    ui.register()
-
-
-def unregister() -> None:
-    ui.unregister()
-    ops.unregister()
-    props.unregister()
+__all__ = ["TaskLayer", "BuildContext"]

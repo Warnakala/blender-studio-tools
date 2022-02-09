@@ -17,35 +17,39 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
-import importlib
 
-from . import props, ops, ui, builder, api
+import logging
 
+from typing import List, Dict, Union, Any, Set, Optional
+from types import ModuleType
 
-# ----------------REGISTER--------------.
+from pathlib import Path
 
-
-def reload() -> None:
-    global builder
-    global props
-    global ops
-    global ui
-    global api
-
-    builder.reload()
-    props = importlib.reload(props)
-    ops = importlib.reload(ops)
-    ui = importlib.reload(ui)
-    api = importlib.reload(api)
+logger = logging.getLogger(__name__)
 
 
-def register() -> None:
-    props.register()
-    ops.register()
-    ui.register()
+class TaskLayer:
 
+    name: str = ""
 
-def unregister() -> None:
-    ui.unregister()
-    ops.unregister()
-    props.unregister()
+    def __init__(self):
+        self.source_path: str = ""
+        self.source_revision: str = ""
+        self.is_locked: bool = False
+
+        # created_at: str
+        # updated_at: str
+        # author: Author
+        # software_hash: str
+        # workstation: str
+        # flags: List[str]
+
+    @classmethod
+    def is_valid(cls) -> bool:
+        return bool(cls.name)
+
+    def __repr__(self) -> str:
+        return f"TaskLayer{self.name}"
+
+    # Private Interface to be implemented by Production Config
+    # -------------------------------------------------------#
