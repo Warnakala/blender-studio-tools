@@ -20,7 +20,7 @@
 
 import logging
 
-from typing import List, Dict, Union, Any, Set, Optional
+from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from types import ModuleType
 
 from pathlib import Path
@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 class TaskLayer:
 
     name: str = ""
+    description: str = ""
 
     def __init__(self):
         self.source_path: str = ""
@@ -53,3 +54,86 @@ class TaskLayer:
 
     # Private Interface to be implemented by Production Config
     # -------------------------------------------------------#
+
+
+class TaskLayerConfig:
+    """
+    This Class holds a TaskLayer and additional Information that
+    determine how this TaskLayer is handeled during build.
+    For example .use controls if TaskLayer should be used for build.
+    """
+
+    def __init__(self, task_layer: type[TaskLayer]):
+        self._task_layer = task_layer
+        self._use: bool = False
+
+    @property
+    def task_layer(self) -> type[TaskLayer]:
+        return self._task_layer
+
+    @property
+    def use(self) -> bool:
+        return self._use
+
+    @use.setter
+    def use(self, value: bool) -> None:
+        self._use = value
+
+
+class TaskLayerAssembly:
+
+    """
+    This Class holds all TaskLayers relevant for build.
+    Each TaskLayer is stored as TaskLayerConfig object which provides
+    the built additional information.
+    """
+
+    def __init__(self, task_layers: List[type[TaskLayer]]):
+        # Create a dictionary data structure here, so we can easily control
+        # from within Blender by string which TaskLayers to enable and disable for built.
+        # As key we will use the class.__name__ attribute of each TaskLayer. (Should be unique)
+        self._task_layer_config_dict: Dict[str, TaskLayerConfig] = {}
+
+        # For each TaskLayer create a TaskLayerConfig and add entry in
+        # dictionary.
+        for task_layer in task_layers:
+
+            # Make sure that for whatever reason there are no 2 identical TaskLayer.
+            if task_layer.__name__ in self._task_layer_config_dict:
+
+                self._task_layer_config_dict.clear()
+                raise Exception(
+                    f"Detected 2 TaskLayers with the same Class name. [{task_layer.__name__}]"
+                )
+
+            self._task_layer_config_dict[task_layer.__name__] = TaskLayerConfig(
+                task_layer
+            )
+
+    @property
+    def task_layer_configs(self) -> List[TaskLayerConfig]:
+        return list(self._task_layer_config_dict.values())
+
+    @property
+    def task_layers(self) -> List[type[TaskLayer]]:
+        return list(t.task_layer for t in self.task_layer_configs)
+
+    @property
+    def task_layer_names(self) -> List[str]:
+        return [l.name for l in self.task_layers]
+
+    def as_blender_enum(self) -> List[Tuple[str, str, str]]:
+        """
+        Returns data structure that works for Blender Enums.
+        [(TaskLayer Class Name, TaskLayer Name, TaskLayer Description)]
+        """
+
+        l = []
+        for key, value in self._task_layer_configs.items():
+            t = (key, value.task_layer.name, value.task_layer.description)
+            l.append(t)
+        return l
+
+    def __repr__(self) -> str:
+        body = f"{', '.join([t.name for t in self.task_layers])}"
+        return f"TaskLayerAssembly({body})"

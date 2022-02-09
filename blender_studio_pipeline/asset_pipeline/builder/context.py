@@ -28,7 +28,7 @@ from pathlib import Path
 import bpy
 
 from ..sys_utils import SystemPathInclude
-from .task_layer import TaskLayer
+from .task_layer import TaskLayer, TaskLayerAssembly
 from .classes import ProcessPair
 
 logger = logging.getLogger(__name__)
@@ -47,8 +47,9 @@ class BuildContext:
         self.config_folder: Optional[Path] = None
         self.module_task_layers: Optional[ModuleType] = None
         self.asset_collection: Optional[bpy.types.Collection] = None
-        self.task_layers: List[TaskLayer] = []
+        self.task_layer_assembly: Optional[TaskLayerAssembly] = None
         self.process_pairs: List[ProcessPair] = []
+        self._is_init: bool = False
 
     def initialize(self, bl_context: bpy.types.Context, config_folder: Path) -> None:
         self.bl_context = bl_context
@@ -63,6 +64,19 @@ class BuildContext:
 
         # Load configs from config_folder.
         self._collect_configs()
+
+        # Update init state.
+        self._is_init = True
+
+    @property
+    def is_initialized(self) -> bool:
+        return self._is_init
+
+    def update_prod_task_layers(self) -> None:
+        if not self._is_init:
+            raise Exception(f"BuildContext is not initialized.")
+
+        self._collect_prod_task_layers()
 
     def _collect_configs(self) -> None:
 
@@ -84,41 +98,48 @@ class BuildContext:
                 self.module_task_layers = prod_task_layers
 
             # Crawl module for TaskLayers.
-            self._collect_prod_task_layers(self.module_task_layers)
+            self._collect_prod_task_layers()
 
-    def _collect_prod_task_layers(self, module: ModuleType) -> List[TaskLayer]:
+    def _collect_prod_task_layers(self) -> List[type[TaskLayer]]:
 
-        # Clear current task layer list
-        self.task_layers.clear()
+        module = self.module_task_layers
+        task_layers_to_load: List[type[TaskLayer]] = []
 
         # Find all valid TaskLayer Classes.
         for module_item_str in dir(module):
             module_item = getattr(module, module_item_str)
 
+            # This checks that the module item is a class definition
+            # and not e.G and instance of that class.
             if module_item.__class__ != type:
                 continue
 
             if not issubclass(module_item, TaskLayer):
                 continue
 
+            # Checks e.G that 'name' class attribute is set.
             if not module_item.is_valid():
                 continue
 
-            self.task_layers.append(module_item)
+            task_layers_to_load.append(module_item)
 
-        logger.info(
-            f"Detected Production TaskLayers: {', '.join([l.name for l in self.task_layers])}"
-        )
+        # Create TaskLayerAssembly Object.
+        self.task_layer_assembly = TaskLayerAssembly(task_layers_to_load)
+
+        logger.info(f"Detected Production TaskLayers: {self.task_layer_assembly}")
 
     def __repr__(self) -> str:
         header = "\nBUILD CONTEXT\n------------------------------------"
         asset_info = f"Asset: {self.asset_collection.bsp_asset.entity_name}({self.asset_collection})"
-        task_layer_info = (
-            f"Production TaskLayers: {', '.join([l.name for l in self.task_layers])}"
+        prod_task_layers = (
+            f"Production Task Layers: {self.task_layer_assembly.task_layer_names}"
         )
+        task_layer_assembly = str(self.task_layer_assembly)
         footer = "\n"
 
-        return "\n".join([header, asset_info, task_layer_info, footer])
+        return "\n".join(
+            [header, asset_info, prod_task_layers, task_layer_assembly, footer]
+        )
 
 
 # Assembling an asset means
