@@ -18,6 +18,7 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
+import importlib
 import logging
 
 from typing import List, Dict, Union, Any, Set, Optional
@@ -27,6 +28,7 @@ import bpy
 import blender_kitsu.cache
 
 from .. import util
+from . import builder
 
 logger = logging.getLogger(__name__)
 
@@ -106,13 +108,18 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         asset_coll = context.scene.bsp_asset.asset_collection
-        return bool(asset_coll and not context.scene.bsp_asset.is_publish_in_progress)
+        return bool(
+            asset_coll
+            and not context.scene.bsp_asset.is_publish_in_progress
+            and builder.BUILD_CONTEXT.is_initialized
+        )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        asset_coll = context.scene.bsp_asset.asset_collection
 
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = True
+
+        print(builder.BUILD_CONTEXT)
 
         # Redraw UI.
         util.redraw_ui()
@@ -142,6 +149,34 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BSP_ASSET_init_build_context(bpy.types.Operator):
+    bl_idname = "bsp_asset.init_build_context"
+    bl_label = "Initialize Build Context"
+    bl_description = ""
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        addon_prefs = util.get_addon_prefs()
+        return bool(
+            addon_prefs.is_prod_task_layers_module_path_valid()
+            and not context.scene.bsp_asset.is_publish_in_progress
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Initialize Build Context.
+        addon_prefs = util.get_addon_prefs()
+        module_path = Path(addon_prefs.prod_task_layers_module)
+        builder.BUILD_CONTEXT.initialize(context, module_path.parent)
+
+        print(builder.BUILD_CONTEXT)
+
+        # Redraw UI.
+        util.redraw_ui()
+
+        return {"FINISHED"}
+
+
 # ----------------REGISTER--------------.
 
 classes = [
@@ -149,6 +184,7 @@ classes = [
     BSP_ASSET_clear_asset_collection,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
+    BSP_ASSET_init_build_context,
 ]
 
 

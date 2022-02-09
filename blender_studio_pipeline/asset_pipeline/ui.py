@@ -27,7 +27,9 @@ from .ops import (
     BSP_ASSET_clear_asset_collection,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
+    BSP_ASSET_init_build_context,
 )
+from . import builder
 
 
 class BSP_ASSET_main_panel:
@@ -85,10 +87,26 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
         layout: bpy.types.UILayout = self.layout
 
-        if not context.scene.bsp_asset.is_publish_in_progress:
-            layout.row().operator(BSP_ASSET_start_publish.bl_idname)
-        else:
+        # Publish is in progress.
+        if context.scene.bsp_asset.is_publish_in_progress:
             layout.row().operator(BSP_ASSET_abort_publish.bl_idname)
+            return
+
+        # No publish in progress.
+
+        # Build Context not initialized.
+        if not builder.BUILD_CONTEXT.is_initialized:
+            layout.row().operator(
+                BSP_ASSET_init_build_context.bl_idname, icon="FILE_REFRESH"
+            )
+            return
+
+        # Build Context is initialized.
+        row = layout.row(align=True)
+        row.operator(BSP_ASSET_start_publish.bl_idname)
+        row.operator(
+            BSP_ASSET_init_build_context.bl_idname, icon="FILE_REFRESH", text=""
+        )
 
         return
 
