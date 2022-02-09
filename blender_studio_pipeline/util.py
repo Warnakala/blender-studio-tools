@@ -11,4 +11,4 @@ def redraw_ui() -> None:
 
 
 def get_addon_prefs() -> bpy.types.AddonPreferences:
-    return bpy.context.preferences.addons[__package__]
+    return bpy.context.preferences.addons[__package__].preferences
