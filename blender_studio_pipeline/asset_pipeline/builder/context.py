@@ -17,6 +17,7 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+import importlib
 import logging
 
 from typing import List, Dict, Union, Any, Set, Optional
@@ -44,6 +45,7 @@ class BuildContext:
     def __init__(self):
         self.bl_context: Optional[bpy.types.Context] = None
         self.config_folder: Optional[Path] = None
+        self.module_task_layers: Optional[ModuleType] = None
         self.asset_collection: Optional[bpy.types.Collection] = None
         self.task_layers: List[TaskLayer] = []
         self.process_pairs: List[ProcessPair] = []
@@ -63,14 +65,26 @@ class BuildContext:
         self._collect_configs()
 
     def _collect_configs(self) -> None:
+
+        # Add config folder temporarily to sys.path for convenient
+        # import.
         with SystemPathInclude([self.config_folder.as_posix()]):
 
             # Load Task Layers.
             # TODO: information duplicated in add-on preferences
             # Make it DRY
-            import task_layers as prod_task_layers
 
-            self._collect_prod_task_layers(prod_task_layers)
+            # Check if task layers module was already imported.
+            if self.module_task_layers:
+                # Reload it so Users won't have to restart Blender.
+                self.module_task_layers = importlib.reload(self.module_task_layers)
+            else:
+                import task_layers as prod_task_layers
+
+                self.module_task_layers = prod_task_layers
+
+            # Crawl module for TaskLayers.
+            self._collect_prod_task_layers(self.module_task_layers)
 
     def _collect_prod_task_layers(self, module: ModuleType) -> List[TaskLayer]:
 

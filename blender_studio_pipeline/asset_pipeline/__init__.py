@@ -19,7 +19,7 @@
 # (c) 2021, Blender Foundation - Paul Golter
 import importlib
 
-from . import props, ops, ui, builder, api
+from . import builder, props, ops, ui, api
 
 
 # ----------------REGISTER--------------.
