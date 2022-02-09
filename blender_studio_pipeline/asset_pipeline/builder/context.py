@@ -60,9 +60,9 @@ class BuildContext:
             )
 
         # Load configs from config_folder.
-        self._load_configs()
+        self._collect_configs()
 
-    def _load_configs(self) -> None:
+    def _collect_configs(self) -> None:
         with SystemPathInclude([self.config_folder.as_posix()]):
 
             # Load Task Layers.
@@ -70,9 +70,9 @@ class BuildContext:
             # Make it DRY
             import task_layers as prod_task_layers
 
-            self._load_prod_task_layers(prod_task_layers)
+            self._collect_prod_task_layers(prod_task_layers)
 
-    def _load_prod_task_layers(self, module: ModuleType) -> List[TaskLayer]:
+    def _collect_prod_task_layers(self, module: ModuleType) -> List[TaskLayer]:
 
         # Clear current task layer list
         self.task_layers.clear()
