@@ -96,6 +96,14 @@ class BuildContext:
         # Update init state.
         self._is_init = True
 
+    def uninitialize(self) -> None:
+        self.bl_context = None
+        self.asset_collection = None
+        self.process_pairs.clear()
+
+        # Update init state.
+        self._is_init = False
+
     @property
     def are_task_layers_loaded(self) -> bool:
         return self._are_task_layers_loaded

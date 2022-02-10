@@ -25,6 +25,7 @@ from typing import List, Dict, Union, Any, Set, Optional
 from pathlib import Path
 
 import bpy
+from bpy.app.handlers import persistent
 import blender_kitsu.cache
 
 from .. import util
@@ -82,7 +83,7 @@ class BSP_ASSET_clear_asset_collection(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         asset_coll = context.scene.bsp_asset.asset_collection
-        return bool(asset_coll)
+        return bool(asset_coll and not context.scene.bsp_asset.is_publish_in_progress)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -138,13 +139,14 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         asset_coll = context.scene.bsp_asset.asset_collection
-        return bool(asset_coll and context.scene.bsp_asset.is_publish_in_progress)
+        return bool(context.scene.bsp_asset.is_publish_in_progress)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        asset_coll = context.scene.bsp_asset.asset_collection
-
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = False
+
+        # Uninitialize Build Context.
+        builder.BUILD_CONTEXT.uninitialize()
 
         # Redraw UI.
         util.redraw_ui()
@@ -186,6 +188,19 @@ class BSP_ASSET_load_task_layers(bpy.types.Operator):
         return {"FINISHED"}
 
 
+@persistent
+def load_task_layers(_):
+
+    # Don't update prod task layers if publish is in progress.
+    if bpy.context.scene.bsp_asset.is_publish_in_progress:
+        return
+
+    if not bpy.ops.bsp_asset.load_task_layers.poll():
+        return
+
+    bpy.ops.bsp_asset.load_task_layers()
+
+
 # ----------------REGISTER--------------.
 
 classes = [
@@ -201,7 +216,14 @@ def register() -> None:
     for cls in classes:
         bpy.utils.register_class(cls)
 
+    # Handlers.
+    bpy.app.handlers.load_post.append(load_task_layers)
+
 
 def unregister() -> None:
+
+    # Handlers.
+    bpy.app.handlers.load_post.remove(load_task_layers)
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
