@@ -27,7 +27,7 @@ from .ops import (
     BSP_ASSET_clear_asset_collection,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
-    BSP_ASSET_load_task_layers,
+    BSP_ASSET_load_prod_context,
 )
 from . import builder
 
@@ -40,7 +40,7 @@ def draw_task_layers_list(
     box = layout.box()
     row = box.row(align=True)
     row.label(text="Task Layers")
-    row.operator(BSP_ASSET_load_task_layers.bl_idname, icon="FILE_REFRESH", text="")
+    row.operator(BSP_ASSET_load_prod_context.bl_idname, icon="FILE_REFRESH", text="")
 
     # Ui-list.
     row = box.row()
@@ -123,17 +123,17 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
 
         # No publish in progress.
 
-        # Task Layers not loaded.
-        if not builder.BUILD_CONTEXT.are_task_layers_loaded:
+        # Production Context not loaded.
+        if not builder.PROD_CONTEXT.is_initialized:
             layout.row().operator(
-                BSP_ASSET_load_task_layers.bl_idname, icon="FILE_REFRESH"
+                BSP_ASSET_load_prod_context.bl_idname, icon="FILE_REFRESH"
             )
             return
 
         # Draw Task Layer List.
         draw_task_layers_list(self, context)
 
-        # Build Context is initialized.
+        # Production Context is initialized.
         row = layout.row(align=True)
         row.operator(BSP_ASSET_start_publish.bl_idname)
 
@@ -168,15 +168,14 @@ class BSP_UL_task_layers(bpy.types.UIList):
         self, context, layout, data, item, icon, active_data, active_propname, index
     ):
         layout: bpy.types.UILayout = layout
-        use = item.use
 
         if self.layout_type in {"DEFAULT", "COMPACT"}:
-            layout.label(text=item.name)
+            layout.label(text=item.task_layer_name)
             layout.prop(item, "use", text="")
 
         elif self.layout_type in {"GRID"}:
             layout.alignment = "CENTER"
-            layout.label(text=item.name)
+            layout.label(text=item.task_layer_name)
 
 
 # ----------------REGISTER--------------.

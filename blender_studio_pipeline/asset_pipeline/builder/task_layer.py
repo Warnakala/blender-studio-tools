@@ -79,6 +79,12 @@ class TaskLayerConfig:
     def use(self, value: bool) -> None:
         self._use = value
 
+    def reset(self) -> None:
+        self._use = False
+
+    def __repr__(self) -> str:
+        return f"{self.task_layer.name}(use: {self.use})"
+
 
 class TaskLayerAssembly:
 
@@ -110,6 +116,13 @@ class TaskLayerAssembly:
                 task_layer
             )
 
+    def get_task_layer_config(self, key: str) -> TaskLayerConfig:
+        return self._task_layer_config_dict[key]
+
+    @property
+    def task_layer_config_dict(self) -> Dict[str, TaskLayerConfig]:
+        return self._task_layer_config_dict
+
     @property
     def task_layer_configs(self) -> List[TaskLayerConfig]:
         return list(self._task_layer_config_dict.values())
@@ -134,9 +147,13 @@ class TaskLayerAssembly:
             l.append(t)
         return l
 
+    def reset_task_layer_configs(self) -> None:
+        for tc in self.task_layer_configs:
+            tc.reset()
+
     def __repr__(self) -> str:
-        body = f"{', '.join([t.name for t in self.task_layers])}"
-        return f"TaskLayerAssembly({body})"
+        body = f"{', '.join([str(t) for t in self.task_layer_configs])}"
+        return f"TaskLayerAssembly: ({body})"
 
     def __bool__(self) -> bool:
         return bool(self._task_layer_config_dict)

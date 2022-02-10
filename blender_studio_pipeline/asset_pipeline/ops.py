@@ -33,6 +33,8 @@ from . import builder
 
 logger = logging.getLogger(__name__)
 
+_prod_context_initialized = False
+
 
 class BSP_ASSET_init_asset_collection(bpy.types.Operator):
     bl_idname = "bsp_asset.init_asset_collection"
@@ -69,6 +71,10 @@ class BSP_ASSET_init_asset_collection(bpy.types.Operator):
 
         logger.info(f"Initiated Collection: {asset_coll.name} as Asset: {asset.name}")
 
+        # Init Asset Context.
+        if bpy.ops.bsp_asset.load_asset_context.poll():
+            bpy.ops.bsp_asset.load_asset_context()
+
         # Redraw UI.
         util.redraw_ui()
 
@@ -95,6 +101,10 @@ class BSP_ASSET_clear_asset_collection(bpy.types.Operator):
 
         logger.info(f"Cleared Asset Collection: {asset_coll.name}")
 
+        # Unitialize Asset Context.
+        builder.ASSET_CONTEXT.uninitialize()
+        context.scene.bsp_asset.task_layers.clear()
+
         # Redraw UI.
         util.redraw_ui()
 
@@ -112,13 +122,17 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         return bool(
             asset_coll
             and not context.scene.bsp_asset.is_publish_in_progress
-            and builder.BUILD_CONTEXT.are_task_layers_loaded
+            and builder.PROD_CONTEXT.is_initialized
+            and builder.ASSET_CONTEXT.is_initialized
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
+        # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
+        builder.ASSET_CONTEXT.update_from_bl_context(context)
+
         # Initialize Build Context.
-        builder.BUILD_CONTEXT.initialize(context)
+        builder.BUILD_CONTEXT.initialize(builder.PROD_CONTEXT, builder.ASSET_CONTEXT)
 
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = True
@@ -138,10 +152,10 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        asset_coll = context.scene.bsp_asset.asset_collection
         return bool(context.scene.bsp_asset.is_publish_in_progress)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = False
 
@@ -154,59 +168,124 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BSP_ASSET_load_task_layers(bpy.types.Operator):
-    bl_idname = "bsp_asset.load_task_layers"
-    bl_label = "Load Task Layers"
-    bl_description = "Load task layers from production config folder."
+class BSP_ASSET_load_prod_context(bpy.types.Operator):
+    bl_idname = "bsp_asset.load_prod_context"
+    bl_label = "Load Production Context"
+    bl_description = (
+        "Process config files in production config folder. Loads all task layers."
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = util.get_addon_prefs()
-        return bool(
-            addon_prefs.is_prod_task_layers_module_path_valid()
-            and not context.scene.bsp_asset.is_publish_in_progress
-        )
+        return bool(addon_prefs.is_prod_task_layers_module_path_valid())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
-        # Initialize Build Context.
+        # Initialize Asset Context.
         addon_prefs = util.get_addon_prefs()
         module_path = Path(addon_prefs.prod_task_layers_module)
-        builder.BUILD_CONTEXT.load_task_layers(module_path.parent)
+        builder.PROD_CONTEXT.initialize(module_path.parent)
 
-        print(builder.BUILD_CONTEXT)
+        print(builder.PROD_CONTEXT)
+
+        # When we run this operator to update the production context
+        # We also want the asset context to be updated.
+        if bpy.ops.bsp_asset.load_asset_context.poll():
+            bpy.ops.bsp_asset.load_asset_context()
+
+        return {"FINISHED"}
+
+
+class BSP_ASSET_load_asset_context(bpy.types.Operator):
+    bl_idname = "bsp_asset.load_asset_context"
+    bl_label = "Load Asset Context"
+    bl_description = (
+        "Initialize Asset Context from Production Context. "
+        "Try to restore Task Layer Settings for this Asset"
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        asset_coll: bpy.types.Collection = context.scene.bsp_asset.asset_collection
+        return bool(builder.PROD_CONTEXT.is_initialized and asset_coll)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Initialize Asset Context.
+        builder.ASSET_CONTEXT.initialize(context, builder.PROD_CONTEXT)
 
         # Populate collection property with task layers that are in BUILD_CONTEXT
-        context.scene.bsp_asset.task_layers.clear()
-        for task_layer in builder.BUILD_CONTEXT.task_layer_assembly.task_layers:
-            item = context.scene.bsp_asset.task_layers.add()
-            item.name = task_layer.name
 
-        # Redraw UI.
-        util.redraw_ui()
+        # Make a backup to restore task layer settings as good as possible.
+        tmp_backup: Dict[str, Dict[str, Any]] = {}
+        for (
+            task_layer_id,
+            task_layer_prop_group,
+        ) in context.scene.bsp_asset.task_layers.items():
+            tmp_backup[task_layer_id] = task_layer_prop_group.as_dict()
+
+        # Clear task layer collection property.
+        context.scene.bsp_asset.task_layers.clear()
+
+        # Load Task Layers from Production Context, try to restore
+        # previous task layer settings
+        for (
+            key,
+            task_layer_config,
+        ) in builder.ASSET_CONTEXT.task_layer_assembly.task_layer_config_dict.items():
+            item = context.scene.bsp_asset.task_layers.add()
+            item.name = key
+            item.task_layer_id = key
+            item.task_layer_name = task_layer_config.task_layer.name
+
+            # Restore previous settings.
+            if key in tmp_backup:
+                item.use = tmp_backup[key]["use"]
+
+                # Update actual ASSET_CONTEXT, which will transfer the task layer settings,
+                # which we restored from scene level.
+                task_layer_config.use = tmp_backup[key]["use"]
+
+        print(builder.ASSET_CONTEXT)
 
         return {"FINISHED"}
 
 
 @persistent
-def load_task_layers(_):
+def load_asset_context(_):
+    # We want this to run on every scene load.
+    # As active assets might change after scene load.
+    if bpy.ops.bsp_asset.load_asset_context.poll():
+        bpy.ops.bsp_asset.load_asset_context()
+    else:
+        # That means we load a scene with no asset collection
+        # assigned. Previous ASSET_CONTEXT should therefore
+        # be uninitialized.
+        builder.ASSET_CONTEXT.uninitialize()
 
-    # Don't update prod task layers if publish is in progress.
-    if bpy.context.scene.bsp_asset.is_publish_in_progress:
-        return
 
-    if not bpy.ops.bsp_asset.load_task_layers.poll():
-        return
+@persistent
+def load_prod_context(_):
+    global _prod_context_initialized
 
-    bpy.ops.bsp_asset.load_task_layers()
+    # Should only run once.
+    if not _prod_context_initialized:
+        if bpy.ops.bsp_asset.load_prod_context.poll():
+            bpy.ops.bsp_asset.load_prod_context()
+            _prod_context_initialized = True
+        else:
+            # That means module_path does not exist or is invalid.
+            builder.PROD_CONTEXT.uninitialize()
 
 
 # ----------------REGISTER--------------.
 
 classes = [
-    BSP_ASSET_load_task_layers,
     BSP_ASSET_init_asset_collection,
     BSP_ASSET_clear_asset_collection,
+    BSP_ASSET_load_prod_context,
+    BSP_ASSET_load_asset_context,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
 ]
@@ -217,13 +296,15 @@ def register() -> None:
         bpy.utils.register_class(cls)
 
     # Handlers.
-    bpy.app.handlers.load_post.append(load_task_layers)
+    bpy.app.handlers.load_post.append(load_prod_context)
+    bpy.app.handlers.load_post.append(load_asset_context)
 
 
 def unregister() -> None:
 
     # Handlers.
-    bpy.app.handlers.load_post.remove(load_task_layers)
+    bpy.app.handlers.load_post.remove(load_asset_context)
+    bpy.app.handlers.load_post.remove(load_prod_context)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

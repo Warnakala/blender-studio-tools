@@ -61,7 +61,14 @@ class BSP_task_layer(bpy.types.PropertyGroup):
     Is used in BSP_ASSET_scene_properties as collection property.
     """
 
-    # TODO: should update build context?
+    task_layer_id: bpy.props.StringProperty(
+        name="Task Layer ID",
+        description="Unique Key that is used to query a Task Layer in TaskLayerAssembly.get_task_layer_config(.",
+    )
+    task_layer_name: bpy.props.StringProperty(
+        name="Task Layer Name",
+    )
+
     use: bpy.props.BoolProperty(
         name="Use",
         default=False,
@@ -71,6 +78,13 @@ class BSP_task_layer(bpy.types.PropertyGroup):
 
     def reset_properties(self):
         self.use = False
+
+    def as_dict(self):
+        return {
+            "use": self.use,
+            "task_layer_id": self.task_layer_id,
+            "task_layer_name": self.task_layer_name,
+        }
 
 
 class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
