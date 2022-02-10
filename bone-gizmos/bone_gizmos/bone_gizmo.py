@@ -58,6 +58,11 @@ class MoveBoneGizmo(Gizmo):
 
 		if self.is_using_vgroup(context):
 			self.load_shape_vertex_group(self.get_shape_object(context), props.vertex_group_name)
+
+			dg = context.evaluated_depsgraph_get()
+			ob = self.get_shape_object(context)
+			self.refresh_shape_vgroup(context, ob.evaluated_get(dg).to_mesh())
+
 		elif self.is_using_facemap(context):
 			# We use the built-in function to draw face maps, so we don't need to do any extra processing.
 			pass
