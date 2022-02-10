@@ -171,6 +171,12 @@ class BSP_ASSET_init_build_context(bpy.types.Operator):
 
         print(builder.BUILD_CONTEXT)
 
+        # Populate collection property with task layers that are in BUILD_CONTEXT
+        context.scene.bsp_asset.task_layers.clear()
+        for task_layer in builder.BUILD_CONTEXT.task_layer_assembly.task_layers:
+            item = context.scene.bsp_asset.task_layers.add()
+            item.name = task_layer.name
+
         # Redraw UI.
         util.redraw_ui()
 

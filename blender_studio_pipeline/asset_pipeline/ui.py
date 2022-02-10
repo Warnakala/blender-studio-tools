@@ -32,6 +32,32 @@ from .ops import (
 from . import builder
 
 
+def draw_task_layers_list(
+    self, context: bpy.types.Context, disable: bool = False
+) -> None:
+    layout: bpy.types.UILayout = self.layout
+
+    box = layout.box()
+    box.label(text="Task Layers")
+
+    # Ui-list.
+    row = box.row()
+    row.template_list(
+        "BSP_UL_task_layers",
+        "task_layers_list",
+        context.scene.bsp_asset,
+        "task_layers",
+        context.scene.bsp_asset,
+        "task_layers_index",
+        rows=5,
+        type="DEFAULT",
+    )
+    if disable:
+        row.enabled = False
+
+    return
+
+
 class BSP_ASSET_main_panel:
     bl_category = "Asset Pipeline"
     bl_label = "Asset Pipeline"
@@ -89,6 +115,7 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
 
         # Publish is in progress.
         if context.scene.bsp_asset.is_publish_in_progress:
+            draw_task_layers_list(self, context, disable=True)
             layout.row().operator(BSP_ASSET_abort_publish.bl_idname)
             return
 
@@ -100,6 +127,9 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
                 BSP_ASSET_init_build_context.bl_idname, icon="FILE_REFRESH"
             )
             return
+
+        # Draw Task Layer List.
+        draw_task_layers_list(self, context)
 
         # Build Context is initialized.
         row = layout.row(align=True)
@@ -134,10 +164,27 @@ class BSP_ASSET_PT_collection_asset_properties(bpy.types.Panel):
         layout.row().prop(coll.bsp_asset, "rig")
 
 
+class BSP_UL_task_layers(bpy.types.UIList):
+    def draw_item(
+        self, context, layout, data, item, icon, active_data, active_propname, index
+    ):
+        layout: bpy.types.UILayout = layout
+        use = item.use
+
+        if self.layout_type in {"DEFAULT", "COMPACT"}:
+            layout.label(text=item.name)
+            layout.prop(item, "use", text="")
+
+        elif self.layout_type in {"GRID"}:
+            layout.alignment = "CENTER"
+            layout.label(text=item.name)
+
+
 # ----------------REGISTER--------------.
 
 classes = [
     BSP_ASSET_PT_collection_asset_properties,
+    BSP_UL_task_layers,
     BSP_ASSET_PT_vi3d_asset_pipeline,
     BSP_ASSET_PT_vi3d_asset_collection,
     BSP_ASSET_PT_vi3d_publish_manager,

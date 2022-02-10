@@ -54,6 +54,25 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
         self.rig = None
 
 
+class BSP_task_layer(bpy.types.PropertyGroup):
+
+    """
+    Property Group that can represent a minimal version of a Task Layer.
+    Is used in BSP_ASSET_scene_properties as collection property.
+    """
+
+    # TODO: should update build context?
+    use: bpy.props.BoolProperty(
+        name="Use",
+        default=False,
+        options={"LIBRARY_EDITABLE"},
+        override={"LIBRARY_OVERRIDABLE"},
+    )
+
+    def reset_properties(self):
+        self.use = False
+
+
 class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
     """
     Scene Properties for Asset Pipeline
@@ -75,10 +94,14 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
 
     is_publish_in_progress: bpy.props.BoolProperty()  # type: ignore
 
+    task_layers: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
+
+    task_layers_index: bpy.props.IntProperty(name="Task Layers Index", min=0)
+
 
 # ----------------REGISTER--------------.
 
-classes = [BSP_ASSET_asset_collection, BSP_ASSET_scene_properties]
+classes = [BSP_task_layer, BSP_ASSET_asset_collection, BSP_ASSET_scene_properties]
 
 
 def register() -> None:
