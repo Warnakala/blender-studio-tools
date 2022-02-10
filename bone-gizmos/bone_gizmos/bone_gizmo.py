@@ -307,8 +307,8 @@ class MoveBoneGizmo(Gizmo):
 			rot_mat = rot.to_matrix().to_4x4()
 
 			display_scale = pb.custom_shape_scale_xyz.copy()
-			if display_bone.use_custom_shape_bone_size:
-				display_scale *= display_bone.length
+			if pb.use_custom_shape_bone_size:
+				display_scale *= display_bone.bone.length
 
 			scale_mat_x = Matrix.Scale(display_scale.x, 4, (1, 0, 0))
 			scale_mat_y = Matrix.Scale(display_scale.y, 4, (0, 1, 0))

@@ -180,7 +180,7 @@ class BONEGIZMO_OT_RestartGizmoGroup(Operator):
 	"""Re-initialize all gizmos. Needed when the gizmo shape objects are modified, since there's no dependency between gizmos and their target shapes"""
 
 	bl_idname = "pose.restart_gizmos"
-	bl_label = "Refresh All"
+	bl_label = "Refresh Gizmos"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	def execute(self, context):

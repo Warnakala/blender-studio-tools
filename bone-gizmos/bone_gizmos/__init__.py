@@ -4,9 +4,10 @@ from . import bone_gizmo_properties
 from . import bone_gizmo
 from . import bone_gizmo_ui
 from . import bone_gizmo_group
+from . import operators
 
 from bpy.props import FloatProperty, IntProperty
-from bpy.types import Scene, AddonPreferences
+from bpy.types import AddonPreferences
 
 bl_info = {
 	'name' : "Bone Gizmos"
@@ -24,6 +25,7 @@ modules = (
 	bone_gizmo,
 	bone_gizmo_ui,
 	bone_gizmo_group,
+	operators,
 )
 
 class BoneGizmoPreferences(AddonPreferences):
