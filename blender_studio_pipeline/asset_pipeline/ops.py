@@ -269,7 +269,7 @@ def load_asset_context(_):
 def load_prod_context(_):
     global _prod_context_initialized
 
-    # Should only run once.
+    # Should only run once on startup.
     if not _prod_context_initialized:
         if bpy.ops.bsp_asset.load_prod_context.poll():
             bpy.ops.bsp_asset.load_prod_context()

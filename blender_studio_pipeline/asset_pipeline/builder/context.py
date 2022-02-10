@@ -51,12 +51,12 @@ class BuildContextFailedToInitialize(Exception):
 
 class ProcessPair:
     """
-    Simple Class that stores a logically connected source and a target path.
+    Simple Class that stores a logically connected target and a pull from path.
     """
 
-    def __init__(self, source: Path, target: Path) -> None:
-        self.source = source
+    def __init__(self, target: Path, pull_from: Path) -> None:
         self.target = target
+        self.pull_from = pull_from
 
 
 class ProductionContext:

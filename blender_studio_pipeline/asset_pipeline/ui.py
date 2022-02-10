@@ -33,7 +33,7 @@ from . import builder
 
 
 def draw_task_layers_list(
-    self, context: bpy.types.Context, disable: bool = False
+    self: bpy.types.Panel, context: bpy.types.Context, disable: bool = False
 ) -> None:
     layout: bpy.types.UILayout = self.layout
 
