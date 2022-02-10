@@ -34,6 +34,10 @@ from .classes import ProcessPair
 logger = logging.getLogger(__name__)
 
 
+class BuildContextFailedToInitialize(Exception):
+    pass
+
+
 class BuildContext:
 
     """
@@ -43,30 +47,58 @@ class BuildContext:
     """
 
     def __init__(self):
+        # TODO: restrict access, make most of the stuff private.
         self.bl_context: Optional[bpy.types.Context] = None
         self.config_folder: Optional[Path] = None
         self.module_task_layers: Optional[ModuleType] = None
         self.asset_collection: Optional[bpy.types.Collection] = None
         self.task_layer_assembly: Optional[TaskLayerAssembly] = None
         self.process_pairs: List[ProcessPair] = []
+
+        self._are_task_layers_loaded: bool = False
         self._is_init: bool = False
 
-    def initialize(self, bl_context: bpy.types.Context, config_folder: Path) -> None:
-        self.bl_context = bl_context
+    def load_task_layers(self, config_folder: Path) -> TaskLayerAssembly:
         self.config_folder = config_folder
-        self.asset_collection = bl_context.scene.bsp_asset.asset_collection
 
-        # Check if bl_context and config_folder are valid.
-        if not all([self.bl_context, self.config_folder, self.asset_collection]):
+        if not config_folder:
             raise ValueError(
-                "Could not initialize BuildContext. Invalid blender_context or config folder."
+                f"Could not load TaskLayers. Invalid config folder: {config_folder}"
             )
 
         # Load configs from config_folder.
         self._collect_configs()
 
+        # If no task layers were found, meaning there was a task_layer.py file
+        # But no definitions were there we won't set self._task_layers_loaded to True.
+        # Is falsy if it contains no task layers.
+        if self.task_layer_assembly:
+            self._are_task_layers_loaded = True
+
+        return self.task_layer_assembly
+
+    def initialize(self, bl_context: bpy.types.Context) -> None:
+
+        if not self._are_task_layers_loaded:
+            raise BuildContextFailedToInitialize(
+                "Failed to initialize Build Context. Task Layers not loaded."
+            )
+
+        self.bl_context = bl_context
+        self.asset_collection = bl_context.scene.bsp_asset.asset_collection
+
+        # Check if bl_context and config_folder are valid.
+        if not all([self.bl_context, self.asset_collection]):
+            raise BuildContextFailedToInitialize(
+                "Failed to initialize BuildContext. Invalid blender_context or asset collection not set."
+            )
+
         # Update init state.
         self._is_init = True
+
+    @property
+    def are_task_layers_loaded(self) -> bool:
+        return self._are_task_layers_loaded
 
     @property
     def is_initialized(self) -> bool:
@@ -130,15 +162,31 @@ class BuildContext:
 
     def __repr__(self) -> str:
         header = "\nBUILD CONTEXT\n------------------------------------"
+        init_info = f"Initialized: {self.is_initialized}"
+        footer = "\n"
+
+        if not self.is_initialized:
+            prod_task_layers = (
+                f"Production Task Layers: {self.task_layer_assembly.task_layer_names}"
+            )
+
+            return "\n".join([header, init_info, prod_task_layers, footer])
+
         asset_info = f"Asset: {self.asset_collection.bsp_asset.entity_name}({self.asset_collection})"
         prod_task_layers = (
             f"Production Task Layers: {self.task_layer_assembly.task_layer_names}"
         )
         task_layer_assembly = str(self.task_layer_assembly)
-        footer = "\n"
 
         return "\n".join(
-            [header, asset_info, prod_task_layers, task_layer_assembly, footer]
+            [
+                header,
+                init_info,
+                asset_info,
+                prod_task_layers,
+                task_layer_assembly,
+                footer,
+            ]
         )
 
 

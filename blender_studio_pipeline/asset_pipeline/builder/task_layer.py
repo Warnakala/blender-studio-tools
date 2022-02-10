@@ -137,3 +137,6 @@ class TaskLayerAssembly:
     def __repr__(self) -> str:
         body = f"{', '.join([t.name for t in self.task_layers])}"
         return f"TaskLayerAssembly({body})"
+
+    def __bool__(self) -> bool:
+        return bool(self._task_layer_config_dict)

@@ -27,7 +27,7 @@ from .ops import (
     BSP_ASSET_clear_asset_collection,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
-    BSP_ASSET_init_build_context,
+    BSP_ASSET_load_task_layers,
 )
 from . import builder
 
@@ -38,7 +38,9 @@ def draw_task_layers_list(
     layout: bpy.types.UILayout = self.layout
 
     box = layout.box()
-    box.label(text="Task Layers")
+    row = box.row(align=True)
+    row.label(text="Task Layers")
+    row.operator(BSP_ASSET_load_task_layers.bl_idname, icon="FILE_REFRESH", text="")
 
     # Ui-list.
     row = box.row()
@@ -121,10 +123,10 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
 
         # No publish in progress.
 
-        # Build Context not initialized.
-        if not builder.BUILD_CONTEXT.is_initialized:
+        # Task Layers not loaded.
+        if not builder.BUILD_CONTEXT.are_task_layers_loaded:
             layout.row().operator(
-                BSP_ASSET_init_build_context.bl_idname, icon="FILE_REFRESH"
+                BSP_ASSET_load_task_layers.bl_idname, icon="FILE_REFRESH"
             )
             return
 
@@ -134,9 +136,6 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
         # Build Context is initialized.
         row = layout.row(align=True)
         row.operator(BSP_ASSET_start_publish.bl_idname)
-        row.operator(
-            BSP_ASSET_init_build_context.bl_idname, icon="FILE_REFRESH", text=""
-        )
 
         return
 

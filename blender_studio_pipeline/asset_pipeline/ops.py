@@ -111,10 +111,13 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         return bool(
             asset_coll
             and not context.scene.bsp_asset.is_publish_in_progress
-            and builder.BUILD_CONTEXT.is_initialized
+            and builder.BUILD_CONTEXT.are_task_layers_loaded
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Initialize Build Context.
+        builder.BUILD_CONTEXT.initialize(context)
 
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = True
@@ -149,10 +152,10 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BSP_ASSET_init_build_context(bpy.types.Operator):
-    bl_idname = "bsp_asset.init_build_context"
-    bl_label = "Initialize Build Context"
-    bl_description = ""
+class BSP_ASSET_load_task_layers(bpy.types.Operator):
+    bl_idname = "bsp_asset.load_task_layers"
+    bl_label = "Load Task Layers"
+    bl_description = "Load task layers from production config folder."
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -167,7 +170,7 @@ class BSP_ASSET_init_build_context(bpy.types.Operator):
         # Initialize Build Context.
         addon_prefs = util.get_addon_prefs()
         module_path = Path(addon_prefs.prod_task_layers_module)
-        builder.BUILD_CONTEXT.initialize(context, module_path.parent)
+        builder.BUILD_CONTEXT.load_task_layers(module_path.parent)
 
         print(builder.BUILD_CONTEXT)
 
@@ -186,11 +189,11 @@ class BSP_ASSET_init_build_context(bpy.types.Operator):
 # ----------------REGISTER--------------.
 
 classes = [
+    BSP_ASSET_load_task_layers,
     BSP_ASSET_init_asset_collection,
     BSP_ASSET_clear_asset_collection,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
-    BSP_ASSET_init_build_context,
 ]
 
 
