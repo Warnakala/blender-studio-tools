@@ -37,7 +37,7 @@ bl_info = {
     "category": "Generic",
 }
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("BSP")
 _need_reload = "asset_pipeline" in locals()
 
 

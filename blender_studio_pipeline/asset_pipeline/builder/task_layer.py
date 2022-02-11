@@ -25,7 +25,7 @@ from types import ModuleType
 
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("BSP")
 
 
 class TaskLayer:

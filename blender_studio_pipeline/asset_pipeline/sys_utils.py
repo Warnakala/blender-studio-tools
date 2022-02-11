@@ -27,7 +27,7 @@ import pathlib
 import logging
 from typing import List, Dict, Union, Any, Optional
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("BSP")
 
 
 class SystemPathInclude:

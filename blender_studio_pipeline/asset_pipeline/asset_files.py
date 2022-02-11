@@ -27,7 +27,7 @@ import bpy
 
 from . import constants
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("BSP")
 
 
 class AssetFile:

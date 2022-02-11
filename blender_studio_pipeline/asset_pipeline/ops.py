@@ -31,7 +31,7 @@ import blender_kitsu.cache
 from .. import util
 from . import builder
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("BSP")
 
 
 class BSP_ASSET_init_asset_collection(bpy.types.Operator):

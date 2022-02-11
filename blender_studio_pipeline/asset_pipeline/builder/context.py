@@ -32,7 +32,7 @@ from .task_layer import TaskLayer, TaskLayerAssembly
 from .. import asset_files
 from ..asset_files import AssetDir, AssetPublish, AssetTask
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("BSP")
 
 
 class ProdContextFailedToInitialize(Exception):
