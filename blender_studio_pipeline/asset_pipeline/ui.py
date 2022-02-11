@@ -28,6 +28,7 @@ from .ops import (
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
     BSP_ASSET_create_prod_context,
+    BSP_ASSET_publish,
 )
 from . import builder
 
@@ -119,6 +120,7 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
         if context.scene.bsp_asset.is_publish_in_progress:
             draw_task_layers_list(self, context, disable=True)
             layout.row().operator(BSP_ASSET_abort_publish.bl_idname)
+            layout.row().operator(BSP_ASSET_publish.bl_idname)
             return
 
         # No publish in progress.

@@ -169,6 +169,37 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BSP_ASSET_publish(bpy.types.Operator):
+    bl_idname = "bsp_asset.publish"
+    bl_label = "Publish"
+    bl_description = "Starst the Asset Builder with the current Build Context"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(
+            context.scene.bsp_asset.is_publish_in_progress
+            and util.is_file_saved()
+            and builder.PROD_CONTEXT
+            and builder.ASSET_CONTEXT,
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Create Asset Builder.
+        builder.ASSET_BUILDER = builder.AssetBuilder(builder.BUILD_CONTEXT)
+
+        # Publish
+        builder.ASSET_BUILDER.build()
+
+        # Update properties
+        context.scene.bsp_asset.is_publish_in_progress = False
+
+        # Redraw UI.
+        util.redraw_ui()
+
+        return {"FINISHED"}
+
+
 class BSP_ASSET_create_prod_context(bpy.types.Operator):
     bl_idname = "bsp_asset.create_prod_context"
     bl_label = "Create Production Context"
@@ -286,6 +317,7 @@ classes = [
     BSP_ASSET_create_asset_context,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
+    BSP_ASSET_publish
 ]
 
 

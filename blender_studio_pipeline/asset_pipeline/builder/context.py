@@ -255,7 +255,6 @@ class BuildContext:
         self._is_first_publish: bool = False
         self._asset_dir = AssetDir(Path(bpy.data.filepath).parent)
         self._asset_task = AssetTask(Path(bpy.data.filepath))
-        self._asset_disk_name = self._asset_dir.asset_name
 
         self._collect_asset_publishes()
 
@@ -280,6 +279,11 @@ class BuildContext:
     def _init_publish(self) -> None:
         if not self._asset_publishes:
             self._is_first_publish = True
+            self._process_pairs.append(
+                ProcessPair(
+                    self.asset_dir.get_first_publish_path(), self.asset_task.path
+                )
+            )
 
     @property
     def asset_task(self) -> AssetTask:
@@ -297,11 +301,15 @@ class BuildContext:
     def asset_context(self) -> AssetContext:
         return self._asset_context
 
+    @property
+    def process_pairs(self) -> List[ProcessPair]:
+        return self._process_pairs
+
     def __repr__(self) -> str:
         header = "\nBUILD CONTEXT\n------------------------------------"
         footer = "------------------------------------"
         asset_task = f"Asset Task: {str(self._asset_task)}"
-        asset_disk_name = f"Asset Disk Name: {self._asset_disk_name}"
+        asset_disk_name = f"Asset Disk Name: {self.asset_dir.asset_disk_name}"
         asset_dir = f"Asset Dir: {str(self.asset_dir)}"
         return "\n".join(
             [

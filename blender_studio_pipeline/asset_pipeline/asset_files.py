@@ -56,6 +56,8 @@ class AssetPublish(AssetFile):
     Represents a publish file.
     """
 
+    # TODO: overwrite init to load metadata etc.
+
     pass
 
     def get_version(self, format: type = str) -> Optional[Union[str, int]]:
@@ -66,11 +68,11 @@ class AssetDir:
     def __init__(self, path: Path):
         self._path = path
         # Directory name should match asset name
-        self._asset_name = path.name
+        self._asset_disk_name = path.name
 
     @property
-    def asset_name(self) -> str:
-        return self._asset_name
+    def asset_disk_name(self) -> str:
+        return self._asset_disk_name
 
     @property
     def publish_dir(self) -> Path:
@@ -94,16 +96,20 @@ class AssetDir:
             t = t.replace(f".{file_version}", "")  # Without version string
 
             # It it matches asset name now, it is an official publish.
-            if t != self._asset_name:
+            if t != self._asset_disk_name:
                 continue
 
             asset_publishes.append(AssetPublish(file))
 
         return asset_publishes
 
+    def get_first_publish_path(self) -> Path:
+        filename = f"{self.asset_disk_name}.v001.blend"
+        return self.publish_dir / filename
+
     def __repr__(self) -> str:
         publishes = ", ".join(str(a) for a in self.get_asset_publishes())
-        return f"{self.asset_name} (Publishes:{str(publishes)})"
+        return f"{self.asset_disk_name} (Publishes:{str(publishes)})"
 
 
 def get_asset_disk_name(asset_name: str) -> str:
