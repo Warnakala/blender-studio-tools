@@ -29,6 +29,8 @@ import bpy
 
 from ..sys_utils import SystemPathInclude
 from .task_layer import TaskLayer, TaskLayerAssembly
+from .. import asset_files
+from ..asset_files import AssetDir, AssetPublish, AssetTask
 
 logger = logging.getLogger(__name__)
 
@@ -66,60 +68,35 @@ class ProductionContext:
     Independent from Blender, no bpy access.
     """
 
-    def __init__(self):
-        self._task_layers: List[type[TaskLayer]] = []
-        self._config_folder: Optional[Path] = None
-        self._module_of_task_layers: Optional[ModuleType] = None
-        self._is_init: bool = False
+    def __init__(self, config_folder: Path):
 
-    def initialize(self, config_folder: Path) -> None:
-        self._config_folder = config_folder
-
-        if not config_folder:
+        if not config_folder or not config_folder.exists():
             raise ProdContextFailedToInitialize(
                 f"Failed to init ProductionContext. Invalid config folder: {config_folder}"
             )
 
+        self._task_layers: List[type[TaskLayer]] = []
+        self._config_folder: Path = config_folder
+        self._module_of_task_layers: Optional[ModuleType] = None
+
         # Load configs from config_folder.
         self._collect_configs()
-
-        # If no task layers were found, meaning there was a task_layer.py file
-        # But no definitions were there we won't set self._initialized to True.
-        if not self._task_layers:
-            return
-
-        self._is_init = True
-
         logger.debug("Initialized Production Context")
 
-    def uninitialize(self) -> None:
-        self._task_layers.clear()
-        self._config_folder = None
-        self._module_of_task_layers = None
-
-        # Update init state.
-        self._is_init = False
-
-        logger.debug("Uninitialized Production Context")
-
     @property
-    def config_folder(self) -> Optional[Path]:
+    def config_folder(self) -> Path:
         return self._config_folder
 
     @property
     def task_layers(self) -> Optional[List[type[TaskLayer]]]:
         return self._task_layers
 
-    @property
-    def is_initialized(self) -> bool:
-        return self._is_init
-
     def _collect_configs(self) -> None:
 
         # Add config folder temporarily to sys.path for convenient
         # import.
 
-        with SystemPathInclude([self._config_folder.as_posix()]):
+        with SystemPathInclude([self._config_folder]):
 
             # Load Task Layers.
             # TODO: information duplicated in add-on preferences
@@ -142,7 +119,7 @@ class ProductionContext:
             # Crawl module for TaskLayers.
             self._collect_prod_task_layers()
 
-    def _collect_prod_task_layers(self) -> List[type[TaskLayer]]:
+    def _collect_prod_task_layers(self) -> None:
 
         # Clear task layer list, otherwise we will add new but don't
         # remove old.
@@ -171,17 +148,11 @@ class ProductionContext:
 
     def __repr__(self) -> str:
         header = "\nPRODUCTION CONTEXT\n------------------------------------"
-        init_info = f"Initialized: {self.is_initialized}"
         footer = "\n"
-
-        if not self.is_initialized:
-            return "\n".join([header, init_info, footer])
-
         prod_task_layers = (
             f"Production Task Layers: {[t.name for t in self._task_layers]}"
         )
-
-        return "\n".join([header, init_info, prod_task_layers, footer])
+        return "\n".join([header, prod_task_layers, footer])
 
 
 class AssetContext:
@@ -190,32 +161,22 @@ class AssetContext:
     Should be updated on each scene load.
     """
 
-    def __init__(self):
-        self._custom_task_layers = []
-        self._bl_context: Optional[bpy.types.Context] = None
-        self._asset_collection: Optional[bpy.types.Collection] = None
-        self._task_layer_assembly: Optional[TaskLayerAssembly] = None
-        self._is_init: bool = False
-
-    def initialize(
-        self, bl_context: bpy.types.Context, prod_context: ProductionContext
-    ) -> None:
-        self._bl_context = bl_context
-        self._asset_collection = bl_context.scene.bsp_asset.asset_collection
+    def __init__(self, bl_context: bpy.types.Context, prod_context: ProductionContext):
 
         # Check if bl_context and config_folder are valid.
-        if not all([self._bl_context, self._asset_collection]):
+        if not all([bl_context, bl_context.scene.bsp_asset.asset_collection]):
             raise AssetContextFailedToInitialize(
                 "Failed to initialize AssetContext. Invalid blender_context or asset collection not set."
             )
 
-        # Create Task Layer Assembly
-        self._load_task_layer_assembly_from_prod(prod_context)
+        self._bl_context: bpy.types.Context = bl_context
+        self._asset_collection: bpy.types.Collection = (
+            bl_context.scene.bsp_asset.asset_collection
+        )
+        self._task_layer_assembly = TaskLayerAssembly(prod_context._task_layers)
 
-        # Load custom Task Layers.
-
-        # Update init state.
-        self._is_init = True
+        # TODO: Load custom Task Layers.
+        self._custom_task_layers: List[Any] = []
 
         logger.debug("Initialized Asset Context")
 
@@ -224,32 +185,16 @@ class AssetContext:
         return self._asset_collection
 
     @property
-    def task_layer_assembly(self) -> Optional[TaskLayerAssembly]:
-        return self._task_layer_assembly
+    def asset_name(self) -> str:
+        return self.asset_collection.bsp_asset.entity_name
 
     @property
-    def is_initialized(self) -> bool:
-        return self._is_init
-
-    def uninitialize(self) -> None:
-        self._custom_task_layers.clear()
-        self._bl_context = None
-        self._asset_collection = None
-        self._task_layer_assembly = None
-
-        # Update init state.
-        self._is_init = False
-
-        logger.debug("Uninitialized Asset Context")
+    def task_layer_assembly(self) -> TaskLayerAssembly:
+        return self._task_layer_assembly
 
     def update_from_bl_context(self, bl_context: bpy.types.Context) -> None:
         self._asset_collection = bl_context.scene.bsp_asset.asset_collection
         self._update_task_layer_assembly_from_context(bl_context)
-
-    def _load_task_layer_assembly_from_prod(
-        self, prod_context: ProductionContext
-    ) -> None:
-        self._task_layer_assembly = TaskLayerAssembly(prod_context._task_layers)
 
     def _update_task_layer_assembly_from_context(
         self, bl_context: bpy.types.Context
@@ -268,19 +213,13 @@ class AssetContext:
 
     def __repr__(self) -> str:
         header = "\nASSET CONTEXT\n------------------------------------"
-        init_info = f"Initialized: {self.is_initialized}"
         footer = "\n"
-
-        if not self.is_initialized:
-            return "\n".join([header, init_info, footer])
-
         asset_info = f"Asset: {self.asset_collection.bsp_asset.entity_name}({self.asset_collection})"
         task_layer_assembly = str(self.task_layer_assembly)
 
         return "\n".join(
             [
                 header,
-                init_info,
                 asset_info,
                 task_layer_assembly,
                 footer,
@@ -297,61 +236,74 @@ class BuildContext:
     Should be updated on start publish/pull and only be relevant for publish/pull.
     """
 
-    def __init__(self):
-        self._asset_context: Optional[AssetContext] = None
-        self._prod_context: Optional[ProductionContext] = None
-        self._process_pairs: List[ProcessPair] = []
-
-    def initialize(
-        self, prod_context: ProductionContext, asset_context: AssetContext
-    ) -> None:
-
-        if not prod_context.is_initialized and asset_context.is_initialized:
+    def __init__(
+        self,
+        prod_context: ProductionContext,
+        asset_context: AssetContext,
+        is_publish: bool,
+    ):
+        if not all([prod_context, asset_context]):
             raise BuildContextFailedToInitialize(
                 "Failed to initialize Build Context. Production or Asset Context not initialized."
             )
 
-        self._asset_context = asset_context
-        self._prod_context = prod_context
+        self._prod_context: ProductionContext = prod_context
+        self._asset_context: AssetContext = asset_context
+        self._is_publish = is_publish
+        self._asset_publishes: List[AssetPublish] = []
+        self._process_pairs: List[ProcessPair] = []
+        self._is_first_publish: bool = False
+        self._asset_dir = AssetDir(Path(bpy.data.filepath).parent)
+        self._asset_task = AssetTask(Path(bpy.data.filepath))
+        self._asset_name = self._asset_dir.asset_name
 
-        # Load process pairs (Checking all the metadata etc.)
+        self._collect_asset_publishes()
 
-        # Update init state.
-        self._is_init = True
+        if self._is_publish:
+            self._init_publish()
 
-        logger.debug("Initialized Build Context")
+    @classmethod
+    def init_publish(
+        cls, prod_context: ProductionContext, asset_context: AssetContext
+    ) -> "BuildContext":
+        return cls(prod_context, asset_context, True)
 
-    def uninitialize(self) -> None:
-        self._asset_context = None
-        self._prod_context = None
-        self._process_pairs.clear()
+    @classmethod
+    def init_pull(
+        cls, prod_context: ProductionContext, asset_context: AssetContext
+    ) -> "BuildContext":
+        return cls(prod_context, asset_context, False)
 
-        # Update init state.
-        self._is_init = False
+    def _collect_asset_publishes(self) -> None:
+        self._asset_publishes.extend(self._asset_dir.get_asset_publishes())
 
-        logger.debug("Uninitialized Build Context")
+    def _init_publish(self) -> None:
+        if not self._asset_publishes:
+            self._is_first_publish = True
 
     @property
-    def prod_context(self) -> Optional[ProductionContext]:
+    def asset_task(self) -> AssetTask:
+        return self._asset_task
+
+    @property
+    def asset_dir(self) -> AssetDir:
+        return self._asset_dir
+
+    @property
+    def prod_context(self) -> ProductionContext:
         return self._prod_context
 
     @property
-    def asset_context(self) -> Optional[AssetContext]:
+    def asset_context(self) -> AssetContext:
         return self._asset_context
-
-    @property
-    def is_initialized(self) -> bool:
-        return self._is_init
 
     def __repr__(self) -> str:
         header = "\nBUILD CONTEXT\n------------------------------------"
-        init_info = f"Initialized: {self.is_initialized}"
         footer = "\n"
 
         return "\n".join(
             [
                 header,
-                init_info,
                 "\n",
                 str(self.prod_context),
                 str(self.asset_context),

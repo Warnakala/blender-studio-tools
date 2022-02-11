@@ -19,20 +19,18 @@
 # (c) 2021, Blender Foundation - Paul Golter
 import importlib
 
-from . import builder, props, ops, ui, api
+from . import props, ops, ui, api
 
 
 # ----------------REGISTER--------------.
 
 
 def reload() -> None:
-    global builder
     global props
     global ops
     global ui
     global api
 
-    builder.reload()
     props = importlib.reload(props)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)

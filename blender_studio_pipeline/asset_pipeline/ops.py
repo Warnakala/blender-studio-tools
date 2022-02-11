@@ -33,8 +33,6 @@ from . import builder
 
 logger = logging.getLogger(__name__)
 
-_prod_context_initialized = False
-
 
 class BSP_ASSET_init_asset_collection(bpy.types.Operator):
     bl_idname = "bsp_asset.init_asset_collection"
@@ -72,8 +70,8 @@ class BSP_ASSET_init_asset_collection(bpy.types.Operator):
         logger.info(f"Initiated Collection: {asset_coll.name} as Asset: {asset.name}")
 
         # Init Asset Context.
-        if bpy.ops.bsp_asset.load_asset_context.poll():
-            bpy.ops.bsp_asset.load_asset_context()
+        if bpy.ops.bsp_asset.create_asset_context.poll():
+            bpy.ops.bsp_asset.create_asset_context()
 
         # Redraw UI.
         util.redraw_ui()
@@ -102,7 +100,7 @@ class BSP_ASSET_clear_asset_collection(bpy.types.Operator):
         logger.info(f"Cleared Asset Collection: {asset_coll.name}")
 
         # Unitialize Asset Context.
-        builder.ASSET_CONTEXT.uninitialize()
+        builder.ASSET_CONTEXT = None
         context.scene.bsp_asset.task_layers.clear()
 
         # Redraw UI.
@@ -120,10 +118,11 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         asset_coll = context.scene.bsp_asset.asset_collection
         return bool(
-            asset_coll
+            util.is_file_saved()
+            and asset_coll
             and not context.scene.bsp_asset.is_publish_in_progress
-            and builder.PROD_CONTEXT.is_initialized
-            and builder.ASSET_CONTEXT.is_initialized
+            and builder.PROD_CONTEXT
+            and builder.ASSET_CONTEXT
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -131,8 +130,10 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
         builder.ASSET_CONTEXT.update_from_bl_context(context)
 
-        # Initialize Build Context.
-        builder.BUILD_CONTEXT.initialize(builder.PROD_CONTEXT, builder.ASSET_CONTEXT)
+        # Create Build Context.
+        builder.BUILD_CONTEXT = builder.BuildContext.init_publish(
+            builder.PROD_CONTEXT, builder.ASSET_CONTEXT
+        )
 
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = True
@@ -160,7 +161,7 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
         context.scene.bsp_asset.is_publish_in_progress = False
 
         # Uninitialize Build Context.
-        builder.BUILD_CONTEXT.uninitialize()
+        builder.BUILD_CONTEXT = None
 
         # Redraw UI.
         util.redraw_ui()
@@ -168,9 +169,9 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BSP_ASSET_load_prod_context(bpy.types.Operator):
-    bl_idname = "bsp_asset.load_prod_context"
-    bl_label = "Load Production Context"
+class BSP_ASSET_create_prod_context(bpy.types.Operator):
+    bl_idname = "bsp_asset.create_prod_context"
+    bl_label = "Create Production Context"
     bl_description = (
         "Process config files in production config folder. Loads all task layers."
     )
@@ -184,22 +185,22 @@ class BSP_ASSET_load_prod_context(bpy.types.Operator):
 
         # Initialize Asset Context.
         addon_prefs = util.get_addon_prefs()
-        module_path = Path(addon_prefs.prod_task_layers_module)
-        builder.PROD_CONTEXT.initialize(module_path.parent)
+        config_folder = Path(addon_prefs.prod_config_dir)
+        builder.PROD_CONTEXT = builder.ProductionContext(config_folder)
 
         print(builder.PROD_CONTEXT)
 
         # When we run this operator to update the production context
         # We also want the asset context to be updated.
-        if bpy.ops.bsp_asset.load_asset_context.poll():
-            bpy.ops.bsp_asset.load_asset_context()
+        if bpy.ops.bsp_asset.create_asset_context.poll():
+            bpy.ops.bsp_asset.create_asset_context()
 
         return {"FINISHED"}
 
 
-class BSP_ASSET_load_asset_context(bpy.types.Operator):
-    bl_idname = "bsp_asset.load_asset_context"
-    bl_label = "Load Asset Context"
+class BSP_ASSET_create_asset_context(bpy.types.Operator):
+    bl_idname = "bsp_asset.create_asset_context"
+    bl_label = "Create Asset Context"
     bl_description = (
         "Initialize Asset Context from Production Context. "
         "Try to restore Task Layer Settings for this Asset"
@@ -208,12 +209,12 @@ class BSP_ASSET_load_asset_context(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         asset_coll: bpy.types.Collection = context.scene.bsp_asset.asset_collection
-        return bool(builder.PROD_CONTEXT.is_initialized and asset_coll)
+        return bool(builder.PROD_CONTEXT and asset_coll)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # Initialize Asset Context.
-        builder.ASSET_CONTEXT.initialize(context, builder.PROD_CONTEXT)
+        builder.ASSET_CONTEXT = builder.AssetContext(context, builder.PROD_CONTEXT)
 
         # Populate collection property with task layers that are in BUILD_CONTEXT
 
@@ -253,30 +254,27 @@ class BSP_ASSET_load_asset_context(bpy.types.Operator):
 
 
 @persistent
-def load_asset_context(_):
+def create_asset_context(_):
     # We want this to run on every scene load.
     # As active assets might change after scene load.
-    if bpy.ops.bsp_asset.load_asset_context.poll():
-        bpy.ops.bsp_asset.load_asset_context()
+    if bpy.ops.bsp_asset.create_asset_context.poll():
+        bpy.ops.bsp_asset.create_asset_context()
     else:
         # That means we load a scene with no asset collection
         # assigned. Previous ASSET_CONTEXT should therefore
         # be uninitialized.
-        builder.ASSET_CONTEXT.uninitialize()
+        builder.ASSET_CONTEXT = None
 
 
 @persistent
-def load_prod_context(_):
-    global _prod_context_initialized
+def create_prod_context(_):
 
     # Should only run once on startup.
-    if not _prod_context_initialized:
-        if bpy.ops.bsp_asset.load_prod_context.poll():
-            bpy.ops.bsp_asset.load_prod_context()
-            _prod_context_initialized = True
+    if not builder.PROD_CONTEXT:
+        if bpy.ops.bsp_asset.create_prod_context.poll():
+            bpy.ops.bsp_asset.create_prod_context()
         else:
-            # That means module_path does not exist or is invalid.
-            builder.PROD_CONTEXT.uninitialize()
+            builder.PROD_CONTEXT = None
 
 
 # ----------------REGISTER--------------.
@@ -284,8 +282,8 @@ def load_prod_context(_):
 classes = [
     BSP_ASSET_init_asset_collection,
     BSP_ASSET_clear_asset_collection,
-    BSP_ASSET_load_prod_context,
-    BSP_ASSET_load_asset_context,
+    BSP_ASSET_create_prod_context,
+    BSP_ASSET_create_asset_context,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
 ]
@@ -296,15 +294,15 @@ def register() -> None:
         bpy.utils.register_class(cls)
 
     # Handlers.
-    bpy.app.handlers.load_post.append(load_prod_context)
-    bpy.app.handlers.load_post.append(load_asset_context)
+    bpy.app.handlers.load_post.append(create_prod_context)
+    bpy.app.handlers.load_post.append(create_asset_context)
 
 
 def unregister() -> None:
 
     # Handlers.
-    bpy.app.handlers.load_post.remove(load_asset_context)
-    bpy.app.handlers.load_post.remove(load_prod_context)
+    bpy.app.handlers.load_post.remove(create_asset_context)
+    bpy.app.handlers.load_post.remove(create_prod_context)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

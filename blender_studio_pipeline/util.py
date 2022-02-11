@@ -12,3 +12,7 @@ def redraw_ui() -> None:
 
 def get_addon_prefs() -> bpy.types.AddonPreferences:
     return bpy.context.preferences.addons[__package__].preferences
+
+
+def is_file_saved() -> bool:
+    return bool(bpy.data.filepath)

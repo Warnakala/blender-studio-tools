@@ -30,7 +30,7 @@ from . import constants
 logger = logging.getLogger(__name__)
 
 
-class AssetPublish:
+class AssetFile:
     def __init__(self, asset_path: Path):
         self._path = asset_path
         self._metadata_path = (
@@ -42,6 +42,63 @@ class AssetPublish:
         return self._path
 
 
+class AssetTask(AssetFile):
+    """
+    Represents a working file.
+    """
+
+
+class AssetPublish(AssetFile):
+    """
+    Represents a publish file.
+    """
+
+    pass
+
+    def get_version(self, format: type = str) -> Optional[Union[str, int]]:
+        return get_file_version(self.path, format=format)
+
+
+class AssetDir:
+    def __init__(self, path: Path):
+        self._path = path
+        # Directory name should match asset name
+        self._asset_name = path.name
+
+    @property
+    def asset_name(self) -> str:
+        return self._asset_name
+
+    @property
+    def publish_dir(self) -> Path:
+        return self._path / "publish"
+
+    def get_asset_publishes(self) -> List[AssetPublish]:
+        # Asset Naming Convention: {asset_name}.{asset_version}.{suffix}
+
+        if not self.publish_dir.exists():
+            return []
+
+        blend_files = get_files_by_suffix(self.publish_dir, ".blend")
+        asset_publishes: List[AssetPublish] = []
+
+        for file in blend_files:
+            file_version = get_file_version(file)
+            if not file_version:
+                continue
+
+            t = file.stem  # Without suffix
+            t = t.replace(f".{file_version}", "")  # Without version string
+
+            # It it matches asset name now, it is an official publish.
+            if t != self._asset_name:
+                continue
+
+            asset_publishes.append(AssetPublish(file))
+
+        return asset_publishes
+
+
 def get_asset_disk_name(asset_name: str) -> str:
     """
     Converts Asset Name that is stored on Kitsu to a
@@ -49,28 +106,6 @@ def get_asset_disk_name(asset_name: str) -> str:
     and lowercases all.
     """
     return asset_name.lower().replace(" ", "_")
-
-
-def get_asset_publishes(asset_dir: Path, asset_name: str) -> List[AssetPublish]:
-    # Asset Naming Convention: {asset_name}.{asset_version}.{suffix}
-    blend_files = get_files_by_suffix(asset_dir, ".blend")
-    asset_publishes: List[AssetPublish] = []
-
-    for file in blend_files:
-        file_version = get_file_version(file)
-        if not file_version:
-            continue
-
-        t = file.stem  # Without suffix
-        t = t.replace(f".{file_version}", "")  # Without version string
-
-        # It it matches asset name now, it is an official publish.
-        if t != asset_name:
-            continue
-
-        asset_publishes.append(AssetPublish(file))
-
-    return asset_publishes
 
 
 def get_file_version(path: Path, format: type = str) -> Optional[Union[str, int]]:

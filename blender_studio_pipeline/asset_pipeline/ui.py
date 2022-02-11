@@ -27,7 +27,7 @@ from .ops import (
     BSP_ASSET_clear_asset_collection,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
-    BSP_ASSET_load_prod_context,
+    BSP_ASSET_create_prod_context,
 )
 from . import builder
 
@@ -40,7 +40,7 @@ def draw_task_layers_list(
     box = layout.box()
     row = box.row(align=True)
     row.label(text="Task Layers")
-    row.operator(BSP_ASSET_load_prod_context.bl_idname, icon="FILE_REFRESH", text="")
+    row.operator(BSP_ASSET_create_prod_context.bl_idname, icon="FILE_REFRESH", text="")
 
     # Ui-list.
     row = box.row()
@@ -124,9 +124,9 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
         # No publish in progress.
 
         # Production Context not loaded.
-        if not builder.PROD_CONTEXT.is_initialized:
+        if not builder.PROD_CONTEXT:
             layout.row().operator(
-                BSP_ASSET_load_prod_context.bl_idname, icon="FILE_REFRESH"
+                BSP_ASSET_create_prod_context.bl_idname, icon="FILE_REFRESH"
             )
             return
 
