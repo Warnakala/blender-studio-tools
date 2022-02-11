@@ -41,6 +41,9 @@ class AssetFile:
     def path(self) -> Path:
         return self._path
 
+    def __repr__(self) -> str:
+        return self._path.name
+
 
 class AssetTask(AssetFile):
     """
@@ -75,7 +78,7 @@ class AssetDir:
 
     def get_asset_publishes(self) -> List[AssetPublish]:
         # Asset Naming Convention: {asset_name}.{asset_version}.{suffix}
-
+        # TODO: if asset_dir.name == asset.name we could use this logic here
         if not self.publish_dir.exists():
             return []
 
@@ -97,6 +100,10 @@ class AssetDir:
             asset_publishes.append(AssetPublish(file))
 
         return asset_publishes
+
+    def __repr__(self) -> str:
+        publishes = ", ".join(str(a) for a in self.get_asset_publishes())
+        return f"{self.asset_name} (Publishes:{str(publishes)})"
 
 
 def get_asset_disk_name(asset_name: str) -> str:

@@ -148,7 +148,7 @@ class ProductionContext:
 
     def __repr__(self) -> str:
         header = "\nPRODUCTION CONTEXT\n------------------------------------"
-        footer = "\n"
+        footer = "------------------------------------"
         prod_task_layers = (
             f"Production Task Layers: {[t.name for t in self._task_layers]}"
         )
@@ -213,7 +213,7 @@ class AssetContext:
 
     def __repr__(self) -> str:
         header = "\nASSET CONTEXT\n------------------------------------"
-        footer = "\n"
+        footer = "------------------------------------"
         asset_info = f"Asset: {self.asset_collection.bsp_asset.entity_name}({self.asset_collection})"
         task_layer_assembly = str(self.task_layer_assembly)
 
@@ -255,7 +255,7 @@ class BuildContext:
         self._is_first_publish: bool = False
         self._asset_dir = AssetDir(Path(bpy.data.filepath).parent)
         self._asset_task = AssetTask(Path(bpy.data.filepath))
-        self._asset_name = self._asset_dir.asset_name
+        self._asset_disk_name = self._asset_dir.asset_name
 
         self._collect_asset_publishes()
 
@@ -299,12 +299,16 @@ class BuildContext:
 
     def __repr__(self) -> str:
         header = "\nBUILD CONTEXT\n------------------------------------"
-        footer = "\n"
-
+        footer = "------------------------------------"
+        asset_task = f"Asset Task: {str(self._asset_task)}"
+        asset_disk_name = f"Asset Disk Name: {self._asset_disk_name}"
+        asset_dir = f"Asset Dir: {str(self.asset_dir)}"
         return "\n".join(
             [
                 header,
-                "\n",
+                asset_disk_name,
+                asset_task,
+                asset_dir,
                 str(self.prod_context),
                 str(self.asset_context),
                 footer,
