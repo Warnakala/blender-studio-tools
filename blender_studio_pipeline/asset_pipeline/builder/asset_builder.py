@@ -17,6 +17,7 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+import pickle
 import logging
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
@@ -42,15 +43,32 @@ class AssetBuilder:
 
         self._build_context = build_context
 
-    def build(self) -> None:
-
+    def publish(self) -> None:
         # Catch special case first version.
-        if self._build_context._is_first_publish:
+        if not self._build_context._asset_publishes:
             self._create_first_version()
             return
 
+        # Normal publish, process
+        pickle_path = self._build_context.asset_dir.path.joinpath(
+            f"{self._build_context.asset_dir.asset_disk_name}.pickle"
+        )
+        self._build_context._prod_context = None
+        self._build_context.asset_context._bl_context = None
+        self._build_context.asset_context._asset_collection = None
+
+        # TODO: To this on monday
+        with open(pickle_path.as_posix(), "wb") as f:
+            pickle.dump(self._build_context, f)
+
+        logger.info(f"Pickled to {pickle_path.as_posix()}")
+
+    def pull(self) -> None:
+        # TODO:
+        return
+
     def _create_first_version(self) -> None:
-        target = self._build_context.process_pairs[0].target
+        target = self._build_context.asset_dir.get_first_publish_path()
         asset_coll = self._build_context.asset_context.asset_collection
         # with bpy.data.libraries.load(target.as_posix(), relative=True, link=False) as (
         #     data_from,

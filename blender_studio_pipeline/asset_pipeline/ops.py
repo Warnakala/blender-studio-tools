@@ -131,7 +131,7 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         builder.ASSET_CONTEXT.update_from_bl_context(context)
 
         # Create Build Context.
-        builder.BUILD_CONTEXT = builder.BuildContext.init_publish(
+        builder.BUILD_CONTEXT = builder.BuildContext(
             builder.PROD_CONTEXT, builder.ASSET_CONTEXT
         )
 
@@ -189,7 +189,7 @@ class BSP_ASSET_publish(bpy.types.Operator):
         builder.ASSET_BUILDER = builder.AssetBuilder(builder.BUILD_CONTEXT)
 
         # Publish
-        builder.ASSET_BUILDER.build()
+        builder.ASSET_BUILDER.publish()
 
         # Update properties
         context.scene.bsp_asset.is_publish_in_progress = False
@@ -317,7 +317,7 @@ classes = [
     BSP_ASSET_create_asset_context,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
-    BSP_ASSET_publish
+    BSP_ASSET_publish,
 ]
 
 

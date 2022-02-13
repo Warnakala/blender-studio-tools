@@ -240,7 +240,6 @@ class BuildContext:
         self,
         prod_context: ProductionContext,
         asset_context: AssetContext,
-        is_publish: bool,
     ):
         if not all([prod_context, asset_context]):
             raise BuildContextFailedToInitialize(
@@ -249,41 +248,15 @@ class BuildContext:
 
         self._prod_context: ProductionContext = prod_context
         self._asset_context: AssetContext = asset_context
-        self._is_publish = is_publish
         self._asset_publishes: List[AssetPublish] = []
         self._process_pairs: List[ProcessPair] = []
-        self._is_first_publish: bool = False
         self._asset_dir = AssetDir(Path(bpy.data.filepath).parent)
         self._asset_task = AssetTask(Path(bpy.data.filepath))
 
         self._collect_asset_publishes()
 
-        if self._is_publish:
-            self._init_publish()
-
-    @classmethod
-    def init_publish(
-        cls, prod_context: ProductionContext, asset_context: AssetContext
-    ) -> "BuildContext":
-        return cls(prod_context, asset_context, True)
-
-    @classmethod
-    def init_pull(
-        cls, prod_context: ProductionContext, asset_context: AssetContext
-    ) -> "BuildContext":
-        return cls(prod_context, asset_context, False)
-
     def _collect_asset_publishes(self) -> None:
         self._asset_publishes.extend(self._asset_dir.get_asset_publishes())
-
-    def _init_publish(self) -> None:
-        if not self._asset_publishes:
-            self._is_first_publish = True
-            self._process_pairs.append(
-                ProcessPair(
-                    self.asset_dir.get_first_publish_path(), self.asset_task.path
-                )
-            )
 
     @property
     def asset_task(self) -> AssetTask:

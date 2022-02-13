@@ -71,6 +71,10 @@ class AssetDir:
         self._asset_disk_name = path.name
 
     @property
+    def path(self) -> Path:
+        return self._path
+
+    @property
     def asset_disk_name(self) -> str:
         return self._asset_disk_name
 
