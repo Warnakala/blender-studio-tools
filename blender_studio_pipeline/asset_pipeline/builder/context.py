@@ -56,9 +56,9 @@ class ProcessPair:
     Simple Class that stores a logically connected target and a pull from path.
     """
 
-    def __init__(self, target: Path, pull_from: Path) -> None:
-        self.target = target
-        self.pull_from = pull_from
+    def __init__(self, asset_task: AssetTask, asset_publish: AssetPublish) -> None:
+        self.asset_task = asset_task
+        self.asset_publish = asset_publish
 
 
 class ProductionContext:
@@ -301,9 +301,24 @@ class BuildContext:
         self._asset_task = AssetTask(Path(bpy.data.filepath))
 
         self._collect_asset_publishes()
+        self._collect_process_pairs()
 
     def _collect_asset_publishes(self) -> None:
         self._asset_publishes.extend(self._asset_dir.get_asset_publishes())
+
+    def _collect_process_pairs(self) -> None:
+        # Here we want to loop through all asset publishes and
+        # create a list of process pairs out of it.
+        # This is the place where we perform the logic of checking
+        # which task layers the user selected in self._asset_context.task_layer_assembly
+        # and then reading the metadata of each asset publish and check where the corresponding
+        # task layers are live.
+        # The result of this is a list of process pairs(target, pull_from) that
+        # the AssetBuilder needs to process
+        tl_assembly = self._asset_context.task_layer_assembly
+        for asset_publish in self._asset_publishes:
+            # TMP: for testing we will use all asset publishes.
+            self._process_pairs.append(ProcessPair(self._asset_task, asset_publish))
 
     @property
     def asset_task(self) -> AssetTask:
