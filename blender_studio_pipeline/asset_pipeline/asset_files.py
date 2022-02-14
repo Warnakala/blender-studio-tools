@@ -54,12 +54,14 @@ class AssetFile:
 
 
 class AssetTask(AssetFile):
+    data_suffix = ".TASK"
     """
     Represents a working file.
     """
 
 
 class AssetPublish(AssetFile):
+    data_suffix = ".PUBLISH"
     """
     Represents a publish file.
     """
