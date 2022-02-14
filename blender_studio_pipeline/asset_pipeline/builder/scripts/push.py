@@ -29,6 +29,8 @@ import sys
 from typing import List, Dict, Union, Any, Set, Optional
 
 from blender_studio_pipeline.asset_pipeline.builder.context import BuildContext
+from blender_studio_pipeline.asset_pipeline.builder.asset_builder import AssetBuilder
+from blender_studio_pipeline.asset_pipeline.builder.asset_importer import AssetImporter
 
 from pathlib import Path
 
@@ -64,6 +66,15 @@ if not pickle_path.exists():
 # Load pickle
 print(f"LOADING PICKLE: {pickle_path.as_posix()}")
 with open(pickle_path.as_posix(), "rb") as f:
-    BUILDER = pickle.load(f)
+    BUILD_CONTEXT: BuildContext = pickle.load(f)
 
-print(BUILDER)
+print(BUILD_CONTEXT)
+
+print(
+    f"IMPORTING ASSET COLLECTION FROM TASK: {BUILD_CONTEXT.asset_task.path.as_posix()}"
+)
+
+# Import Asset Collection form Asset Task.
+asset_task = BUILD_CONTEXT.asset_task
+ASSET_IMPORTER = AssetImporter(BUILD_CONTEXT)
+ASSET_IMPORTER.import_asset_task()
