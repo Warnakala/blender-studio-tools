@@ -322,6 +322,10 @@ class BuildContext:
         return self._asset_context
 
     @property
+    def asset_publishes(self) -> List[AssetPublish]:
+        return self._asset_publishes
+
+    @property
     def process_pairs(self) -> List[ProcessPair]:
         return self._process_pairs
 

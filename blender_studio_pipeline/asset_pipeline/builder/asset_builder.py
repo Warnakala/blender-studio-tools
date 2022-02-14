@@ -26,6 +26,7 @@ from pathlib import Path
 import bpy
 
 from .context import ProductionContext, AssetContext, BuildContext
+from .blstarter import BuilderBlenderStarter
 
 logger = logging.getLogger("BSP")
 
@@ -43,9 +44,13 @@ class AssetBuilder:
 
         self._build_context = build_context
 
+    @property
+    def build_context(self) -> BuildContext:
+        return self._build_context
+
     def publish(self) -> None:
         # Catch special case first version.
-        if not self._build_context._asset_publishes:
+        if not self.build_context._asset_publishes:
             self._create_first_version()
             return
 
@@ -67,12 +72,18 @@ class AssetBuilder:
         # (We can add custom behavior to work around this please see: ./context.py)
 
         # Start pickling.
-        pickle_path = self._build_context.asset_task.pickle_path
+        pickle_path = self.build_context.asset_task.pickle_path
         with open(pickle_path.as_posix(), "wb") as f:
-            pickle.dump(self._build_context, f)
+            pickle.dump(self.build_context, f)
         logger.info(f"Pickled to {pickle_path.as_posix()}")
 
         # Open new blender instance, with publish script.
+
+        # Tmp, use first version, TODO: for all elements in process_pairs
+        BuilderBlenderStarter.start_publish(
+            self.build_context.asset_publishes[0].path,
+            pickle_path,
+        )
 
     def pull(self) -> None:
         # TODO:
