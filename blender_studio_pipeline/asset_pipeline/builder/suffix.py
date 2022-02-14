@@ -119,7 +119,7 @@ def remove_suffix_from_hierarchy(
 
 
 def add_suffix_to_collection_recursive(
-    collection: bpy.types.Collection, suffix: str = ".tmp"
+    collection: bpy.types.Collection, suffix: str
 ) -> None:
     """Recursively add a suffix to a hierarchy of collections and objects."""
     for coll in traverse_collection_tree(collection):
@@ -127,7 +127,7 @@ def add_suffix_to_collection_recursive(
 
 
 def add_suffix_to_node_tree_recursive(
-    node_tree: bpy.types.NodeTree, suffix: str = ".tmp"
+    node_tree: bpy.types.NodeTree, suffix: str
 ) -> None:
     """Recursively add a suffix to this node tree and all node trees within."""
     # TODO: add traverse_node_tree function
@@ -144,7 +144,7 @@ def add_suffix_to_node_tree_recursive(
 
 
 def add_suffix_to_hierarchy(
-    collection: bpy.types.Collection, suffix: str = ".tmp"
+    collection: bpy.types.Collection, suffix: str
 ) -> bpy.types.Collection:
     """Add a suffix to the names of all sub-collections, objects,
     materials and node groups of a collection."""
