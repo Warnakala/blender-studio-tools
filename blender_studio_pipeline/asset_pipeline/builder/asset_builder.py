@@ -49,16 +49,30 @@ class AssetBuilder:
             self._create_first_version()
             return
 
-        # Normal publish, process
-        pickle_path = self._build_context.asset_dir.path.joinpath(
-            f"{self._build_context.asset_dir.asset_disk_name}.pickle"
-        )
+        # Normal publish process.
 
-        # TODO: To this on monday
+        # No here it gets a little tricky. We cannot just simply
+        # perform a libraries.write() operation. The merge process
+        # requires additional operations to happen so we need to actually
+        # open the asset version blend file and perform them.
+
+        # Now we already assembled this huge BuildContext, in which we have
+        # all the information we need for whatever needs to be done.
+        # The question is how can we share this info with the new Blender Instance
+        # that knows nothing about it.
+
+        # A very effective and easy ways seems to be pickling the BuildContext
+        # and unpickling  it in the new Blender Instance again.
+        # Some objects cannot be pickled (like the blender context or a collection)
+        # (We can add custom behavior to work around this please see: ./context.py)
+
+        # Start pickling.
+        pickle_path = self._build_context.asset_task.pickle_path
         with open(pickle_path.as_posix(), "wb") as f:
             pickle.dump(self._build_context, f)
-
         logger.info(f"Pickled to {pickle_path.as_posix()}")
+
+        # Open new blender instance, with publish script.
 
     def pull(self) -> None:
         # TODO:

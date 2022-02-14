@@ -41,6 +41,14 @@ class AssetFile:
     def path(self) -> Path:
         return self._path
 
+    @property
+    def metadata_path(self) -> Path:
+        return self._metadata_path
+
+    @property
+    def pickle_path(self) -> Path:
+        return self.path.parent / f"{self.path.stem}.pickle"
+
     def __repr__(self) -> str:
         return self._path.name
 
