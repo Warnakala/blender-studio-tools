@@ -154,6 +154,30 @@ class ProductionContext:
         )
         return "\n".join([header, prod_task_layers, footer])
 
+    def __getstate__(self) -> Dict[str, Any]:
+        # Pickle uses this function to generate a dictionary which it uses
+        # to pickle the instance.
+        # Here we can basically overwrite this dictionary, for example to
+        # delete some properties that pickle can't handle.
+
+        # Pickle cannot store module objects.
+        state = self.__dict__.copy()
+        state["_module_of_task_layers"] = None
+        return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        # Pickle uses a state Dictionary to restore the instance attributes.
+        # In this function we can overwrite this behavior and restore
+        # data that pickle wasn't able to store
+
+        self.__dict__.update(state)
+
+        # Restore module object.
+        with SystemPathInclude([self.config_folder]):
+            import task_layers as prod_task_layers
+
+            self._module_of_task_layers = prod_task_layers
+
 
 class AssetContext:
 
@@ -224,6 +248,29 @@ class AssetContext:
                 task_layer_assembly,
                 footer,
             ]
+        )
+
+    def __getstate__(self) -> Dict[str, Any]:
+
+        # Pickle cannot pickle blender context or collection.
+        state = self.__dict__.copy()
+        state["_bl_context"] = None
+        state["_restore_asset_collection_name"] = self.asset_collection.name
+        state["_asset_collection"] = None
+        return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        asset_coll_name = state["_restore_asset_collection_name"]
+        asset_coll = bpy.data.collections[asset_coll_name]
+        self._asset_collection = asset_coll
+        self._bl_context = bpy.context
+
+        del self._restore_asset_collection_name
+        logger.info(
+            "Restored Asset Collection: %s, Context: %s",
+            str(self._asset_collection),
+            str(self._bl_context),
         )
 
 

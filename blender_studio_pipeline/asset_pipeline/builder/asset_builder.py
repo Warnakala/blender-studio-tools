@@ -53,9 +53,6 @@ class AssetBuilder:
         pickle_path = self._build_context.asset_dir.path.joinpath(
             f"{self._build_context.asset_dir.asset_disk_name}.pickle"
         )
-        self._build_context._prod_context = None
-        self._build_context.asset_context._bl_context = None
-        self._build_context.asset_context._asset_collection = None
 
         # TODO: To this on monday
         with open(pickle_path.as_posix(), "wb") as f:
