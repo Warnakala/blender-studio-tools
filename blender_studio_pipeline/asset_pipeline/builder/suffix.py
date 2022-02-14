@@ -35,7 +35,7 @@ def traverse_collection_tree(
 
 
 def remove_suffix_from_hierarchy(
-    collection: bpy.types.Collection, delimiter: str = ".", material: bool = True
+    collection: bpy.types.Collection, delimiter: str = "."
 ) -> None:
     """Removes the suffix after a set delimiter from all collections, objects, object_data, materials in a collection hierarchy"""
 
@@ -73,6 +73,8 @@ def remove_suffix_from_hierarchy(
             done_nt = remove_suffix_from_node_tree_recursive(
                 m.node_tree, done_nt, delimiter
             )
+
+        # GEO-NODES.
         for mod in obj.modifiers:
             if not mod.type == "NODES":
                 continue
@@ -160,7 +162,7 @@ def add_suffix_to_hierarchy(
 
             add_suffix_to_node_tree_recursive(m.node_tree, suffix)
 
-        # MODIFIERS.
+        # GEO-NODES.
         for mod in obj.modifiers:
             if not mod.type == "NODES":
                 continue
