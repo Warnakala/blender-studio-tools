@@ -44,7 +44,10 @@ def mb_refresh_single_gizmo(gizmo_group, bone_name):
 	context = bpy.context
 	pose_bone = context.object.pose.bones.get(bone_name)
 	gizmo_props = pose_bone.bone_gizmo
-	gizmo = gizmo_group.widgets[bone_name]
+	try:
+		gizmo = gizmo_group.widgets[bone_name]
+	except:
+		return
 	
 	if gizmo_props.operator != 'None':
 		op_name = gizmo_props.operator
@@ -68,8 +71,11 @@ def mb_refresh_single_gizmo_shape(gizmo_group, bone_name):
 	context = bpy.context
 	if not context.object or context.object.type != 'ARMATURE' or context.object.mode != 'POSE':
 		return
-	gizmo = gizmo_group.widgets[bone_name]
-	gizmo.init_shape(context)
+	try:
+		gizmo = gizmo_group.widgets[bone_name]
+		gizmo.init_shape(context)
+	except:
+		pass
 
 class BoneGizmoGroup(GizmoGroup):
 	"""This single GizmoGroup manages all bone gizmos for all rigs."""	# TODO: Currently this will have issues when there are two rigs with similar bone names. Rig object names should be included when identifying widgets.
@@ -174,7 +180,11 @@ class BoneGizmoGroup(GizmoGroup):
 			else:
 				eval_meshes[obj.name] = eval_mesh = obj.evaluated_get(dg).to_mesh()
 				eval_mesh.calc_loop_triangles()
-			gizmo.refresh_shape_vgroup(context, eval_mesh)
+			try:
+				gizmo.refresh_shape_vgroup(context, eval_mesh)
+			except ReferenceError:
+				# For some reason sometimes it complains that StructRNA of the Mesh has been removed. I don't get why.
+				pass
 
 class BONEGIZMO_OT_RestartGizmoGroup(Operator):
 	"""Re-initialize all gizmos. Needed when the gizmo shape objects are modified, since there's no dependency between gizmos and their target shapes"""

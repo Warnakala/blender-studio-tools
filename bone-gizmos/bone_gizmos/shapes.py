@@ -237,7 +237,6 @@ class MeshShape3D(BasicShape):
 
 	def __init__(self, mesh, scale=1.0, vertex_groups=None, weight_threshold=0.2):
 		self._indices = []
-		self._obj = None
 		self.scale_factor = scale
 		self.tris_from_mesh(mesh, vertex_groups=vertex_groups, weight_threshold=weight_threshold)
 
@@ -258,10 +257,8 @@ class MeshShape3D(BasicShape):
 		return verts
 
 	def tris_from_mesh(self, obj, vertex_groups=[], weight_threshold=0.2):
-		self._obj = obj
-
 		depsgraph = bpy.context.evaluated_depsgraph_get()
-		eval_ob = self._obj.evaluated_get(depsgraph)
+		eval_ob = obj.evaluated_get(depsgraph)
 		mesh = eval_ob.data
 		mesh.calc_loop_triangles()
 
