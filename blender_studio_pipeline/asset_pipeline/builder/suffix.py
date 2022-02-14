@@ -26,34 +26,53 @@ import bpy
 logger = logging.getLogger("BSP")
 
 
-def remove_suffix_from_hierarchy(collection, delimiter=".", material=True):
+def traverse_collection_tree(
+    collection: bpy.types.Collection,
+) -> Generator[bpy.types.Collection, None, None]:
+    yield collection
+    for child in collection.children:
+        yield from traverse_collection_tree(child)
+
+
+def remove_suffix_from_hierarchy(
+    collection: bpy.types.Collection, delimiter: str = ".", material: bool = True
+) -> None:
     """Removes the suffix after a set delimiter from all collections, objects, object_data, materials in a collection hierarchy"""
 
-    print(remove_suffix_from_collection_recursive(collection, [], delimiter))
+    remove_suffix_from_collection_recursive(collection, delimiter)
 
-    materials = []
-
-    done_nt = []
-    done_geonodes = []
+    materials: Set[bpy.types.Material] = set()
+    done_nt: List[bpy.types.NodeTree] = []
+    done_geonodes: List[bpy.types.GeometryNode] = []
 
     for obj in collection.all_objects:
-        # Object
-        obj.name = ".".join(obj.name.split(".")[:-1])
 
+        # OBJECTS.
+        obj.name = delimiter.join(obj.name.split(delimiter)[:-1])
+
+        # OBJECT DATA.
         if obj.data:
-            # Object data
             obj.data.name = ".".join(obj.data.name.split(".")[:-1])
+
+        # MATERIALS.
         for ms in obj.material_slots:
             m = ms.material
-            if m and m not in materials:
-                # Material
-                m.name = ".".join(m.name.split(".")[:-1])
-                materials.append(m)
-                if not m.node_tree:
-                    continue
-                done_nt = remove_suffix_from_node_tree_recursive(
-                    m.node_tree, done_nt, delimiter
-                )
+
+            if not m:
+                continue
+
+            if m in materials:
+                continue
+
+            m.name = delimiter.join(m.name.split(delimiter)[:-1])
+            materials.add(m)
+
+            if not m.node_tree:
+                continue
+
+            done_nt = remove_suffix_from_node_tree_recursive(
+                m.node_tree, done_nt, delimiter
+            )
         for mod in obj.modifiers:
             if not mod.type == "NODES":
                 continue
@@ -61,21 +80,23 @@ def remove_suffix_from_hierarchy(collection, delimiter=".", material=True):
                 continue
             if mod.node_group in done_geonodes:
                 continue
-            mod.node_group.name = ".".join(mod.node_group.name.split(".")[:-1])
+            mod.node_group.name = delimiter.join(
+                mod.node_group.name.split(delimiter)[:-1]
+            )
             done_geonodes.append(mod.node_group)
 
 
-def remove_suffix_from_collection_recursive(collection, done, delimiter="."):
+def remove_suffix_from_collection_recursive(
+    collection: bpy.types.Collection, delimiter: str = "."
+) -> None:
     """Recursively remove a suffix to a hierarchy of collections."""
-    if not collection in done:
-        collection.name = ".".join(collection.name.split(".")[:-1])
-        done += [collection]
-    for child in collection.children:
-        done = remove_suffix_from_collection_recursive(child, done, delimiter)
-    return done
+    for coll in traverse_collection_tree(collection):
+        coll.name = delimiter.join(collection.name.split(delimiter)[:-1])
 
 
-def remove_suffix_from_node_tree_recursive(node_tree, done, delimiter="."):
+def remove_suffix_from_node_tree_recursive(
+    node_tree: bpy.types.NodeTree, done: List[bpy.types.NodeTree], delimiter: str = "."
+) -> List[bpy.types.NodeTree]:
     """Recursively remove a suffix from this node tree and all node trees within."""
     if not (node_tree in done or node_tree.library):
         if not node_tree.name.startswith("Shader Nodetree"):
@@ -91,57 +112,81 @@ def remove_suffix_from_node_tree_recursive(node_tree, done, delimiter="."):
     return done
 
 
-def add_suffix_to_hierarchy(collection, suffix=".tmp"):
+def add_suffix_to_hierarchy(
+    collection: bpy.types.Collection, suffix: str = ".tmp"
+) -> bpy.types.Collection:
     """Add a suffix to the names of all sub-collections, objects,
     materials and node groups of a collection."""
 
     add_suffix_to_collection_recursive(collection, suffix)
 
-    materials = []
+    materials: Set[bpy.types.Material] = set()
 
     for obj in collection.all_objects:
-        # Object
+        # OBJECT.
         new_name = obj.name + suffix
+
+        # Check if new name already exists for some reason.
         if new_name in bpy.data.objects:
             bad_object = bpy.data.objects[new_name]
             bad_object.name += ".old"
-            print(
-                f"Warning: Object {new_name} with suffix already existed, added .old suffix."
+            logger.warning(
+                "Warning: Object %s with suffix already existed, added .old suffix.",
+                new_name,
             )
-
         obj.name = new_name
+
+        # OBJECT DATA.
         if obj.data:
-            # Object data
             obj.data.name += suffix
+
+        # MATERIALS.
         for ms in obj.material_slots:
             m = ms.material
-            if m and m not in materials:
-                # Material
-                m.name += suffix
-                materials.append(m)
-                if not m.node_tree:
-                    continue
-                add_suffix_to_node_tree_recursive(m.node_tree, suffix)
+
+            # Material can be None.
+            if not m:
+                continue
+
+            # Material can be processed
+            if m in materials:
+                continue
+
+            m.name += suffix
+            materials.add(m)
+
+            if not m.node_tree:
+                continue
+
+            add_suffix_to_node_tree_recursive(m.node_tree, suffix)
+
+        # MODIFIERS.
         for mod in obj.modifiers:
             if not mod.type == "NODES":
                 continue
             if not mod.node_group:
                 continue
             if not mod.node_group.name.endswith(suffix):
+                # TODO: could we run in collisions here, same
+                # as object name renaming couple lines up?
                 mod.node_group.name += suffix
 
-    return collection.all_objects
+    return collection
 
 
-def add_suffix_to_collection_recursive(collection, suffix=".tmp"):
+def add_suffix_to_collection_recursive(
+    collection: bpy.types.Collection, suffix: str = ".tmp"
+) -> None:
     """Recursively add a suffix to a hierarchy of collections and objects."""
-    collection.name += suffix
-    for child in collection.children:
-        add_suffix_to_collection_recursive(child, suffix)
+    for coll in traverse_collection_tree(collection):
+        coll.name += suffix
 
 
-def add_suffix_to_node_tree_recursive(node_tree, suffix=".tmp"):
+def add_suffix_to_node_tree_recursive(
+    node_tree: bpy.types.NodeTree, suffix: str = ".tmp"
+) -> None:
     """Recursively add a suffix to this node tree and all node trees within."""
+    # TODO: add traverse_node_tree function
     if not (
         node_tree.name.endswith(suffix)
         or node_tree.library
