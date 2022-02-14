@@ -36,6 +36,34 @@ def traverse_collection_tree(
         yield from traverse_collection_tree(child)
 
 
+def remove_suffix_from_collection_recursive(
+    collection: bpy.types.Collection, delimiter: str = constants.DELIMITER
+) -> None:
+    """Recursively remove a suffix to a hierarchy of collections."""
+    for coll in traverse_collection_tree(collection):
+        coll.name = delimiter.join(collection.name.split(delimiter)[:-1])
+
+
+def remove_suffix_from_node_tree_recursive(
+    node_tree: bpy.types.NodeTree,
+    done: List[bpy.types.NodeTree],
+    delimiter: str = constants.DELIMITER,
+) -> List[bpy.types.NodeTree]:
+    """Recursively remove a suffix from this node tree and all node trees within."""
+    if not (node_tree in done or node_tree.library):
+        if not node_tree.name.startswith("Shader Nodetree"):
+            node_tree.name = delimiter.join(node_tree.name.split(delimiter)[:-1])
+            done += [node_tree]
+
+        for n in node_tree.nodes:
+            if n.type == "GROUP" and n.node_tree:
+                if not n.node_tree in done:
+                    done = remove_suffix_from_node_tree_recursive(
+                        n.node_tree, done, delimiter
+                    )
+    return done
+
+
 def remove_suffix_from_hierarchy(
     collection: bpy.types.Collection, delimiter: str = constants.DELIMITER
 ) -> None:
@@ -90,32 +118,29 @@ def remove_suffix_from_hierarchy(
             done_geonodes.append(mod.node_group)
 
 
-def remove_suffix_from_collection_recursive(
-    collection: bpy.types.Collection, delimiter: str = constants.DELIMITER
+def add_suffix_to_collection_recursive(
+    collection: bpy.types.Collection, suffix: str = ".tmp"
 ) -> None:
-    """Recursively remove a suffix to a hierarchy of collections."""
+    """Recursively add a suffix to a hierarchy of collections and objects."""
     for coll in traverse_collection_tree(collection):
-        coll.name = delimiter.join(collection.name.split(delimiter)[:-1])
+        coll.name += suffix
 
 
-def remove_suffix_from_node_tree_recursive(
-    node_tree: bpy.types.NodeTree,
-    done: List[bpy.types.NodeTree],
-    delimiter: str = constants.DELIMITER,
-) -> List[bpy.types.NodeTree]:
-    """Recursively remove a suffix from this node tree and all node trees within."""
-    if not (node_tree in done or node_tree.library):
-        if not node_tree.name.startswith("Shader Nodetree"):
-            node_tree.name = delimiter.join(node_tree.name.split(delimiter)[:-1])
-            done += [node_tree]
+def add_suffix_to_node_tree_recursive(
+    node_tree: bpy.types.NodeTree, suffix: str = ".tmp"
+) -> None:
+    """Recursively add a suffix to this node tree and all node trees within."""
+    # TODO: add traverse_node_tree function
+    if not (
+        node_tree.name.endswith(suffix)
+        or node_tree.library
+        or node_tree.name == "Shader Nodetree"
+    ):
+        node_tree.name += suffix
 
-        for n in node_tree.nodes:
-            if n.type == "GROUP" and n.node_tree:
-                if not n.node_tree in done:
-                    done = remove_suffix_from_node_tree_recursive(
-                        n.node_tree, done, delimiter
-                    )
-    return done
+    for n in node_tree.nodes:
+        if n.type == "GROUP" and n.node_tree and not n.node_tree.name.endswith(suffix):
+            add_suffix_to_node_tree_recursive(n.node_tree, suffix)
 
 
 def add_suffix_to_hierarchy(
@@ -178,28 +203,3 @@ def add_suffix_to_hierarchy(
                 mod.node_group.name += suffix
 
     return collection
-
-
-def add_suffix_to_collection_recursive(
-    collection: bpy.types.Collection, suffix: str = ".tmp"
-) -> None:
-    """Recursively add a suffix to a hierarchy of collections and objects."""
-    for coll in traverse_collection_tree(collection):
-        coll.name += suffix
-
-
-def add_suffix_to_node_tree_recursive(
-    node_tree: bpy.types.NodeTree, suffix: str = ".tmp"
-) -> None:
-    """Recursively add a suffix to this node tree and all node trees within."""
-    # TODO: add traverse_node_tree function
-    if not (
-        node_tree.name.endswith(suffix)
-        or node_tree.library
-        or node_tree.name == "Shader Nodetree"
-    ):
-        node_tree.name += suffix
-
-    for n in node_tree.nodes:
-        if n.type == "GROUP" and n.node_tree and not n.node_tree.name.endswith(suffix):
-            add_suffix_to_node_tree_recursive(n.node_tree, suffix)
