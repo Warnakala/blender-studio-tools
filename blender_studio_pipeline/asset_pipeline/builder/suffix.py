@@ -23,6 +23,8 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple, Generator
 
 import bpy
 
+from .. import constants
+
 logger = logging.getLogger("BSP")
 
 
@@ -35,7 +37,7 @@ def traverse_collection_tree(
 
 
 def remove_suffix_from_hierarchy(
-    collection: bpy.types.Collection, delimiter: str = "."
+    collection: bpy.types.Collection, delimiter: str = constants.DELIMITER
 ) -> None:
     """Removes the suffix after a set delimiter from all collections, objects, object_data, materials in a collection hierarchy"""
 
@@ -52,7 +54,7 @@ def remove_suffix_from_hierarchy(
 
         # OBJECT DATA.
         if obj.data:
-            obj.data.name = ".".join(obj.data.name.split(".")[:-1])
+            obj.data.name = delimiter.join(obj.data.name.split(delimiter)[:-1])
 
         # MATERIALS.
         for ms in obj.material_slots:
@@ -89,7 +91,7 @@ def remove_suffix_from_hierarchy(
 
 
 def remove_suffix_from_collection_recursive(
-    collection: bpy.types.Collection, delimiter: str = "."
+    collection: bpy.types.Collection, delimiter: str = constants.DELIMITER
 ) -> None:
     """Recursively remove a suffix to a hierarchy of collections."""
     for coll in traverse_collection_tree(collection):
@@ -97,12 +99,14 @@ def remove_suffix_from_collection_recursive(
 
 
 def remove_suffix_from_node_tree_recursive(
-    node_tree: bpy.types.NodeTree, done: List[bpy.types.NodeTree], delimiter: str = "."
+    node_tree: bpy.types.NodeTree,
+    done: List[bpy.types.NodeTree],
+    delimiter: str = constants.DELIMITER,
 ) -> List[bpy.types.NodeTree]:
     """Recursively remove a suffix from this node tree and all node trees within."""
     if not (node_tree in done or node_tree.library):
         if not node_tree.name.startswith("Shader Nodetree"):
-            node_tree.name = ".".join(node_tree.name.split(".")[:-1])
+            node_tree.name = delimiter.join(node_tree.name.split(delimiter)[:-1])
             done += [node_tree]
 
         for n in node_tree.nodes:
