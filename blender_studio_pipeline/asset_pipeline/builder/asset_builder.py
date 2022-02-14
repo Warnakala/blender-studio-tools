@@ -71,19 +71,25 @@ class AssetBuilder:
         # Some objects cannot be pickled (like the blender context or a collection)
         # (We can add custom behavior to work around this please see: ./context.py)
 
-        # Start pickling.
-        pickle_path = self.build_context.asset_task.pickle_path
-        with open(pickle_path.as_posix(), "wb") as f:
-            pickle.dump(self.build_context, f)
-        logger.info(f"Pickled to {pickle_path.as_posix()}")
+        for process_pair in self.build_context.process_pairs:
 
-        # Open new blender instance, with publish script.
+            asset_publish = process_pair.asset_publish
 
-        # Tmp, use first version, TODO: for all elements in process_pairs
-        BuilderBlenderStarter.start_publish(
-            self.build_context.asset_publishes[0].path,
-            pickle_path,
-        )
+            logger.info("Processing %s", asset_publish.path.as_posix())
+
+            # Start pickling.
+            pickle_path = (
+                asset_publish.pickle_path
+            )  # TODO: Do we need a pickle for all of them? I think one would be enough.
+            with open(pickle_path.as_posix(), "wb") as f:
+                pickle.dump(self.build_context, f)
+            logger.info(f"Pickled to {pickle_path.as_posix()}")
+
+            # Open new blender instance, with publish script.
+            BuilderBlenderStarter.start_publish(
+                asset_publish.path,
+                pickle_path,
+            )
 
     def pull(self) -> None:
         # TODO:
