@@ -113,6 +113,11 @@ class AssetDir:
 
             asset_publishes.append(AssetPublish(file))
 
+        # Sort asset publishes after their 'version' ascending -> v001, v002, v003
+        def get_publish_version(asset_publish: AssetPublish) -> int:
+            return asset_publish.get_version(format=int)
+
+        asset_publishes.sort(key=get_publish_version)
         return asset_publishes
 
     def get_first_publish_path(self) -> Path:
