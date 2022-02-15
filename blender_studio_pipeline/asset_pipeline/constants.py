@@ -21,3 +21,4 @@
 METADATA_EXT = ".xmp"
 VERSION_PATTERN = r"v(\d\d\d)"
 DELIMITER = "."
+TARGET_SUFFIX = ".TARGET"
