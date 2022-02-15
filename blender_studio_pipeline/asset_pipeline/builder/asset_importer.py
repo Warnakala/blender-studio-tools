@@ -26,7 +26,7 @@ import bpy
 
 from .context import BuildContext
 from ..asset_files import AssetPublish
-from . import suffix
+from . import asset_suffix
 from .. import constants
 
 logger = logging.getLogger("BSP")
@@ -124,7 +124,7 @@ class AssetImporter:
     ) -> bpy.types.Collection:
 
         coll = import_data_from_lib(libpath, "collections", coll_name)
-        suffix.add_suffix_to_hierarchy(coll, coll_suffix)
+        asset_suffix.add_suffix_to_hierarchy(coll, coll_suffix)
         return coll
 
     def import_asset_task(self) -> None:
@@ -165,13 +165,13 @@ class AssetImporter:
             logger.info("Take Asset Task as Base: %s", asset_task.path.name)
 
             # Suffix asset_publish collection with .PUBLISH
-            suffix.add_suffix_to_hierarchy(
-                asset_coll_publish, asset_publish.data_suffix
+            asset_suffix.add_suffix_to_hierarchy(
+                asset_coll_publish, constants.PUBLISH_SUFFIX
             )
 
             # Import asset task collection with .TASK suffix.
             asset_coll_task = self._import_coll_with_suffix(
-                asset_task.path, asset_coll_name, asset_task.data_suffix
+                asset_task.path, asset_coll_name, constants.TASK_SUFFIX
             )
 
             # Import asset_task collection again and suffix as .TARGET
@@ -191,13 +191,13 @@ class AssetImporter:
             tmp_blendfile_path = self._duplicate_tmp_blendfile()
 
             # Suffix asset_publish collection with .PUBLISH.
-            suffix.add_suffix_to_hierarchy(
-                asset_coll_publish, asset_publish.data_suffix
+            asset_suffix.add_suffix_to_hierarchy(
+                asset_coll_publish, constants.PUBLISH_SUFFIX
             )
 
             # Import asset task collection with .TASK suffix.
             asset_coll_task = self._import_coll_with_suffix(
-                asset_task.path, asset_coll_name, asset_task.data_suffix
+                asset_task.path, asset_coll_name, constants.TASK_SUFFIX
             )
 
             # Import asset_publish collection from tmp blend file and suffix as .TARGET
