@@ -170,6 +170,9 @@ class ProductionContext:
         # Check if any TaskLayers have the same order.
         self._validate_task_layer_orders()
 
+        # Sort TaskLayers after order attribute.
+        self._task_layers.sort(key=lambda tl: tl.order)
+
         logger.info(f"Detected Production TaskLayers: {self._task_layers}")
 
     def _validate_task_layer_orders(self) -> None:
