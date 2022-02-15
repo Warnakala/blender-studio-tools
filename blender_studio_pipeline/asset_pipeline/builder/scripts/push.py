@@ -31,6 +31,10 @@ from typing import List, Dict, Union, Any, Set, Optional
 from blender_studio_pipeline.asset_pipeline.builder.context import BuildContext
 from blender_studio_pipeline.asset_pipeline.builder.asset_builder import AssetBuilder
 from blender_studio_pipeline.asset_pipeline.builder.asset_importer import AssetImporter
+from blender_studio_pipeline.asset_pipeline.builder.asset_mapping import (
+    MergeCollectionTriplet,
+    AssetTransferMapping,
+)
 
 from pathlib import Path
 
@@ -77,4 +81,44 @@ print(
 # Import Asset Collection form Asset Task.
 asset_task = BUILD_CONTEXT.asset_task
 ASSET_IMPORTER = AssetImporter(BUILD_CONTEXT)
-ASSET_IMPORTER.import_asset_task()
+merge_triplet: MergeCollectionTriplet = ASSET_IMPORTER.import_asset_task()
+
+
+# The target collection (base) was already decided by ASSET_IMPORTER.import_asset_task()
+# and is saved in merge_triplet.target_coll.
+mapping_task_target = AssetTransferMapping(
+    merge_triplet.task_coll, merge_triplet.target_coll
+)
+mapping_publish_target = AssetTransferMapping(
+    merge_triplet.publish_coll, merge_triplet.target_coll
+)
+
+# Process only the TaskLayers that were ticked as 'use'.
+used_task_layers = (
+    BUILD_CONTEXT.asset_context.task_layer_assembly.get_used_task_layers()
+)
+
+# Should be ordered, just in case.
+task_layers = BUILD_CONTEXT.prod_context.task_layers
+task_layers.sort(key=lambda tl: tl.order)
+
+# Perform Task Layer merging.
+
+# Note: We always want to apply all TaskLayers except for the Task Layer with the lowest order
+# aka 'Base Task Layer'. This Task Layer gives us the starting point on which to apply all other Task Layers
+# on. The asset importer already handles this logic by supplying as with the right TARGET collection
+# after import. That's why we exclude the first task layer here in the loop.
+
+print(f"Using {task_layers[0].name} as base.")
+for task_layer in task_layers[1:]:
+
+    # Now we need to decide if we want to transfer data from
+    # the task collection to the target collection
+    # or
+    # the publish collection to the target collection
+    if task_layer in used_task_layers:
+        print(f"Transferring {task_layer.name} from task to target.")
+        task_layer.transfer_data(bpy.context, mapping_task_target)
+    else:
+        print(f"Transferring {task_layer.name} from publish to target.")
+        task_layer.transfer_data(bpy.context, mapping_publish_target)
