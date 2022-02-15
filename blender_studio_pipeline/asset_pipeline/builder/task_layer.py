@@ -32,6 +32,7 @@ class TaskLayer:
 
     name: str = ""
     description: str = ""
+    order: int = -1
 
     def __init__(self):
         self.source_path: str = ""
@@ -47,7 +48,7 @@ class TaskLayer:
 
     @classmethod
     def is_valid(cls) -> bool:
-        return bool(cls.name)
+        return bool(cls.name and cls.order >= 0)
 
     def __repr__(self) -> str:
         return f"TaskLayer{self.name}"
@@ -146,6 +147,15 @@ class TaskLayerAssembly:
             t = (key, value.task_layer.name, value.task_layer.description)
             l.append(t)
         return l
+
+    def get_task_layer_orders(self, only_used: bool = False) -> List[int]:
+        """
+        Returns a list of all TaskLayers.order values.
+        """
+        if not only_used:
+            return [t.order for t in self.task_layers]
+        else:
+            return [tc.task_layer.order for tc in self.task_layer_configs if tc.use]
 
     def reset_task_layer_configs(self) -> None:
         for tc in self.task_layer_configs:

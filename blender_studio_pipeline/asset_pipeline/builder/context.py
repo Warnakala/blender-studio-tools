@@ -47,6 +47,10 @@ class BuildContextFailedToInitialize(Exception):
     pass
 
 
+class InvalidTaskLayerDefinition(Exception):
+    pass
+
+
 # TODO: create global context, that holds Productio TaskLayers
 # BuildContext uses that to create TaskLayerAsssembly
 
@@ -88,8 +92,14 @@ class ProductionContext:
         return self._config_folder
 
     @property
-    def task_layers(self) -> Optional[List[type[TaskLayer]]]:
+    def task_layers(self) -> List[type[TaskLayer]]:
         return self._task_layers
+
+    def get_task_layer_orders(self) -> List[int]:
+        """
+        Returns a list of all TaskLayers.order values.
+        """
+        return [t.order for t in self.task_layers]
 
     def _collect_configs(self) -> None:
 
@@ -138,13 +148,40 @@ class ProductionContext:
             if not issubclass(module_item, TaskLayer):
                 continue
 
+            # We don't want to collect to Root TaskLayer class.
+            # Only classes that inherit from it.
+            if module_item == TaskLayer:
+                continue
+
             # Checks e.G that 'name' class attribute is set.
             if not module_item.is_valid():
+                if module_item.order < 0:
+                    raise InvalidTaskLayerDefinition(
+                        f"Invalid TaskLayer {str(module_item)} Order attribute not set.",
+                    )
+                if not module_item.name:
+                    raise InvalidTaskLayerDefinition(
+                        f"Invalid Task Layer {str(module_item)} Name attribute not set.",
+                    )
                 continue
 
             self._task_layers.append(module_item)
 
+        # Check if any TaskLayers have the same order.
+        self._validate_task_layer_orders()
+
         logger.info(f"Detected Production TaskLayers: {self._task_layers}")
+
+    def _validate_task_layer_orders(self) -> None:
+        for i in range(len(self._task_layers)):
+            tl = self._task_layers[i]
+
+            for j in range(i + 1, len(self._task_layers)):
+                tl_comp = self._task_layers[j]
+                if tl.order == tl_comp.order:
+                    raise InvalidTaskLayerDefinition(
+                        f"Invalid Task Layer {str(tl)} has some 'order' as {str(tl_comp)}.",
+                    )
 
     def __repr__(self) -> str:
         header = "\nPRODUCTION CONTEXT\n------------------------------------"
@@ -205,7 +242,7 @@ class AssetContext:
         logger.debug("Initialized Asset Context")
 
     @property
-    def asset_collection(self) -> Optional[bpy.types.Collection]:
+    def asset_collection(self) -> bpy.types.Collection:
         return self._asset_collection
 
     @property
