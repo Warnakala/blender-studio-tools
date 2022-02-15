@@ -19,6 +19,6 @@
 # (c) 2021, Blender Foundation - Paul Golter
 from ..builder.context import BuildContext
 from ..builder.task_layer import TaskLayer
+from ..builder.asset_mapping import AssetTransferMapping
 
-
-__all__ = ["TaskLayer", "BuildContext"]
+__all__ = ["TaskLayer", "BuildContext", "AssetTransferMapping"]

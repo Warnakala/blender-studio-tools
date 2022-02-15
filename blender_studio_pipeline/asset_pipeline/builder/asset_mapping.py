@@ -71,10 +71,14 @@ def rreplace(s: str, old: str, new: str, occurrence: int) -> str:
 
 class AssetTransferMapping:
     """
-    This class represents a mapping between a source collection and a target collection.
-    It also contains an object mapping which connects each source object with a target
-    object. The mapping process relies heavily on suffixes, which is why we use
+    The AssetTranfserMapping class represents a mapping between a source and a target.
+    It contains an object mapping which connects each source object with a target
+    object as well as a collection mapping.
+    The mapping process relies heavily on suffixes, which is why we use
     MergeCollections as input that store a suffix.
+
+    Instances of this class will be pased TaskLayer data transfer function so Users
+    can easily write their merge instructions.
     """
 
     def __init__(
@@ -180,8 +184,16 @@ class AssetTransferMapping:
 
     @property
     def object_map(self) -> Dict[bpy.types.Object, bpy.types.Object]:
+        """
+        Key: Source
+        Value: Target
+        """
         return self._object_map
 
     @property
     def collection_map(self) -> Dict[bpy.types.Collection, bpy.types.Collection]:
+        """
+        Key: Source
+        Value: Target
+        """
         return self._collection_map

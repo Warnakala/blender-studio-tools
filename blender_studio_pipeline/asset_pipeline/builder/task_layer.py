@@ -25,9 +25,19 @@ from types import ModuleType
 
 from pathlib import Path
 
+import bpy
+
+from .asset_mapping import AssetTransferMapping
+
 logger = logging.getLogger("BSP")
 
 
+# TODO: Do we maybe need a BaseTask Layer that has default order = 0
+# and has no transfer_data function?
+# The Base Task Layer gives us the base data on which we apply all other
+# TaskLayers. Merging this layer just means, take it as a starting point.
+# Note: Right now the Asset Importer already handles this logic by checking if the
+# asset task source has the TaskLayer with the lowest order enabled and creates a TARGET collection.
 class TaskLayer:
 
     name: str = ""
@@ -50,11 +60,28 @@ class TaskLayer:
     def is_valid(cls) -> bool:
         return bool(cls.name and cls.order >= 0)
 
+    @classmethod
+    def transfer_data(
+        cls, context: bpy.types.Context, transfer_mapping: AssetTransferMapping
+    ) -> None:
+        """
+        The AssetTranfserMapping class represents a mapping between a source and a target.
+        It contains an object mapping which connects each source object with a target
+        object as well as a collection mapping.
+        This makes it easy to write Merge Instructions.
+        With it you can do access things like:
+
+        transfer_mapping.object_map: Dict[bpy.types.Object, bpy.types.Object]
+        transfer_mapping.collection_map: Dict[bpy.types.Collection, bpy.types.Collection]
+
+        For all mappings:
+        Key: Source
+        Value: Target
+        """
+        raise NotImplementedError
+
     def __repr__(self) -> str:
         return f"TaskLayer{self.name}"
-
-    # Private Interface to be implemented by Production Config
-    # -------------------------------------------------------#
 
 
 class TaskLayerConfig:
