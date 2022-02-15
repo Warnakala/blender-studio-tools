@@ -26,6 +26,7 @@ import bpy
 
 from .context import BuildContext
 from ..asset_files import AssetPublish
+from .asset_mapping import MergeCollection, MergeCollectionTriplet
 from . import asset_suffix
 from .. import constants
 
@@ -127,7 +128,7 @@ class AssetImporter:
         asset_suffix.add_suffix_to_hierarchy(coll, coll_suffix)
         return coll
 
-    def import_asset_task(self) -> None:
+    def import_asset_task(self) -> MergeCollectionTriplet:
         """
         Imports that asset task that is stored in BuildContext.asset_task.
         Note: This function assumes it is run in an asset publish file.
@@ -205,13 +206,19 @@ class AssetImporter:
                 tmp_blendfile_path, asset_coll_name, constants.TARGET_SUFFIX
             )
 
+            # Remove tmp blend file.
+            tmp_blendfile_path.unlink()
+
         # Link for debugging.
         bpy.context.scene.collection.children.link(asset_coll_publish)
         bpy.context.scene.collection.children.link(asset_coll_target)
         bpy.context.scene.collection.children.link(asset_coll_task)
 
-        # Remove tmp blend file.
-        tmp_blendfile_path.unlink()
+        return MergeCollectionTriplet(
+            MergeCollection(asset_coll_task, constants.TASK_SUFFIX),
+            MergeCollection(asset_coll_publish, constants.PUBLISH_SUFFIX),
+            MergeCollection(asset_coll_target, constants.TARGET_SUFFIX),
+        )
 
     def import_asset_version(self) -> None:
         """
