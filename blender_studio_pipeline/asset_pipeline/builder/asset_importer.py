@@ -219,5 +219,4 @@ class AssetImporter:
         """
         # Get latest asset version.
         asset_publish = self.build_context.asset_publishes[-1]
-        print(asset_publish)
         return

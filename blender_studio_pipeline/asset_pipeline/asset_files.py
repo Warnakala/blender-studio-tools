@@ -59,6 +59,8 @@ class AssetTask(AssetFile):
     Represents a working file.
     """
 
+    # TODO: overwrite init to load metadata etc.
+
 
 class AssetPublish(AssetFile):
     data_suffix = ".PUBLISH"
@@ -67,8 +69,6 @@ class AssetPublish(AssetFile):
     """
 
     # TODO: overwrite init to load metadata etc.
-
-    pass
 
     def get_version(self, format: type = str) -> Optional[Union[str, int]]:
         return get_file_version(self.path, format=format)

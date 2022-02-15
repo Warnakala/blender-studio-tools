@@ -346,7 +346,7 @@ class BuildContext:
     def _collect_process_pairs(self) -> None:
         # Here we want to loop through all asset publishes and
         # create a list of process pairs out of it.
-        # This is the place where we perform the logic of checking
+        # TODO: This is the place where we perform the logic of checking
         # which task layers the user selected in self._asset_context.task_layer_assembly
         # and then reading the metadata of each asset publish and check where the corresponding
         # task layers are live.
