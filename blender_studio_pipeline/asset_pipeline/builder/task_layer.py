@@ -127,7 +127,8 @@ class TaskLayerAssembly:
         # from within Blender by string which TaskLayers to enable and disable for built.
         # As key we will use the class.__name__ attribute of each TaskLayer. (Should be unique)
         self._task_layer_config_dict: Dict[str, TaskLayerConfig] = {}
-
+        self._task_layers = task_layers
+        self._task_layer_configs: List[TaskLayerConfig] = []
         # For each TaskLayer create a TaskLayerConfig and add entry in
         # dictionary.
         for task_layer in task_layers:
@@ -139,13 +140,19 @@ class TaskLayerAssembly:
                 raise Exception(
                     f"Detected 2 TaskLayers with the same Class name. [{task_layer.__name__}]"
                 )
+            tc = TaskLayerConfig(task_layer)
+            self._task_layer_configs.append(tc)
+            self._task_layer_config_dict[task_layer.__name__] = tc
 
-            self._task_layer_config_dict[task_layer.__name__] = TaskLayerConfig(
-                task_layer
-            )
+        # Sort lists.
+        self._task_layer_configs.sort(key=lambda tc: tc.task_layer.order)
+        self._task_layers.sort(key=lambda tl: tl.order)
 
     def get_task_layer_config(self, key: str) -> TaskLayerConfig:
         return self._task_layer_config_dict[key]
+
+    def get_used_task_layers(self) -> List[type[TaskLayer]]:
+        return [tc.task_layer for tc in self.task_layer_configs if tc.use]
 
     @property
     def task_layer_config_dict(self) -> Dict[str, TaskLayerConfig]:
@@ -153,27 +160,15 @@ class TaskLayerAssembly:
 
     @property
     def task_layer_configs(self) -> List[TaskLayerConfig]:
-        return list(self._task_layer_config_dict.values())
+        return self._task_layer_configs
 
     @property
     def task_layers(self) -> List[type[TaskLayer]]:
-        return list(t.task_layer for t in self.task_layer_configs)
+        return self._task_layers
 
     @property
     def task_layer_names(self) -> List[str]:
         return [l.name for l in self.task_layers]
-
-    def as_blender_enum(self) -> List[Tuple[str, str, str]]:
-        """
-        Returns data structure that works for Blender Enums.
-        [(TaskLayer Class Name, TaskLayer Name, TaskLayer Description)]
-        """
-
-        l = []
-        for key, value in self._task_layer_configs.items():
-            t = (key, value.task_layer.name, value.task_layer.description)
-            l.append(t)
-        return l
 
     def get_task_layer_orders(self, only_used: bool = False) -> List[int]:
         """
@@ -183,10 +178,6 @@ class TaskLayerAssembly:
             return [t.order for t in self.task_layers]
         else:
             return [tc.task_layer.order for tc in self.task_layer_configs if tc.use]
-
-    def reset_task_layer_configs(self) -> None:
-        for tc in self.task_layer_configs:
-            tc.reset()
 
     def __repr__(self) -> str:
         body = f"{', '.join([str(t) for t in self.task_layer_configs])}"
