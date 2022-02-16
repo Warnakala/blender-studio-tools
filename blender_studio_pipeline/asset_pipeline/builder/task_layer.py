@@ -64,6 +64,9 @@ class TaskLayer:
     def transfer_data(
         cls, context: bpy.types.Context, transfer_mapping: AssetTransferMapping
     ) -> None:
+        # TODO: Think about adding a setting infrastructure to give the possibility for Users
+        # to define and set their own custom options for the transfer data function.
+        # Do we need a *settings/options Dict? We could store those settings on scene property group?
         """
         The AssetTranfserMapping class represents a mapping between a source and a target.
         It contains an object mapping which connects each source object with a target
