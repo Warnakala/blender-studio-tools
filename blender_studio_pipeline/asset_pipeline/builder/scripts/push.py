@@ -35,6 +35,7 @@ from blender_studio_pipeline.asset_pipeline.builder.asset_mapping import (
     MergeCollectionTriplet,
     AssetTransferMapping,
 )
+from blender_studio_pipeline.asset_pipeline import prop_utils
 
 from pathlib import Path
 
@@ -71,6 +72,18 @@ if not pickle_path.exists():
 print(f"LOADING PICKLE: {pickle_path.as_posix()}")
 with open(pickle_path.as_posix(), "rb") as f:
     BUILD_CONTEXT: BuildContext = pickle.load(f)
+
+print("LOAD TRANSFER SETTINGS")
+# Fetch transfer settings from AssetContext.
+TRANSFER_SETTINGS = bpy.context.scene.bsp_asset_transfer_settings
+for prop_name, prop in prop_utils.get_property_group_items(TRANSFER_SETTINGS):
+    try:
+        value = BUILD_CONTEXT.asset_context.transfer_settings[prop_name]
+    except KeyError:
+        continue
+    else:
+        setattr(TRANSFER_SETTINGS, prop_name, value)
+        print(f"Loaded setting({prop_name}: {value})")
 
 print(BUILD_CONTEXT)
 
@@ -118,7 +131,7 @@ for task_layer in task_layers[1:]:
     # the publish collection to the target collection
     if task_layer in used_task_layers:
         print(f"Transferring {task_layer.name} from task to target.")
-        task_layer.transfer_data(bpy.context, mapping_task_target)
+        task_layer.transfer_data(bpy.context, mapping_task_target, TRANSFER_SETTINGS)
     else:
         print(f"Transferring {task_layer.name} from publish to target.")
-        task_layer.transfer_data(bpy.context, mapping_publish_target)
+        task_layer.transfer_data(bpy.context, mapping_publish_target, TRANSFER_SETTINGS)

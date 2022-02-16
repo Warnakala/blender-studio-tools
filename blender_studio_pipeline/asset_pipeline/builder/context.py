@@ -29,7 +29,7 @@ import bpy
 
 from ..sys_utils import SystemPathInclude
 from .task_layer import TaskLayer, TaskLayerAssembly
-from .. import asset_files
+from .. import asset_files, constants, prop_utils
 from ..asset_files import AssetDir, AssetPublish, AssetTask
 
 logger = logging.getLogger("BSP")
@@ -80,6 +80,7 @@ class ProductionContext:
             )
 
         self._task_layers: List[type[TaskLayer]] = []
+        self._transfer_settings: Optional[type[bpy.types.PropertyGroup]] = None
         self._config_folder: Path = config_folder
         self._module_of_task_layers: Optional[ModuleType] = None
 
@@ -128,6 +129,7 @@ class ProductionContext:
 
             # Crawl module for TaskLayers.
             self._collect_prod_task_layers()
+            self._collect_prod_transfer_settings()
 
     def _collect_prod_task_layers(self) -> None:
 
@@ -174,6 +176,48 @@ class ProductionContext:
         self._task_layers.sort(key=lambda tl: tl.order)
 
         logger.info(f"Detected Production TaskLayers: {self._task_layers}")
+
+    def _collect_prod_transfer_settings(self) -> None:
+        """
+        Here we search the task_layers.py module for a class that is
+        named as defined in constants.TRANSFER_SETTINGS_NAME. This is supposed to be
+        a regular Blender PropertyGroup. In this PropertyGroup Users can define
+        regular blender Properties that represent a setting to customize the
+        transfer data process. This PropertyGroup will be registered on scene level
+        and can then be easily queried in the transfer data function of the TaskLayer.
+        That way Users can provide themselves options to use in their code.
+        This options are also displayed in the Blender AssetPipeline Panel automatically.
+        """
+        self._transfer_settings = None
+        module = self._module_of_task_layers
+
+        try:
+            prop_group = getattr(module, constants.TRANSFER_SETTINGS_NAME)
+        except AttributeError:
+            logger.info(
+                "No Transfer Settings loaded. Failed to find %s variable.",
+                constants.TRANSFER_SETTINGS_NAME,
+            )
+        else:
+            # Check if prop group is actually of type PropertyGroup.
+            if not issubclass(prop_group, bpy.types.PropertyGroup):
+                raise ProdContextFailedToInitialize(
+                    f"{constants.TRANSFER_SETTINGS_NAME} must be subclass of bpy.types.PropertyGroup"
+                )
+            self._transfer_settings = prop_group
+            try:
+                bpy.utils.unregister_class(prop_group)
+            except RuntimeError:
+                bpy.utils.register_class(prop_group)
+                # Scene Asset Pipeline Properties.
+                bpy.types.Scene.bsp_asset_transfer_settings = bpy.props.PointerProperty(
+                    type=prop_group
+                )
+
+            logger.info(f"Detected Transfer Settings: {self._transfer_settings}")
+            logger.info(
+                f"Registered Transfer Settings:  bpy.types.Scene.bsp_asset_transfer_settings"
+            )
 
     def _validate_task_layer_orders(self) -> None:
         for i in range(len(self._task_layers)):
@@ -239,6 +283,11 @@ class AssetContext:
         )
         self._task_layer_assembly = TaskLayerAssembly(prod_context._task_layers)
 
+        # Transfer settings are stored in a PropertyGroup on scene level.
+        # We cannot pickle those. So what we do is write them in a dictionary here
+        # before publish and restore the settings when we open the other blend file.
+        self._transfer_settings: Dict[str, Any] = {}
+
         # TODO: Load custom Task Layers.
         self._custom_task_layers: List[Any] = []
 
@@ -256,9 +305,14 @@ class AssetContext:
     def task_layer_assembly(self) -> TaskLayerAssembly:
         return self._task_layer_assembly
 
+    @property
+    def transfer_settings(self) -> Dict[str, Any]:
+        return self._transfer_settings
+
     def update_from_bl_context(self, bl_context: bpy.types.Context) -> None:
         self._asset_collection = bl_context.scene.bsp_asset.asset_collection
         self._update_task_layer_assembly_from_context(bl_context)
+        self._update_transfer_settings_from_context(bl_context)
 
     def _update_task_layer_assembly_from_context(
         self, bl_context: bpy.types.Context
@@ -274,6 +328,16 @@ class AssetContext:
                 item.task_layer_id
             )
             task_layer_config.use = item.use
+
+    def _update_transfer_settings_from_context(
+        self, bl_context: bpy.types.Context
+    ) -> None:
+        for prop_name, prop in prop_utils.get_property_group_items(
+            bl_context.scene.bsp_asset_transfer_settings
+        ):
+            self._transfer_settings[prop_name] = getattr(
+                bl_context.scene.bsp_asset_transfer_settings, prop_name
+            )
 
     def __repr__(self) -> str:
         header = "\nASSET CONTEXT\n------------------------------------"

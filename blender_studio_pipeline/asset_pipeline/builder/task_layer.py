@@ -62,7 +62,10 @@ class TaskLayer:
 
     @classmethod
     def transfer_data(
-        cls, context: bpy.types.Context, transfer_mapping: AssetTransferMapping
+        cls,
+        context: bpy.types.Context,
+        transfer_mapping: AssetTransferMapping,
+        transfer_settings: bpy.types.PropertyGroup,
     ) -> None:
         # TODO: Think about adding a setting infrastructure to give the possibility for Users
         # to define and set their own custom options for the transfer data function.

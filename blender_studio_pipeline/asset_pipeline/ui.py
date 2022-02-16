@@ -31,6 +31,7 @@ from .ops import (
     BSP_ASSET_publish,
 )
 from . import builder
+from . import prop_utils
 
 
 def draw_task_layers_list(
@@ -142,6 +143,24 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
         return
 
 
+class BSP_ASSET_PT_vi3d_transfer_settings(BSP_ASSET_main_panel, bpy.types.Panel):
+
+    bl_label = "Transfer Settings"
+    bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
+
+    @classmethod
+    def poll(cls, context):
+        return hasattr(context.scene, "bsp_asset_transfer_settings")
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+
+        for (pname, prop,) in prop_utils.get_property_group_items(
+            context.scene.bsp_asset_transfer_settings
+        ):
+            layout.row().prop(context.scene.bsp_asset_transfer_settings, pname)
+
+
 class BSP_ASSET_PT_collection_asset_properties(bpy.types.Panel):
     bl_label = "Asset Properties"
     bl_space_type = "PROPERTIES"
@@ -188,6 +207,7 @@ classes = [
     BSP_ASSET_PT_vi3d_asset_pipeline,
     BSP_ASSET_PT_vi3d_asset_collection,
     BSP_ASSET_PT_vi3d_publish_manager,
+    BSP_ASSET_PT_vi3d_transfer_settings,
 ]
 
 
