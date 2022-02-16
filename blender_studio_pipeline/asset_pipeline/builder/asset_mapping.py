@@ -99,8 +99,12 @@ class AssetTransferMapping:
         self._target_merge_coll = target_merge_coll
         self._source_coll = source_merge_coll.collection
         self._target_coll = target_merge_coll.collection
+
+        # TODO: gen_map functions almost have the same code,
+        # refactor it to one function with the right parameters.
         self._object_map = self._gen_object_map()
         self._collection_map = self._gen_collection_map()
+        self._material_map = self._gen_material_map()
 
     @property
     def source_coll(self) -> bpy.types.Collection:
@@ -190,6 +194,74 @@ class AssetTransferMapping:
 
         return coll_map
 
+    def _gen_material_map(self) -> Dict[bpy.types.Material, bpy.types.Material]:
+        material_map: Dict[bpy.types.Material, bpy.types.Material] = {}
+
+        source_materials: List[bpy.types.Material] = self._get_all_materials_of_coll(
+            self.source_coll
+        )
+        target_materials_dict: Dict[
+            str, bpy.types.Material
+        ] = self._get_all_materials_of_coll(self.target_coll, as_dict=True)
+
+        # Link up all children.
+        for s_mat in source_materials:
+
+            # assert s_mat.name.endswith(self._source_merge_coll.suffix)
+
+            # Replace source object suffix with target suffix to get target object.
+            target_mat_name = rreplace(
+                s_mat.name,
+                self._source_merge_coll.suffix,
+                self._target_merge_coll.suffix,
+                1,
+            )
+            try:
+                t_mat = target_materials_dict[target_mat_name]
+            except KeyError:
+                logger.debug(
+                    "Failed to find match material %s for %s",
+                    s_mat.name,
+                    target_mat_name,
+                )
+                continue
+            else:
+                material_map[s_mat] = t_mat
+                logger.debug(
+                    "Found match: source: %s target: %s",
+                    s_mat.name,
+                    t_mat.name,
+                )
+
+        return material_map
+
+    def _get_all_materials_of_coll(
+        self, coll: bpy.types.Collection, as_dict: bool = False
+    ) -> Union[List[bpy.types.Material], Dict[str, bpy.types.Material]]:
+        materials: List[bpy.types.Material] = []
+        for obj in coll.all_objects:
+            for ms in obj.material_slots:
+                m = ms.material
+
+                # Material can be None.
+                if not m:
+                    continue
+
+                if m in materials:
+                    continue
+
+                materials.append(m)
+
+        # Return list.
+        if not as_dict:
+            return materials
+
+        # Return dict.
+        materials_dict = {}
+        for mat in materials:
+            materials_dict[mat.name] = mat
+        return materials_dict
+
     @property
     def object_map(self) -> Dict[bpy.types.Object, bpy.types.Object]:
         """
@@ -205,3 +277,11 @@ class AssetTransferMapping:
         Value: Target
         """
         return self._collection_map
+
+    @property
+    def material_map(self) -> Dict[bpy.types.Material, bpy.types.Material]:
+        """
+        Key: Source
+        Value: Target
+        """
+        return self._material_map
