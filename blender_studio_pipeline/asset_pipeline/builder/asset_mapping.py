@@ -40,6 +40,8 @@ class MergeCollection:
     """
 
     def __init__(self, collection: bpy.types.Collection, suffix: str):
+        # TODO: Just realized we might not need this class if we just
+        # store the SUFFIX in a custom collection property.
         self.collection = collection
         self.suffix = suffix
 
