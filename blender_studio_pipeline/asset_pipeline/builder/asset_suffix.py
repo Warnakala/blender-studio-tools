@@ -24,23 +24,16 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple, Generator
 import bpy
 
 from .. import constants
+from ... import util
 
 logger = logging.getLogger("BSP")
-
-
-def traverse_collection_tree(
-    collection: bpy.types.Collection,
-) -> Generator[bpy.types.Collection, None, None]:
-    yield collection
-    for child in collection.children:
-        yield from traverse_collection_tree(child)
 
 
 def remove_suffix_from_collection_recursive(
     collection: bpy.types.Collection, delimiter: str = constants.DELIMITER
 ) -> None:
     """Recursively remove a suffix to a hierarchy of collections."""
-    for coll in traverse_collection_tree(collection):
+    for coll in util.traverse_collection_tree(collection):
         coll.name = delimiter.join(collection.name.split(delimiter)[:-1])
 
 
@@ -122,7 +115,7 @@ def add_suffix_to_collection_recursive(
     collection: bpy.types.Collection, suffix: str
 ) -> None:
     """Recursively add a suffix to a hierarchy of collections and objects."""
-    for coll in traverse_collection_tree(collection):
+    for coll in util.traverse_collection_tree(collection):
         coll.name += suffix
 
 

@@ -24,7 +24,7 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from types import ModuleType
 
 from pathlib import Path
-from . import asset_suffix
+from ... import util
 
 import bpy
 
@@ -64,6 +64,12 @@ class MergeCollectionTriplet:
         self.publish_coll = publish_coll
         self.task_coll = task_coll
         self.target_coll = target_coll
+
+    def get_merge_collections(self) -> List[MergeCollection]:
+        return [self.publish_coll, self.task_coll, self.target_coll]
+
+    def get_collections(self) -> List[bpy.types.Collection]:
+        return [m.collection for m in self.get_merge_collections()]
 
 
 def rreplace(s: str, old: str, new: str, occurrence: int) -> str:
@@ -154,7 +160,7 @@ class AssetTransferMapping:
         coll_map[self.source_coll] = self.target_coll
 
         # Link up all children.
-        for s_coll in asset_suffix.traverse_collection_tree(self.source_coll):
+        for s_coll in util.traverse_collection_tree(self.source_coll):
 
             # assert source_obj.name.endswith(self._source_merge_coll.suffix)
 

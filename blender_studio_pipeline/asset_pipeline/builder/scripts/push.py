@@ -29,13 +29,13 @@ import sys
 from typing import List, Dict, Union, Any, Set, Optional
 
 from blender_studio_pipeline.asset_pipeline.builder.context import BuildContext
-from blender_studio_pipeline.asset_pipeline.builder.asset_builder import AssetBuilder
 from blender_studio_pipeline.asset_pipeline.builder.asset_importer import AssetImporter
 from blender_studio_pipeline.asset_pipeline.builder.asset_mapping import (
     MergeCollectionTriplet,
     AssetTransferMapping,
 )
 from blender_studio_pipeline.asset_pipeline import prop_utils
+from blender_studio_pipeline.asset_pipeline.builder.vis import EnsureVisible
 
 from pathlib import Path
 
@@ -96,6 +96,15 @@ asset_task = BUILD_CONTEXT.asset_task
 ASSET_IMPORTER = AssetImporter(BUILD_CONTEXT)
 merge_triplet: MergeCollectionTriplet = ASSET_IMPORTER.import_asset_task()
 
+# Apparently Blender does not evaluate objects or collections in the depsgraph
+# in some cases if they are not visible. This is something Users should not have to take
+# care about when writing their transfer data instructions. So we will make sure here
+# that everything is visible and after the transfer the original state will be restored.
+vis_objs: List[EnsureVisible] = []
+for coll in merge_triplet.get_collections():
+    for obj in coll.all_objects:
+        vis_objs.append(EnsureVisible(obj))
+
 
 # The target collection (base) was already decided by ASSET_IMPORTER.import_asset_task()
 # and is saved in merge_triplet.target_coll.
@@ -135,3 +144,8 @@ for task_layer in task_layers[1:]:
     else:
         print(f"Transferring {task_layer.name} from publish to target.")
         task_layer.transfer_data(bpy.context, mapping_publish_target, TRANSFER_SETTINGS)
+
+
+# Restore Visibility.
+for obj in vis_objs:
+    obj.restore()
