@@ -143,7 +143,7 @@ class BSP_ASSET_initial_publish(bpy.types.Operator):
         builder.ASSET_BUILDER = builder.AssetBuilder(builder.BUILD_CONTEXT)
 
         # Publish
-        builder.ASSET_BUILDER.publish()
+        builder.ASSET_BUILDER.push()
 
         # Update properties
         context.scene.bsp_asset.is_publish_in_progress = False
@@ -265,9 +265,9 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BSP_ASSET_publish(bpy.types.Operator):
-    bl_idname = "bsp_asset.publish"
-    bl_label = "Publish"
+class BSP_ASSET_push_task_layers(bpy.types.Operator):
+    bl_idname = "bsp_asset.push_task_layers"
+    bl_label = "Apply Changes"
     bl_description = (
         "Calls the publish function of the Asset Builder with the current Build Context"
     )
@@ -287,7 +287,7 @@ class BSP_ASSET_publish(bpy.types.Operator):
         builder.ASSET_BUILDER = builder.AssetBuilder(builder.BUILD_CONTEXT)
 
         # Publish
-        builder.ASSET_BUILDER.publish()
+        builder.ASSET_BUILDER.push()
 
         # Update properties
         context.scene.bsp_asset.is_publish_in_progress = False
@@ -455,7 +455,7 @@ classes = [
     BSP_ASSET_start_publish,
     BSP_ASSET_start_publish_new_version,
     BSP_ASSET_abort_publish,
-    BSP_ASSET_publish,
+    BSP_ASSET_push_task_layers,
     BSP_ASSET_pull,
 ]
 

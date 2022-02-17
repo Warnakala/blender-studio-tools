@@ -72,7 +72,7 @@ class AssetBuilder:
     def transfer_settings(self) -> bpy.types.PropertyGroup:
         return self._transfer_settings
 
-    def publish(self) -> None:
+    def push(self) -> None:
         # Catch special case first version.
         if not self.build_context.asset_publishes:
             self._create_first_version()
