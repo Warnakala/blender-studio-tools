@@ -121,6 +121,12 @@ class AssetBuilder:
         source_type: Union[type[AssetTask], type[AssetPublish]],
     ) -> None:
 
+        """
+        This function is used to pull task layers from an asset publish in to an asset task
+        but also to pull an asset task in to an asset publish. The source_type argument controls
+        the direction.
+        """
+
         # TODO: Refactor this to get rif of the if else checking depending on the source
         # type.
 
