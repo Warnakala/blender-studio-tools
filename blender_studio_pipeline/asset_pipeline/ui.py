@@ -27,6 +27,7 @@ from .ops import (
     BSP_ASSET_clear_asset_collection,
     BSP_ASSET_initial_publish,
     BSP_ASSET_start_publish,
+    BSP_ASSET_start_publish_new_version,
     BSP_ASSET_abort_publish,
     BSP_ASSET_create_prod_context,
     BSP_ASSET_publish,
@@ -156,8 +157,17 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
 
         # Production Context is initialized.
         row = layout.row(align=True)
-        row.operator(BSP_ASSET_start_publish.bl_idname)
+        if context.window_manager.bsp_asset.new_asset_version:
+            row.operator(BSP_ASSET_start_publish_new_version.bl_idname)
+        else:
+            row.operator(BSP_ASSET_start_publish.bl_idname)
 
+        row.prop(
+            context.window_manager.bsp_asset,
+            "new_asset_version",
+            text="",
+            icon="ADD",
+        )
         return
 
 

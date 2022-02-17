@@ -18,7 +18,6 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
-import importlib
 import logging
 
 from typing import List, Dict, Union, Any, Set, Optional
@@ -172,6 +171,7 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
             and not context.scene.bsp_asset.is_publish_in_progress
             and builder.PROD_CONTEXT
             and builder.ASSET_CONTEXT
+            and builder.ASSET_CONTEXT.asset_publishes
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -191,6 +191,50 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         context.scene.bsp_asset.is_publish_in_progress = True
 
         print(builder.BUILD_CONTEXT)
+
+        # Redraw UI.
+        util.redraw_ui()
+
+        return {"FINISHED"}
+
+
+class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
+    bl_idname = "bsp_asset.start_publish_new_version"
+    bl_label = "Start Publish New Version"
+    bl_description = "Starts publish of the Asset Collection as a new Version"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        asset_coll = context.scene.bsp_asset.asset_collection
+        return bool(
+            util.is_file_saved()
+            and asset_coll
+            and not context.scene.bsp_asset.is_publish_in_progress
+            and builder.PROD_CONTEXT
+            and builder.ASSET_CONTEXT
+            and builder.ASSET_CONTEXT.asset_publishes
+            and context.window_manager.bsp_asset.new_asset_version
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
+        builder.ASSET_CONTEXT.update_from_bl_context(context)
+
+        # Copy latest asset publish and increment.
+        asset_publish = builder.ASSET_CONTEXT.asset_dir.increment_latest_publish()
+
+        # Update the asset publishes again.
+        builder.ASSET_CONTEXT.update_asset_publishes()
+
+        # Create Build Context.
+        builder.BUILD_CONTEXT = builder.BuildContext(
+            builder.PROD_CONTEXT, builder.ASSET_CONTEXT
+        )
+        print(builder.BUILD_CONTEXT)
+
+        # Update properties.
+        context.scene.bsp_asset.is_publish_in_progress = True
 
         # Redraw UI.
         util.redraw_ui()
@@ -409,6 +453,7 @@ classes = [
     BSP_ASSET_create_asset_context,
     BSP_ASSET_initial_publish,
     BSP_ASSET_start_publish,
+    BSP_ASSET_start_publish_new_version,
     BSP_ASSET_abort_publish,
     BSP_ASSET_publish,
     BSP_ASSET_pull,

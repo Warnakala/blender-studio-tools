@@ -134,6 +134,11 @@ class BSP_ASSET_tmp_properties(bpy.types.PropertyGroup):
         name="Source", get=get_asset_publish_source_path
     )
 
+    new_asset_version: bpy.props.BoolProperty(
+        name="New Version",
+        description="Controls if new Version should be created when starting the publish",
+    )
+
 
 # ----------------REGISTER--------------.
 
