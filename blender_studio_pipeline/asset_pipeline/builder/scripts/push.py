@@ -41,13 +41,13 @@ logger = logging.getLogger("BSP")
 
 # Get cli input.
 argv = sys.argv
-# print(argv)
+# logger.info(argv)
 argv = argv[argv.index("--") + 1 :]
 
-print("\n" * 2)
-print(f"STARTING NEW BLENDER: {bpy.data.filepath}")
-print("RUNNING PUSH SCRIPT")
-print("------------------------------------")
+logger.info("\n" * 2)
+logger.info(f"STARTING NEW BLENDER: {bpy.data.filepath}")
+logger.info("RUNNING PUSH SCRIPT")
+logger.info("------------------------------------")
 
 try:
     argv[0]
@@ -56,22 +56,22 @@ except IndexError:
     sys.exit(1)
 
 # Check if pickle path is valid.
-pickle_path = argv[0]
+pickle_path: str = argv[0]
 
 if not pickle_path:
     raise ValueError("Supply valid pickle path as first argument after '--'.")
 
-pickle_path = Path(pickle_path)
+pickle_path: Path = Path(pickle_path)
 
 if not pickle_path.exists():
     raise ValueError(f"Pickle path does not exist: {pickle_path.as_posix()}")
 
 # Load pickle
-print(f"LOADING PICKLE: {pickle_path.as_posix()}")
+logger.info(f"LOADING PICKLE: %s", pickle_path.as_posix())
 with open(pickle_path.as_posix(), "rb") as f:
     BUILD_CONTEXT: BuildContext = pickle.load(f)
 
-print("LOAD TRANSFER SETTINGS")
+logger.info("LOAD TRANSFER SETTINGS")
 
 # Fetch transfer settings from AssetContext and update scene settings
 # as they are the ones that are used by the pull() process.
@@ -83,14 +83,19 @@ for prop_name, prop in prop_utils.get_property_group_items(TRANSFER_SETTINGS):
         continue
     else:
         setattr(TRANSFER_SETTINGS, prop_name, value)
-        print(f"Loaded setting({prop_name}: {value})")
+        logger.info("Loaded setting(%s: %s)", prop_name, str(value))
 
-print(BUILD_CONTEXT)
+logger.info(BUILD_CONTEXT)
 
-print(
-    f"IMPORTING ASSET COLLECTION FROM TASK: {BUILD_CONTEXT.asset_task.path.as_posix()}"
+logger.info(
+    f"IMPORTING ASSET COLLECTION FROM TASK: %s",
+    BUILD_CONTEXT.asset_task.path.as_posix(),
 )
 
 ASSET_BUILDER = AssetBuilder(BUILD_CONTEXT)
 
 ASSET_BUILDER.pull(bpy.context, AssetTask)
+
+# Delete pickle.
+pickle_path.unlink()
+logger.info("Deleted pickle: %s", pickle_path.name)
