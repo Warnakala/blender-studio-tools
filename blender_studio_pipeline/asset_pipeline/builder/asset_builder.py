@@ -111,7 +111,11 @@ class AssetBuilder:
                 pickle_path,
             )
 
-    def pull(self, source_type: Union[type[AssetTask], type[AssetPublish]]) -> None:
+    def pull(
+        self,
+        context: bpy.types.Context,
+        source_type: Union[type[AssetTask], type[AssetPublish]],
+    ) -> None:
 
         # TODO: Refactor this to get rif of the if else checking depending on the source
         # type.
@@ -187,14 +191,14 @@ class AssetBuilder:
                         f"Transferring {task_layer.name} from {merge_triplet.task_coll.name} to {merge_triplet.target_coll.name}."
                     )
                     task_layer.transfer_data(
-                        bpy.context, mapping_task_target, self.transfer_settings
+                        context, mapping_task_target, self.transfer_settings
                     )
                 elif source_type == AssetPublish:
                     logger.info(
                         f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
                     )
                     task_layer.transfer_data(
-                        bpy.context, mapping_publish_target, self.transfer_settings
+                        context, mapping_publish_target, self.transfer_settings
                     )
 
             else:
@@ -204,7 +208,7 @@ class AssetBuilder:
                         f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
                     )
                     task_layer.transfer_data(
-                        bpy.context, mapping_publish_target, self.transfer_settings
+                        context, mapping_publish_target, self.transfer_settings
                     )
 
                 elif source_type == AssetPublish:
@@ -212,7 +216,7 @@ class AssetBuilder:
                         f"Transferring {task_layer.name} from {merge_triplet.task_coll.name} to {merge_triplet.target_coll.name}."
                     )
                     task_layer.transfer_data(
-                        bpy.context, mapping_task_target, self.transfer_settings
+                        context, mapping_task_target, self.transfer_settings
                     )
 
         # Restore Visibility.
@@ -225,6 +229,12 @@ class AssetBuilder:
 
         # Remove suffix from TARGET Collection.
         asset_suffix.remove_suffix_from_hierarchy(merge_triplet.target_coll)
+
+        # Remove transfer suffix.
+        merge_triplet.target_coll.bsp_asset.transfer_suffix = ""
+
+        # Restore scenes asset collection.
+        context.scene.bsp_asset.asset_collection = merge_triplet.target_coll
 
     def _create_first_version(self) -> None:
         target = self._build_context.asset_dir.get_first_publish_path()

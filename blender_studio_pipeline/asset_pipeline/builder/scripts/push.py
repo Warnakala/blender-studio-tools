@@ -93,4 +93,4 @@ print(
 
 ASSET_BUILDER = AssetBuilder(BUILD_CONTEXT)
 
-ASSET_BUILDER.pull(AssetTask)
+ASSET_BUILDER.pull(bpy.context, AssetTask)
