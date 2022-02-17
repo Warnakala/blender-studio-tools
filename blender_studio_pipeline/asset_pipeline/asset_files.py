@@ -18,6 +18,7 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 import re
+import shutil
 import logging
 
 from typing import List, Dict, Union, Any, Set, Optional
@@ -28,6 +29,10 @@ import bpy
 from . import constants
 
 logger = logging.getLogger("BSP")
+
+
+class FailedToIncrementLatestPublish(Exception):
+    pass
 
 
 class AssetFile:
@@ -119,6 +124,29 @@ class AssetDir:
 
         asset_publishes.sort(key=get_publish_version)
         return asset_publishes
+
+    def increment_latest_publish(self) -> AssetPublish:
+        asset_publishes = self.get_asset_publishes()
+        if not asset_publishes:
+            raise FailedToIncrementLatestPublish(
+                f"No publishes available in: {self.publish_dir.as_posix()}"
+            )
+
+        latest_publish = asset_publishes[-1]
+        new_version = f"v{(latest_publish.get_version(format=int)+1):03}"
+        new_name = latest_publish.path.name.replace(
+            latest_publish.get_version(), new_version
+        )
+        new_path = latest_publish.path.parent / new_name
+
+        if new_path.exists():
+            raise FailedToIncrementLatestPublish(
+                f"Already exists: {new_path.as_posix()}"
+            )
+
+        shutil.copy(latest_publish.path, new_path)
+        logger.info(f"Copied: {latest_publish.path.name} to: {new_path.name}")
+        return AssetPublish(new_path)
 
     def get_first_publish_path(self) -> Path:
         filename = f"{self.asset_disk_name}.v001.blend"
