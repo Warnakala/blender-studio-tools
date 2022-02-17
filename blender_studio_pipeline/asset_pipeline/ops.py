@@ -28,7 +28,7 @@ from bpy.app.handlers import persistent
 import blender_kitsu.cache
 
 from .. import util
-from . import builder
+from . import builder, opsdata
 from .asset_files import AssetPublish
 
 logger = logging.getLogger("BSP")
@@ -182,6 +182,9 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         # Update the asset publishes again.
         builder.ASSET_CONTEXT.update_asset_publishes()
 
+        # Make sure that the blender property group gets updated as well.
+        opsdata.populate_asset_publishes(context, builder.ASSET_CONTEXT)
+
         # Create Build Context.
         builder.BUILD_CONTEXT = builder.BuildContext(
             builder.PROD_CONTEXT, builder.ASSET_CONTEXT
@@ -226,6 +229,9 @@ class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
 
         # Update the asset publishes again.
         builder.ASSET_CONTEXT.update_asset_publishes()
+
+        # Make sure that the blender property group gets updated as well.
+        opsdata.populate_asset_publishes(context, builder.ASSET_CONTEXT)
 
         # Create Build Context.
         builder.BUILD_CONTEXT = builder.BuildContext(
@@ -383,40 +389,17 @@ class BSP_ASSET_create_asset_context(bpy.types.Operator):
         # Initialize Asset Context.
         builder.ASSET_CONTEXT = builder.AssetContext(context, builder.PROD_CONTEXT)
 
-        # Populate collection property with task layers that are in BUILD_CONTEXT
+        # Populate collection property with loaded task layers.
+        opsdata.populate_task_layers(context, builder.ASSET_CONTEXT)
 
-        # Make a backup to restore task layer settings as good as possible.
-        tmp_backup: Dict[str, Dict[str, Any]] = {}
-        for (
-            task_layer_id,
-            task_layer_prop_group,
-        ) in context.scene.bsp_asset.task_layers.items():
-            tmp_backup[task_layer_id] = task_layer_prop_group.as_dict()
+        # Populate collection property with found asset publishes.
+        opsdata.populate_asset_publishes(context, builder.ASSET_CONTEXT)
 
-        # Clear task layer collection property.
-        context.scene.bsp_asset.task_layers.clear()
-
-        # Load Task Layers from Production Context, try to restore
-        # previous task layer settings
-        for (
-            key,
-            task_layer_config,
-        ) in builder.ASSET_CONTEXT.task_layer_assembly.task_layer_config_dict.items():
-            item = context.scene.bsp_asset.task_layers.add()
-            item.name = key
-            item.task_layer_id = key
-            item.task_layer_name = task_layer_config.task_layer.name
-
-            # Restore previous settings.
-            if key in tmp_backup:
-                item.use = tmp_backup[key]["use"]
-
-                # Update actual ASSET_CONTEXT, which will transfer the task layer settings,
-                # which we restored from scene level.
-                task_layer_config.use = tmp_backup[key]["use"]
+        # Update Asset Context from bl context again, as populate
+        # task layers tries to restore previous task layer selection states.
+        builder.ASSET_CONTEXT.update_from_bl_context(context)
 
         print(builder.ASSET_CONTEXT)
-
         return {"FINISHED"}
 
 

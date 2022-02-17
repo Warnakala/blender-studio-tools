@@ -17,6 +17,8 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+from typing import Optional, Dict, Any
+
 from pathlib import Path
 
 import bpy
@@ -29,7 +31,7 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     Collection Properties for Blender Studio Asset Collections
     """
 
-    is_asset: bpy.props.BoolProperty(
+    is_asset: bpy.props.BoolProperty(  # type: ignore
         name="Is Asset",
         default=False,
         description="Controls if this Collection is recognized as an official Asset",
@@ -65,30 +67,50 @@ class BSP_task_layer(bpy.types.PropertyGroup):
     Is used in BSP_ASSET_scene_properties as collection property.
     """
 
-    task_layer_id: bpy.props.StringProperty(
+    task_layer_id: bpy.props.StringProperty(  # type: ignore
         name="Task Layer ID",
         description="Unique Key that is used to query a Task Layer in TaskLayerAssembly.get_task_layer_config(.",
     )
-    task_layer_name: bpy.props.StringProperty(
+    task_layer_name: bpy.props.StringProperty(  # type: ignore
         name="Task Layer Name",
     )
 
-    use: bpy.props.BoolProperty(
+    use: bpy.props.BoolProperty(  # type: ignore
         name="Use",
         default=False,
         options={"LIBRARY_EDITABLE"},
         override={"LIBRARY_OVERRIDABLE"},
     )
 
-    def reset_properties(self):
+    def reset_properties(self) -> None:
         self.use = False
 
-    def as_dict(self):
+    def as_dict(self) -> Dict[str, Any]:
         return {
             "use": self.use,
             "task_layer_id": self.task_layer_id,
             "task_layer_name": self.task_layer_name,
         }
+
+
+class BSP_asset_file(bpy.types.PropertyGroup):
+
+    """
+    Property Group that can represent a minimal version of an Asset File.
+    """
+
+    path_str: bpy.props.StringProperty(  # type: ignore
+        name="Path",
+    )
+
+    @property
+    def path(self) -> Optional[Path]:
+        if not self.path_str:
+            return None
+        return Path(self.path_str)
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {"path": self.path}
 
 
 class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
@@ -114,7 +136,10 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
 
     task_layers: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
 
-    task_layers_index: bpy.props.IntProperty(name="Task Layers Index", min=0)
+    asset_publishes: bpy.props.CollectionProperty(type=BSP_asset_file)  # type: ignore
+
+    task_layers_index: bpy.props.IntProperty(name="Task Layers Index", min=0)  # type: ignore
+    asset_publishes_index: bpy.props.IntProperty(name="Asset Publishes Index", min=0)  # type: ignore
 
 
 def get_asset_publish_source_path(context: bpy.types.Context) -> str:
@@ -134,7 +159,7 @@ class BSP_ASSET_tmp_properties(bpy.types.PropertyGroup):
         name="Source", get=get_asset_publish_source_path
     )
 
-    new_asset_version: bpy.props.BoolProperty(
+    new_asset_version: bpy.props.BoolProperty(  # type: ignore
         name="New Version",
         description="Controls if new Version should be created when starting the publish",
     )
@@ -144,6 +169,7 @@ class BSP_ASSET_tmp_properties(bpy.types.PropertyGroup):
 
 classes = [
     BSP_task_layer,
+    BSP_asset_file,
     BSP_ASSET_asset_collection,
     BSP_ASSET_scene_properties,
     BSP_ASSET_tmp_properties,
