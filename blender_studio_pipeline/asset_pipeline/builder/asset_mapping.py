@@ -31,25 +31,9 @@ import bpy
 logger = logging.getLogger("BSP")
 
 
-class MergeCollection:
+class TransferCollectionTriplet:
     """
-    Small convenient class to connect a collection and its objects to a
-    specific suffix. This is needed because later we need to map objects
-    to objects. These objects have the same name except of the suffix.
-    If we know the suffix we can easily map them up together.
-    """
-
-    def __init__(self, collection: bpy.types.Collection, suffix: str):
-        # TODO: Just realized we might not need this class if we just
-        # store the SUFFIX in a custom collection property.
-        self.collection = collection
-        self.suffix = suffix
-
-
-class MergeCollectionTriplet:
-    """
-    This class holds the 3 collections (with their suffixes by storing them as MergeCollection)
-    that are needed for the merge process. Publish, Task and Target Collection.
+    This class holds the 3 collections that are needed for the merge process. Publish, Task and Target Collection.
     During the merge we have to dynamically decide which Task Layer we take from the Publish Collection
     and which we take from the Task Collection to apply on the target.
     That's why we save these 3 Collections in a dedicated class, as we require them.
@@ -57,19 +41,16 @@ class MergeCollectionTriplet:
 
     def __init__(
         self,
-        task_coll: MergeCollection,
-        publish_coll: MergeCollection,
-        target_coll: MergeCollection,
+        task_coll: bpy.types.Collection,
+        publish_coll: bpy.types.Collection,
+        target_coll: bpy.types.Collection,
     ):
         self.publish_coll = publish_coll
         self.task_coll = task_coll
         self.target_coll = target_coll
 
-    def get_merge_collections(self) -> List[MergeCollection]:
-        return [self.publish_coll, self.task_coll, self.target_coll]
-
     def get_collections(self) -> List[bpy.types.Collection]:
-        return [m.collection for m in self.get_merge_collections()]
+        return [self.task_coll, self.publish_coll, self.target_coll]
 
 
 def rreplace(s: str, old: str, new: str, occurrence: int) -> str:
@@ -91,14 +72,12 @@ class AssetTransferMapping:
 
     def __init__(
         self,
-        source_merge_coll: MergeCollection,
-        target_merge_coll: MergeCollection,
+        source_coll: bpy.types.Collection,
+        target_coll: bpy.types.Collection,
     ):
 
-        self._source_merge_coll = source_merge_coll
-        self._target_merge_coll = target_merge_coll
-        self._source_coll = source_merge_coll.collection
-        self._target_coll = target_merge_coll.collection
+        self._source_coll = source_coll
+        self._target_coll = target_coll
 
         # TODO: gen_map functions almost have the same code,
         # refactor it to one function with the right parameters.
@@ -130,8 +109,8 @@ class AssetTransferMapping:
             # Replace source object suffix with target suffix to get target object.
             target_obj_name = rreplace(
                 source_obj.name,
-                self._source_merge_coll.suffix,
-                self._target_merge_coll.suffix,
+                self._source_coll.bsp_asset.transfer_suffix,
+                self._target_coll.bsp_asset.transfer_suffix,
                 1,
             )
             try:
@@ -171,8 +150,8 @@ class AssetTransferMapping:
             # Replace source object suffix with target suffix to get target object.
             target_coll_name = rreplace(
                 s_coll.name,
-                self._source_merge_coll.suffix,
-                self._target_merge_coll.suffix,
+                self._source_coll.bsp_asset.transfer_suffix,
+                self._target_coll.bsp_asset.transfer_suffix,
                 1,
             )
             try:
@@ -212,8 +191,8 @@ class AssetTransferMapping:
             # Replace source object suffix with target suffix to get target object.
             target_mat_name = rreplace(
                 s_mat.name,
-                self._source_merge_coll.suffix,
-                self._target_merge_coll.suffix,
+                self._source_coll.bsp_asset.transfer_suffix,
+                self._target_coll.bsp_asset.transfer_suffix,
                 1,
             )
             try:

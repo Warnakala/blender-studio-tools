@@ -31,7 +31,7 @@ from typing import List, Dict, Union, Any, Set, Optional
 from blender_studio_pipeline.asset_pipeline.builder.context import BuildContext
 from blender_studio_pipeline.asset_pipeline.builder.asset_importer import AssetImporter
 from blender_studio_pipeline.asset_pipeline.builder.asset_mapping import (
-    MergeCollectionTriplet,
+    TransferCollectionTriplet,
     AssetTransferMapping,
 )
 from blender_studio_pipeline.asset_pipeline import prop_utils
@@ -94,7 +94,7 @@ print(
 # Import Asset Collection form Asset Task.
 asset_task = BUILD_CONTEXT.asset_task
 ASSET_IMPORTER = AssetImporter(BUILD_CONTEXT)
-merge_triplet: MergeCollectionTriplet = ASSET_IMPORTER.import_asset_task()
+merge_triplet: TransferCollectionTriplet = ASSET_IMPORTER.import_asset_task()
 
 # Apparently Blender does not evaluate objects or collections in the depsgraph
 # in some cases if they are not visible. This is something Users should not have to take

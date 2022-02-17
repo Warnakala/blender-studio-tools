@@ -41,6 +41,8 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
 
     rig: bpy.props.PointerProperty(type=bpy.types.Armature, name="Rig")  # type: ignore
 
+    transfer_suffix: bpy.props.StringProperty(name="Transfer Suffix")  # type: ignore
+
     # Display properties that can't be set by User in UI.
     displ_entity_name: bpy.props.StringProperty(name="Asset Name", get=lambda self: self.entity_name)  # type: ignore
     displ_entity_id: bpy.props.StringProperty(name="Asset ID", get=lambda self: self.entity_id)  # type: ignore
