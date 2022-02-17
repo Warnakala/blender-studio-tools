@@ -295,8 +295,8 @@ class BSP_ASSET_push_task_layers(bpy.types.Operator):
         # Publish
         builder.ASSET_BUILDER.push()
 
-        # Update properties
-        context.scene.bsp_asset.is_publish_in_progress = False
+        # Update properties.
+        context.scene.bsp_asset.are_task_layers_pushed = True
 
         # Redraw UI.
         util.redraw_ui()
@@ -338,6 +338,42 @@ class BSP_ASSET_pull(bpy.types.Operator):
 
         # Pull.
         builder.ASSET_BUILDER.pull(context, AssetPublish)
+
+        return {"FINISHED"}
+
+
+class BSP_ASSET_publish(bpy.types.Operator):
+    bl_idname = "bsp_asset.publish"
+    bl_label = "Publish"
+    bl_description = "Publishes the pushed changes on SVN"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+
+        return bool(
+            context.scene.bsp_asset.is_publish_in_progress
+            and util.is_file_saved()
+            and builder.PROD_CONTEXT
+            and builder.ASSET_CONTEXT
+            and builder.ASSET_CONTEXT.asset_publishes
+            and context.scene.bsp_asset.are_task_layers_pushed
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Placeholder
+
+        # Commit to SVN.
+
+        # Uninitialize Build Context.
+        builder.BUILD_CONTEXT = None
+
+        # Update properties.
+        context.scene.bsp_asset.is_publish_in_progress = False
+        context.scene.bsp_asset.are_task_layers_pushed = False
+
+        # Redraw UI.
+        util.redraw_ui()
 
         return {"FINISHED"}
 
@@ -440,6 +476,7 @@ classes = [
     BSP_ASSET_abort_publish,
     BSP_ASSET_push_task_layers,
     BSP_ASSET_pull,
+    BSP_ASSET_publish,
 ]
 
 

@@ -32,6 +32,7 @@ from .ops import (
     BSP_ASSET_create_prod_context,
     BSP_ASSET_push_task_layers,
     BSP_ASSET_pull,
+    BSP_ASSET_publish,
 )
 from . import builder
 from . import prop_utils
@@ -180,6 +181,9 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
             # Draw push task layers operator inside of box.
             row = box.row()
             row.operator(BSP_ASSET_push_task_layers.bl_idname)
+
+            # Draw publish operator.
+            row = layout.operator(BSP_ASSET_publish.bl_idname)
 
             return
 

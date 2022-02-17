@@ -133,6 +133,7 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
     tmp_asset_collection: bpy.props.PointerProperty(type=bpy.types.Collection)  # type: ignore
 
     is_publish_in_progress: bpy.props.BoolProperty()  # type: ignore
+    are_task_layers_pushed: bpy.props.BoolProperty()  # type: ignore
 
     task_layers: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
 
