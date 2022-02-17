@@ -46,3 +46,8 @@ def traverse_collection_tree(
     yield collection
     for child in collection.children:
         yield from traverse_collection_tree(child)
+
+
+def del_collection(collection: bpy.types.Collection) -> None:
+    collection.user_clear()
+    bpy.data.collections.remove(collection)

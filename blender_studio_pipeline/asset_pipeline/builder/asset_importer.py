@@ -210,9 +210,10 @@ class AssetImporter:
             tmp_blendfile_path.unlink()
 
         # Link for debugging.
-        bpy.context.scene.collection.children.link(asset_coll_publish)
-        bpy.context.scene.collection.children.link(asset_coll_target)
-        bpy.context.scene.collection.children.link(asset_coll_task)
+        for coll in [asset_coll_publish, asset_coll_target, asset_coll_task]:
+            if coll in list(bpy.context.scene.collection.children):
+                continue
+            bpy.context.scene.collection.children.link(coll)
 
         # Set suffixes.
         asset_coll_task.bsp_asset.transfer_suffix = constants.TASK_SUFFIX

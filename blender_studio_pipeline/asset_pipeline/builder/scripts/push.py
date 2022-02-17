@@ -35,6 +35,8 @@ from blender_studio_pipeline.asset_pipeline.builder.asset_mapping import (
     AssetTransferMapping,
 )
 from blender_studio_pipeline.asset_pipeline import prop_utils
+from blender_studio_pipeline.asset_pipeline.builder import asset_suffix
+from blender_studio_pipeline import util
 from blender_studio_pipeline.asset_pipeline.builder.vis import EnsureVisible
 
 from pathlib import Path
@@ -139,13 +141,26 @@ for task_layer in task_layers[1:]:
     # or
     # the publish collection to the target collection
     if task_layer in used_task_layers:
-        print(f"Transferring {task_layer.name} from task to target.")
+        print(
+            f"Transferring {task_layer.name} from {merge_triplet.task_coll.name} to {merge_triplet.target_coll.name}."
+        )
         task_layer.transfer_data(bpy.context, mapping_task_target, TRANSFER_SETTINGS)
     else:
-        print(f"Transferring {task_layer.name} from publish to target.")
+        print(
+            f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
+        )
         task_layer.transfer_data(bpy.context, mapping_publish_target, TRANSFER_SETTINGS)
 
 
 # Restore Visibility.
 for obj in vis_objs:
     obj.restore()
+
+
+# Remove non TARGET collections.
+for coll in [merge_triplet.publish_coll, merge_triplet.task_coll]:
+    util.del_collection(coll)
+
+
+# Remove suffix from TARGET Collection.
+asset_suffix.remove_suffix_from_hierarchy(merge_triplet.target_coll)
