@@ -25,13 +25,23 @@ from pathlib import Path
 
 import bpy
 
-from .context import ProductionContext, AssetContext, BuildContext
+from .context import BuildContext
+from ..asset_files import AssetTask, AssetPublish
+from .asset_importer import AssetImporter
+from .asset_mapping import TransferCollectionTriplet, AssetTransferMapping
 from .blstarter import BuilderBlenderStarter
+from .vis import EnsureVisible
+from ... import util
+from . import asset_suffix
 
 logger = logging.getLogger("BSP")
 
 
 class AssetBuilderFailedToInitialize(Exception):
+    pass
+
+
+class AssetBuilderFailedToPull(Exception):
     pass
 
 
@@ -43,14 +53,24 @@ class AssetBuilder:
             )
 
         self._build_context = build_context
+        self._asset_importer = AssetImporter(self._build_context)
+        self._transfer_settings = bpy.context.scene.bsp_asset_transfer_settings
 
     @property
     def build_context(self) -> BuildContext:
         return self._build_context
 
+    @property
+    def asset_importer(self) -> AssetImporter:
+        return self._asset_importer
+
+    @property
+    def transfer_settings(self) -> bpy.types.PropertyGroup:
+        return self._transfer_settings
+
     def publish(self) -> None:
         # Catch special case first version.
-        if not self.build_context._asset_publishes:
+        if not self.build_context.asset_publishes:
             self._create_first_version()
             return
 
@@ -91,9 +111,120 @@ class AssetBuilder:
                 pickle_path,
             )
 
-    def pull(self) -> None:
-        # TODO:
-        return
+    def pull(self, source_type: Union[type[AssetTask], type[AssetPublish]]) -> None:
+
+        # TODO: Refactor this to get rif of the if else checking depending on the source
+        # type.
+
+        # Here we don't need to open another blender instance. We can use the current
+        # one. We pull in the asset collection from the latest asset publish and
+        # perform the required data transfers depending on what was selected.
+
+        if issubclass(source_type, AssetTask):
+            # Import Asset Collection form Asset Task.
+            merge_triplet: TransferCollectionTriplet = (
+                self.asset_importer.import_asset_task()
+            )
+
+        elif issubclass(source_type, AssetPublish):
+
+            # Check if there are any publishes.
+            if not self.build_context.asset_publishes:
+                raise AssetBuilderFailedToPull(
+                    f"Failed to pull. Found no asset publishes."
+                )
+
+            # Import Asset Collection form Asset Publish.
+            merge_triplet: TransferCollectionTriplet = (
+                self.asset_importer.import_asset_publish()
+            )
+
+        # Apparently Blender does not evaluate objects or collections in the depsgraph
+        # in some cases if they are not visible. This is something Users should not have to take
+        # care about when writing their transfer data instructions. So we will make sure here
+        # that everything is visible and after the transfer the original state will be restored.
+        vis_objs: List[EnsureVisible] = []
+        for coll in merge_triplet.get_collections():
+            for obj in coll.all_objects:
+                vis_objs.append(EnsureVisible(obj))
+
+        # The target collection (base) was already decided by ASSET_IMPORTER.import_asset_task()
+        # and is saved in merge_triplet.target_coll.
+        mapping_task_target = AssetTransferMapping(
+            merge_triplet.task_coll, merge_triplet.target_coll
+        )
+        mapping_publish_target = AssetTransferMapping(
+            merge_triplet.publish_coll, merge_triplet.target_coll
+        )
+
+        # Process only the TaskLayers that were ticked as 'use'.
+        used_task_layers = (
+            self.build_context.asset_context.task_layer_assembly.get_used_task_layers()
+        )
+
+        # Should be ordered, just in case.
+        task_layers = self.build_context.prod_context.task_layers
+        task_layers.sort(key=lambda tl: tl.order)
+
+        # Perform Task Layer merging.
+
+        # Note: We always want to apply all TaskLayers except for the Task Layer with the lowest order
+        # aka 'Base Task Layer'. This Task Layer gives us the starting point on which to apply all other Task Layers
+        # on. The asset importer already handles this logic by supplying as with the right TARGET collection
+        # after import. That's why we exclude the first task layer here in the loop.
+        logger.info(f"Using {task_layers[0].name} as base.")
+        for task_layer in task_layers[1:]:
+
+            # Now we need to decide if we want to transfer data from
+            # the task collection to the target collection
+            # or
+            # the publish collection to the target collection
+
+            # This is reversed depending if we do a push or a pull.
+            if task_layer in used_task_layers:
+                if source_type == AssetTask:
+                    logger.info(
+                        f"Transferring {task_layer.name} from {merge_triplet.task_coll.name} to {merge_triplet.target_coll.name}."
+                    )
+                    task_layer.transfer_data(
+                        bpy.context, mapping_task_target, self.transfer_settings
+                    )
+                elif source_type == AssetPublish:
+                    logger.info(
+                        f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
+                    )
+                    task_layer.transfer_data(
+                        bpy.context, mapping_publish_target, self.transfer_settings
+                    )
+
+            else:
+
+                if source_type == AssetTask:
+                    logger.info(
+                        f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
+                    )
+                    task_layer.transfer_data(
+                        bpy.context, mapping_publish_target, self.transfer_settings
+                    )
+
+                elif source_type == AssetPublish:
+                    logger.info(
+                        f"Transferring {task_layer.name} from {merge_triplet.task_coll.name} to {merge_triplet.target_coll.name}."
+                    )
+                    task_layer.transfer_data(
+                        bpy.context, mapping_task_target, self.transfer_settings
+                    )
+
+        # Restore Visibility.
+        for obj in vis_objs:
+            obj.restore()
+
+        # Remove non TARGET collections.
+        for coll in [merge_triplet.publish_coll, merge_triplet.task_coll]:
+            util.del_collection(coll)
+
+        # Remove suffix from TARGET Collection.
+        asset_suffix.remove_suffix_from_hierarchy(merge_triplet.target_coll)
 
     def _create_first_version(self) -> None:
         target = self._build_context.asset_dir.get_first_publish_path()

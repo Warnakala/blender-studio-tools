@@ -29,13 +29,16 @@ from .ops import (
     BSP_ASSET_abort_publish,
     BSP_ASSET_create_prod_context,
     BSP_ASSET_publish,
+    BSP_ASSET_pull,
 )
 from . import builder
 from . import prop_utils
 
 
 def draw_task_layers_list(
-    self: bpy.types.Panel, context: bpy.types.Context, disable: bool = False
+    self: bpy.types.Panel,
+    context: bpy.types.Context,
+    disable: bool = False,
 ) -> None:
     layout: bpy.types.UILayout = self.layout
 
@@ -143,6 +146,30 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
         return
 
 
+class BSP_ASSET_PT_vi3d_task_layers(BSP_ASSET_main_panel, bpy.types.Panel):
+
+    bl_label = "Task Layers"
+    bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
+
+    @classmethod
+    def poll(cls, context):
+        return hasattr(context.scene, "bsp_asset_transfer_settings")
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+
+        draw_task_layers_list(self, context, disable=False)
+
+        box = layout.box()
+        box.label(text="Pull")
+
+        row = box.row(align=True)
+        row.prop(context.window_manager.bsp_asset, "asset_publish_source_path")
+
+        row = box.row(align=True)
+        row.operator(BSP_ASSET_pull.bl_idname)
+
+
 class BSP_ASSET_PT_vi3d_transfer_settings(BSP_ASSET_main_panel, bpy.types.Panel):
 
     bl_label = "Transfer Settings"
@@ -207,6 +234,7 @@ classes = [
     BSP_ASSET_PT_vi3d_asset_pipeline,
     BSP_ASSET_PT_vi3d_asset_collection,
     BSP_ASSET_PT_vi3d_publish_manager,
+    BSP_ASSET_PT_vi3d_task_layers,
     BSP_ASSET_PT_vi3d_transfer_settings,
 ]
 

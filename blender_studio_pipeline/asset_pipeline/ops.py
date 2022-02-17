@@ -30,6 +30,7 @@ import blender_kitsu.cache
 
 from .. import util
 from . import builder
+from .asset_files import AssetPublish
 
 logger = logging.getLogger("BSP")
 
@@ -130,6 +131,9 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
         builder.ASSET_CONTEXT.update_from_bl_context(context)
 
+        # Update the asset publishes again.
+        builder.ASSET_CONTEXT.update_asset_publishes()
+
         # Create Build Context.
         builder.BUILD_CONTEXT = builder.BuildContext(
             builder.PROD_CONTEXT, builder.ASSET_CONTEXT
@@ -172,7 +176,9 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
 class BSP_ASSET_publish(bpy.types.Operator):
     bl_idname = "bsp_asset.publish"
     bl_label = "Publish"
-    bl_description = "Starst the Asset Builder with the current Build Context"
+    bl_description = (
+        "Calls the publish function of the Asset Builder with the current Build Context"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -196,6 +202,44 @@ class BSP_ASSET_publish(bpy.types.Operator):
 
         # Redraw UI.
         util.redraw_ui()
+
+        return {"FINISHED"}
+
+
+class BSP_ASSET_pull(bpy.types.Operator):
+    bl_idname = "bsp_asset.pull"
+    bl_label = "Pull"
+    bl_description = (
+        "Calls the pull function of the Asset Builder with the current Build Context"
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(
+            not context.scene.bsp_asset.is_publish_in_progress
+            and util.is_file_saved()
+            and builder.PROD_CONTEXT
+            and builder.ASSET_CONTEXT,
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
+        builder.ASSET_CONTEXT.update_from_bl_context(context)
+
+        # Update the asset publishes again.
+        # builder.ASSET_CONTEXT.update_asset_publishes()
+
+        # Create Build Context.
+        builder.BUILD_CONTEXT = builder.BuildContext(
+            builder.PROD_CONTEXT, builder.ASSET_CONTEXT
+        )
+
+        # Create Asset Builder.
+        builder.ASSET_BUILDER = builder.AssetBuilder(builder.BUILD_CONTEXT)
+
+        # Pull.
+        builder.ASSET_BUILDER.pull(AssetPublish)
 
         return {"FINISHED"}
 
@@ -240,7 +284,7 @@ class BSP_ASSET_create_asset_context(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         asset_coll: bpy.types.Collection = context.scene.bsp_asset.asset_collection
-        return bool(builder.PROD_CONTEXT and asset_coll)
+        return bool(builder.PROD_CONTEXT and asset_coll and bpy.data.filepath)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
@@ -318,6 +362,7 @@ classes = [
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
     BSP_ASSET_publish,
+    BSP_ASSET_pull,
 ]
 
 

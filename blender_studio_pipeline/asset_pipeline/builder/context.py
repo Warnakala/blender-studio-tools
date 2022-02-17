@@ -276,12 +276,20 @@ class AssetContext:
             raise AssetContextFailedToInitialize(
                 "Failed to initialize AssetContext. Invalid blender_context or asset collection not set."
             )
+        # Check if file is saved.
+        if not bpy.data.filepath:
+            raise AssetContextFailedToInitialize(
+                "Failed to initialize AssetContext. File not saved"
+            )
 
         self._bl_context: bpy.types.Context = bl_context
         self._asset_collection: bpy.types.Collection = (
             bl_context.scene.bsp_asset.asset_collection
         )
         self._task_layer_assembly = TaskLayerAssembly(prod_context._task_layers)
+        self._asset_dir = AssetDir(Path(bpy.data.filepath).parent)
+        self._asset_task = AssetTask(Path(bpy.data.filepath))
+        self._asset_publishes: List[AssetPublish] = []
 
         # Transfer settings are stored in a PropertyGroup on scene level.
         # We cannot pickle those. So what we do is write them in a dictionary here
@@ -291,6 +299,7 @@ class AssetContext:
         # TODO: Load custom Task Layers.
         self._custom_task_layers: List[Any] = []
 
+        self._collect_asset_publishes()
         logger.debug("Initialized Asset Context")
 
     @property
@@ -300,6 +309,18 @@ class AssetContext:
     @property
     def asset_name(self) -> str:
         return self.asset_collection.bsp_asset.entity_name
+
+    @property
+    def asset_task(self) -> AssetTask:
+        return self._asset_task
+
+    @property
+    def asset_dir(self) -> AssetDir:
+        return self._asset_dir
+
+    @property
+    def asset_publishes(self) -> List[AssetPublish]:
+        return self._asset_publishes
 
     @property
     def task_layer_assembly(self) -> TaskLayerAssembly:
@@ -313,6 +334,12 @@ class AssetContext:
         self._asset_collection = bl_context.scene.bsp_asset.asset_collection
         self._update_task_layer_assembly_from_context(bl_context)
         self._update_transfer_settings_from_context(bl_context)
+
+    def update_asset_publishes(self) -> None:
+        self._collect_asset_publishes()
+
+    def _collect_asset_publishes(self) -> None:
+        self._asset_publishes.extend(self._asset_dir.get_asset_publishes())
 
     def _update_task_layer_assembly_from_context(
         self, bl_context: bpy.types.Context
@@ -399,16 +426,9 @@ class BuildContext:
 
         self._prod_context: ProductionContext = prod_context
         self._asset_context: AssetContext = asset_context
-        self._asset_publishes: List[AssetPublish] = []
         self._process_pairs: List[ProcessPair] = []
-        self._asset_dir = AssetDir(Path(bpy.data.filepath).parent)
-        self._asset_task = AssetTask(Path(bpy.data.filepath))
 
-        self._collect_asset_publishes()
         self._collect_process_pairs()
-
-    def _collect_asset_publishes(self) -> None:
-        self._asset_publishes.extend(self._asset_dir.get_asset_publishes())
 
     def _collect_process_pairs(self) -> None:
         # Here we want to loop through all asset publishes and
@@ -420,17 +440,9 @@ class BuildContext:
         # The result of this is a list of process pairs(target, pull_from) that
         # the AssetBuilder needs to process
         tl_assembly = self._asset_context.task_layer_assembly
-        for asset_publish in self._asset_publishes:
+        for asset_publish in self.asset_publishes:
             # TMP: for testing we will use all asset publishes.
-            self._process_pairs.append(ProcessPair(self._asset_task, asset_publish))
-
-    @property
-    def asset_task(self) -> AssetTask:
-        return self._asset_task
-
-    @property
-    def asset_dir(self) -> AssetDir:
-        return self._asset_dir
+            self._process_pairs.append(ProcessPair(self.asset_task, asset_publish))
 
     @property
     def prod_context(self) -> ProductionContext:
@@ -441,8 +453,16 @@ class BuildContext:
         return self._asset_context
 
     @property
+    def asset_task(self) -> AssetTask:
+        return self.asset_context.asset_task
+
+    @property
+    def asset_dir(self) -> AssetDir:
+        return self.asset_context.asset_dir
+
+    @property
     def asset_publishes(self) -> List[AssetPublish]:
-        return self._asset_publishes
+        return self.asset_context.asset_publishes
 
     @property
     def process_pairs(self) -> List[ProcessPair]:
@@ -451,7 +471,7 @@ class BuildContext:
     def __repr__(self) -> str:
         header = "\nBUILD CONTEXT\n------------------------------------"
         footer = "------------------------------------"
-        asset_task = f"Asset Task: {str(self._asset_task)}"
+        asset_task = f"Asset Task: {str(self.asset_task)}"
         asset_disk_name = f"Asset Disk Name: {self.asset_dir.asset_disk_name}"
         asset_dir = f"Asset Dir: {str(self.asset_dir)}"
         return "\n".join(
@@ -465,45 +485,3 @@ class BuildContext:
                 footer,
             ]
         )
-
-
-# Assembling an asset means
-# Identifying push or pull is not too important for the actual logic as we kind of do the
-# same thing in both. If we push we actually open the asset version file and perform a pull as well.
-# We only need to differentiate the last step: Execute Post Merge Hook (Push) / Override Restore Hook (Pull)
-
-# # Init BuildContext:
-# - Collect Production Task Layers + Metadata
-# - Collect Custom Task Layers + Metadata
-
-# # Input BuildOptions:
-# - Get input: Push or Pull
-# - Get input: Task Layer Selection to process
-
-# # Finalize BuildContext:
-# - Collect Metadata:
-#   Push:
-#   - Collect 1 source (current file) + Metadata
-#   - Collect MULTI Targets (Has live task layer, validate if source might be different) + Metadata
-# - Pull:
-#   - Collect 1 Source + Metadata
-#   - Collect 1 Target (current file) + Metadata
-# - Create ProcessPair ([{"source": rex.v001.blend, "target": rex.shading.blend}, {"source": rex.shading.blend, "target": rex.v001.blend}])
-# - Collect Post Merge Hooks
-# - Collect Override Restore Data
-# - --> Create Build Context that has all that information
-
-# # For each ProcessPair:
-# - Open target file if current file not target
-#   - Collect Target Asset Collection
-# - Read Source file as library
-#   - Collect Source Asset Collection
-# - Identify if Source or Target Asset Collection will be Base
-# - Suffix Target
-# - Append Source Asset Collection
-# - Suffix Source
-# - Duplicate Base
-# - Suffix Base
-# - Merge Task Layers
-# - Execute Post Merge Hooks (On Push)
-# - Execute Override Restore Hooks (On Pull)

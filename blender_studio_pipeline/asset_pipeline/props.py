@@ -21,6 +21,8 @@ from pathlib import Path
 
 import bpy
 
+from . import builder
+
 
 class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     """
@@ -115,9 +117,32 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
     task_layers_index: bpy.props.IntProperty(name="Task Layers Index", min=0)
 
 
+def get_asset_publish_source_path(context: bpy.types.Context) -> str:
+    if not builder.ASSET_CONTEXT:
+        return ""
+
+    if not builder.ASSET_CONTEXT.asset_publishes:
+        return ""
+
+    return builder.ASSET_CONTEXT.asset_publishes[-1].path.name
+
+
+class BSP_ASSET_tmp_properties(bpy.types.PropertyGroup):
+
+    # Asset publish source
+    asset_publish_source_path: bpy.props.StringProperty(  # type: ignore
+        name="Source", get=get_asset_publish_source_path
+    )
+
+
 # ----------------REGISTER--------------.
 
-classes = [BSP_task_layer, BSP_ASSET_asset_collection, BSP_ASSET_scene_properties]
+classes = [
+    BSP_task_layer,
+    BSP_ASSET_asset_collection,
+    BSP_ASSET_scene_properties,
+    BSP_ASSET_tmp_properties,
+]
 
 
 def register() -> None:
@@ -132,6 +157,11 @@ def register() -> None:
     # Scene Asset Pipeline Properties.
     bpy.types.Scene.bsp_asset = bpy.props.PointerProperty(
         type=BSP_ASSET_scene_properties
+    )
+
+    # Window Manager Properties.
+    bpy.types.WindowManager.bsp_asset = bpy.props.PointerProperty(
+        type=BSP_ASSET_tmp_properties
     )
 
 

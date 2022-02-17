@@ -23,25 +23,21 @@ It needs a pickle_path after -- . The pickle path contains a pickled BuildContex
 This BuildContext will be unpickled in this script and processed, which means performing
 the publish of the selected TaskLayers in the AssetTask.
 """
-
+import logging
 import pickle
 import sys
+
 from typing import List, Dict, Union, Any, Set, Optional
-
-from blender_studio_pipeline.asset_pipeline.builder.context import BuildContext
-from blender_studio_pipeline.asset_pipeline.builder.asset_importer import AssetImporter
-from blender_studio_pipeline.asset_pipeline.builder.asset_mapping import (
-    TransferCollectionTriplet,
-    AssetTransferMapping,
-)
-from blender_studio_pipeline.asset_pipeline import prop_utils
-from blender_studio_pipeline.asset_pipeline.builder import asset_suffix
-from blender_studio_pipeline import util
-from blender_studio_pipeline.asset_pipeline.builder.vis import EnsureVisible
-
 from pathlib import Path
 
+from blender_studio_pipeline.asset_pipeline import prop_utils
+from blender_studio_pipeline.asset_pipeline.builder import AssetBuilder
+from blender_studio_pipeline.asset_pipeline.builder.context import BuildContext
+from blender_studio_pipeline.asset_pipeline.asset_files import AssetTask
+
 import bpy
+
+logger = logging.getLogger("BSP")
 
 # Get cli input.
 argv = sys.argv
@@ -76,7 +72,9 @@ with open(pickle_path.as_posix(), "rb") as f:
     BUILD_CONTEXT: BuildContext = pickle.load(f)
 
 print("LOAD TRANSFER SETTINGS")
-# Fetch transfer settings from AssetContext.
+
+# Fetch transfer settings from AssetContext and update scene settings
+# as they are the ones that are used by the pull() process.
 TRANSFER_SETTINGS = bpy.context.scene.bsp_asset_transfer_settings
 for prop_name, prop in prop_utils.get_property_group_items(TRANSFER_SETTINGS):
     try:
@@ -93,74 +91,6 @@ print(
     f"IMPORTING ASSET COLLECTION FROM TASK: {BUILD_CONTEXT.asset_task.path.as_posix()}"
 )
 
-# Import Asset Collection form Asset Task.
-asset_task = BUILD_CONTEXT.asset_task
-ASSET_IMPORTER = AssetImporter(BUILD_CONTEXT)
-merge_triplet: TransferCollectionTriplet = ASSET_IMPORTER.import_asset_task()
+ASSET_BUILDER = AssetBuilder(BUILD_CONTEXT)
 
-# Apparently Blender does not evaluate objects or collections in the depsgraph
-# in some cases if they are not visible. This is something Users should not have to take
-# care about when writing their transfer data instructions. So we will make sure here
-# that everything is visible and after the transfer the original state will be restored.
-vis_objs: List[EnsureVisible] = []
-for coll in merge_triplet.get_collections():
-    for obj in coll.all_objects:
-        vis_objs.append(EnsureVisible(obj))
-
-
-# The target collection (base) was already decided by ASSET_IMPORTER.import_asset_task()
-# and is saved in merge_triplet.target_coll.
-mapping_task_target = AssetTransferMapping(
-    merge_triplet.task_coll, merge_triplet.target_coll
-)
-mapping_publish_target = AssetTransferMapping(
-    merge_triplet.publish_coll, merge_triplet.target_coll
-)
-
-# Process only the TaskLayers that were ticked as 'use'.
-used_task_layers = (
-    BUILD_CONTEXT.asset_context.task_layer_assembly.get_used_task_layers()
-)
-
-# Should be ordered, just in case.
-task_layers = BUILD_CONTEXT.prod_context.task_layers
-task_layers.sort(key=lambda tl: tl.order)
-
-# Perform Task Layer merging.
-
-# Note: We always want to apply all TaskLayers except for the Task Layer with the lowest order
-# aka 'Base Task Layer'. This Task Layer gives us the starting point on which to apply all other Task Layers
-# on. The asset importer already handles this logic by supplying as with the right TARGET collection
-# after import. That's why we exclude the first task layer here in the loop.
-
-print(f"Using {task_layers[0].name} as base.")
-for task_layer in task_layers[1:]:
-
-    # Now we need to decide if we want to transfer data from
-    # the task collection to the target collection
-    # or
-    # the publish collection to the target collection
-    if task_layer in used_task_layers:
-        print(
-            f"Transferring {task_layer.name} from {merge_triplet.task_coll.name} to {merge_triplet.target_coll.name}."
-        )
-        task_layer.transfer_data(bpy.context, mapping_task_target, TRANSFER_SETTINGS)
-    else:
-        print(
-            f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
-        )
-        task_layer.transfer_data(bpy.context, mapping_publish_target, TRANSFER_SETTINGS)
-
-
-# Restore Visibility.
-for obj in vis_objs:
-    obj.restore()
-
-
-# Remove non TARGET collections.
-for coll in [merge_triplet.publish_coll, merge_triplet.task_coll]:
-    util.del_collection(coll)
-
-
-# Remove suffix from TARGET Collection.
-asset_suffix.remove_suffix_from_hierarchy(merge_triplet.target_coll)
+ASSET_BUILDER.pull(AssetTask)
