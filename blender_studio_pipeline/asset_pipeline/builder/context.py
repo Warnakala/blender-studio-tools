@@ -339,6 +339,7 @@ class AssetContext:
         self._collect_asset_publishes()
 
     def _collect_asset_publishes(self) -> None:
+        self._asset_publishes.clear()
         self._asset_publishes.extend(self._asset_dir.get_asset_publishes())
 
     def _update_task_layer_assembly_from_context(
