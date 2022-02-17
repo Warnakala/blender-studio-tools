@@ -110,6 +110,54 @@ class BSP_ASSET_clear_asset_collection(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BSP_ASSET_initial_publish(bpy.types.Operator):
+    bl_idname = "bsp_asset.initial_publish"
+    bl_label = "Create First Publish"
+    bl_description = "Creates the first publish by exporting the asset collection"
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        asset_coll = context.scene.bsp_asset.asset_collection
+        return bool(
+            util.is_file_saved()
+            and asset_coll
+            and not context.scene.bsp_asset.is_publish_in_progress
+            and builder.PROD_CONTEXT
+            and builder.ASSET_CONTEXT
+            and not builder.ASSET_CONTEXT.asset_publishes
+        )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
+        builder.ASSET_CONTEXT.update_from_bl_context(context)
+
+        # Create Build Context.
+        builder.BUILD_CONTEXT = builder.BuildContext(
+            builder.PROD_CONTEXT, builder.ASSET_CONTEXT
+        )
+
+        # Update properties.
+        context.scene.bsp_asset.is_publish_in_progress = True
+
+        # Create Asset Builder.
+        builder.ASSET_BUILDER = builder.AssetBuilder(builder.BUILD_CONTEXT)
+
+        # Publish
+        builder.ASSET_BUILDER.publish()
+
+        # Update properties
+        context.scene.bsp_asset.is_publish_in_progress = False
+
+        # Update Asset Context publish files.
+        builder.ASSET_CONTEXT.update_asset_publishes()
+
+        # Redraw UI.
+        util.redraw_ui()
+
+        return {"FINISHED"}
+
+
 class BSP_ASSET_start_publish(bpy.types.Operator):
     bl_idname = "bsp_asset.start_publish"
     bl_label = "Start Publish"
@@ -359,6 +407,7 @@ classes = [
     BSP_ASSET_clear_asset_collection,
     BSP_ASSET_create_prod_context,
     BSP_ASSET_create_asset_context,
+    BSP_ASSET_initial_publish,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
     BSP_ASSET_publish,

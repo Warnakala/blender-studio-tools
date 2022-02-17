@@ -25,6 +25,7 @@ import bpy
 from .ops import (
     BSP_ASSET_init_asset_collection,
     BSP_ASSET_clear_asset_collection,
+    BSP_ASSET_initial_publish,
     BSP_ASSET_start_publish,
     BSP_ASSET_abort_publish,
     BSP_ASSET_create_prod_context,
@@ -117,8 +118,22 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
     bl_label = "Publish Manager"
     bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
 
+    @classmethod
+    def poll(cls, context):
+        return bool(context.scene.bsp_asset.asset_collection)
+
     def draw(self, context: bpy.types.Context) -> None:
         layout: bpy.types.UILayout = self.layout
+
+        # Show warning if blend file not saved.
+        if not bpy.data.filepath:
+            layout.row().label(text="Blend files needs to be saved", icon="ERROR")
+            return
+
+        # Initial publish.
+        if not builder.ASSET_CONTEXT.asset_publishes:
+            layout.row().operator(BSP_ASSET_initial_publish.bl_idname, icon="ADD")
+            return
 
         # Publish is in progress.
         if context.scene.bsp_asset.is_publish_in_progress:
@@ -153,10 +168,19 @@ class BSP_ASSET_PT_vi3d_task_layers(BSP_ASSET_main_panel, bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return hasattr(context.scene, "bsp_asset_transfer_settings")
+        return bool(
+            context.scene.bsp_asset.asset_collection
+            and builder.ASSET_CONTEXT
+            and builder.ASSET_CONTEXT.asset_publishes
+        )
 
     def draw(self, context: bpy.types.Context) -> None:
         layout: bpy.types.UILayout = self.layout
+
+        # Show warning if blend file not saved.
+        if not bpy.data.filepath:
+            layout.row().label(text="Blend files needs to be saved", icon="ERROR")
+            return
 
         draw_task_layers_list(self, context, disable=False)
 
@@ -177,7 +201,12 @@ class BSP_ASSET_PT_vi3d_transfer_settings(BSP_ASSET_main_panel, bpy.types.Panel)
 
     @classmethod
     def poll(cls, context):
-        return hasattr(context.scene, "bsp_asset_transfer_settings")
+        return bool(
+            hasattr(context.scene, "bsp_asset_transfer_settings")
+            and context.scene.bsp_asset.asset_collection
+            and builder.ASSET_CONTEXT
+            and builder.ASSET_CONTEXT.asset_publishes
+        )
 
     def draw(self, context: bpy.types.Context) -> None:
         layout: bpy.types.UILayout = self.layout

@@ -45,6 +45,10 @@ class AssetBuilderFailedToPull(Exception):
     pass
 
 
+class AssetBuilderFailedToPublish(Exception):
+    pass
+
+
 class AssetBuilder:
     def __init__(self, build_context: BuildContext):
         if not build_context:
@@ -248,6 +252,12 @@ class AssetBuilder:
 
         # Create directory if not exist.
         target.parent.mkdir(parents=True, exist_ok=True)
+
+        # Check if already exists.
+        if target.exists():
+            raise AssetBuilderFailedToPublish(
+                f"Failed to create first publish. Already exist: {target.name}"
+            )
 
         bpy.data.libraries.write(
             target.as_posix(), data_blocks, path_remap="RELATIVE_ALL", fake_user=True
