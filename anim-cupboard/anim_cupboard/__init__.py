@@ -2,6 +2,7 @@ import importlib
 from bpy.utils import register_class, unregister_class
 
 from .operators import select_similar_curves
+from .operators import lock_curves
 
 bl_info = {
     'name' : "Animation Cupboard"
@@ -16,6 +17,7 @@ bl_info = {
 
 modules = (
     select_similar_curves,
+    lock_curves,
 )
 
 def register():

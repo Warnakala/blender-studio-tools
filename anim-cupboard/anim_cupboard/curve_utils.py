@@ -18,3 +18,16 @@ def get_fcurves_of_bones(action: Action, pose_bones: List[PoseBone]) -> List[FCu
         fcurves.extend(get_fcurves_of_bone(action, pb.name))
 
     return fcurves
+
+def get_fcurves(context, action: Action, set="ALL") -> List[FCurve]:
+    """Return a list of FCurves in the given action."""
+
+    fcurves = action.fcurves
+    if set=='ALL':
+        return fcurves
+    elif set=='ACTIVE':
+        return context.active_editable_fcurve
+    elif set=='SELECTED':
+        return [fc for fc in fcurves if fc.select] # Differs from selected_editable_fcurves because locked curves can be selected but aren't editable.
+    elif set=='UNSELECTED':
+        return [fc for fc in fcurves if not fc.select]
