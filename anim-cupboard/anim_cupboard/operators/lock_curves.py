@@ -52,24 +52,24 @@ class GRAPH_MT_channel_lock(Menu):
     def draw(self, context):
         layout = self.layout
 
-        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Lock Selected")
+        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Lock Selected", icon='LOCKED')
         op.prop_name = "lock"
         op.prop_value = True
         op.curve_set = 'SELECTED'
 
-        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Lock Unselected")
+        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Lock Unselected", icon='LOCKED')
         op.prop_name = "lock"
         op.prop_value = True
         op.curve_set = 'UNSELECTED'
 
         layout.separator()
 
-        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Unlock Selected")
+        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Unlock Selected", icon='UNLOCKED')
         op.prop_name = "lock"
         op.prop_value = False
         op.curve_set = 'SELECTED'
 
-        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Unlock All")
+        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Unlock All", icon='UNLOCKED')
         op.prop_name = "lock"
         op.prop_value = False
         op.curve_set = 'ALL'
@@ -77,7 +77,7 @@ class GRAPH_MT_channel_lock(Menu):
 
 def draw_curves_lock_menu(self, context):
     layout = self.layout
-    layout.menu("GRAPH_MT_channel_lock")
+    layout.menu("GRAPH_MT_channel_lock", icon='LOCKED')
 
 registry = [
     POSE_OT_curves_set_boolean,
