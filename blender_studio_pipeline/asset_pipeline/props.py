@@ -24,6 +24,7 @@ from pathlib import Path
 import bpy
 
 from . import builder
+from .builder.metadata import MetadataAsset
 
 
 class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
@@ -37,10 +38,13 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
         description="Controls if this Collection is recognized as an official Asset",
     )
 
+    # We use entity_ prefix as blender uses .id as built in attribute already, which
+    # might be confusing.
     entity_name: bpy.props.StringProperty(name="Asset Name")  # type: ignore
     entity_id: bpy.props.StringProperty(name="Asset ID")  # type: ignore
 
     version: bpy.props.StringProperty(name="Asset Version")  # type: ignore
+    status: bpy.props.StringProperty(name="Asset Version")  # type: ignore
     project_id: bpy.props.StringProperty(name="Project ID")  # type: ignore
 
     rig: bpy.props.PointerProperty(type=bpy.types.Armature, name="Rig")  # type: ignore
@@ -58,6 +62,22 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
         self.version = ""
         self.project_id = ""
         self.rig = None
+
+    def gen_meta_asset(self) -> MetadataAsset:
+        # These keys represent all mandatory arguments for the data class metadata.MetaAsset
+        # The idea is, to be able to construct a MetaAsst from this dict.
+        keys = ["entity_name", "entity_id", "project_id", "version", "status"]
+        d = {}
+        for key in keys:
+
+            # MetaAsset tries to mirror Kitsu data structure as much as possible.
+            # Remove entity_ prefix.
+            if key.startswith("entity_"):
+                d[key.replace("entity_", "")] = getattr(self, key)
+            else:
+                d[key] = getattr(self, key)
+
+        return MetadataAsset.from_dict(d)
 
 
 class BSP_task_layer(bpy.types.PropertyGroup):

@@ -33,6 +33,9 @@ from .blstarter import BuilderBlenderStarter
 from .vis import EnsureVisible
 from ... import util
 from . import asset_suffix
+from . import metadata
+from .metadata import AssetMetadataTree, MetadataAsset, MetaDataTaskLayer
+from . import meta_util
 
 logger = logging.getLogger("BSP")
 
@@ -247,25 +250,43 @@ class AssetBuilder:
         context.scene.bsp_asset.asset_collection = merge_triplet.target_coll
 
     def _create_first_version(self) -> None:
-        target = self._build_context.asset_dir.get_first_publish_path()
+        target = AssetPublish(self._build_context.asset_dir.get_first_publish_path())
         asset_coll = self._build_context.asset_context.asset_collection
-        # with bpy.data.libraries.load(target.as_posix(), relative=True, link=False) as (
-        #     data_from,
-        #     data_to,
-        # ):
-        #     data_to.collections.append(asset_coll.name)
         data_blocks = set((asset_coll,))
 
+        from xml.etree.ElementTree import ElementTree
+        from .metadata import AssetElement, TaskLayerElement
+
+        # Create asset meta tree.
+        meta_asset = (
+            self.build_context.asset_context.asset_collection.bsp_asset.gen_meta_asset()
+        )
+        meta_task_layers: List[MetaDataTaskLayer] = []
+
+        for task_layer in self.build_context.prod_context.task_layers:
+            meta_tl = meta_util.init_meta_task_layer(task_layer)
+            meta_task_layers.append(meta_tl)
+
+        asset_tree = AssetMetadataTree(meta_asset, meta_task_layers)
+
         # Create directory if not exist.
-        target.parent.mkdir(parents=True, exist_ok=True)
+        target.path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Save asset tree.
+        metadata.write_tree_to_file(target.metadata_path, asset_tree)
 
         # Check if already exists.
-        if target.exists():
+        if target.path.exists():
             raise AssetBuilderFailedToPublish(
-                f"Failed to create first publish. Already exist: {target.name}"
+                f"Failed to create first publish. Already exist: {target.path.name}"
             )
 
+        # Create blend file.
         bpy.data.libraries.write(
-            target.as_posix(), data_blocks, path_remap="RELATIVE_ALL", fake_user=True
+            target.path.as_posix(),
+            data_blocks,
+            path_remap="RELATIVE_ALL",
+            fake_user=True,
         )
-        logger.info("Created first asset version: %s", target.as_posix())
+
+        logger.info("Created first asset version: %s", target.path.as_posix())
