@@ -38,23 +38,13 @@ logger = logging.getLogger("BSP")
 # TaskLayers. Merging this layer just means, take it as a starting point.
 # Note: Right now the Asset Importer already handles this logic by checking if the
 # asset task source has the TaskLayer with the lowest order enabled and creates a TARGET collection.
+
+
 class TaskLayer:
 
     name: str = ""
     description: str = ""
     order: int = -1
-
-    def __init__(self):
-        self.source_path: str = ""
-        self.source_revision: str = ""
-        self.is_locked: bool = False
-
-        # created_at: str
-        # updated_at: str
-        # author: Author
-        # software_hash: str
-        # workstation: str
-        # flags: List[str]
 
     @classmethod
     def is_valid(cls) -> bool:
@@ -67,9 +57,9 @@ class TaskLayer:
         transfer_mapping: AssetTransferMapping,
         transfer_settings: bpy.types.PropertyGroup,
     ) -> None:
-        # TODO: Think about adding a setting infrastructure to give the possibility for Users
-        # to define and set their own custom options for the transfer data function.
-        # Do we need a *settings/options Dict? We could store those settings on scene property group?
+
+        # TODO: transfer_settings can be None if Users didn't provide a
+        # TransferSettings class in the task layer module. We should update this.
         """
         The AssetTranfserMapping class represents a mapping between a source and a target.
         It contains an object mapping which connects each source object with a target
@@ -79,10 +69,17 @@ class TaskLayer:
 
         transfer_mapping.object_map: Dict[bpy.types.Object, bpy.types.Object]
         transfer_mapping.collection_map: Dict[bpy.types.Collection, bpy.types.Collection]
+        transfer_mapping.material_map: Dict[bpy.types.Material, bpy.types.Material]
 
         For all mappings:
         Key: Source
         Value: Target
+
+        Further then that Users can define custom transfer settings by defining a TransferSettings
+        Class which inherits from a PropertyGroup in the task_layer module. Users can query these settings
+        by checking the transfer_settings argument.
+
+        transfer_settings.custom_option
         """
         raise NotImplementedError
 
