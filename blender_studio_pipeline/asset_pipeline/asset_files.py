@@ -39,7 +39,7 @@ class AssetFile:
     def __init__(self, asset_path: Path):
         self._path = asset_path
         self._metadata_path = (
-            asset_path.parent / f"{asset_path.name}{constants.METADATA_EXT}"
+            asset_path.parent / f"{asset_path.stem}{constants.METADATA_EXT}"
         )
 
     @property
