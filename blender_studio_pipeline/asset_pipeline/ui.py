@@ -168,6 +168,7 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
             return
 
         # Publish is in progress.
+        # ---------------------------------
         if context.scene.bsp_asset.is_publish_in_progress:
 
             # Draw Task Layer List.
@@ -188,6 +189,7 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
             return
 
         # No publish in progress.
+        # ---------------------------------
 
         # Production Context not loaded.
         if not builder.PROD_CONTEXT:
