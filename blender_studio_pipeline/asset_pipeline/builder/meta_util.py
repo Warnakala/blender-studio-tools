@@ -25,7 +25,6 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
-from xml.etree import ElementTree
 
 import bpy
 

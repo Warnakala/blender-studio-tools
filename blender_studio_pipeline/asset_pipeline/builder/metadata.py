@@ -26,8 +26,8 @@ from dataclasses import dataclass, asdict, field, fields
 from pathlib import Path
 from enum import Enum, auto
 
-from xml.etree import ElementTree
-from xml.etree.ElementTree import Element
+from xml.etree import ElementTree as ET
+from xml.etree.ElementTree import Element, ElementTree
 from xml.dom import minidom
 
 from .task_layer import TaskLayer
@@ -39,17 +39,21 @@ M = TypeVar("M", bound="MetadataClass")
 
 
 def prettify(element: Element) -> str:
-    xmlstr = ElementTree.tostring(element, "utf-8")
+    xmlstr = ET.tostring(element, "utf-8")
     reparse: minidom.Document = minidom.parseString(xmlstr)
     pretty_str: bytes = reparse.toprettyxml(indent="    ", encoding="utf-8")
     return pretty_str.decode()
 
 
-def write_tree_to_file(filepath: Path, tree: ElementTree.ElementTree) -> None:
+def write_tree_to_file(filepath: Path, tree: ElementTree) -> None:
     xmlstr = prettify(tree.getroot())
     with open(filepath.as_posix(), "w") as f:
         f.write(xmlstr)
     # tree.write(filepath.as_posix())
+
+
+def load_from_file(filepath: Path) -> ElementTree:
+    return ET.parse(filepath.as_posix())
 
 
 def convert_value_for_xml(value: Any) -> Any:
@@ -78,13 +82,14 @@ def convert_metadata_obj_to_elements(
     for key, value in d.items():
 
         e = Element(key)
-        print(f"Processing: {key}:{value}")
+        # print(f"Processing: {key}:{value}")
         # print(type(value))
         if issubclass(type(value), MetadataClass):
             convert_metadata_obj_to_elements(e, value)
         else:
             e.text = convert_value_for_xml(value)
-            root_element.append(e)
+
+        root_element.append(e)
 
     return root_element
 
@@ -183,7 +188,7 @@ class TaskLayerElement(MetadataElement):
         super().__init__(meta_class)
 
 
-class AssetMetadataTree(ElementTree.ElementTree):
+class AssetMetadataTree(ElementTree):
     def __init__(
         self, meta_asset: MetadataAsset, meta_task_layers: List[MetaDataTaskLayer]
     ):
