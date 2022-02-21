@@ -196,17 +196,33 @@ class AssetBuilder:
             # the task collection to the target collection
             # or
             # the publish collection to the target collection
-
             # This is reversed depending if we do a push or a pull.
-            if task_layer in used_task_layers:
-                if source_type == AssetTask:
+
+            if source_type == AssetTask:
+                # If source type is AssetTask (User does a publish/push):
+                # Transfer selected task layers from AssetTask Coll -> Target Coll.
+                if task_layer in used_task_layers:
                     logger.info(
                         f"Transferring {task_layer.name} from {merge_triplet.task_coll.name} to {merge_triplet.target_coll.name}."
                     )
                     task_layer.transfer_data(
                         context, mapping_task_target, self.transfer_settings
                     )
-                elif source_type == AssetPublish:
+                else:
+                    # Transfer unselected task layers from Publish Coll -> Target Coll.
+                    logger.info(
+                        f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
+                    )
+                    task_layer.transfer_data(
+                        context, mapping_publish_target, self.transfer_settings
+                    )
+                pass
+
+            elif source_type == AssetPublish:
+                # If source type is AssetPublish (User does a pull):
+                # Transfer selected task layers from Publish Coll -> Target Coll.
+                if task_layer in used_task_layers:
+
                     logger.info(
                         f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
                     )
@@ -214,17 +230,8 @@ class AssetBuilder:
                         context, mapping_publish_target, self.transfer_settings
                     )
 
-            else:
-
-                if source_type == AssetTask:
-                    logger.info(
-                        f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
-                    )
-                    task_layer.transfer_data(
-                        context, mapping_publish_target, self.transfer_settings
-                    )
-
-                elif source_type == AssetPublish:
+                # Transfer unselected task layers from Task Coll -> Target Coll.
+                else:
                     logger.info(
                         f"Transferring {task_layer.name} from {merge_triplet.task_coll.name} to {merge_triplet.target_coll.name}."
                     )
