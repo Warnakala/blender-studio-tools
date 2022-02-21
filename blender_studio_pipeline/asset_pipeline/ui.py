@@ -152,7 +152,7 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return bool(context.scene.bsp_asset.asset_collection)
+        return bool(builder.ASSET_CONTEXT and context.scene.bsp_asset.asset_collection)
 
     def draw(self, context: bpy.types.Context) -> None:
         layout: bpy.types.UILayout = self.layout
