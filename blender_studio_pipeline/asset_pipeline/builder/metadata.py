@@ -95,7 +95,7 @@ def convert_metadata_obj_to_elements(
 
 
 # The idea here is to have Schemas in the form of Python Dataclasses that can be converted to their equivalent as XML Element.
-# Schemas can have nested Dataclasses. The conversion happens in MetadataElement and can handle that.
+# Schemas can have nested Dataclasses. The conversion happens in ElementMetadata and can handle that.
 
 
 @dataclass
@@ -120,7 +120,7 @@ class MetadataUser(MetadataClass):
 
 
 @dataclass
-class MetaDataTaskLayer(MetadataClass):
+class MetadataTaskLayer(MetadataClass):
     id: str
     name: str
 
@@ -152,14 +152,20 @@ class MetadataAsset(MetadataClass):
 
     # Optional.
     flags: List[str] = field(default_factory=list)
-    task_layers: List[MetaDataTaskLayer] = field(default_factory=list)
+    task_layers: List[MetadataTaskLayer] = field(default_factory=list)
 
 
-class MetadataElement(Element):
+class ElementMetadata(Element):
     _tag: str = ""
 
     def __init__(self, meta_class: MetadataClass) -> None:
         super().__init__(self._tag)
+
+        # If metaclass has an ID field
+        # Add a "id" attribute to the element for convenient
+        # querying.
+        if hasattr(meta_class, "id"):
+            self.attrib.update({"id": meta_class.id})
 
         # This function makes sure that the input  MetadataClass
         # will be converted to an element tree. It also handles
@@ -167,33 +173,33 @@ class MetadataElement(Element):
         convert_metadata_obj_to_elements(self, meta_class)
 
 
-class UserElement(MetadataElement):
+class ElementUser(ElementMetadata):
     _tag: str = "User"
 
     def __init__(self, meta_class: MetadataUser) -> None:
         super().__init__(meta_class)
 
 
-class AssetElement(MetadataElement):
+class ElementAsset(ElementMetadata):
     _tag: str = "Asset"
 
     def __init__(self, meta_class: MetadataAsset) -> None:
         super().__init__(meta_class)
 
 
-class TaskLayerElement(MetadataElement):
+class ElementTaskLayer(ElementMetadata):
     _tag: str = "TaskLayer"
 
-    def __init__(self, meta_class: MetaDataTaskLayer) -> None:
+    def __init__(self, meta_class: MetadataTaskLayer) -> None:
         super().__init__(meta_class)
 
 
-class AssetMetadataTree(ElementTree):
+class ElementTreeAsset(ElementTree):
     def __init__(
-        self, meta_asset: MetadataAsset, meta_task_layers: List[MetaDataTaskLayer]
+        self, meta_asset: MetadataAsset, meta_task_layers: List[MetadataTaskLayer]
     ):
         # Create Asset Element and append to root.
-        asset_element = AssetElement(meta_asset)
+        asset_element = ElementAsset(meta_asset)
 
         super().__init__(asset_element)
 
@@ -202,7 +208,7 @@ class AssetMetadataTree(ElementTree):
 
         # Append all meta task layers to it.
         for meta_tl in meta_task_layers:
-            tl_element = TaskLayerElement(meta_tl)
+            tl_element = ElementTaskLayer(meta_tl)
             prod_task_layers.append(tl_element)
 
         self.getroot().append(prod_task_layers)

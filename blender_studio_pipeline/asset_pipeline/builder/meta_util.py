@@ -31,7 +31,7 @@ import bpy
 from .. import constants
 from .task_layer import TaskLayer
 from .asset_status import AssetStatus
-from .metadata import MetaDataTaskLayer, MetadataUser
+from .metadata import MetadataTaskLayer, MetadataUser
 
 from blender_kitsu import cache
 from blender_kitsu.types import User
@@ -39,7 +39,7 @@ from blender_kitsu.types import User
 logger = logging.getLogger("BSP")
 
 
-def init_meta_task_layer(task_layer: type[TaskLayer]) -> MetaDataTaskLayer:
+def init_meta_task_layer(task_layer: type[TaskLayer]) -> MetadataTaskLayer:
 
     d: Dict[str, Any] = {}
     time = datetime.now()
@@ -58,4 +58,4 @@ def init_meta_task_layer(task_layer: type[TaskLayer]) -> MetaDataTaskLayer:
     d["software_hash"] = bpy.app.build_hash.decode()
     d["hostname"] = socket.gethostname()
 
-    return MetaDataTaskLayer.from_dict(d)
+    return MetadataTaskLayer.from_dict(d)

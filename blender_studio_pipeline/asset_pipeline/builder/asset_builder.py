@@ -34,7 +34,7 @@ from .vis import EnsureVisible
 from ... import util
 from . import asset_suffix
 from . import metadata
-from .metadata import AssetMetadataTree, MetadataAsset, MetaDataTaskLayer
+from .metadata import ElementTreeAsset, MetadataAsset, MetadataTaskLayer
 from . import meta_util
 
 logger = logging.getLogger("BSP")
@@ -165,6 +165,8 @@ class AssetBuilder:
             for obj in coll.all_objects:
                 vis_objs.append(EnsureVisible(obj))
 
+        # Load metadata file.
+
         # The target collection (base) was already decided by ASSET_IMPORTER.import_asset_task()
         # and is saved in merge_triplet.target_coll.
         mapping_task_target = AssetTransferMapping(
@@ -216,7 +218,6 @@ class AssetBuilder:
                     task_layer.transfer_data(
                         context, mapping_publish_target, self.transfer_settings
                     )
-                pass
 
             elif source_type == AssetPublish:
                 # If source type is AssetPublish (User does a pull):
@@ -261,9 +262,6 @@ class AssetBuilder:
         asset_coll = self._build_context.asset_context.asset_collection
         data_blocks = set((asset_coll,))
 
-        from xml.etree.ElementTree import ElementTree
-        from .metadata import AssetElement, TaskLayerElement
-
         # Create asset meta tree.
         asset_tree = self._create_asset_meta_tree()
 
@@ -289,15 +287,15 @@ class AssetBuilder:
 
         logger.info("Created first asset version: %s", target.path.as_posix())
 
-    def _create_asset_meta_tree(self) -> AssetMetadataTree:
+    def _create_asset_meta_tree(self) -> ElementTreeAsset:
         # Create asset meta tree.
         meta_asset = (
             self.build_context.asset_context.asset_collection.bsp_asset.gen_meta_asset()
         )
-        meta_task_layers: List[MetaDataTaskLayer] = []
+        meta_task_layers: List[MetadataTaskLayer] = []
 
         for task_layer in self.build_context.prod_context.task_layers:
             meta_tl = meta_util.init_meta_task_layer(task_layer)
             meta_task_layers.append(meta_tl)
 
-        return AssetMetadataTree(meta_asset, meta_task_layers)
+        return ElementTreeAsset(meta_asset, meta_task_layers)
