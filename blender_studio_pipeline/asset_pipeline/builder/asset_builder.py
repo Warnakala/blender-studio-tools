@@ -258,16 +258,7 @@ class AssetBuilder:
         from .metadata import AssetElement, TaskLayerElement
 
         # Create asset meta tree.
-        meta_asset = (
-            self.build_context.asset_context.asset_collection.bsp_asset.gen_meta_asset()
-        )
-        meta_task_layers: List[MetaDataTaskLayer] = []
-
-        for task_layer in self.build_context.prod_context.task_layers:
-            meta_tl = meta_util.init_meta_task_layer(task_layer)
-            meta_task_layers.append(meta_tl)
-
-        asset_tree = AssetMetadataTree(meta_asset, meta_task_layers)
+        asset_tree = self._create_asset_meta_tree()
 
         # Create directory if not exist.
         target.path.parent.mkdir(parents=True, exist_ok=True)
@@ -290,3 +281,16 @@ class AssetBuilder:
         )
 
         logger.info("Created first asset version: %s", target.path.as_posix())
+
+    def _create_asset_meta_tree(self) -> AssetMetadataTree:
+        # Create asset meta tree.
+        meta_asset = (
+            self.build_context.asset_context.asset_collection.bsp_asset.gen_meta_asset()
+        )
+        meta_task_layers: List[MetaDataTaskLayer] = []
+
+        for task_layer in self.build_context.prod_context.task_layers:
+            meta_tl = meta_util.init_meta_task_layer(task_layer)
+            meta_task_layers.append(meta_tl)
+
+        return AssetMetadataTree(meta_asset, meta_task_layers)
