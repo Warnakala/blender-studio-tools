@@ -293,6 +293,11 @@ class AssetBuilder:
         for coll in [merge_triplet.publish_coll, merge_triplet.task_coll]:
             util.del_collection(coll)
 
+        # Purge orphan data.
+        # This is quite an important one, if this goes wrong we can end up with
+        # wrong data block names.
+        bpy.ops.outliner.orphans_purge(do_recursive=True)
+
         # Remove suffix from TARGET Collection.
         asset_suffix.remove_suffix_from_hierarchy(merge_triplet.target_coll)
 
