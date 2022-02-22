@@ -24,7 +24,7 @@ from pathlib import Path
 import bpy
 
 from . import builder
-from .builder.metadata import MetadataAsset
+from .builder.metadata import MetadataAsset, MetadataTaskLayer
 
 
 class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
@@ -63,7 +63,7 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
         self.project_id = ""
         self.rig = None
 
-    def gen_meta_asset(self) -> MetadataAsset:
+    def gen_metadata_class(self) -> MetadataAsset:
         # These keys represent all mandatory arguments for the data class metadata.MetaAsset
         # The idea is, to be able to construct a MetaAsst from this dict.
         keys = ["entity_name", "entity_id", "project_id", "version", "status"]
@@ -83,31 +83,33 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
 class BSP_task_layer(bpy.types.PropertyGroup):
 
     """
-    Property Group that can represent a minimal version of a Task Layer.
+    Property Group that can represent a minimal TaskLayer.
+    Note: It misses properties compared to MetadataTaskLayer class, contains only the ones
+    needed for internal use. Also contains 'use' attribute to avoid creating a new property group
+    to mimic more the TaskLayer TaskLayerConfig setup.
     Is used in BSP_ASSET_scene_properties as collection property.
     """
 
     task_layer_id: bpy.props.StringProperty(  # type: ignore
         name="Task Layer ID",
-        description="Unique Key that is used to query a Task Layer in TaskLayerAssembly.get_task_layer_config(.",
+        description="Unique Key that is used to query a Task Layer in TaskLayerAssembly.get_task_layer_config()",
     )
     task_layer_name: bpy.props.StringProperty(  # type: ignore
         name="Task Layer Name",
     )
 
-    use: bpy.props.BoolProperty(  # type: ignore
-        name="Use",
-        default=False,
-        options={"LIBRARY_EDITABLE"},
-        override={"LIBRARY_OVERRIDABLE"},
+    is_locked: bpy.props.BoolProperty(  # type: ignore
+        name="Is Locked",
     )
 
-    def reset_properties(self) -> None:
-        self.use = False
+    use: bpy.props.BoolProperty(  # type: ignore
+        name="Use",
+    )
 
     def as_dict(self) -> Dict[str, Any]:
         return {
             "use": self.use,
+            "is_locked": self.is_locked,
             "task_layer_id": self.task_layer_id,
             "task_layer_name": self.task_layer_name,
         }
@@ -122,6 +124,7 @@ class BSP_asset_file(bpy.types.PropertyGroup):
     path_str: bpy.props.StringProperty(  # type: ignore
         name="Path",
     )
+    task_layers: bpy.props.CollectionProperty(type=BSP_task_layer)
 
     @property
     def path(self) -> Optional[Path]:
@@ -131,6 +134,13 @@ class BSP_asset_file(bpy.types.PropertyGroup):
 
     def as_dict(self) -> Dict[str, Any]:
         return {"path": self.path}
+
+    def add_task_layer_from_metaclass(self, metadata_task_layer: MetadataTaskLayer):
+        item = self.task_layers.add()
+        # TODO: could be made more procedural.
+        item.task_layer_id = metadata_task_layer.id
+        item.task_layer_name = metadata_task_layer.name
+        item.is_locked = metadata_task_layer.is_locked
 
 
 class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):

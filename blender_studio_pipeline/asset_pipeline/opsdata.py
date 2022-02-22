@@ -42,7 +42,7 @@ def populate_task_layers(
         tmp_backup[task_layer_id] = task_layer_prop_group.as_dict()
 
     # Clear task layer collection property.
-    context.scene.bsp_asset.task_layers.clear()
+    clear_task_layers(context)
 
     # Load Task Layers from Production Context, try to restore
     # previous task layer settings
@@ -69,10 +69,25 @@ def populate_asset_publishes(
 ) -> None:
 
     # Clear asset_publishes collection property.
-    context.scene.bsp_asset.asset_publishes.clear()
+    clear_asset_publishes(context)
 
     # Load Asset Publishes from Asset Context.
     for asset_publish in asset_context.asset_publishes:
         item = context.scene.bsp_asset.asset_publishes.add()
         item.name = asset_publish.path.name
         item.path_str = asset_publish.path.as_posix()
+
+        # Create a task layer item for each asset file,
+        # so we can display the task layer state of each
+        # asset file in the UI.
+        metadata = asset_publish.metadata
+        for tl in metadata.meta_task_layers:
+            item.add_task_layer_from_metaclass(tl)
+
+
+def clear_task_layers(context: bpy.types.Context) -> None:
+    context.scene.bsp_asset.task_layers.clear()
+
+
+def clear_asset_publishes(context: bpy.types.Context) -> None:
+    context.scene.bsp_asset.asset_publishes.clear()

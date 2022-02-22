@@ -345,7 +345,7 @@ class AssetBuilder:
     def _create_asset_meta_tree(self) -> ElementTreeAsset:
         # Create asset meta tree.
         meta_asset = (
-            self.build_context.asset_context.asset_collection.bsp_asset.gen_meta_asset()
+            self.build_context.asset_context.asset_collection.bsp_asset.gen_metadata_class()
         )
         meta_task_layers: List[MetadataTaskLayer] = []
 

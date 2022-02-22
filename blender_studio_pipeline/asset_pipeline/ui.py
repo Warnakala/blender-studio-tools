@@ -30,6 +30,7 @@ from .ops import (
     BSP_ASSET_start_publish_new_version,
     BSP_ASSET_abort_publish,
     BSP_ASSET_create_prod_context,
+    BSP_ASSET_create_asset_context,
     BSP_ASSET_push_task_layers,
     BSP_ASSET_pull,
     BSP_ASSET_publish,
@@ -79,6 +80,7 @@ def draw_affected_asset_publishes_list(
     box = layout.box()
     row = box.row(align=True)
     row.label(text="Asset Publishes")
+    row.operator(BSP_ASSET_create_asset_context.bl_idname, icon="FILE_REFRESH", text="")
 
     # Ui-list.
     row = box.row()
@@ -318,7 +320,25 @@ class BSP_UL_affected_asset_publishes(bpy.types.UIList):
         layout: bpy.types.UILayout = layout
 
         if self.layout_type in {"DEFAULT", "COMPACT"}:
-            layout.label(text=item.path.name)
+
+            # Di split for filename spacing.
+            row = layout.row(align=True)
+            row.alignment = "LEFT"
+
+            # Draw filename.
+            base_split = row.split(factor=0.4)
+            base_split.label(text=item.path.name)
+
+            # Draw each task layer.
+            for tl_item in item.task_layers:
+
+                # Get locked state.
+                icon = "MESH_CIRCLE"
+                if tl_item.is_locked:
+                    icon = "LOCKED"
+
+                # Draw label that represents task layer with locked state as icon.
+                base_split.label(text=f"{tl_item.task_layer_id[:2]}".upper(), icon=icon)
 
         elif self.layout_type in {"GRID"}:
             layout.alignment = "CENTER"
