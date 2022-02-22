@@ -209,7 +209,7 @@ class AssetBuilder:
                 # This means this code actually runs in the publish file (as we open a new blend in the bg and call this function)
 
                 # Load metadata file.
-                asset_publish = AssetPublish(bpy.data.filepath)
+                asset_publish = AssetPublish(Path(bpy.data.filepath))
                 metadata_path = asset_publish.metadata_path
                 meta_asset_tree = metadata.load_asset_metadata_tree_from_file(
                     metadata_path
