@@ -45,7 +45,7 @@ def init_meta_task_layer(task_layer: type[TaskLayer]) -> MetadataTaskLayer:
     time = datetime.now()
     user: User = cache.user_active_get()
 
-    d["id"] = task_layer.__name__
+    d["id"] = task_layer.get_id()
     d["name"] = task_layer.name
 
     d["source_revision"] = ""  # TODO:

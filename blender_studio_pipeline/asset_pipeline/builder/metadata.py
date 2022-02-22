@@ -36,6 +36,15 @@ from .asset_status import AssetStatus
 logger = logging.getLogger("BSP")
 
 M = TypeVar("M", bound="MetadataClass")
+E = TypeVar("E", bound="ElementMetadata")
+
+
+class FailedToInitAssetElementTree(Exception):
+    pass
+
+
+class FailedToInitMetadataTaskLayer(Exception):
+    pass
 
 
 def prettify(element: Element) -> str:
@@ -56,9 +65,28 @@ def load_from_file(filepath: Path) -> ElementTree:
     return ET.parse(filepath.as_posix())
 
 
+def load_asset_metadata_tree_from_file(filepath: Path) -> "MetadataTreeAsset":
+    tree = load_from_file(filepath)
+    asset_tree = ElementTreeAsset(element=tree.getroot())
+    return MetadataTreeAsset.from_element(asset_tree)
+
+
 def convert_value_for_xml(value: Any) -> Any:
     if type(value) == bool:
         return str(value).lower()
+    # TODO: Is this a good idea?
+    if type(value) == list:
+        return ""
+    if type(value) == Path:
+        return value.as_posix()
+    return value
+
+
+def convert_value_from_xml(value: Any) -> Any:
+    if value == "false":
+        return False
+    elif value == "true":
+        return True
     return value
 
 
@@ -96,6 +124,17 @@ def convert_metadata_obj_to_elements(
 
 # The idea here is to have Schemas in the form of Python Dataclasses that can be converted to their equivalent as XML Element.
 # Schemas can have nested Dataclasses. The conversion happens in ElementMetadata and can handle that.
+# Metadata Classes can also be generated from ElementClasses. This conversion is happening in the .from_element() function.
+# The idea is that the code rest of the code only works with dataclasses and adjusts their data. That results in this
+# logic.
+# A: Saving Metadata to file:
+#    -> MetadataClass -> ElementClass -> XML File on Disk
+# B: Loading Metadata from file:
+#    -> XML File on Disk -> ElementClass -> MetadataClass
+
+
+# METADATA CLASSES
+# ----------------------------------------------
 
 
 @dataclass
@@ -105,6 +144,16 @@ class MetadataClass:
         return cls(
             **{k: v for k, v in env.items() if k in inspect.signature(cls).parameters}
         )
+
+    @classmethod
+    def from_element(cls: type[M], element: Element) -> M:
+        d = {}
+        # Take care to only take fist layer with './', otherwise we would take the
+        # e.G the 'id' attribute of author and overwrite it.
+        # cannot use e.iter().
+        for sub_e in element.findall("./"):
+            d[sub_e.tag] = convert_value_from_xml(sub_e.text)
+        return cls.from_dict(d)
 
 
 @dataclass
@@ -137,6 +186,27 @@ class MetadataTaskLayer(MetadataClass):
     # Optional.
     flags: List[str] = field(default_factory=list)
 
+    @classmethod
+    def from_element(cls: type[M], element: Element) -> M:
+        # For nested Metadata Classes we need to re-implement this.
+        d = {}
+        # Take care to only take fist layer with './', otherwise we would take the
+        # e.G the 'id' attribute of author and overwrite it.
+        # cannot use e.iter().
+        for sub_e in element.findall("./"):
+            if sub_e.tag == "author":
+                continue
+            d[sub_e.tag] = convert_value_from_xml(sub_e.text)
+
+        # Convert Author element to MetadataUser.
+        author = element.find(".author")
+        if author == None:
+            raise FailedToInitMetadataTaskLayer(
+                "Expected to find 'author' element in input"
+            )
+        d["author"] = MetadataUser.from_element(element.author)
+        return cls.from_dict(d)
+
 
 @dataclass
 class MetadataAsset(MetadataClass):
@@ -152,63 +222,153 @@ class MetadataAsset(MetadataClass):
 
     # Optional.
     flags: List[str] = field(default_factory=list)
-    task_layers: List[MetadataTaskLayer] = field(default_factory=list)
+
+    # This is only placeholder and will be filled when creating
+    task_layers_production: List[MetadataTaskLayer] = field(default_factory=list)
 
 
+@dataclass
+class MetadataTreeAsset(MetadataClass):
+    meta_asset: MetadataAsset
+    meta_task_layers: List[MetadataTaskLayer]
+
+    @classmethod
+    def from_element(cls: type[M], element: "ElementTreeAsset") -> M:
+        # For nested Metadata Classes we need to re-implement this.
+        d = {}
+        e_asset = element.asset_element
+        e_task_layers: List[ElementTaskLayer] = element.get_element_task_layers()
+        d["meta_asset"] = MetadataAsset.from_element(e_asset)
+        d["meta_task_layers"] = []
+        for e_tl in e_task_layers:
+            m_tl = MetadataTaskLayer.from_element(e_tl)
+            d["meta_task_layers"].append(m_tl)
+
+        return cls.from_dict(d)
+
+    def get_metadata_task_layer(self, id: str) -> Optional[MetadataTaskLayer]:
+        """
+        Id == TaskLayer.get_id()
+        """
+        for tl in self.meta_task_layers:
+            if tl.id == id:
+                return tl
+        return None
+
+
+# ELEMENT CLASSES
+# ----------------------------------------------
 class ElementMetadata(Element):
     _tag: str = ""
 
-    def __init__(self, meta_class: MetadataClass) -> None:
+    def __init__(self, element: Optional[Union[Element, ElementTree]] = None) -> None:
         super().__init__(self._tag)
+        if element:
+            for child in element:
+                self.append(child)
+            # super().__init__(element)
 
+            # TODO it seems like it does not matter wheter we pass a tree here,
+            # we loose the children elements.
+
+    @classmethod
+    def from_metadata_cls(cls, meta_class: M) -> E:
         # If metaclass has an ID field
         # Add a "id" attribute to the element for convenient
         # querying.
+        instance = cls()
         if hasattr(meta_class, "id"):
-            self.attrib.update({"id": meta_class.id})
+            instance.attrib.update({"id": meta_class.id})
 
         # This function makes sure that the input  MetadataClass
         # will be converted to an element tree. It also handles
         # nested MetadataClasses respectively.
-        convert_metadata_obj_to_elements(self, meta_class)
+        convert_metadata_obj_to_elements(instance, meta_class)
+        return instance
 
 
 class ElementUser(ElementMetadata):
     _tag: str = "User"
 
-    def __init__(self, meta_class: MetadataUser) -> None:
-        super().__init__(meta_class)
-
 
 class ElementAsset(ElementMetadata):
     _tag: str = "Asset"
 
-    def __init__(self, meta_class: MetadataAsset) -> None:
-        super().__init__(meta_class)
+    @property
+    def task_layers_production(self) -> Element:
+        return self.find(".task_layers_production")
 
 
 class ElementTaskLayer(ElementMetadata):
     _tag: str = "TaskLayer"
 
-    def __init__(self, meta_class: MetadataTaskLayer) -> None:
-        super().__init__(meta_class)
+    @classmethod
+    def from_metadata_cls(cls, meta_class: MetadataTaskLayer) -> "ElementTaskLayer":
+
+        instance = super().from_metadata_cls(meta_class)
+
+        # Update Author field.
+        e = instance.find(".author")
+        e.text = e.find(".full_name").text
+        return instance
+
+    @property
+    def author(self) -> Optional[Element]:
+        return self.find(".author")
 
 
 class ElementTreeAsset(ElementTree):
-    def __init__(
-        self, meta_asset: MetadataAsset, meta_task_layers: List[MetadataTaskLayer]
-    ):
+    @classmethod
+    def from_metadata_cls(
+        cls, meta_tree_asset: MetadataTreeAsset
+    ) -> "ElementTreeAsset":
         # Create Asset Element and append to root.
-        asset_element = ElementAsset(meta_asset)
-
-        super().__init__(asset_element)
+        asset_element: ElementAsset = ElementAsset.from_metadata_cls(
+            meta_tree_asset.meta_asset
+        )
 
         # Create ProductionTaskLayers Element
-        prod_task_layers = Element("ProductionTaskLayers")
+        prod_task_layers = asset_element.task_layers_production
+
+        # TODO: I DONT UNDERSTAND:
+        # For some reasons the task_layers_production entry will
+        # be duplicated if we just use
+        # prod_task_layers = asset_element.task_layers_production
+        # no idea why, we need to first delete it and add it again???
+        for i in asset_element:
+            if i.tag == "task_layers_production":
+                asset_element.remove(i)
+
+        prod_task_layers = Element("task_layers_production")
+
+        # Need to check for None, if element empty it is falsy.
+        if prod_task_layers == None:
+            raise FailedToInitAssetElementTree(
+                f"Failed to find  task_layers_production child in ElementAsset Class."
+            )
 
         # Append all meta task layers to it.
-        for meta_tl in meta_task_layers:
-            tl_element = ElementTaskLayer(meta_tl)
+        for meta_tl in meta_tree_asset.meta_task_layers:
+            tl_element = ElementTaskLayer.from_metadata_cls(meta_tl)
             prod_task_layers.append(tl_element)
 
-        self.getroot().append(prod_task_layers)
+        asset_element.append(prod_task_layers)
+
+        return cls(asset_element)
+
+    def get_element_task_layers(self) -> List[ElementTaskLayer]:
+        l: List[ElementTaskLayer] = []
+        for e in self.findall(".//TaskLayer"):
+            # We need to pass e as ElementTree otherwise we won't receive
+            # a full tree copy of all childrens recursively.
+            e_tl = ElementTaskLayer(element=e)
+            l.append(e_tl)
+
+        return l
+
+    def get_task_layer(self, id: str) -> Optional[Element]:
+        return self.find(f".//TaskLayer[@id='{id}']")
+
+    @property
+    def asset_element(self) -> Element:
+        return self.getroot()

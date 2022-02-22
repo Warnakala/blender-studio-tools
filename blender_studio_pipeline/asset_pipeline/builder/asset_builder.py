@@ -22,10 +22,12 @@ import logging
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
+from datetime import datetime
 
 import bpy
 
 from .context import BuildContext
+from .. import constants
 from ..asset_files import AssetTask, AssetPublish
 from .asset_importer import AssetImporter
 from .asset_mapping import TransferCollectionTriplet, AssetTransferMapping
@@ -34,7 +36,7 @@ from .vis import EnsureVisible
 from ... import util
 from . import asset_suffix
 from . import metadata
-from .metadata import ElementTreeAsset, MetadataAsset, MetadataTaskLayer
+from .metadata import ElementTreeAsset, MetadataTaskLayer, MetadataTreeAsset
 from . import meta_util
 
 logger = logging.getLogger("BSP")
@@ -165,8 +167,6 @@ class AssetBuilder:
             for obj in coll.all_objects:
                 vis_objs.append(EnsureVisible(obj))
 
-        # Load metadata file.
-
         # The target collection (base) was already decided by ASSET_IMPORTER.import_asset_task()
         # and is saved in merge_triplet.target_coll.
         mapping_task_target = AssetTransferMapping(
@@ -192,6 +192,10 @@ class AssetBuilder:
         # on. The asset importer already handles this logic by supplying as with the right TARGET collection
         # after import. That's why we exclude the first task layer here in the loop.
         logger.info(f"Using {task_layers[0].name} as base.")
+
+        # Get time for later metadata update.
+        time = datetime.now()
+
         for task_layer in task_layers[1:]:
 
             # Now we need to decide if we want to transfer data from
@@ -202,6 +206,16 @@ class AssetBuilder:
 
             if source_type == AssetTask:
                 # If source type is AssetTask (User does a publish/push):
+                # This means this code actually runs in the publish file (as we open a new blend in the bg and call this function)
+
+                # Load metadata file.
+                asset_publish = AssetPublish(bpy.data.filepath)
+                metadata_path = asset_publish.metadata_path
+                meta_asset_tree = metadata.load_asset_metadata_tree_from_file(
+                    metadata_path
+                )
+                meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
+
                 # Transfer selected task layers from AssetTask Coll -> Target Coll.
                 if task_layer in used_task_layers:
                     logger.info(
@@ -210,6 +224,11 @@ class AssetBuilder:
                     task_layer.transfer_data(
                         context, mapping_task_target, self.transfer_settings
                     )
+
+                    # Update source meta task layer source path.
+                    meta_tl.source_path = self.build_context.asset_task.path.as_posix()
+                    meta_tl.updated_at = time.strftime(constants.TIME_FORMAT)
+
                 else:
                     # Transfer unselected task layers from Publish Coll -> Target Coll.
                     logger.info(
@@ -219,8 +238,29 @@ class AssetBuilder:
                         context, mapping_publish_target, self.transfer_settings
                     )
 
+                    # Here we don't want to update source path, we keep it as is, as we are just 'retaining' here.
+
             elif source_type == AssetPublish:
                 # If source type is AssetPublish (User does a pull):
+                # This means code runs in current open Blend file (Asset Task)
+
+                # Load metadata file.
+                asset_publish = self.build_context.asset_publishes[-1]
+                metadata_path = self.build_context.asset_task.metadata_path
+
+                # If metafile does not exist yet create it.
+                if not metadata_path.exists():
+                    tree = self._create_asset_meta_tree()
+                    metadata.write_tree_to_file(metadata_path, tree)
+                    logger.info("Created metadata file: %s", metadata_path.name)
+                    del tree
+
+                # Otherwise load it from disk.
+                meta_asset_tree = metadata.load_asset_metadata_tree_from_file(
+                    metadata_path
+                )
+
+                meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
                 # Transfer selected task layers from Publish Coll -> Target Coll.
                 if task_layer in used_task_layers:
 
@@ -230,6 +270,9 @@ class AssetBuilder:
                     task_layer.transfer_data(
                         context, mapping_publish_target, self.transfer_settings
                     )
+                    # Update source meta task layer source path.
+                    meta_tl.source_path = asset_publish.path.as_posix()
+                    meta_tl.updated_at = time.strftime(constants.TIME_FORMAT)
 
                 # Transfer unselected task layers from Task Coll -> Target Coll.
                 else:
@@ -239,6 +282,8 @@ class AssetBuilder:
                     task_layer.transfer_data(
                         context, mapping_task_target, self.transfer_settings
                     )
+
+                    # Here we don't want to update source path, we keep it as is, as we are just 'retaining' here.
 
         # Restore Visibility.
         for obj in vis_objs:
@@ -256,6 +301,10 @@ class AssetBuilder:
 
         # Restore scenes asset collection.
         context.scene.bsp_asset.asset_collection = merge_triplet.target_coll
+
+        # Save updated metadata.
+        tree = ElementTreeAsset.from_metadata_cls(meta_asset_tree)
+        metadata.write_tree_to_file(metadata_path, tree)
 
     def _create_first_version(self) -> None:
         target = AssetPublish(self._build_context.asset_dir.get_first_publish_path())
@@ -286,6 +335,7 @@ class AssetBuilder:
         )
 
         logger.info("Created first asset version: %s", target.path.as_posix())
+        return
 
     def _create_asset_meta_tree(self) -> ElementTreeAsset:
         # Create asset meta tree.
@@ -298,4 +348,7 @@ class AssetBuilder:
             meta_tl = meta_util.init_meta_task_layer(task_layer)
             meta_task_layers.append(meta_tl)
 
-        return ElementTreeAsset(meta_asset, meta_task_layers)
+        meta_tree_asset = MetadataTreeAsset(
+            meta_asset=meta_asset, meta_task_layers=meta_task_layers
+        )
+        return ElementTreeAsset.from_metadata_cls(meta_tree_asset)

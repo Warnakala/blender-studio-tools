@@ -105,7 +105,6 @@ class AssetImporter:
         # Gen a UUID to minimize risk of overwriting an existing blend file.
         id = uuid.uuid4()
         filepath_tmp = Path(bpy.data.filepath)
-        print(filepath_tmp)
         filepath_tmp = filepath_tmp.parent / f"{filepath_tmp.stem}-{id}.blend"
 
         if filepath_tmp.exists():

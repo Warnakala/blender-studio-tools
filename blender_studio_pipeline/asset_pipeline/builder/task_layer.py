@@ -47,6 +47,14 @@ class TaskLayer:
     order: int = -1
 
     @classmethod
+    def get_id(cls) -> str:
+        """
+        Used to uniquely identify a TaskLayer as we expect that there are not 2 TaskLayer Classes
+        That have the same name.
+        """
+        return cls.__name__
+
+    @classmethod
     def is_valid(cls) -> bool:
         return bool(cls.name and cls.order >= 0)
 
@@ -128,7 +136,7 @@ class TaskLayerAssembly:
     def __init__(self, task_layers: List[type[TaskLayer]]):
         # Create a dictionary data structure here, so we can easily control
         # from within Blender by string which TaskLayers to enable and disable for built.
-        # As key we will use the class.__name__ attribute of each TaskLayer. (Should be unique)
+        # As key we will use the class.get_id() attribute of each TaskLayer. (Should be unique)
         self._task_layer_config_dict: Dict[str, TaskLayerConfig] = {}
         self._task_layers = task_layers
         self._task_layer_configs: List[TaskLayerConfig] = []
@@ -137,15 +145,15 @@ class TaskLayerAssembly:
         for task_layer in task_layers:
 
             # Make sure that for whatever reason there are no 2 identical TaskLayer.
-            if task_layer.__name__ in self._task_layer_config_dict:
+            if task_layer.get_id() in self._task_layer_config_dict:
 
                 self._task_layer_config_dict.clear()
                 raise Exception(
-                    f"Detected 2 TaskLayers with the same Class name. [{task_layer.__name__}]"
+                    f"Detected 2 TaskLayers with the same Class name. [{task_layer.get_id()}]"
                 )
             tc = TaskLayerConfig(task_layer)
             self._task_layer_configs.append(tc)
-            self._task_layer_config_dict[task_layer.__name__] = tc
+            self._task_layer_config_dict[task_layer.get_id()] = tc
 
         # Sort lists.
         self._task_layer_configs.sort(key=lambda tc: tc.task_layer.order)
