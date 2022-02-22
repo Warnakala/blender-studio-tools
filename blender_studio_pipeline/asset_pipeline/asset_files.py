@@ -134,18 +134,20 @@ class AssetDir:
 
         latest_publish = asset_publishes[-1]
         new_version = f"v{(latest_publish.get_version(format=int)+1):03}"
-        new_name = latest_publish.path.name.replace(
-            latest_publish.get_version(), new_version
-        )
-        new_path = latest_publish.path.parent / new_name
 
-        if new_path.exists():
-            raise FailedToIncrementLatestPublish(
-                f"Already exists: {new_path.as_posix()}"
-            )
+        # Duplicate blend and metadata file.
+        for path in [latest_publish.path, latest_publish.metadata_path]:
+            new_name = path.name.replace(latest_publish.get_version(), new_version)
+            new_path = latest_publish.path.parent / new_name
 
-        shutil.copy(latest_publish.path, new_path)
-        logger.info(f"Copied: {latest_publish.path.name} to: {new_path.name}")
+            if new_path.exists():
+                raise FailedToIncrementLatestPublish(
+                    f"Already exists: {new_path.as_posix()}"
+                )
+
+            shutil.copy(path, new_path)
+            logger.info(f"Copied: {path.name} to: {new_path.name}")
+
         return AssetPublish(new_path)
 
     def get_first_publish_path(self) -> Path:
