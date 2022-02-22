@@ -27,11 +27,17 @@ from pathlib import Path
 import bpy
 
 from . import constants
+from .builder import metadata
+from .builder.metadata import MetadataTreeAsset
 
 logger = logging.getLogger("BSP")
 
 
 class FailedToIncrementLatestPublish(Exception):
+    pass
+
+
+class FailedToLoadMetadata(Exception):
     pass
 
 
@@ -41,6 +47,7 @@ class AssetFile:
         self._metadata_path = (
             asset_path.parent / f"{asset_path.stem}{constants.METADATA_EXT}"
         )
+        self._metadata: MetadataTreeAsset = None
 
     @property
     def path(self) -> Path:
@@ -51,11 +58,22 @@ class AssetFile:
         return self._metadata_path
 
     @property
+    def metadata(self) -> MetadataTreeAsset:
+        return self._metadata
+
+    @property
     def pickle_path(self) -> Path:
         return self.path.parent / f"{self.path.stem}.pickle"
 
     def __repr__(self) -> str:
         return self._path.name
+
+    def _load_metadata(self) -> None:
+        if not self.metadata_path.exists():
+            raise FailedToLoadMetadata(
+                f"Metadata file does not exist: {self.metadata_path.as_posix()}"
+            )
+        self._metadata = metadata.load_asset_metadata_tree_from_file(self.metadata_path)
 
 
 class AssetTask(AssetFile):
@@ -71,7 +89,9 @@ class AssetPublish(AssetFile):
     Represents a publish file.
     """
 
-    # TODO: overwrite init to load metadata etc.
+    def __init__(self, asset_path: Path):
+        super().__init__(asset_path)
+        self._load_metadata()
 
     def get_version(self, format: type = str) -> Optional[Union[str, int]]:
         return get_file_version(self.path, format=format)
