@@ -24,7 +24,7 @@ from pathlib import Path
 import bpy
 
 
-logger = logging.getLogger(name=__name__)
+logger = logging.getLogger(name="BSP")
 
 
 class BSP_addon_preferences(bpy.types.AddonPreferences):
