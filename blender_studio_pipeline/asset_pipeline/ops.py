@@ -450,6 +450,8 @@ def create_asset_context(_):
         # assigned. Previous ASSET_CONTEXT should therefore
         # be uninitialized.
         builder.ASSET_CONTEXT = None
+        opsdata.clear_asset_publishes(bpy.context)
+        opsdata.clear_task_layers(bpy.context)
 
 
 @persistent
