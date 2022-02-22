@@ -252,6 +252,28 @@ class BSP_ASSET_PT_vi3d_task_layers(BSP_ASSET_main_panel, bpy.types.Panel):
         row.operator(BSP_ASSET_pull.bl_idname)
 
 
+class BSP_ASSET_PT_vi3d_status_manager(BSP_ASSET_main_panel, bpy.types.Panel):
+
+    bl_label = "Status Manager"
+    bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
+
+    @classmethod
+    def poll(cls, context):
+        return bool(
+            context.scene.bsp_asset.asset_collection
+            and builder.ASSET_CONTEXT
+            and builder.ASSET_CONTEXT.asset_publishes
+        )
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+
+        box = draw_affected_asset_publishes_list(self, context, disable=False)
+
+        box = layout.box()
+        box.label(text="Task Layer Status")
+
+
 class BSP_ASSET_PT_vi3d_transfer_settings(BSP_ASSET_main_panel, bpy.types.Panel):
 
     bl_label = "Transfer Settings"
@@ -355,6 +377,7 @@ classes = [
     BSP_ASSET_PT_vi3d_asset_collection,
     BSP_ASSET_PT_vi3d_publish_manager,
     BSP_ASSET_PT_vi3d_task_layers,
+    BSP_ASSET_PT_vi3d_status_manager,
     BSP_ASSET_PT_vi3d_transfer_settings,
 ]
 
