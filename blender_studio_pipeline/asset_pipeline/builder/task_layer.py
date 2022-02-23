@@ -165,6 +165,9 @@ class TaskLayerAssembly:
     def get_used_task_layers(self) -> List[type[TaskLayer]]:
         return [tc.task_layer for tc in self.task_layer_configs if tc.use]
 
+    def get_task_layers_for_bl_enum(self) -> List[Tuple[str, str, str]]:
+        return [(tl.get_id(), tl.name, tl.description) for tl in self.task_layers]
+
     @property
     def task_layer_config_dict(self) -> Dict[str, TaskLayerConfig]:
         return self._task_layer_config_dict

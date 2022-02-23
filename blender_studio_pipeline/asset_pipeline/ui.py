@@ -34,6 +34,7 @@ from .ops import (
     BSP_ASSET_push_task_layers,
     BSP_ASSET_pull,
     BSP_ASSET_publish,
+    BSP_ASSET_set_task_layer_status,
 )
 from . import builder
 from . import prop_utils
@@ -272,6 +273,8 @@ class BSP_ASSET_PT_vi3d_status_manager(BSP_ASSET_main_panel, bpy.types.Panel):
 
         box = layout.box()
         box.label(text="Task Layer Status")
+        row = box.row(align=True)
+        row.operator(BSP_ASSET_set_task_layer_status.bl_idname)
 
 
 class BSP_ASSET_PT_vi3d_transfer_settings(BSP_ASSET_main_panel, bpy.types.Panel):

@@ -61,6 +61,12 @@ class AssetFile:
     def metadata(self) -> MetadataTreeAsset:
         return self._metadata
 
+    def write_metadata(self) -> None:
+        metadata.write_asset_metadata_tree_to_file(self.metadata_path, self.metadata)
+
+    def reload_metadata(self) -> None:
+        self._load_metadata()
+
     @property
     def pickle_path(self) -> Path:
         return self.path.parent / f"{self.path.stem}.pickle"

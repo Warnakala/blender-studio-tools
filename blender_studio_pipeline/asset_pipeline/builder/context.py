@@ -338,6 +338,10 @@ class AssetContext:
     def update_asset_publishes(self) -> None:
         self._collect_asset_publishes()
 
+    def reload_asset_publishes_metadata(self) -> None:
+        for asset_publish in self.asset_publishes:
+            asset_publish.reload_metadata()
+
     def _collect_asset_publishes(self) -> None:
         self._asset_publishes.clear()
         self._asset_publishes.extend(self._asset_dir.get_asset_publishes())

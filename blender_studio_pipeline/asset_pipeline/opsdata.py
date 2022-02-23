@@ -20,12 +20,14 @@
 
 import logging
 
-from typing import List, Dict, Union, Any, Set, Optional
+from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
 import bpy
 
 from .builder.context import AssetContext
+from . import builder
+from .asset_files import AssetPublish
 
 logger = logging.getLogger("BSP")
 
@@ -91,3 +93,17 @@ def clear_task_layers(context: bpy.types.Context) -> None:
 
 def clear_asset_publishes(context: bpy.types.Context) -> None:
     context.scene.bsp_asset.asset_publishes.clear()
+
+
+def get_active_asset_publish(context: bpy.types.Context) -> AssetPublish:
+    index = context.scene.bsp_asset.asset_publishes_index
+    asset_file = context.scene.bsp_asset.asset_publishes[index]
+    return AssetPublish(asset_file.path)
+
+
+def get_task_layers_for_bl_enum(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    if not builder.ASSET_CONTEXT:
+        return []
+    return builder.ASSET_CONTEXT.task_layer_assembly.get_task_layers_for_bl_enum()

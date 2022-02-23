@@ -20,7 +20,7 @@
 
 import logging
 
-from typing import List, Dict, Union, Any, Set, Optional
+from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
 import bpy
@@ -439,6 +439,107 @@ class BSP_ASSET_create_asset_context(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BSP_ASSET_set_task_layer_status(bpy.types.Operator):
+    bl_idname = "bsp_asset.set_task_layer_status"
+    bl_label = "Set Task Layer Status"
+    bl_description = "Sets the Status of a Task Layer of a specific Asset Publish, which controls the is_locked attribute"
+
+    @staticmethod
+    def get_current_state(self: bpy.types.Operator) -> str:
+        # Get Metadata Task Layer.
+        asset_publish = opsdata.get_active_asset_publish(bpy.context)
+        m_tl = asset_publish.metadata.get_metadata_task_layer(self.task_layer)
+        return "locked" if m_tl.is_locked else "live"
+
+    target: bpy.props.StringProperty(name="Target")  # type: ignore
+    task_layer: bpy.props.EnumProperty(  # type: ignore
+        items=opsdata.get_task_layers_for_bl_enum,
+        name="Task Layer",
+        description="Task Layer for which to change the Status",
+    )
+    current_status: bpy.props.StringProperty(  # type: ignore
+        name="Current Status",
+        description="Current State of selected Task Layer",
+        get=get_current_state.__func__,
+    )
+    new_status: bpy.props.EnumProperty(  # type: ignore
+        items=[("locked", "locked", ""), ("live", "live", "")],
+        name="New Status",
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        asset_coll = context.scene.bsp_asset.asset_collection
+        return bool(
+            util.is_file_saved()
+            and asset_coll
+            and not context.scene.bsp_asset.is_publish_in_progress
+            and builder.PROD_CONTEXT
+            and builder.ASSET_CONTEXT
+            and builder.ASSET_CONTEXT.asset_publishes
+        )
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        # Get selected asset publish.
+        self.asset_publish = opsdata.get_active_asset_publish(context)
+
+        # Update target attribute.
+        self.target = self.asset_publish.path.name
+
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        # Update locked state.
+        is_locked = True if self.new_status == "locked" else False
+        self.asset_publish.metadata.get_metadata_task_layer(
+            self.task_layer
+        ).is_locked = is_locked
+
+        # Write metadata to file.
+        self.asset_publish.write_metadata()
+
+        # Log.
+        logger.info(
+            f"Set {self.asset_publish.path.name} {self.task_layer} Task Layer Status: {self.new_status}"
+        )
+
+        # Reset attributes.
+        del self.asset_publish
+
+        # Reload asset publishes.
+        builder.ASSET_CONTEXT.reload_asset_publishes_metadata()
+        opsdata.populate_asset_publishes(context, builder.ASSET_CONTEXT)
+
+        # Redraw UI.
+        util.redraw_ui()
+
+        return {"FINISHED"}
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+
+        # Target.
+        row = layout.row(align=True)
+        row.prop(self, "target")
+        row.enabled = False
+
+        # Task Layer.
+        row = layout.row(align=True)
+        row.prop(self, "task_layer")
+
+        # Current State.
+        row = layout.row(align=True)
+        row.prop(self, "current_status")
+
+        layout.separator()
+        layout.separator()
+
+        # Current State.
+        row = layout.row(align=True)
+        row.prop(self, "new_status")
+
+
 @persistent
 def create_asset_context(_):
     # We want this to run on every scene load.
@@ -479,6 +580,7 @@ classes = [
     BSP_ASSET_push_task_layers,
     BSP_ASSET_pull,
     BSP_ASSET_publish,
+    BSP_ASSET_set_task_layer_status,
 ]
 
 
