@@ -36,7 +36,7 @@ from .vis import EnsureVisible
 from ... import util
 from . import asset_suffix
 from . import metadata
-from .metadata import ElementTreeAsset, MetadataTaskLayer, MetadataTreeAsset
+from .metadata import MetadataTaskLayer, MetadataTreeAsset
 from . import meta_util
 
 logger = logging.getLogger("BSP")
@@ -250,8 +250,8 @@ class AssetBuilder:
 
                 # If metafile does not exist yet create it.
                 if not metadata_path.exists():
-                    tree = self._create_asset_meta_tree()
-                    metadata.write_tree_to_file(metadata_path, tree)
+                    tree = self._create_asset_metadata_tree()
+                    metadata.write_asset_metadata_tree_to_file(metadata_path, tree)
                     logger.info("Created metadata file: %s", metadata_path.name)
                     del tree
 
@@ -308,8 +308,7 @@ class AssetBuilder:
         context.scene.bsp_asset.asset_collection = merge_triplet.target_coll
 
         # Save updated metadata.
-        tree = ElementTreeAsset.from_metadata_cls(meta_asset_tree)
-        metadata.write_tree_to_file(metadata_path, tree)
+        metadata.write_asset_metadata_tree_to_file(metadata_path, meta_asset_tree)
 
     def _create_first_version(self) -> None:
         target = AssetPublish(self._build_context.asset_dir.get_first_publish_path())
@@ -317,13 +316,15 @@ class AssetBuilder:
         data_blocks = set((asset_coll,))
 
         # Create asset meta tree.
-        asset_tree = self._create_asset_meta_tree()
+        asset_metadata_tree = self._create_asset_metadata_tree()
 
         # Create directory if not exist.
         target.path.parent.mkdir(parents=True, exist_ok=True)
 
         # Save asset tree.
-        metadata.write_tree_to_file(target.metadata_path, asset_tree)
+        metadata.write_asset_metadata_tree_to_file(
+            target.metadata_path, asset_metadata_tree
+        )
 
         # Check if already exists.
         if target.path.exists():
@@ -342,7 +343,7 @@ class AssetBuilder:
         logger.info("Created first asset version: %s", target.path.as_posix())
         return
 
-    def _create_asset_meta_tree(self) -> ElementTreeAsset:
+    def _create_asset_metadata_tree(self) -> MetadataTreeAsset:
         # Create asset meta tree.
         meta_asset = (
             self.build_context.asset_context.asset_collection.bsp_asset.gen_metadata_class()
@@ -356,4 +357,4 @@ class AssetBuilder:
         meta_tree_asset = MetadataTreeAsset(
             meta_asset=meta_asset, meta_task_layers=meta_task_layers
         )
-        return ElementTreeAsset.from_metadata_cls(meta_tree_asset)
+        return meta_tree_asset

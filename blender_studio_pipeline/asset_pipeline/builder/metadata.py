@@ -54,11 +54,18 @@ def prettify(element: Element) -> str:
     return pretty_str.decode()
 
 
-def write_tree_to_file(filepath: Path, tree: ElementTree) -> None:
+def write_element_tree_to_file(filepath: Path, tree: ElementTree) -> None:
     xmlstr = prettify(tree.getroot())
     with open(filepath.as_posix(), "w") as f:
         f.write(xmlstr)
     # tree.write(filepath.as_posix())
+
+
+def write_asset_metadata_tree_to_file(
+    filepath: Path, asset_metadata_tree: "MetadataTreeAsset"
+) -> None:
+    e_tree = ElementTreeAsset.from_metadata_cls(asset_metadata_tree)
+    write_element_tree_to_file(filepath, e_tree)
 
 
 def load_from_file(filepath: Path) -> ElementTree:
@@ -126,7 +133,8 @@ def convert_metadata_obj_to_elements(
 # Schemas can have nested Dataclasses. The conversion happens in ElementMetadata and can handle that.
 # Metadata Classes can also be generated from ElementClasses. This conversion is happening in the .from_element() function.
 # The idea is that the code rest of the code only works with dataclasses and adjusts their data. That results in this
-# logic.
+# logic. That means it is forbidden to import Element[] classes in the rest of the code base, the conversion from and to Dataclasses
+# is only handled in this module.
 # A: Saving Metadata to file:
 #    -> MetadataClass -> ElementClass -> XML File on Disk
 # B: Loading Metadata from file:
