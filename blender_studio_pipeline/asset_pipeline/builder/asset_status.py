@@ -22,8 +22,16 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 from enum import Enum, auto
 
+import bpy
+
 
 class AssetStatus(Enum):
-    REVIEW = auto()
-    APPROVED = auto()
-    DEPRECATED = auto()
+    REVIEW = 0
+    APPROVED = 1
+    DEPRECATED = 2
+
+
+def get_asset_status_as_bl_enum(
+    self: bpy.types.Operator, context: bpy.types.Context
+) -> List[Tuple[str, str, str]]:
+    return [(str(item.value), item.name.capitalize(), "") for item in AssetStatus]

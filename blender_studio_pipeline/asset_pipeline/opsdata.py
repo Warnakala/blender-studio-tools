@@ -75,14 +75,18 @@ def populate_asset_publishes(
 
     # Load Asset Publishes from Asset Context.
     for asset_publish in asset_context.asset_publishes:
+        metadata = asset_publish.metadata
+
         item = context.scene.bsp_asset.asset_publishes.add()
         item.name = asset_publish.path.name
         item.path_str = asset_publish.path.as_posix()
 
+        # Use name attribute.
+        item.status = metadata.meta_asset.status.name
+
         # Create a task layer item for each asset file,
         # so we can display the task layer state of each
         # asset file in the UI.
-        metadata = asset_publish.metadata
         for tl in metadata.meta_task_layers:
             item.add_task_layer_from_metaclass(tl)
 

@@ -35,6 +35,7 @@ from .ops import (
     BSP_ASSET_pull,
     BSP_ASSET_publish,
     BSP_ASSET_set_task_layer_status,
+    BSP_ASSET_set_asset_status,
 )
 from . import builder
 from . import prop_utils
@@ -271,10 +272,17 @@ class BSP_ASSET_PT_vi3d_status_manager(BSP_ASSET_main_panel, bpy.types.Panel):
 
         box = draw_affected_asset_publishes_list(self, context, disable=False)
 
+        # Task Layer Status.
         box = layout.box()
         box.label(text="Task Layer Status")
         row = box.row(align=True)
         row.operator(BSP_ASSET_set_task_layer_status.bl_idname)
+
+        # Asset Status.
+        box = layout.box()
+        box.label(text="Asset Status")
+        row = box.row(align=True)
+        row.operator(BSP_ASSET_set_asset_status.bl_idname)
 
 
 class BSP_ASSET_PT_vi3d_transfer_settings(BSP_ASSET_main_panel, bpy.types.Panel):
@@ -350,9 +358,12 @@ class BSP_UL_affected_asset_publishes(bpy.types.UIList):
             row = layout.row(align=True)
             row.alignment = "LEFT"
 
-            # Draw filename.
+            # Draw filename with status in brackets.
             base_split = row.split(factor=0.4)
-            base_split.label(text=item.path.name)
+
+            label_text = item.path.name
+            label_text += f"({item.status[:1]})".upper()
+            base_split.label(text=label_text)
 
             # Draw each task layer.
             for tl_item in item.task_layers:

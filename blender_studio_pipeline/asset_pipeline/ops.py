@@ -29,6 +29,8 @@ import blender_kitsu.cache
 
 from .. import util
 from . import builder, opsdata
+from .builder import asset_status
+from .builder.asset_status import AssetStatus
 from .asset_files import AssetPublish
 
 logger = logging.getLogger("BSP")
@@ -490,6 +492,10 @@ class BSP_ASSET_set_task_layer_status(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
+        # Exit if no status change.
+        if self.new_status == self.current_status:
+            return {"CANCELLED"}
+
         # Update locked state.
         is_locked = True if self.new_status == "locked" else False
         self.asset_publish.metadata.get_metadata_task_layer(
@@ -535,7 +541,102 @@ class BSP_ASSET_set_task_layer_status(bpy.types.Operator):
         layout.separator()
         layout.separator()
 
+        # New State.
+        row = layout.row(align=True)
+        row.prop(self, "new_status")
+
+
+class BSP_ASSET_set_asset_status(bpy.types.Operator):
+    bl_idname = "bsp_asset.set_asset_status"
+    bl_label = "Set Asset Status"
+    bl_description = "Sets the Status of a specific Asset Publish"
+
+    @staticmethod
+    def get_current_status(self: bpy.types.Operator) -> str:
+        # Get Metadata Task Layer.
+        asset_publish = opsdata.get_active_asset_publish(bpy.context)
+        return asset_publish.metadata.meta_asset.status.name.capitalize()
+
+    target: bpy.props.StringProperty(name="Target")  # type: ignore
+
+    current_status: bpy.props.StringProperty(  # type: ignore
+        name="Current Status",
+        description="Current State of selected Task Layer",
+        get=get_current_status.__func__,
+    )
+    new_status: bpy.props.EnumProperty(  # type: ignore
+        items=asset_status.get_asset_status_as_bl_enum,
+        name="New Status",
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        asset_coll = context.scene.bsp_asset.asset_collection
+        return bool(
+            util.is_file_saved()
+            and asset_coll
+            and not context.scene.bsp_asset.is_publish_in_progress
+            and builder.PROD_CONTEXT
+            and builder.ASSET_CONTEXT
+            and builder.ASSET_CONTEXT.asset_publishes
+        )
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        # Get selected asset publish.
+        self.asset_publish = opsdata.get_active_asset_publish(context)
+
+        # Update target attribute.
+        self.target = self.asset_publish.path.name
+
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        status = AssetStatus(int(self.new_status))
+
+        # Current status is in in int, convert new status to it so
+        # we can compare.
+        # Exit if no status change.
+        if status.name == self.current_status.upper():
+            return {"CANCELLED"}
+
+        # Update Assset Status.
+        self.asset_publish.metadata.meta_asset.status = status
+
+        # Write metadata to file.
+        self.asset_publish.write_metadata()
+
+        # Log.
+        logger.info(f"Set {self.asset_publish.path.name} Asset Status: {status.name}")
+
+        # Reset attributes.
+        del self.asset_publish
+
+        # Reload asset publishes.
+        builder.ASSET_CONTEXT.reload_asset_publishes_metadata()
+        opsdata.populate_asset_publishes(context, builder.ASSET_CONTEXT)
+
+        # Redraw UI.
+        util.redraw_ui()
+
+        return {"FINISHED"}
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+
+        # Target.
+        row = layout.row(align=True)
+        row.prop(self, "target")
+        row.enabled = False
+
         # Current State.
+        row = layout.row(align=True)
+        row.prop(self, "current_status")
+
+        layout.separator()
+        layout.separator()
+
+        # New State.
         row = layout.row(align=True)
         row.prop(self, "new_status")
 
@@ -581,6 +682,7 @@ classes = [
     BSP_ASSET_pull,
     BSP_ASSET_publish,
     BSP_ASSET_set_task_layer_status,
+    BSP_ASSET_set_asset_status,
 ]
 
 

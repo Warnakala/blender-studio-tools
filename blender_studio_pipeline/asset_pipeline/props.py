@@ -23,6 +23,7 @@ from pathlib import Path
 
 import bpy
 
+from . import constants
 from . import builder
 from .builder.metadata import MetadataAsset, MetadataTaskLayer
 
@@ -44,7 +45,7 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     entity_id: bpy.props.StringProperty(name="Asset ID")  # type: ignore
 
     version: bpy.props.StringProperty(name="Asset Version")  # type: ignore
-    status: bpy.props.StringProperty(name="Asset Version")  # type: ignore
+    status: bpy.props.StringProperty(name="Asset Status", default=constants.DEFAULT_ASSET_STATUS)  # type: ignore
     project_id: bpy.props.StringProperty(name="Project ID")  # type: ignore
 
     rig: bpy.props.PointerProperty(type=bpy.types.Armature, name="Rig")  # type: ignore
@@ -124,7 +125,9 @@ class BSP_asset_file(bpy.types.PropertyGroup):
     path_str: bpy.props.StringProperty(  # type: ignore
         name="Path",
     )
-    task_layers: bpy.props.CollectionProperty(type=BSP_task_layer)
+    task_layers: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
+
+    status: bpy.props.StringProperty(name="Status")  # type: ignore
 
     @property
     def path(self) -> Optional[Path]:

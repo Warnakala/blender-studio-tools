@@ -79,21 +79,42 @@ def load_asset_metadata_tree_from_file(filepath: Path) -> "MetadataTreeAsset":
 
 
 def convert_value_for_xml(value: Any) -> Any:
+    """
+    Takes as input a value and converts it so it can
+    be saved by to the xml format.
+    """
     if type(value) == bool:
         return str(value).lower()
-    # TODO: Is this a good idea?
-    if type(value) == list:
+
+    # TODO: XML does not support Lists, add some functionality to handle the conversion
+    # of lists in Metadata classes to elements.
+    elif type(value) == list:
         return ""
-    if type(value) == Path:
+
+    elif type(value) == Path:
         return value.as_posix()
+
+    elif type(value) == AssetStatus:
+        # If value is AssetStatus(Enum)
+        # save the name as str instead of value(int), so its
+        # more human readable
+        return value.name
+
     return value
 
 
-def convert_value_from_xml(value: Any) -> Any:
+def convert_value_from_xml(element: Element) -> Any:
+    """
+    Takes as input an element and converts the element.text
+    to a value that works for the MetadataClasses.
+    """
+    value = element.text
     if value == "false":
         return False
     elif value == "true":
         return True
+    elif element.tag == "status":
+        return getattr(AssetStatus, value)
     return value
 
 
@@ -160,7 +181,7 @@ class MetadataClass:
         # e.G the 'id' attribute of author and overwrite it.
         # cannot use e.iter().
         for sub_e in element.findall("./"):
-            d[sub_e.tag] = convert_value_from_xml(sub_e.text)
+            d[sub_e.tag] = convert_value_from_xml(sub_e)
         return cls.from_dict(d)
 
 
@@ -204,7 +225,7 @@ class MetadataTaskLayer(MetadataClass):
         for sub_e in element.findall("./"):
             if sub_e.tag == "author":
                 continue
-            d[sub_e.tag] = convert_value_from_xml(sub_e.text)
+            d[sub_e.tag] = convert_value_from_xml(sub_e)
 
         # Convert Author element to MetadataUser.
         author = element.find(".author")
@@ -226,7 +247,7 @@ class MetadataAsset(MetadataClass):
     name: str
     project_id: str
     version: str
-    # status: AssetStatus
+    status: AssetStatus
 
     # Optional.
     flags: List[str] = field(default_factory=list)
@@ -269,15 +290,14 @@ class MetadataTreeAsset(MetadataClass):
 class ElementMetadata(Element):
     _tag: str = ""
 
-    def __init__(self, element: Optional[Union[Element, ElementTree]] = None) -> None:
+    def __init__(self, element: Optional[Element] = None) -> None:
         super().__init__(self._tag)
+        # If we initialize with an element, we basically want to
+        # copy the content of the element in to an instance of type
+        # ElementMetadata to benefit from additional functions.
         if element:
             for child in element:
                 self.append(child)
-            # super().__init__(element)
-
-            # TODO it seems like it does not matter wheter we pass a tree here,
-            # we loose the children elements.
 
     @classmethod
     def from_metadata_cls(cls, meta_class: M) -> E:
