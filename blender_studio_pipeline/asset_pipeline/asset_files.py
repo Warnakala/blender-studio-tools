@@ -47,7 +47,8 @@ class AssetFile:
         self._metadata_path = (
             asset_path.parent / f"{asset_path.stem}{constants.METADATA_EXT}"
         )
-        self._metadata: MetadataTreeAsset = None
+        self._metadata: Optional[MetadataTreeAsset] = None
+        self._load_metadata()
 
     @property
     def path(self) -> Path:
@@ -65,6 +66,10 @@ class AssetFile:
         metadata.write_asset_metadata_tree_to_file(self.metadata_path, self.metadata)
 
     def reload_metadata(self) -> None:
+        if not self.metadata_path.exists():
+            raise FailedToLoadMetadata(
+                f"Metadata file does not exist: {self.metadata_path.as_posix()}"
+            )
         self._load_metadata()
 
     @property
@@ -75,10 +80,16 @@ class AssetFile:
         return self._path.name
 
     def _load_metadata(self) -> None:
+        # Make AssetPublish initializeable even tough
+        # metadata file does not exist.
+        # Its handy to use this class for in the 'future'
+        # existing files, to query paths etc.
         if not self.metadata_path.exists():
-            raise FailedToLoadMetadata(
+            logger.info(
                 f"Metadata file does not exist: {self.metadata_path.as_posix()}"
             )
+            return
+
         self._metadata = metadata.load_asset_metadata_tree_from_file(self.metadata_path)
 
 
@@ -87,17 +98,11 @@ class AssetTask(AssetFile):
     Represents a working file.
     """
 
-    # TODO: overwrite init to load metadata etc.
-
 
 class AssetPublish(AssetFile):
     """
     Represents a publish file.
     """
-
-    def __init__(self, asset_path: Path):
-        super().__init__(asset_path)
-        self._load_metadata()
 
     def get_version(self, format: type = str) -> Optional[Union[str, int]]:
         return get_file_version(self.path, format=format)
