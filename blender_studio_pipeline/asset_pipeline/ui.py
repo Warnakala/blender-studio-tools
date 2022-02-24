@@ -102,6 +102,35 @@ def draw_affected_asset_publishes_list(
     return box
 
 
+def draw_task_layer_lock_plans_on_new_publish(
+    self: bpy.types.Panel,
+    context: bpy.types.Context,
+    disable: bool = False,
+) -> bpy.types.UILayout:
+    layout: bpy.types.UILayout = self.layout
+
+    box = layout.box()
+    row = box.row(align=True)
+    row.label(text="Locked Task Layers")
+
+    # Ui-list.
+    row = box.row()
+    row.template_list(
+        "BSP_UL_task_layer_lock_plans",
+        "task_layer_lock_plans",
+        context.scene.bsp_asset,
+        "task_layer_lock_plans",
+        context.scene.bsp_asset,
+        "task_layer_lock_plans_index",
+        rows=constants.DEFAULT_ROWS,
+        type="DEFAULT",
+    )
+    if disable:
+        row.enabled = False
+
+    return box
+
+
 class BSP_ASSET_main_panel:
     bl_category = "Asset Pipeline"
     bl_label = "Asset Pipeline"
@@ -181,8 +210,13 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
             # Draw abort button.
             layout.row().operator(BSP_ASSET_abort_publish.bl_idname)
 
+            # If new publish, draw task layer lock list.
+            if len(context.scene.bsp_asset.task_layer_lock_plans.items()) > 0:
+                draw_task_layer_lock_plans_on_new_publish(self, context)
+
             # Draw affected publishes list.
             box = draw_affected_asset_publishes_list(self, context)
+
             # Draw push task layers operator inside of box.
             row = box.row()
             row.operator(BSP_ASSET_push_task_layers.bl_idname)
@@ -381,6 +415,38 @@ class BSP_UL_affected_asset_publishes(bpy.types.UIList):
             layout.label(text=item.path.name)
 
 
+class BSP_UL_task_layer_lock_plans(bpy.types.UIList):
+    def draw_item(
+        self, context, layout, data, item, icon, active_data, active_propname, index
+    ):
+        layout: bpy.types.UILayout = layout
+
+        if self.layout_type in {"DEFAULT", "COMPACT"}:
+
+            # Di split for filename spacing.
+            row = layout.row(align=True)
+            row.alignment = "LEFT"
+
+            # Draw filename with status in brackets.
+            base_split = row.split(factor=0.4)
+
+            label_text = item.path.name
+            base_split.label(text=label_text)
+
+            # Draw each task layer.
+            for tl_item in item.task_layers:
+
+                # Get locked state.
+                icon = "LOCKED"
+
+                # Draw label that represents task layer with locked state as icon.
+                base_split.label(text=f"{tl_item.task_layer_id[:2]}".upper(), icon=icon)
+
+        elif self.layout_type in {"GRID"}:
+            layout.alignment = "CENTER"
+            layout.label(text=item.path.name)
+
+
 # ----------------REGISTER--------------.
 
 classes = [
@@ -393,6 +459,7 @@ classes = [
     BSP_ASSET_PT_vi3d_task_layers,
     BSP_ASSET_PT_vi3d_status_manager,
     BSP_ASSET_PT_vi3d_transfer_settings,
+    BSP_UL_task_layer_lock_plans,
 ]
 
 

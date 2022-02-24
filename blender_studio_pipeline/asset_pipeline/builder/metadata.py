@@ -290,6 +290,9 @@ class MetadataTreeAsset(MetadataClass):
     def get_locked_task_layer_ids(self) -> List[str]:
         return [tl.id for tl in self.meta_task_layers if tl.is_locked]
 
+    def get_task_layer_ids(self) -> List[str]:
+        return [tl.id for tl in self.meta_task_layers]
+
 
 # ELEMENT CLASSES
 # ----------------------------------------------

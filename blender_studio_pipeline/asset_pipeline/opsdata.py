@@ -26,6 +26,8 @@ from pathlib import Path
 import bpy
 
 from .builder.context import AssetContext, BuildContext
+from .builder.task_layer import TaskLayer
+from .builder.lock_plan import TaskLayerLockPlan
 from . import builder
 from .asset_files import AssetPublish
 
@@ -124,6 +126,10 @@ def clear_task_layers(context: bpy.types.Context) -> None:
     context.scene.bsp_asset.task_layers.clear()
 
 
+def clear_task_layer_lock_plans(context: bpy.types.Context) -> None:
+    context.scene.bsp_asset.task_layer_lock_plans.clear()
+
+
 def clear_asset_publishes(context: bpy.types.Context) -> None:
     context.scene.bsp_asset.asset_publishes.clear()
 
@@ -140,3 +146,70 @@ def get_task_layers_for_bl_enum(
     if not builder.ASSET_CONTEXT:
         return []
     return builder.ASSET_CONTEXT.task_layer_assembly.get_task_layers_for_bl_enum()
+
+
+def get_task_layer_lock_plans(asset_context: AssetContext) -> List[TaskLayerLockPlan]:
+
+    """
+    This function should be called when you want to know which task layers of which asset publishes
+    need to be locked after creating a new asset publish with a selection of task layers.
+    This information will be returned in the form of a List of TaskLayerLockPlan classes.
+    """
+
+    task_layer_lock_plans: List[TaskLayerLockPlan] = []
+    task_layers_to_push = asset_context.task_layer_assembly.get_used_task_layers()
+
+    for asset_publish in asset_context.asset_publishes[:-1]:
+
+        task_layers_to_lock: List[TaskLayer] = []
+
+        for task_layer in task_layers_to_push:
+
+            # This is an interesting case, that means the task layer is not even in the assset publish
+            # metadata file. Could happen if there was a new production task layer added midway production.
+            if task_layer.get_id() not in asset_publish.metadata.get_task_layer_ids():
+                # TODO: How to handle this case?
+                logger.warning(
+                    "TaskLayer: %s does not exist in %s. Maybe added during production?",
+                    task_layer.get_id(),
+                    asset_publish.metadata_path.name,
+                )
+                continue
+
+            # Task Layer is already locked.
+            if (
+                task_layer.get_id()
+                in asset_publish.metadata.get_locked_task_layer_ids()
+            ):
+                continue
+
+            # Otherwise this Task Layer should be locked.
+            task_layers_to_lock.append(task_layer)
+
+        # If task layers need to be locked
+        # Store that in TaskLayerLockPlan.
+        if task_layers_to_lock:
+            task_layer_lock_plans.append(
+                TaskLayerLockPlan(asset_publish, task_layers_to_lock)
+            )
+
+    return task_layer_lock_plans
+
+
+def populate_context_with_lock_plans(
+    context: bpy.types.Context, lock_plan_list: List[TaskLayerLockPlan]
+) -> None:
+
+    context.scene.bsp_asset.task_layer_lock_plans.clear()
+
+    # Add asset publishes.
+    for lock_plan in lock_plan_list:
+        item = context.scene.bsp_asset.task_layer_lock_plans.add()
+        item.path_str = lock_plan.asset_publish.path.as_posix()
+
+        # Add task layers to lock for that asset publish.
+        for tl_to_lock in lock_plan.task_layers_to_lock:
+            tl_item = item.task_layers.add()
+            tl_item.name = tl_to_lock.get_id()
+            tl_item.task_layer_id = tl_to_lock.get_id()
+            tl_item.task_layer_name = tl_to_lock.name

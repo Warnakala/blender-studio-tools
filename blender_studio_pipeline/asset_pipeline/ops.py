@@ -250,16 +250,38 @@ class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
         # Update the asset publishes again.
         builder.ASSET_CONTEXT.reload_asset_publishes()
 
-        # Make sure that the blender property group gets updated as well.
-        opsdata.populate_asset_publishes_by_asset_context(
-            context, builder.ASSET_CONTEXT
-        )
+        # Get task layers that need be locked resulting of the creation of the new
+        # asset publish with the currently enabled task layers.
+        lock_plans = opsdata.get_task_layer_lock_plans(builder.ASSET_CONTEXT)
+        opsdata.populate_context_with_lock_plans(context, lock_plans)
+
+        # Lock task layers.
+        for task_layer_lock_plan in lock_plans:
+            task_layer_lock_plan.lock()
+            logger.info(
+                "TaskLayers locked(%s): %s",
+                task_layer_lock_plan.asset_publish.path.name,
+                ",".join(task_layer_lock_plan.get_task_layer_ids_to_lock()),
+            )
+
+        # TODO: Create Undo Step for metadata adjustment.
 
         # Create Build Context.
         builder.BUILD_CONTEXT = builder.BuildContext(
             builder.PROD_CONTEXT, builder.ASSET_CONTEXT
         )
         print(builder.BUILD_CONTEXT)
+
+        # Make sure that the blender property group gets updated as well.
+        # Note: By Build context as we only want to show the relevant
+        # asset publishes.
+        opsdata.populate_asset_publishes_by_build_context(
+            context, builder.BUILD_CONTEXT
+        )
+
+        # TODO: something seems to go wrong here, the latest asset version
+        # shows up twice in asset publishes list... mhhh
+        # maybe we should make 2 lists. one AssetContext and one BuildContext
 
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = True
@@ -298,6 +320,8 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
 
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = False
+
+        opsdata.clear_task_layer_lock_plans(context)
 
         # Redraw UI.
         util.redraw_ui()
@@ -342,8 +366,11 @@ class BSP_ASSET_push_task_layers(bpy.types.Operator):
             bpy.ops.bsp_asset.abort_publish()
             return {"CANCELLED"}
 
-        # Publish
+        # Publish.
         builder.ASSET_BUILDER.push()
+
+        # TODO: Add undo step for metadata adjustment
+        # and task layer push to make it undoable on abort.
 
         # Update properties.
         context.scene.bsp_asset.are_task_layers_pushed = True

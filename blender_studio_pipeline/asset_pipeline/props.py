@@ -161,6 +161,24 @@ class BSP_undo_context(bpy.types.PropertyGroup):
         self.files_created.clear()
 
 
+class BSP_task_layer_lock_plan(bpy.types.PropertyGroup):
+
+    """
+    Property Group that can represent a minimal version of a TaskLayerLockPlan.
+    """
+
+    path_str: bpy.props.StringProperty(  # type: ignore
+        name="Path",
+    )
+    task_layers: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
+
+    @property
+    def path(self) -> Optional[Path]:
+        if not self.path_str:
+            return None
+        return Path(self.path_str)
+
+
 class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
     """
     Scene Properties for Asset Pipeline
@@ -189,8 +207,11 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
 
     task_layers_index: bpy.props.IntProperty(name="Task Layers Index", min=0)  # type: ignore
     asset_publishes_index: bpy.props.IntProperty(name="Asset Publishes Index", min=0)  # type: ignore
+    task_layer_lock_plans_index: bpy.props.IntProperty(name="Task Layer Lock Plans Index", min=0)  # type: ignore
 
     undo_context: bpy.props.PointerProperty(type=BSP_undo_context)  # type: ignore
+
+    task_layer_lock_plans: bpy.props.CollectionProperty(type=BSP_task_layer_lock_plan)  # type: ignore
 
 
 def get_asset_publish_source_path(context: bpy.types.Context) -> str:
@@ -223,6 +244,7 @@ classes = [
     BSP_asset_file,
     BSP_undo_context,
     BSP_ASSET_asset_collection,
+    BSP_task_layer_lock_plan,
     BSP_ASSET_scene_properties,
     BSP_ASSET_tmp_properties,
 ]
