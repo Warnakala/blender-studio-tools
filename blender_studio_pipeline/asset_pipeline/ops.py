@@ -151,7 +151,7 @@ class BSP_ASSET_initial_publish(bpy.types.Operator):
         context.scene.bsp_asset.is_publish_in_progress = False
 
         # Update Asset Context publish files.
-        builder.ASSET_CONTEXT.update_asset_publishes()
+        builder.ASSET_CONTEXT.reload_asset_publishes()
 
         # Redraw UI.
         util.redraw_ui()
@@ -182,7 +182,7 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         builder.ASSET_CONTEXT.update_from_bl_context(context)
 
         # Update the asset publishes again.
-        builder.ASSET_CONTEXT.update_asset_publishes()
+        builder.ASSET_CONTEXT.reload_asset_publishes()
 
         # Create Build Context.
         builder.BUILD_CONTEXT = builder.BuildContext(
@@ -244,8 +244,11 @@ class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
         # Copy latest asset publish and increment.
         asset_publish = builder.ASSET_CONTEXT.asset_dir.increment_latest_publish()
 
+        # Add file create step of new asset publish.
+        builder.UNDO_CONTEXT.add_step_publish_create(context, asset_publish)
+
         # Update the asset publishes again.
-        builder.ASSET_CONTEXT.update_asset_publishes()
+        builder.ASSET_CONTEXT.reload_asset_publishes()
 
         # Make sure that the blender property group gets updated as well.
         opsdata.populate_asset_publishes_by_asset_context(
@@ -278,8 +281,12 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
-        # Update properties.
-        context.scene.bsp_asset.is_publish_in_progress = False
+        # Undo.
+        # This will undo all steps that were done between start publish and the call of this function.
+        builder.UNDO_CONTEXT.undo(context)
+
+        # Update Asset context after undo.
+        builder.ASSET_CONTEXT.reload_asset_publishes()
 
         # Reset asset publishes to global list.
         opsdata.populate_asset_publishes_by_asset_context(
@@ -288,6 +295,9 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
 
         # Uninitialize Build Context.
         builder.BUILD_CONTEXT = None
+
+        # Update properties.
+        context.scene.bsp_asset.is_publish_in_progress = False
 
         # Redraw UI.
         util.redraw_ui()
@@ -691,6 +701,12 @@ class BSP_ASSET_set_asset_status(bpy.types.Operator):
 
 
 @persistent
+def create_undo_context(_):
+    builder.UNDO_CONTEXT = builder.UndoContext()
+    builder.UNDO_CONTEXT.update_from_bl_context(bpy.context)
+
+
+@persistent
 def create_asset_context(_):
     # We want this to run on every scene load.
     # As active assets might change after scene load.
@@ -742,11 +758,13 @@ def register() -> None:
     # Handlers.
     bpy.app.handlers.load_post.append(create_prod_context)
     bpy.app.handlers.load_post.append(create_asset_context)
+    bpy.app.handlers.load_post.append(create_undo_context)
 
 
 def unregister() -> None:
 
     # Handlers.
+    bpy.app.handlers.load_post.remove(create_undo_context)
     bpy.app.handlers.load_post.remove(create_asset_context)
     bpy.app.handlers.load_post.remove(create_prod_context)
 

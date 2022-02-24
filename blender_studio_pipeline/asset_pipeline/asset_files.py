@@ -107,6 +107,13 @@ class AssetPublish(AssetFile):
     def get_version(self, format: type = str) -> Optional[Union[str, int]]:
         return get_file_version(self.path, format=format)
 
+    def unlink(self) -> None:
+        """
+        Caution: This will delete the file and the metadata file of this asset publish on disk.
+        """
+        self.metadata_path.unlink()
+        self.path.unlink()
+
 
 class AssetDir:
     def __init__(self, path: Path):
@@ -167,7 +174,8 @@ class AssetDir:
         new_version = f"v{(latest_publish.get_version(format=int)+1):03}"
 
         # Duplicate blend and metadata file.
-        for path in [latest_publish.path, latest_publish.metadata_path]:
+        # Have metadata_path first so new_path is the one with .blend.
+        for path in [latest_publish.metadata_path, latest_publish.path]:
             new_name = path.name.replace(latest_publish.get_version(), new_version)
             new_path = latest_publish.path.parent / new_name
 

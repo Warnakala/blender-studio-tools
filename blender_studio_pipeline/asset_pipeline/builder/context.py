@@ -335,7 +335,7 @@ class AssetContext:
         self._update_task_layer_assembly_from_context(bl_context)
         self._update_transfer_settings_from_context(bl_context)
 
-    def update_asset_publishes(self) -> None:
+    def reload_asset_publishes(self) -> None:
         self._collect_asset_publishes()
 
     def reload_asset_publishes_metadata(self) -> None:
@@ -500,3 +500,55 @@ class BuildContext:
                 footer,
             ]
         )
+
+
+class UndoContext:
+    """
+    This should be a context that we can populate along the way of starting a publish and actually publishing.
+    The idea is that we can add 'undo' steps that we can then undo() if users aborts the publish.
+    The point of it is to mainly be able to revert the filesystem and other things that happen between starting
+    the publish and aborting it.
+    These steps will also be mirrored on the scene Property group so you can actually start a publish
+    open another scene and still abort it and it will undo the correct things.
+    """
+
+    def __init__(self):
+        self._asset_publishes: List[AssetPublish] = []
+
+    def add_step_publish_create(
+        self, bl_context: bpy.types.Context, asset_publish: AssetPublish
+    ) -> None:
+        # Add to self context.
+        self._asset_publishes.append(asset_publish)
+
+        # Add to scene, to restore on load.
+        bl_context.scene.bsp_asset.undo_context.add_step_asset_publish_create(
+            asset_publish
+        )
+
+        logger.debug("Created file creation undo step: %s", asset_publish.path.name)
+
+    def undo(self, bl_context: bpy.types.Context) -> None:
+
+        # Delete files.
+        for asset_publish in self._asset_publishes:
+            if asset_publish.path.exists():
+                logger.info(
+                    "Undoing file creation. Delete: [%s, %s]",
+                    asset_publish.path.name,
+                    asset_publish.metadata_path.name,
+                )
+                asset_publish.unlink()
+
+        # Clear self steps.
+        self._asset_publishes.clear()
+
+        # Clear scene.
+        bl_context.scene.bsp_asset.undo_context.clear()
+
+    def update_from_bl_context(self, bl_context: bpy.types.Context) -> None:
+
+        self._asset_publishes.clear()
+
+        for item in bl_context.scene.bsp_asset.undo_context.files_created:
+            self._asset_publishes.append(AssetPublish(item.path))

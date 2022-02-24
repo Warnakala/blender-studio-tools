@@ -26,6 +26,7 @@ import bpy
 from . import constants
 from . import builder
 from .builder.metadata import MetadataAsset, MetadataTaskLayer
+from .asset_files import AssetPublish
 
 
 class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
@@ -146,6 +147,20 @@ class BSP_asset_file(bpy.types.PropertyGroup):
         item.is_locked = metadata_task_layer.is_locked
 
 
+class BSP_undo_context(bpy.types.PropertyGroup):
+
+    """ """
+
+    files_created: bpy.props.CollectionProperty(type=BSP_asset_file)  # type: ignore
+
+    def add_step_asset_publish_create(self, asset_publish: AssetPublish) -> None:
+        item = self.files_created.add()
+        item.path_str = asset_publish.path.as_posix()
+
+    def clear(self):
+        self.files_created.clear()
+
+
 class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
     """
     Scene Properties for Asset Pipeline
@@ -174,6 +189,8 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
 
     task_layers_index: bpy.props.IntProperty(name="Task Layers Index", min=0)  # type: ignore
     asset_publishes_index: bpy.props.IntProperty(name="Asset Publishes Index", min=0)  # type: ignore
+
+    undo_context: bpy.props.PointerProperty(type=BSP_undo_context)  # type: ignore
 
 
 def get_asset_publish_source_path(context: bpy.types.Context) -> str:
@@ -204,6 +221,7 @@ class BSP_ASSET_tmp_properties(bpy.types.PropertyGroup):
 classes = [
     BSP_task_layer,
     BSP_asset_file,
+    BSP_undo_context,
     BSP_ASSET_asset_collection,
     BSP_ASSET_scene_properties,
     BSP_ASSET_tmp_properties,

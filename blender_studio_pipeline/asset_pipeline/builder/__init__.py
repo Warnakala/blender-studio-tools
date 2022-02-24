@@ -18,7 +18,7 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 from typing import List, Dict, Union, Any, Set, Optional
-from .context import ProductionContext, AssetContext, BuildContext
+from .context import ProductionContext, AssetContext, BuildContext, UndoContext
 from .asset_builder import AssetBuilder
 
 # Initialize building variables.
@@ -26,3 +26,4 @@ PROD_CONTEXT: Optional[ProductionContext] = None
 ASSET_CONTEXT: Optional[AssetContext] = None
 BUILD_CONTEXT: Optional[BuildContext] = None
 ASSET_BUILDER: Optional[AssetBuilder] = None
+UNDO_CONTEXT: Optional[UndoContext] = None
