@@ -25,7 +25,7 @@ from pathlib import Path
 
 import bpy
 
-from .builder.context import AssetContext
+from .builder.context import AssetContext, BuildContext
 from . import builder
 from .asset_files import AssetPublish
 
@@ -66,29 +66,58 @@ def populate_task_layers(
             task_layer_config.use = tmp_backup[key]["use"]
 
 
-def populate_asset_publishes(
+def add_asset_publish_to_context(
+    context: bpy.types.Context, asset_publish: AssetPublish
+) -> None:
+    metadata = asset_publish.metadata
+
+    item = context.scene.bsp_asset.asset_publishes.add()
+    item.name = asset_publish.path.name
+    item.path_str = asset_publish.path.as_posix()
+
+    # Use name attribute.
+    item.status = metadata.meta_asset.status.name
+
+    # Create a task layer item for each asset file,
+    # so we can display the task layer state of each
+    # asset file in the UI.
+    for tl in metadata.meta_task_layers:
+        item.add_task_layer_from_metaclass(tl)
+
+
+def populate_asset_publishes_by_asset_context(
     context: bpy.types.Context, asset_context: AssetContext
 ) -> None:
+
+    """
+    This populates the context with asset publishes based on the asset context.
+    Meaning it will take all found asset publishes (asset_context.asset_publishes).
+    """
 
     # Clear asset_publishes collection property.
     clear_asset_publishes(context)
 
     # Load Asset Publishes from Asset Context.
     for asset_publish in asset_context.asset_publishes:
-        metadata = asset_publish.metadata
+        add_asset_publish_to_context(context, asset_publish)
 
-        item = context.scene.bsp_asset.asset_publishes.add()
-        item.name = asset_publish.path.name
-        item.path_str = asset_publish.path.as_posix()
 
-        # Use name attribute.
-        item.status = metadata.meta_asset.status.name
+def populate_asset_publishes_by_build_context(
+    context: bpy.types.Context, build_context: BuildContext
+) -> None:
+    """
+    This populates the context with asset publishes based on the build context.
+    Meaning it will only take the asset publishes it will find in
+    build_context.process_pairs.
+    """
 
-        # Create a task layer item for each asset file,
-        # so we can display the task layer state of each
-        # asset file in the UI.
-        for tl in metadata.meta_task_layers:
-            item.add_task_layer_from_metaclass(tl)
+    # Clear asset_publishes collection property.
+    clear_asset_publishes(context)
+
+    # Load Asset Publishes from Asset Context.
+    for process_pair in build_context.process_pairs:
+        asset_publish = process_pair.asset_publish
+        add_asset_publish_to_context(context, asset_publish)
 
 
 def clear_task_layers(context: bpy.types.Context) -> None:

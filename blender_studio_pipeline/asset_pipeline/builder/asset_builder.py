@@ -216,6 +216,19 @@ class AssetBuilder:
                 )
                 meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
 
+                # Skip Task Layer if locked.
+                # We have to do this check here because Users can push multiple Task Layer at
+                # the same time. Amongst the selected TaskLayers there could be some locked and some live
+                # in this asset publish.
+                locked_task_layer_ids = (
+                    asset_publish.metadata.get_locked_task_layer_ids()
+                )
+                if task_layer.get_id() in locked_task_layer_ids:
+                    logger.warning(
+                        f"TaskLayer: {task_layer.get_id()} is locked in: {asset_publish.path.name}. Skip."
+                    )
+                    continue
+
                 # Transfer selected task layers from AssetTask Coll -> Target Coll.
                 if task_layer in used_task_layers:
                     logger.info(

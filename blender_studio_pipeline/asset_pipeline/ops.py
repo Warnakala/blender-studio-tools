@@ -184,12 +184,27 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         # Update the asset publishes again.
         builder.ASSET_CONTEXT.update_asset_publishes()
 
-        # Make sure that the blender property group gets updated as well.
-        opsdata.populate_asset_publishes(context, builder.ASSET_CONTEXT)
-
         # Create Build Context.
         builder.BUILD_CONTEXT = builder.BuildContext(
             builder.PROD_CONTEXT, builder.ASSET_CONTEXT
+        )
+
+        # That means that the selected TaskLayers were locked in all versions.
+        if not builder.BUILD_CONTEXT.process_pairs:
+            enabled_tl_ids = [
+                tl.get_id()
+                for tl in builder.BUILD_CONTEXT.asset_context.task_layer_assembly.get_used_task_layers()
+            ]
+            self.report(
+                {"WARNING"},
+                f"Task Layers: {','.join(enabled_tl_ids)} are locked in all asset publishes.",
+            )
+            builder.BUILD_CONTEXT = None
+            return {"CANCELLED"}
+
+        # Make sure that the blender property group gets updated as well.
+        opsdata.populate_asset_publishes_by_build_context(
+            context, builder.BUILD_CONTEXT
         )
 
         # Update properties.
@@ -233,7 +248,9 @@ class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
         builder.ASSET_CONTEXT.update_asset_publishes()
 
         # Make sure that the blender property group gets updated as well.
-        opsdata.populate_asset_publishes(context, builder.ASSET_CONTEXT)
+        opsdata.populate_asset_publishes_by_asset_context(
+            context, builder.ASSET_CONTEXT
+        )
 
         # Create Build Context.
         builder.BUILD_CONTEXT = builder.BuildContext(
@@ -264,6 +281,11 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = False
 
+        # Reset asset publishes to global list.
+        opsdata.populate_asset_publishes_by_asset_context(
+            context, builder.ASSET_CONTEXT
+        )
+
         # Uninitialize Build Context.
         builder.BUILD_CONTEXT = None
 
@@ -293,6 +315,22 @@ class BSP_ASSET_push_task_layers(bpy.types.Operator):
 
         # Create Asset Builder.
         builder.ASSET_BUILDER = builder.AssetBuilder(builder.BUILD_CONTEXT)
+
+        # That means that the selected TaskLayers were locked in all versions.
+        # This code shouldn't be running if all previous logic goes well.
+        # Just in case Users might change metadata manually, lets leave it here.
+        if not builder.BUILD_CONTEXT.process_pairs:
+            enabled_tl_ids = [
+                tl.get_id()
+                for tl in builder.BUILD_CONTEXT.asset_context.task_layer_assembly.get_used_task_layers()
+            ]
+            self.report(
+                {"WARNING"},
+                f"Task Layers: {','.join(enabled_tl_ids)} are locked in all asset publishes.",
+            )
+            # Abort the publish.
+            bpy.ops.bsp_asset.abort_publish()
+            return {"CANCELLED"}
 
         # Publish
         builder.ASSET_BUILDER.push()
@@ -367,6 +405,11 @@ class BSP_ASSET_publish(bpy.types.Operator):
 
         # Commit to SVN.
 
+        # Reset asset publishes to global list.
+        opsdata.populate_asset_publishes_by_asset_context(
+            context, builder.ASSET_CONTEXT
+        )
+
         # Uninitialize Build Context.
         builder.BUILD_CONTEXT = None
 
@@ -431,7 +474,9 @@ class BSP_ASSET_create_asset_context(bpy.types.Operator):
         opsdata.populate_task_layers(context, builder.ASSET_CONTEXT)
 
         # Populate collection property with found asset publishes.
-        opsdata.populate_asset_publishes(context, builder.ASSET_CONTEXT)
+        opsdata.populate_asset_publishes_by_asset_context(
+            context, builder.ASSET_CONTEXT
+        )
 
         # Update Asset Context from bl context again, as populate
         # task layers tries to restore previous task layer selection states.
@@ -515,7 +560,9 @@ class BSP_ASSET_set_task_layer_status(bpy.types.Operator):
 
         # Reload asset publishes.
         builder.ASSET_CONTEXT.reload_asset_publishes_metadata()
-        opsdata.populate_asset_publishes(context, builder.ASSET_CONTEXT)
+        opsdata.populate_asset_publishes_by_asset_context(
+            context, builder.ASSET_CONTEXT
+        )
 
         # Redraw UI.
         util.redraw_ui()
@@ -614,7 +661,9 @@ class BSP_ASSET_set_asset_status(bpy.types.Operator):
 
         # Reload asset publishes.
         builder.ASSET_CONTEXT.reload_asset_publishes_metadata()
-        opsdata.populate_asset_publishes(context, builder.ASSET_CONTEXT)
+        opsdata.populate_asset_publishes_by_asset_context(
+            context, builder.ASSET_CONTEXT
+        )
 
         # Redraw UI.
         util.redraw_ui()

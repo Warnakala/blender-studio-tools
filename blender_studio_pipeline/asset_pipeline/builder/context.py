@@ -438,16 +438,26 @@ class BuildContext:
     def _collect_process_pairs(self) -> None:
         # Here we want to loop through all asset publishes and
         # create a list of process pairs out of it.
-        # TODO: This is the place where we perform the logic of checking
+        # This is the place where we perform the logic of checking
         # which task layers the user selected in self._asset_context.task_layer_assembly
         # and then reading the metadata of each asset publish and check where the corresponding
         # task layers are live.
         # The result of this is a list of process pairs(target, pull_from) that
         # the AssetBuilder needs to process
         tl_assembly = self._asset_context.task_layer_assembly
+        task_layers_enabled = tl_assembly.get_used_task_layers()
+
         for asset_publish in self.asset_publishes:
-            # TMP: for testing we will use all asset publishes.
-            self._process_pairs.append(ProcessPair(self.asset_task, asset_publish))
+
+            # For this asset publish get all locked task layers IDs.
+            locked_task_layer_ids = asset_publish.metadata.get_locked_task_layer_ids()
+
+            # Check if there is any enabled Task Layer ID that is not in the locked IDs.
+            for tl in task_layers_enabled:
+                if tl.get_id() not in locked_task_layer_ids:
+                    self._process_pairs.append(
+                        ProcessPair(self.asset_task, asset_publish)
+                    )
 
     @property
     def prod_context(self) -> ProductionContext:
