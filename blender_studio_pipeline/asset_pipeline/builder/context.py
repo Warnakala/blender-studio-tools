@@ -64,6 +64,18 @@ class ProcessPair:
         self.asset_task = asset_task
         self.asset_publish = asset_publish
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ProcessPair):
+            raise NotImplementedError()
+
+        return bool(
+            self.asset_task == other.asset_task
+            and self.asset_publish == other.asset_publish
+        )
+
+    def __hash__(self) -> int:
+        return hash((self.asset_task, self.asset_publish))
+
 
 class ProductionContext:
 
@@ -289,7 +301,9 @@ class AssetContext:
         self._task_layer_assembly = TaskLayerAssembly(prod_context._task_layers)
         self._asset_dir = AssetDir(Path(bpy.data.filepath).parent)
         self._asset_task = AssetTask(Path(bpy.data.filepath))
-        self._asset_publishes: List[AssetPublish] = []
+        self._asset_publishes: List[
+            AssetPublish
+        ] = []  # TODO: could convert in to  set.
 
         # Transfer settings are stored in a PropertyGroup on scene level.
         # We cannot pickle those. So what we do is write them in a dictionary here
@@ -431,7 +445,7 @@ class BuildContext:
 
         self._prod_context: ProductionContext = prod_context
         self._asset_context: AssetContext = asset_context
-        self._process_pairs: List[ProcessPair] = []
+        self._process_pairs: Set[ProcessPair] = set()
 
         self._collect_process_pairs()
 
@@ -444,6 +458,8 @@ class BuildContext:
         # task layers are live.
         # The result of this is a list of process pairs(target, pull_from) that
         # the AssetBuilder needs to process
+        self._process_pairs.clear()
+
         tl_assembly = self._asset_context.task_layer_assembly
         task_layers_enabled = tl_assembly.get_used_task_layers()
 
@@ -455,9 +471,7 @@ class BuildContext:
             # Check if there is any enabled Task Layer ID that is not in the locked IDs.
             for tl in task_layers_enabled:
                 if tl.get_id() not in locked_task_layer_ids:
-                    self._process_pairs.append(
-                        ProcessPair(self.asset_task, asset_publish)
-                    )
+                    self._process_pairs.add(ProcessPair(self.asset_task, asset_publish))
 
     @property
     def prod_context(self) -> ProductionContext:
@@ -480,7 +494,7 @@ class BuildContext:
         return self.asset_context.asset_publishes
 
     @property
-    def process_pairs(self) -> List[ProcessPair]:
+    def process_pairs(self) -> Set[ProcessPair]:
         return self._process_pairs
 
     def __repr__(self) -> str:

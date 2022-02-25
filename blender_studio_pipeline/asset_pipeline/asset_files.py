@@ -92,6 +92,15 @@ class AssetFile:
 
         self._metadata = metadata.load_asset_metadata_tree_from_file(self.metadata_path)
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, AssetFile):
+            raise NotImplementedError()
+
+        return bool(self.path == other.path)
+
+    def __hash__(self) -> int:
+        return hash(self.path)
+
 
 class AssetTask(AssetFile):
     """
