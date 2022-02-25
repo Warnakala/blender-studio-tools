@@ -152,6 +152,9 @@ class BSP_ASSET_initial_publish(bpy.types.Operator):
 
         # Update Asset Context publish files.
         builder.ASSET_CONTEXT.reload_asset_publishes()
+        opsdata.populate_asset_publishes_by_asset_context(
+            context, builder.ASSET_CONTEXT
+        )
 
         # Redraw UI.
         util.redraw_ui()
