@@ -433,14 +433,23 @@ class BSP_UL_task_layer_lock_plans(bpy.types.UIList):
             label_text = item.path.name
             base_split.label(text=label_text)
 
-            # Draw each task layer.
-            for tl_item in item.task_layers:
+            for tl_item in context.scene.bsp_asset.task_layers:
 
-                # Get locked state.
-                icon = "LOCKED"
+                # Draw label for each task layer to align spacing.
+                if tl_item.task_layer_id in [
+                    tl.task_layer_id for tl in item.task_layers
+                ]:
+                    # Get locked state.
+                    icon = "LOCKED"
 
-                # Draw label that represents task layer with locked state as icon.
-                base_split.label(text=f"{tl_item.task_layer_id[:2]}".upper(), icon=icon)
+                    # Draw label that represents task layer with locked state as icon.
+                    base_split.label(
+                        text=f"{tl_item.task_layer_id[:2]}".upper(), icon=icon
+                    )
+                # If task layer was not locked just draw empty string but still draw it for
+                # alignment.
+                else:
+                    base_split.label(text=f"  ")
 
         elif self.layout_type in {"GRID"}:
             layout.alignment = "CENTER"
