@@ -138,17 +138,11 @@ class BSP_ASSET_initial_publish(bpy.types.Operator):
             builder.PROD_CONTEXT, builder.ASSET_CONTEXT
         )
 
-        # Update properties.
-        context.scene.bsp_asset.is_publish_in_progress = True
-
         # Create Asset Builder.
         builder.ASSET_BUILDER = builder.AssetBuilder(builder.BUILD_CONTEXT)
 
         # Publish
         builder.ASSET_BUILDER.push()
-
-        # Update properties
-        context.scene.bsp_asset.is_publish_in_progress = False
 
         # Update Asset Context publish files.
         builder.ASSET_CONTEXT.reload_asset_publishes()
@@ -449,6 +443,7 @@ class BSP_ASSET_publish(bpy.types.Operator):
         opsdata.populate_asset_publishes_by_asset_context(
             context, builder.ASSET_CONTEXT
         )
+        opsdata.clear_task_layer_lock_plans(context)
 
         # Uninitialize Build Context.
         builder.BUILD_CONTEXT = None
