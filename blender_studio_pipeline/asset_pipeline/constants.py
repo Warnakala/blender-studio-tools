@@ -28,3 +28,4 @@ TRANSFER_SETTINGS_NAME = "TransferSettings"
 DEFAULT_ROWS = 3
 TIME_FORMAT = r"%Y-%m-%dT%H:%M:%S"
 DEFAULT_ASSET_STATUS = "REVIEW"
+HOOK_ATTR_NAME = "_asset_builder_rules"

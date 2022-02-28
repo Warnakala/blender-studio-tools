@@ -21,7 +21,7 @@ import importlib
 import logging
 
 from typing import List, Dict, Union, Any, Set, Optional
-from types import ModuleType
+from types import ModuleType, FunctionType
 
 from pathlib import Path
 
@@ -31,6 +31,7 @@ from ..sys_utils import SystemPathInclude
 from .task_layer import TaskLayer, TaskLayerAssembly
 from .. import asset_files, constants, prop_utils
 from ..asset_files import AssetDir, AssetPublish, AssetTask
+from .hook import Hooks
 
 logger = logging.getLogger("BSP")
 
@@ -95,6 +96,8 @@ class ProductionContext:
         self._transfer_settings: Optional[type[bpy.types.PropertyGroup]] = None
         self._config_folder: Path = config_folder
         self._module_of_task_layers: Optional[ModuleType] = None
+        self._module_of_hooks: Optional[ModuleType] = None
+        self._hooks = Hooks()
 
         # Load configs from config_folder.
         self._collect_configs()
@@ -139,8 +142,13 @@ class ProductionContext:
 
                 self._module_of_task_layers = prod_task_layers
 
+            import hooks
+
+            self._module_of_hooks = hooks
+
             # Crawl module for TaskLayers.
             self._collect_prod_task_layers()
+            self._collect_prod_hooks()
             self._collect_prod_transfer_settings()
 
     def _collect_prod_task_layers(self) -> None:
@@ -187,7 +195,33 @@ class ProductionContext:
         # Sort TaskLayers after order attribute.
         self._task_layers.sort(key=lambda tl: tl.order)
 
-        logger.info(f"Detected Production TaskLayers: {self._task_layers}")
+        if self.task_layers:
+            logger.info(f"Detected Production TaskLayers: {self.task_layers}")
+
+    def _collect_prod_hooks(self) -> None:
+
+        module = self._module_of_hooks
+        self._hooks = Hooks()
+
+        for module_item_str in dir(module):
+            module_item = getattr(module, module_item_str)
+            # Skip non functions.
+            if not isinstance(module_item, FunctionType):
+                continue
+            # Skip functions of other modules.
+            if module_item.__module__ != module.__name__:
+                continue
+            # @hook() decorator adds this attribute which make a hook
+            # distinguishable from a regular function.
+            # Note: @hook() needs to be called otherwise this check
+            # will fail.
+            if not hasattr(module_item, constants.HOOK_ATTR_NAME):
+                continue
+
+            self._hooks.register(module_item)
+
+        if self._hooks:
+            logger.info(f"Detected Production Hooks: {self._hooks.callables}")
 
     def _collect_prod_transfer_settings(self) -> None:
         """
@@ -242,6 +276,10 @@ class ProductionContext:
                         f"Invalid Task Layer {str(tl)} has some 'order' as {str(tl_comp)}.",
                     )
 
+    @property
+    def hooks(self) -> Hooks:
+        return self._hooks
+
     def __repr__(self) -> str:
         header = "\nPRODUCTION CONTEXT\n------------------------------------"
         footer = "------------------------------------"
@@ -259,6 +297,7 @@ class ProductionContext:
         # Pickle cannot store module objects.
         state = self.__dict__.copy()
         state["_module_of_task_layers"] = None
+        state["_module_of_hooks"] = None
         return state
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
@@ -271,8 +310,10 @@ class ProductionContext:
         # Restore module object.
         with SystemPathInclude([self.config_folder]):
             import task_layers as prod_task_layers
+            import hooks
 
             self._module_of_task_layers = prod_task_layers
+            self._module_of_hooks = hooks
 
 
 class AssetContext:
@@ -345,6 +386,7 @@ class AssetContext:
         return self._transfer_settings
 
     def update_from_bl_context(self, bl_context: bpy.types.Context) -> None:
+        self._bl_context = bl_context
         self._asset_collection = bl_context.scene.bsp_asset.asset_collection
         self._update_task_layer_assembly_from_context(bl_context)
         self._update_transfer_settings_from_context(bl_context)
@@ -514,6 +556,14 @@ class BuildContext:
                 footer,
             ]
         )
+
+    def get_hook_kwargs(self) -> Dict[str, Any]:
+        return {
+            "asset_collection": self.asset_context.asset_collection,
+            "context": bpy.context,
+            "asset_task": self.asset_task,
+            "asset_dir": self.asset_context.asset_dir,
+        }
 
 
 class UndoContext:

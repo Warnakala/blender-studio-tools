@@ -59,12 +59,15 @@ class BSP_ASSET_init_asset_collection(bpy.types.Operator):
 
         # Get active asset.
         asset = blender_kitsu.cache.asset_active_get()
+        asset_type = blender_kitsu.cache.asset_type_active_get()
 
         # Set Asset Collection attributes.
         asset_coll.bsp_asset.is_asset = True
         asset_coll.bsp_asset.entity_id = asset.id
         asset_coll.bsp_asset.entity_name = asset.name
         asset_coll.bsp_asset.project_id = asset.project_id
+        asset_coll.bsp_asset.entity_parent_id = asset_type.id
+        asset_coll.bsp_asset.entity_parent_name = asset_type.name
 
         # Clear tmp asset coll again.
         context.scene.bsp_asset.tmp_asset_collection = None
@@ -207,7 +210,7 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = True
 
-        print(builder.BUILD_CONTEXT)
+        # print(builder.BUILD_CONTEXT)
 
         # Redraw UI.
         util.redraw_ui()
@@ -267,7 +270,7 @@ class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
         builder.BUILD_CONTEXT = builder.BuildContext(
             builder.PROD_CONTEXT, builder.ASSET_CONTEXT
         )
-        print(builder.BUILD_CONTEXT)
+        # print(builder.BUILD_CONTEXT)
 
         # Make sure that the blender property group gets updated as well.
         # Note: By Build context as we only want to show the relevant
@@ -477,7 +480,7 @@ class BSP_ASSET_create_prod_context(bpy.types.Operator):
         config_folder = Path(addon_prefs.prod_config_dir)
         builder.PROD_CONTEXT = builder.ProductionContext(config_folder)
 
-        print(builder.PROD_CONTEXT)
+        # print(builder.PROD_CONTEXT)
 
         # When we run this operator to update the production context
         # We also want the asset context to be updated.
@@ -517,7 +520,7 @@ class BSP_ASSET_create_asset_context(bpy.types.Operator):
         # task layers tries to restore previous task layer selection states.
         builder.ASSET_CONTEXT.update_from_bl_context(context)
 
-        print(builder.ASSET_CONTEXT)
+        # print(builder.ASSET_CONTEXT)
         return {"FINISHED"}
 
 

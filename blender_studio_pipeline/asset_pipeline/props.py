@@ -42,6 +42,8 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
 
     # We use entity_ prefix as blender uses .id as built in attribute already, which
     # might be confusing.
+    entity_parent_id: bpy.props.StringProperty(name="Asset Type ID")  # type: ignore
+    entity_parent_name: bpy.props.StringProperty(name="Asset Type")  # type: ignore
     entity_name: bpy.props.StringProperty(name="Asset Name")  # type: ignore
     entity_id: bpy.props.StringProperty(name="Asset ID")  # type: ignore
 

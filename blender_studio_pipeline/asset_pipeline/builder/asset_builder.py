@@ -20,7 +20,7 @@
 import pickle
 import logging
 
-from typing import List, Dict, Union, Any, Set, Optional, Tuple
+from typing import List, Dict, Union, Any, Set, Optional, Tuple, Callable
 from pathlib import Path
 from datetime import datetime
 
@@ -38,6 +38,7 @@ from . import asset_suffix
 from . import metadata
 from .metadata import MetadataTaskLayer, MetadataTreeAsset
 from . import meta_util
+from .hook import HookFunction
 
 logger = logging.getLogger("BSP")
 
@@ -322,6 +323,65 @@ class AssetBuilder:
 
         # Save updated metadata.
         metadata.write_asset_metadata_tree_to_file(metadata_path, meta_asset_tree)
+
+        # Run hook phase.
+        self._run_hooks(context)
+
+    def _run_hooks(self, context: bpy.types.Context) -> None:
+
+        if not self.build_context.prod_context.hooks:
+            logger.info("No hooks to run")
+            return
+
+        asset_coll = context.scene.bsp_asset.asset_collection
+        asset_data = asset_coll.bsp_asset
+        params = self.build_context.get_hook_kwargs()
+        hooks_to_run: Set[HookFunction] = set()
+
+        # Collect global hooks first.
+        for hook in self.build_context.prod_context.hooks.filter():
+            hooks_to_run.add(hook)
+
+        # Collect asset type hooks.
+        for hook in self.build_context.prod_context.hooks.filter(
+            match_asset_type=asset_data.entity_parent_name,
+        ):
+            hooks_to_run.add(hook)
+
+        # Collect Global Layer Hooks.
+        # We have to loop through each task layer here, can't give filter() function
+        # a list as one of the input parameters.
+        for (
+            task_layer_id
+        ) in (
+            self.build_context.asset_context.task_layer_assembly.get_used_task_layer_ids()
+        ):
+            for hook in self.build_context.prod_context.hooks.filter(
+                match_task_layers=task_layer_id,
+            ):
+                hooks_to_run.add(hook)
+
+        # Collect asset hooks.
+        for hook in self.build_context.prod_context.hooks.filter(
+            match_asset=asset_data.entity_name,
+        ):
+            hooks_to_run.add(hook)
+
+        # Collect asset + task layer specific hooks.
+        for (
+            task_layer_id
+        ) in (
+            self.build_context.asset_context.task_layer_assembly.get_used_task_layer_ids()
+        ):
+            for hook in self.build_context.prod_context.hooks.filter(
+                match_asset=asset_data.entity_name,
+                match_task_layers=task_layer_id,
+            ):
+                hooks_to_run.add(hook)
+
+        # Run actual hooks.
+        for hook in hooks_to_run:
+            hook(**params)
 
     def _create_first_version(self) -> None:
         target = AssetPublish(self._build_context.asset_dir.get_first_publish_path())
