@@ -25,4 +25,4 @@ import bpy
 
 from blender_kitsu.logger import LoggerFactory
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()

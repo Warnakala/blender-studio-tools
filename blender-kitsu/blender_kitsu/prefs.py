@@ -40,7 +40,7 @@ from blender_kitsu.auth.ops import (
 from blender_kitsu.context.ops import KITSU_OT_con_productions_load
 from blender_kitsu.lookdev.prefs import LOOKDEV_preferences
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 class KITSU_task(bpy.types.PropertyGroup):

@@ -21,6 +21,7 @@
 import logging
 from typing import List, Tuple
 
+
 class LoggerFactory:
 
     """
@@ -28,7 +29,7 @@ class LoggerFactory:
     """
 
     @staticmethod
-    def getLogger(name=__name__):
+    def getLogger(name="blender-kitsu"):
         name = name
         logger = logging.getLogger(name)
         return logger
@@ -51,7 +52,7 @@ class LoggerLevelManager:
 
                 log.setLevel(logging.CRITICAL)
 
-        #set root logger level
+        # Set root logger level.
         logging.getLogger().setLevel(logging.INFO)
         logger.info("Configured logging Levels")
 

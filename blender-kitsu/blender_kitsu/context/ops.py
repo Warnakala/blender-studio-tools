@@ -27,7 +27,7 @@ from blender_kitsu import bkglobals, cache, util, prefs
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.types import TaskType, AssetType
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 class KITSU_OT_con_productions_load(bpy.types.Operator):

@@ -27,7 +27,7 @@ import bpy
 from blender_kitsu.models import FileListModel
 from blender_kitsu.logger import LoggerFactory
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 RD_PRESET_FILE_MODEL = FileListModel()
 _rd_preset_enum_list: List[Tuple[str, str, str]] = []

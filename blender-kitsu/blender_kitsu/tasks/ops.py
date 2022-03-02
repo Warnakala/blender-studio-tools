@@ -28,7 +28,7 @@ from blender_kitsu import cache, prefs, gazu, util
 from blender_kitsu.tasks import opsdata
 from blender_kitsu.logger import LoggerFactory
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 class KITSU_OT_tasks_user_laod(bpy.types.Operator):

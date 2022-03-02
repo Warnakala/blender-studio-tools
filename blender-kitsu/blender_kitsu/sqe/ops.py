@@ -38,7 +38,7 @@ from blender_kitsu.types import (
     TaskType,
 )
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 class KITSU_OT_sqe_push_shot_meta(bpy.types.Operator):

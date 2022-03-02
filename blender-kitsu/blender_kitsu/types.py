@@ -66,7 +66,7 @@ class Session:
 
     def end(self) -> bool:
         if not self._data.login:
-            logger.info("Failed to log out. Session not started yet")
+            logger.debug("Failed to log out. Session not started yet")
             return False
 
         self._data = SessionData(gazu.log_out())  # returns empty dict
@@ -76,7 +76,7 @@ class Session:
 
     def _is_host_up(self) -> bool:
         if gazu.client.host_is_up():
-            logger.info("Host is up and running at: %s", self.host)
+            logger.debug("Host is up and running at: %s", self.host)
             return True
         else:
             logger.error("Failed to reach host at: %s", self.host)
@@ -1163,5 +1163,5 @@ class Person(Entity):
 class Cache:
     @classmethod
     def clear_all(cls):
-        logger.info("Cleared Server Cache")
+        logger.debug("Cleared Server Cache")
         return gazu.cache.clear_all()

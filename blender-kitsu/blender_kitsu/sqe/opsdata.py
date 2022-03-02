@@ -27,7 +27,7 @@ import bpy
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.types import Sequence, Task, TaskStatus, Shot, TaskType
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 _sqe_shot_enum_list: List[Tuple[str, str, str]] = []
 _sqe_not_linked: List[Tuple[str, str, str]] = []

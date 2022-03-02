@@ -40,7 +40,7 @@ from blender_kitsu.types import (
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.gazu.exception import RouteNotFoundException
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 # CACHE VARIABLES
 # used to cache active entitys to prevent a new api request when read only
@@ -91,14 +91,14 @@ def project_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None
 
     _project_active = Project.by_id(entity_id)
     _addon_prefs_get(context).project_active_id = entity_id
-    logger.info("Set active project to %s", _project_active.name)
+    logger.debug("Set active project to %s", _project_active.name)
 
 
 def project_active_reset(context: bpy.types.Context) -> None:
     global _project_active
     _project_active = Project()
     _addon_prefs_get(context).project_active_id = ""
-    logger.info("Reset active project")
+    logger.debug("Reset active project")
 
 
 def sequence_active_get() -> Sequence:
@@ -110,7 +110,7 @@ def sequence_active_set_by_id(context: bpy.types.Context, entity_id: str) -> Non
 
     _sequence_active = Sequence.by_id(entity_id)
     context.scene.kitsu.sequence_active_id = entity_id
-    logger.info("Set active sequence to %s", _sequence_active.name)
+    logger.debug("Set active sequence to %s", _sequence_active.name)
 
 
 def sequence_active_reset(context: bpy.types.Context) -> None:
@@ -118,7 +118,7 @@ def sequence_active_reset(context: bpy.types.Context) -> None:
 
     _sequence_active = Sequence()
     context.scene.kitsu.sequence_active_id = ""
-    logger.info("Reset active sequence")
+    logger.debug("Reset active sequence")
 
 
 def shot_active_get() -> Shot:
@@ -140,7 +140,7 @@ def shot_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
 
     _shot_active = Shot.by_id(entity_id)
     context.scene.kitsu.shot_active_id = entity_id
-    logger.info("Set active shot to %s", _shot_active.name)
+    logger.debug("Set active shot to %s", _shot_active.name)
 
 
 def shot_active_reset(context: bpy.types.Context) -> None:
@@ -148,7 +148,7 @@ def shot_active_reset(context: bpy.types.Context) -> None:
 
     _shot_active = Shot()
     context.scene.kitsu.shot_active_id = ""
-    logger.info("Reset active shot")
+    logger.debug("Reset active shot")
 
 
 def asset_active_get() -> Asset:
@@ -162,7 +162,7 @@ def asset_active_set_by_id(context: bpy.types.Context, entity_id: str) -> None:
 
     _asset_active = Asset.by_id(entity_id)
     context.scene.kitsu.asset_active_id = entity_id
-    logger.info("Set active asset to %s", _asset_active.name)
+    logger.debug("Set active asset to %s", _asset_active.name)
 
 
 def asset_active_reset(context: bpy.types.Context) -> None:
@@ -170,7 +170,7 @@ def asset_active_reset(context: bpy.types.Context) -> None:
 
     _asset_active = Asset()
     context.scene.kitsu.asset_active_id = ""
-    logger.info("Reset active asset")
+    logger.debug("Reset active asset")
 
 
 def asset_type_active_get() -> AssetType:
@@ -184,7 +184,7 @@ def asset_type_active_set_by_id(context: bpy.types.Context, entity_id: str) -> N
 
     _asset_type_active = AssetType.by_id(entity_id)
     context.scene.kitsu.asset_type_active_id = entity_id
-    logger.info("Set active asset type to %s", _asset_type_active.name)
+    logger.debug("Set active asset type to %s", _asset_type_active.name)
 
 
 def asset_type_active_reset(context: bpy.types.Context) -> None:
@@ -192,7 +192,7 @@ def asset_type_active_reset(context: bpy.types.Context) -> None:
 
     _asset_type_active = AssetType()
     context.scene.kitsu.asset_type_active_id = ""
-    logger.info("Reset active asset type")
+    logger.debug("Reset active asset type")
 
 
 def task_type_active_get() -> TaskType:
@@ -206,7 +206,7 @@ def task_type_active_set_by_id(context: bpy.types.Context, entity_id: str) -> No
 
     _task_type_active = TaskType.by_id(entity_id)
     context.scene.kitsu.task_type_active_id = entity_id
-    logger.info("Set active task type to %s", _task_type_active.name)
+    logger.debug("Set active task type to %s", _task_type_active.name)
 
 
 def task_type_active_reset(context: bpy.types.Context) -> None:
@@ -214,7 +214,7 @@ def task_type_active_reset(context: bpy.types.Context) -> None:
 
     _task_type_active = TaskType()
     context.scene.kitsu.task_type_active_id = ""
-    logger.info("Reset active task type")
+    logger.debug("Reset active task type")
 
 
 def get_projects_enum_list(
@@ -366,7 +366,7 @@ def load_user_all_tasks(context: bpy.types.Context) -> List[Task]:
 
     _update_tasks_collection_prop(context)
 
-    logger.info("Loaded assigned tasks for: %s", _user_active.full_name)
+    logger.debug("Loaded assigned tasks for: %s", _user_active.full_name)
 
     return _user_all_tasks
 
@@ -421,7 +421,7 @@ def _init_cache_entity(
     if entity_id:
         try:
             globals()[cache_variable_name] = entity_type.by_id(entity_id)
-            logger.info(
+            logger.debug(
                 "Initiated active %s cache to: %s",
                 cache_name,
                 globals()[cache_variable_name].name,
@@ -441,20 +441,20 @@ def init_startup_variables(context: bpy.types.Context) -> None:
     global _user_all_tasks
 
     if not addon_prefs.session.is_auth():
-        logger.info("Skip initiating startup cache. Session not authorized")
+        logger.debug("Skip initiating startup cache. Session not authorized")
         return
 
     if _cache_startup_initialized:
-        logger.info("Startup Cache already initiated")
+        logger.debug("Startup Cache already initiated")
         return
 
     # User.
     _user_active = User()
-    logger.info("Initiated active user cache to: %s", _user_active.full_name)
+    logger.debug("Initiated active user cache to: %s", _user_active.full_name)
 
     # User Tasks.
     load_user_all_tasks(context)
-    logger.info("Initiated active user tasks")
+    logger.debug("Initiated active user tasks")
 
     _cache_startup_initialized = True
 
@@ -465,11 +465,11 @@ def clear_startup_variables():
     global _cache_startup_initialized
 
     _user_active = User()
-    logger.info("Cleared active user cache")
+    logger.debug("Cleared active user cache")
 
     _user_all_tasks.clear()
     _update_tasks_collection_prop(bpy.context)
-    logger.info("Cleared active user all tasks cache")
+    logger.debug("Cleared active user all tasks cache")
 
     _cache_startup_initialized = False
 
@@ -485,11 +485,11 @@ def init_cache_variables() -> None:
     addon_prefs = _addon_prefs_get(bpy.context)
 
     if not addon_prefs.session.is_auth():
-        logger.info("Skip initiating cache. Session not authorized")
+        logger.debug("Skip initiating cache. Session not authorized")
         return
 
     if _cache_initialized:
-        logger.info("Cache already initiated")
+        logger.debug("Cache already initiated")
         return
 
     project_active_id = addon_prefs.project_active_id
@@ -521,25 +521,25 @@ def clear_cache_variables():
     global _cache_initialized
 
     _user_active = User()
-    logger.info("Cleared active user cache")
+    logger.debug("Cleared active user cache")
 
     _shot_active = Shot()
-    logger.info("Cleared active shot cache")
+    logger.debug("Cleared active shot cache")
 
     _asset_active = Asset()
-    logger.info("Cleared active asset cache")
+    logger.debug("Cleared active asset cache")
 
     _sequence_active = Sequence()
-    logger.info("Cleared active aequence cache")
+    logger.debug("Cleared active aequence cache")
 
     _asset_type_active = AssetType()
-    logger.info("Cleared active asset type cache")
+    logger.debug("Cleared active asset type cache")
 
     _project_active = Project()
-    logger.info("Cleared active project cache")
+    logger.debug("Cleared active project cache")
 
     _task_type_active = TaskType()
-    logger.info("Cleared active task type cache")
+    logger.debug("Cleared active task type cache")
 
     _cache_initialized = False
 

@@ -29,7 +29,7 @@ import bpy
 from blender_kitsu.logger import LoggerFactory
 
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 class KITSU_OT_open_path(bpy.types.Operator):

@@ -51,7 +51,7 @@ from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_clear_update_indicators,
 )
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 def get_selshots_noun(nr_of_shots: int, prefix: str = "Active") -> str:

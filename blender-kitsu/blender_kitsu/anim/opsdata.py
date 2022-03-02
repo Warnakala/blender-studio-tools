@@ -29,7 +29,7 @@ from blender_kitsu.models import FileListModel
 from blender_kitsu.types import Shot
 from blender_kitsu.logger import LoggerFactory
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 PLAYBLAST_FILE_MODEL = FileListModel()
 _playblast_enum_list: List[Tuple[str, str, str]] = []

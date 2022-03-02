@@ -27,7 +27,7 @@ from bpy.app.handlers import persistent
 from blender_kitsu import propsdata, bkglobals
 from blender_kitsu.logger import LoggerFactory
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 class KITSU_sequence_colors(bpy.types.PropertyGroup):

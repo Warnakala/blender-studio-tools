@@ -25,7 +25,7 @@ import bpy
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.sqe import checkstrip
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 def _is_range_in(range1: range, range2: range) -> bool:

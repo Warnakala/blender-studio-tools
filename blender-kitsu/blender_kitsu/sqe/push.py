@@ -26,7 +26,7 @@ from blender_kitsu import bkglobals
 from blender_kitsu.types import Sequence, Project, Shot
 from blender_kitsu.logger import LoggerFactory
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 def shot_meta(strip: bpy.types.Sequence, shot: Shot) -> None:

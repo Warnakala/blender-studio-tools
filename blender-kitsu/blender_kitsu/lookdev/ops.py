@@ -30,7 +30,7 @@ from blender_kitsu.logger import LoggerFactory
 from blender_kitsu import prefs, util
 from blender_kitsu.lookdev import opsdata
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 class KITSU_OT_lookdev_set_preset(bpy.types.Operator):

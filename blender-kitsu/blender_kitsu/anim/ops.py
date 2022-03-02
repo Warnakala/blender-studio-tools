@@ -42,7 +42,7 @@ from blender_kitsu.types import (
 from blender_kitsu.anim import opsdata
 from bpy.types import Scene
 
-logger = LoggerFactory.getLogger(name=__name__)
+logger = LoggerFactory.getLogger()
 
 
 class KITSU_OT_anim_create_playblast(bpy.types.Operator):
@@ -859,11 +859,12 @@ def save_pre_handler_clean_overrides(dummy: Any) -> None:
         props = override.properties
         for prop in props[:]:
             rna_path = prop.rna_path
-            if rna_path in ['active_material_index', 'active_material']:
+            if rna_path in ["active_material_index", "active_material"]:
                 props.remove(prop)
                 linked_value = getattr(override.reference, rna_path)
                 setattr(o, rna_path, linked_value)
                 o.property_unset(rna_path)
+
 
 # ---------REGISTER ----------.
 
