@@ -29,6 +29,7 @@ import bpy
 from . import constants
 from .builder import metadata
 from .builder.metadata import MetadataTreeAsset
+from .builder.asset_status import AssetStatus
 
 logger = logging.getLogger("BSP")
 
@@ -196,7 +197,22 @@ class AssetDir:
             shutil.copy(path, new_path)
             logger.info(f"Copied: {path.name} to: {new_path.name}")
 
-        return AssetPublish(new_path)
+        new_publish = AssetPublish(new_path)
+
+        # Update metadata.
+        new_publish.metadata.meta_asset.version = new_version
+
+        # Set new status to review.
+        new_publish.metadata.meta_asset.status = AssetStatus.REVIEW.name
+
+        # Set all task layers of new version to live.
+        for meta_tl in new_publish.metadata.meta_task_layers:
+            meta_tl.is_locked = False
+
+        # Write metadata to disk.
+        new_publish.write_metadata()
+
+        return new_publish
 
     def get_first_publish_path(self) -> Path:
         filename = f"{self.asset_disk_name}.v001.blend"

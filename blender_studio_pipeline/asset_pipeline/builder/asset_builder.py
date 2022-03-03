@@ -422,37 +422,42 @@ class AssetBuilder:
             hook(**params)
 
     def _create_first_version(self) -> AssetPublish:
-        target = AssetPublish(self._build_context.asset_dir.get_first_publish_path())
+        first_publish = AssetPublish(
+            self._build_context.asset_dir.get_first_publish_path()
+        )
         asset_coll = self._build_context.asset_context.asset_collection
         data_blocks = set((asset_coll,))
 
         # Check if already exists.
-        if target.path.exists():
+        if first_publish.path.exists():
             raise AssetBuilderFailedToPublish(
-                f"Failed to create first publish. Already exist: {target.path.name}"
+                f"Failed to create first publish. Already exist: {first_publish.path.name}"
             )
 
         # Create asset meta tree.
         asset_metadata_tree = self._create_asset_metadata_tree_from_collection()
 
+        # Adjust version metadata.
+        asset_metadata_tree.meta_asset.version = first_publish.get_version()
+
         # Create directory if not exist.
-        target.path.parent.mkdir(parents=True, exist_ok=True)
+        first_publish.path.parent.mkdir(parents=True, exist_ok=True)
 
         # Save asset tree.
         metadata.write_asset_metadata_tree_to_file(
-            target.metadata_path, asset_metadata_tree
+            first_publish.metadata_path, asset_metadata_tree
         )
 
         # Create blend file.
         bpy.data.libraries.write(
-            target.path.as_posix(),
+            first_publish.path.as_posix(),
             data_blocks,
             path_remap="RELATIVE_ALL",
             fake_user=True,
         )
 
-        logger.info("Created first asset version: %s", target.path.as_posix())
-        return AssetPublish(target.path)
+        logger.info("Created first asset version: %s", first_publish.path.as_posix())
+        return first_publish
 
     def _create_asset_metadata_tree_from_collection(self) -> MetadataTreeAsset:
         # Create asset meta tree.
