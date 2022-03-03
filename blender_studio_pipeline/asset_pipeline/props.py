@@ -57,7 +57,6 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     )
     version: bpy.props.StringProperty(name="Asset Version")  # type: ignore
     publish_path: bpy.props.StringProperty(name="Asset Publish")  # type: ignore
-    status: bpy.props.StringProperty(name="Asset Status", default=constants.DEFAULT_ASSET_STATUS)  # type: ignore
 
     # Other properties, useful for external scripts.
     rig: bpy.props.PointerProperty(type=bpy.types.Armature, name="Rig")  # type: ignore
@@ -88,7 +87,6 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
 
         self.is_publish = False
         self.version = ""
-        self.status = ""
         self.publish_path = ""
 
         self.rig = None
@@ -98,6 +96,8 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     def gen_metadata_class(self) -> MetadataAsset:
         # These keys represent all mandatory arguments for the data class metadata.MetaAsset
         # The idea is, to be able to construct a MetaAsst from this dict.
+        # Note: This function will most likely only be called when creating the first asset version
+        # to get some data to start with.
         keys = [
             "entity_name",
             "entity_id",
@@ -105,7 +105,6 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
             "entity_parent_name",
             "project_id",
             "version",
-            "status",
         ]
         d = {}
         for key in keys:
@@ -117,6 +116,8 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
             else:
                 d[key] = getattr(self, key)
 
+        # Set status to default asset status.
+        d["status"] = constants.DEFAULT_ASSET_STATUS
         return MetadataAsset.from_dict(d)
 
     def update_props_by_asset_publish(self, asset_publish: AssetPublish) -> None:
