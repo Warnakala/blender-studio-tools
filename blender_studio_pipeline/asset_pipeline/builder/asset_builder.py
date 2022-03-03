@@ -81,7 +81,21 @@ class AssetBuilder:
     def push(self) -> None:
         # Catch special case first version.
         if not self.build_context.asset_publishes:
-            self._create_first_version()
+            asset_publish = self._create_first_version()
+
+            # Start pickling.
+            pickle_path = asset_publish.pickle_path
+            with open(pickle_path.as_posix(), "wb") as f:
+                pickle.dump(self.build_context, f)
+            logger.info(f"Pickled to {pickle_path.as_posix()}")
+
+            # Open new blender instance, with publish script.
+            # Publish script can detect a first version publish and performs
+            # a special set of operations.
+            BuilderBlenderStarter.start_publish(
+                asset_publish.path,
+                pickle_path,
+            )
             return
 
         # Normal publish process.
@@ -121,10 +135,108 @@ class AssetBuilder:
                 pickle_path,
             )
 
-    def pull(
+    def pull_from_publish(
         self,
         context: bpy.types.Context,
-        source_type: Union[type[AssetTask], type[AssetPublish]],
+    ) -> None:
+
+        # Here we don't need to open another blender instance. We can use the current
+        # one. We pull in the asset collection from the latest asset publish and
+        # perform the required data transfers depending on what was selected.
+
+        # User does a pull. This code runs in AssetTask file.
+        # Check if there are any publishes.
+        if not self.build_context.asset_publishes:
+            raise AssetBuilderFailedToPull(f"Failed to pull. Found no asset publishes.")
+
+        # We always want to pull from latest asset publish.
+        asset_publish = self.build_context.asset_publishes[-1]
+
+        # Import Asset Collection form Asset Publish.
+        transfer_triplet: TransferCollectionTriplet = (
+            self.asset_importer.import_asset_publish()
+        )
+
+        # The target collection (base) was already decided by ASSET_IMPORTER.import_asset_task()
+        # and is saved in transfer_triplet.target_coll.
+        mapping_task_target = AssetTransferMapping(
+            transfer_triplet.task_coll, transfer_triplet.target_coll
+        )
+        mapping_publish_target = AssetTransferMapping(
+            transfer_triplet.publish_coll, transfer_triplet.target_coll
+        )
+
+        # Process only the TaskLayers that were ticked as 'use'.
+        used_task_layers = (
+            self.build_context.asset_context.task_layer_assembly.get_used_task_layers()
+        )
+        # Should be ordered, just in case.
+        prod_task_layers = self.build_context.prod_context.task_layers
+        prod_task_layers.sort(key=lambda tl: tl.order)
+
+        # Apparently Blender does not evaluate objects or collections in the depsgraph
+        # in some cases if they are not visible. Ensure visibility here.
+        transfer_triplet.ensure_vis()
+
+        # Perform Task Layer merging.
+        # Note: We always want to apply all TaskLayers except for the Task Layer with the lowest order
+        # aka 'Base Task Layer'. This Task Layer gives us the starting point on which to apply all other Task Layers
+        # on. The asset importer already handles this logic by supplying as with the right TARGET collection
+        # after import. That's why we exclude the first task layer here in the loop.
+        logger.info(f"Using {prod_task_layers[0].name} as base.")
+
+        # If metafile does not exist yet create it.
+        metadata_path = self.build_context.asset_task.metadata_path
+        if not metadata_path.exists():
+            tree = self._create_asset_metadata_tree_from_collection()
+            metadata.write_asset_metadata_tree_to_file(metadata_path, tree)
+            logger.info("Created metadata file: %s", metadata_path.name)
+            del tree
+
+        # Otherwise load it from disk.
+        meta_asset_tree = metadata.load_asset_metadata_tree_from_file(metadata_path)
+
+        # Get time for later metadata update.
+        time = datetime.now()
+
+        for task_layer in prod_task_layers[1:]:
+
+            # Get metadata task layer for current task layer.
+            meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
+
+            # Transfer selected task layers from Publish Coll -> Target Coll.
+            if task_layer in used_task_layers:
+
+                logger.info(
+                    f"Transferring {task_layer.name} from {transfer_triplet.publish_coll.name} to {transfer_triplet.target_coll.name}."
+                )
+                task_layer.transfer_data(
+                    context, mapping_publish_target, self.transfer_settings
+                )
+                # Update source meta task layer source path.
+                meta_tl.source_path = asset_publish.path.as_posix()
+                meta_tl.updated_at = time.strftime(constants.TIME_FORMAT)
+
+            # Transfer unselected task layers from Task Coll -> Target Coll. Retain them.
+            else:
+                logger.info(
+                    f"Transferring {task_layer.name} from {transfer_triplet.task_coll.name} to {transfer_triplet.target_coll.name}."
+                )
+                task_layer.transfer_data(
+                    context, mapping_task_target, self.transfer_settings
+                )
+
+                # Here we don't want to update source path, we keep it as is, as we are just 'retaining' here.
+
+        # Cleanup transfer.
+        self._clean_up_transfer(context, transfer_triplet)
+
+        # Save updated metadata.
+        metadata.write_asset_metadata_tree_to_file(metadata_path, meta_asset_tree)
+
+    def pull_from_task(
+        self,
+        context: bpy.types.Context,
     ) -> None:
 
         """
@@ -133,58 +245,35 @@ class AssetBuilder:
         the direction.
         """
 
-        # TODO: Refactor this to get rif of the if else checking depending on the source
-        # type.
+        # User does a publish/push. This code runs ins AssetPublish file.
+        # Import Asset Collection from Asset Task.
+        transfer_triplet: TransferCollectionTriplet = (
+            self.asset_importer.import_asset_task()
+        )
+        asset_publish = AssetPublish(Path(bpy.data.filepath))
+        metadata_path = asset_publish.metadata_path
+        locked_task_layer_ids = asset_publish.metadata.get_locked_task_layer_ids()
+        meta_asset_tree = metadata.load_asset_metadata_tree_from_file(metadata_path)
 
-        # Here we don't need to open another blender instance. We can use the current
-        # one. We pull in the asset collection from the latest asset publish and
-        # perform the required data transfers depending on what was selected.
-
-        if issubclass(source_type, AssetTask):
-            # Import Asset Collection form Asset Task.
-            merge_triplet: TransferCollectionTriplet = (
-                self.asset_importer.import_asset_task()
-            )
-
-        elif issubclass(source_type, AssetPublish):
-
-            # Check if there are any publishes.
-            if not self.build_context.asset_publishes:
-                raise AssetBuilderFailedToPull(
-                    f"Failed to pull. Found no asset publishes."
-                )
-
-            # Import Asset Collection form Asset Publish.
-            merge_triplet: TransferCollectionTriplet = (
-                self.asset_importer.import_asset_publish()
-            )
-
-        # Apparently Blender does not evaluate objects or collections in the depsgraph
-        # in some cases if they are not visible. This is something Users should not have to take
-        # care about when writing their transfer data instructions. So we will make sure here
-        # that everything is visible and after the transfer the original state will be restored.
-        vis_objs: List[EnsureVisible] = []
-        for coll in merge_triplet.get_collections():
-            for obj in coll.all_objects:
-                vis_objs.append(EnsureVisible(obj))
+        # Ensure visibility for depsgraph evaluation.
+        transfer_triplet.ensure_vis()
 
         # The target collection (base) was already decided by ASSET_IMPORTER.import_asset_task()
-        # and is saved in merge_triplet.target_coll.
+        # and is saved in transfer_triplet.target_coll.
         mapping_task_target = AssetTransferMapping(
-            merge_triplet.task_coll, merge_triplet.target_coll
+            transfer_triplet.task_coll, transfer_triplet.target_coll
         )
         mapping_publish_target = AssetTransferMapping(
-            merge_triplet.publish_coll, merge_triplet.target_coll
+            transfer_triplet.publish_coll, transfer_triplet.target_coll
         )
 
         # Process only the TaskLayers that were ticked as 'use'.
         used_task_layers = (
             self.build_context.asset_context.task_layer_assembly.get_used_task_layers()
         )
-
         # Should be ordered, just in case.
-        task_layers = self.build_context.prod_context.task_layers
-        task_layers.sort(key=lambda tl: tl.order)
+        prod_task_layers = self.build_context.prod_context.task_layers
+        prod_task_layers.sort(key=lambda tl: tl.order)
 
         # Perform Task Layer merging.
 
@@ -192,119 +281,74 @@ class AssetBuilder:
         # aka 'Base Task Layer'. This Task Layer gives us the starting point on which to apply all other Task Layers
         # on. The asset importer already handles this logic by supplying as with the right TARGET collection
         # after import. That's why we exclude the first task layer here in the loop.
-        logger.info(f"Using {task_layers[0].name} as base.")
+        logger.info(f"Using {prod_task_layers[0].name} as base.")
 
         # Get time for later metadata update.
         time = datetime.now()
 
-        for task_layer in task_layers[1:]:
+        for task_layer in prod_task_layers[1:]:
 
-            # Now we need to decide if we want to transfer data from
-            # the task collection to the target collection
-            # or
-            # the publish collection to the target collection
-            # This is reversed depending if we do a push or a pull.
+            # Get metadata task layer for current task layer.
+            meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
 
-            if source_type == AssetTask:
-                # If source type is AssetTask (User does a publish/push):
-                # This means this code actually runs in the publish file (as we open a new blend in the bg and call this function)
-
-                # Load metadata file.
-                asset_publish = AssetPublish(Path(bpy.data.filepath))
-                metadata_path = asset_publish.metadata_path
-                meta_asset_tree = metadata.load_asset_metadata_tree_from_file(
-                    metadata_path
+            # Transfer selected task layers from AssetTask Coll -> Target Coll.
+            # Skip any Task Layers that are locked in this AssetPublish.
+            # We have to do this check here because Users can push multiple Task Layer at
+            # the same time. Amongst the selected TaskLayers there could be some locked and some live
+            # in this asset publish.
+            if (
+                task_layer in used_task_layers
+                and task_layer.get_id() not in locked_task_layer_ids
+            ):
+                logger.info(
+                    f"Transferring {task_layer.name} from {transfer_triplet.task_coll.name} to {transfer_triplet.target_coll.name}."
                 )
-                meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
-
-                # Skip Task Layer if locked.
-                # We have to do this check here because Users can push multiple Task Layer at
-                # the same time. Amongst the selected TaskLayers there could be some locked and some live
-                # in this asset publish.
-                locked_task_layer_ids = (
-                    asset_publish.metadata.get_locked_task_layer_ids()
-                )
-                if task_layer.get_id() in locked_task_layer_ids:
-                    logger.warning(
-                        f"TaskLayer: {task_layer.get_id()} is locked in: {asset_publish.path.name}. Skip."
-                    )
-                    continue
-
-                # Transfer selected task layers from AssetTask Coll -> Target Coll.
-                if task_layer in used_task_layers:
-                    logger.info(
-                        f"Transferring {task_layer.name} from {merge_triplet.task_coll.name} to {merge_triplet.target_coll.name}."
-                    )
-                    task_layer.transfer_data(
-                        context, mapping_task_target, self.transfer_settings
-                    )
-
-                    # Update source meta task layer source path.
-                    meta_tl.source_path = self.build_context.asset_task.path.as_posix()
-                    meta_tl.updated_at = time.strftime(constants.TIME_FORMAT)
-
-                else:
-                    # Transfer unselected task layers from Publish Coll -> Target Coll.
-                    logger.info(
-                        f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
-                    )
-                    task_layer.transfer_data(
-                        context, mapping_publish_target, self.transfer_settings
-                    )
-
-                    # Here we don't want to update source path, we keep it as is, as we are just 'retaining' here.
-
-            elif source_type == AssetPublish:
-                # If source type is AssetPublish (User does a pull):
-                # This means code runs in current open Blend file (Asset Task)
-
-                # Load metadata file.
-                asset_publish = self.build_context.asset_publishes[-1]
-                metadata_path = self.build_context.asset_task.metadata_path
-
-                # If metafile does not exist yet create it.
-                if not metadata_path.exists():
-                    tree = self._create_asset_metadata_tree()
-                    metadata.write_asset_metadata_tree_to_file(metadata_path, tree)
-                    logger.info("Created metadata file: %s", metadata_path.name)
-                    del tree
-
-                # Otherwise load it from disk.
-                meta_asset_tree = metadata.load_asset_metadata_tree_from_file(
-                    metadata_path
+                task_layer.transfer_data(
+                    context, mapping_task_target, self.transfer_settings
                 )
 
-                meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
-                # Transfer selected task layers from Publish Coll -> Target Coll.
-                if task_layer in used_task_layers:
+                # Update source meta task layer source path.
+                meta_tl.source_path = self.build_context.asset_task.path.as_posix()
+                meta_tl.updated_at = time.strftime(constants.TIME_FORMAT)
 
-                    logger.info(
-                        f"Transferring {task_layer.name} from {merge_triplet.publish_coll.name} to {merge_triplet.target_coll.name}."
-                    )
-                    task_layer.transfer_data(
-                        context, mapping_publish_target, self.transfer_settings
-                    )
-                    # Update source meta task layer source path.
-                    meta_tl.source_path = asset_publish.path.as_posix()
-                    meta_tl.updated_at = time.strftime(constants.TIME_FORMAT)
+            else:
+                # Transfer unselected task layers from Publish Coll -> Target Coll. Retain them.
+                logger.info(
+                    f"Transferring {task_layer.name} from {transfer_triplet.publish_coll.name} to {transfer_triplet.target_coll.name}."
+                )
+                task_layer.transfer_data(
+                    context, mapping_publish_target, self.transfer_settings
+                )
 
-                # Transfer unselected task layers from Task Coll -> Target Coll.
-                else:
-                    logger.info(
-                        f"Transferring {task_layer.name} from {merge_triplet.task_coll.name} to {merge_triplet.target_coll.name}."
-                    )
-                    task_layer.transfer_data(
-                        context, mapping_task_target, self.transfer_settings
-                    )
+                # Here we don't want to update source path, we keep it as is, as we are just 'retaining' here.
 
-                    # Here we don't want to update source path, we keep it as is, as we are just 'retaining' here.
+        # Cleanup transfer.
+        self._clean_up_transfer(context, transfer_triplet)
 
+        # Save updated metadata.
+        metadata.write_asset_metadata_tree_to_file(metadata_path, meta_asset_tree)
+
+        # Update asset collection properties.
+        context.scene.bsp_asset.asset_collection.bsp_asset.update_props_by_asset_publish(
+            asset_publish
+        )
+
+        # Run hook phase.
+        self._run_hooks(context)
+
+    def _clean_up_transfer(
+        self, context: bpy.types.Context, transfer_triplet: TransferCollectionTriplet
+    ):
+        """
+        Cleans up the transfer by removing the non target collection in the merge triplet, restoring
+        the visibilities as well as purging all orphan data. It also removes the suffixes from the target
+        collection and sets the asset collection.
+        """
         # Restore Visibility.
-        for obj in vis_objs:
-            obj.restore()
+        transfer_triplet.restore_vis()
 
         # Remove non TARGET collections.
-        for coll in [merge_triplet.publish_coll, merge_triplet.task_coll]:
+        for coll in [transfer_triplet.publish_coll, transfer_triplet.task_coll]:
             util.del_collection(coll)
 
         # Purge orphan data.
@@ -313,19 +357,13 @@ class AssetBuilder:
         bpy.ops.outliner.orphans_purge(do_recursive=True)
 
         # Remove suffix from TARGET Collection.
-        asset_suffix.remove_suffix_from_hierarchy(merge_triplet.target_coll)
+        asset_suffix.remove_suffix_from_hierarchy(transfer_triplet.target_coll)
 
         # Remove transfer suffix.
-        merge_triplet.target_coll.bsp_asset.transfer_suffix = ""
+        transfer_triplet.target_coll.bsp_asset.transfer_suffix = ""
 
         # Restore scenes asset collection.
-        context.scene.bsp_asset.asset_collection = merge_triplet.target_coll
-
-        # Save updated metadata.
-        metadata.write_asset_metadata_tree_to_file(metadata_path, meta_asset_tree)
-
-        # Run hook phase.
-        self._run_hooks(context)
+        context.scene.bsp_asset.asset_collection = transfer_triplet.target_coll
 
     def _run_hooks(self, context: bpy.types.Context) -> None:
 
@@ -383,13 +421,19 @@ class AssetBuilder:
         for hook in hooks_to_run:
             hook(**params)
 
-    def _create_first_version(self) -> None:
+    def _create_first_version(self) -> AssetPublish:
         target = AssetPublish(self._build_context.asset_dir.get_first_publish_path())
         asset_coll = self._build_context.asset_context.asset_collection
         data_blocks = set((asset_coll,))
 
+        # Check if already exists.
+        if target.path.exists():
+            raise AssetBuilderFailedToPublish(
+                f"Failed to create first publish. Already exist: {target.path.name}"
+            )
+
         # Create asset meta tree.
-        asset_metadata_tree = self._create_asset_metadata_tree()
+        asset_metadata_tree = self._create_asset_metadata_tree_from_collection()
 
         # Create directory if not exist.
         target.path.parent.mkdir(parents=True, exist_ok=True)
@@ -398,12 +442,6 @@ class AssetBuilder:
         metadata.write_asset_metadata_tree_to_file(
             target.metadata_path, asset_metadata_tree
         )
-
-        # Check if already exists.
-        if target.path.exists():
-            raise AssetBuilderFailedToPublish(
-                f"Failed to create first publish. Already exist: {target.path.name}"
-            )
 
         # Create blend file.
         bpy.data.libraries.write(
@@ -414,9 +452,9 @@ class AssetBuilder:
         )
 
         logger.info("Created first asset version: %s", target.path.as_posix())
-        return
+        return AssetPublish(target.path)
 
-    def _create_asset_metadata_tree(self) -> MetadataTreeAsset:
+    def _create_asset_metadata_tree_from_collection(self) -> MetadataTreeAsset:
         # Create asset meta tree.
         meta_asset = (
             self.build_context.asset_context.asset_collection.bsp_asset.gen_metadata_class()

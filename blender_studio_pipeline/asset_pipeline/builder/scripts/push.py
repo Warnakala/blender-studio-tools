@@ -33,7 +33,7 @@ from pathlib import Path
 from blender_studio_pipeline.asset_pipeline import prop_utils
 from blender_studio_pipeline.asset_pipeline.builder import AssetBuilder
 from blender_studio_pipeline.asset_pipeline.builder.context import BuildContext
-from blender_studio_pipeline.asset_pipeline.asset_files import AssetTask
+from blender_studio_pipeline.asset_pipeline.asset_files import AssetPublish
 
 import bpy
 
@@ -71,6 +71,24 @@ logger.info(f"LOADING PICKLE: %s", pickle_path.as_posix())
 with open(pickle_path.as_posix(), "rb") as f:
     BUILD_CONTEXT: BuildContext = pickle.load(f)
 
+# If first publish, only link in asset collection and update properties.
+if not BUILD_CONTEXT.asset_publishes:
+    asset_publish = AssetPublish(Path(bpy.data.filepath))
+    asset_coll = BUILD_CONTEXT.asset_context.asset_collection
+    # Update scene asset collection.
+    bpy.context.scene.bsp_asset.asset_collection = asset_coll
+
+    # Update asset collection properties.
+    asset_coll.bsp_asset.update_props_by_asset_publish(asset_publish)
+
+    # Link in asset collection in scene.
+    bpy.context.scene.collection.children.link(asset_coll)
+    bpy.context.scene.bsp_asset.asset_collection = asset_coll
+
+    bpy.ops.wm.save_mainfile()
+    bpy.ops.wm.quit_blender()
+    sys.exit(0)
+
 logger.info("LOAD TRANSFER SETTINGS")
 
 # Fetch transfer settings from AssetContext and update scene settings
@@ -94,8 +112,13 @@ logger.info(
 
 ASSET_BUILDER = AssetBuilder(BUILD_CONTEXT)
 
-ASSET_BUILDER.pull(bpy.context, AssetTask)
+ASSET_BUILDER.pull_from_task(bpy.context)
 
 # Delete pickle.
 pickle_path.unlink()
 logger.info("Deleted pickle: %s", pickle_path.name)
+
+# Quit.
+bpy.ops.wm.save_mainfile()
+bpy.ops.wm.quit_blender()
+sys.exit(0)

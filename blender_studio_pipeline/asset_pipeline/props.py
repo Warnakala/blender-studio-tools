@@ -34,43 +34,79 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     Collection Properties for Blender Studio Asset Collections
     """
 
+    # Global is asset identifier.
     is_asset: bpy.props.BoolProperty(  # type: ignore
         name="Is Asset",
         default=False,
         description="Controls if this Collection is recognized as an official Asset",
     )
 
+    # Asset identification properties.
     # We use entity_ prefix as blender uses .id as built in attribute already, which
     # might be confusing.
     entity_parent_id: bpy.props.StringProperty(name="Asset Type ID")  # type: ignore
     entity_parent_name: bpy.props.StringProperty(name="Asset Type")  # type: ignore
     entity_name: bpy.props.StringProperty(name="Asset Name")  # type: ignore
     entity_id: bpy.props.StringProperty(name="Asset ID")  # type: ignore
-
-    version: bpy.props.StringProperty(name="Asset Version")  # type: ignore
-    status: bpy.props.StringProperty(name="Asset Status", default=constants.DEFAULT_ASSET_STATUS)  # type: ignore
     project_id: bpy.props.StringProperty(name="Project ID")  # type: ignore
 
+    # For Asset Publish.
+    is_publish: bpy.props.BoolProperty(  # type: ignore
+        name="Is Publish",
+        description="Controls if this Collection is an Asset Publish to distinguish it from a 'working' Collection",
+    )
+    version: bpy.props.StringProperty(name="Asset Version")  # type: ignore
+    publish_path: bpy.props.StringProperty(name="Asset Publish")  # type: ignore
+    status: bpy.props.StringProperty(name="Asset Status", default=constants.DEFAULT_ASSET_STATUS)  # type: ignore
+
+    # Other properties, useful for external scripts.
     rig: bpy.props.PointerProperty(type=bpy.types.Armature, name="Rig")  # type: ignore
 
+    # Metadata for Asset Builder.
     transfer_suffix: bpy.props.StringProperty(name="Transfer Suffix")  # type: ignore
 
     # Display properties that can't be set by User in UI.
     displ_entity_name: bpy.props.StringProperty(name="Asset Name", get=lambda self: self.entity_name)  # type: ignore
     displ_entity_id: bpy.props.StringProperty(name="Asset ID", get=lambda self: self.entity_id)  # type: ignore
 
+    displ_is_publish: bpy.props.StringProperty(name="Is Publish", get=lambda self: self.is_publish)  # type: ignore
+    displ_version: bpy.props.StringProperty(name="Asset Version", get=lambda self: self.version)  # type: ignore
+    displ_publish_path: bpy.props.StringProperty(name="Asset Path", get=lambda self: self.publish_path)  # type: ignore
+
     def clear(self) -> None:
+        """
+        Gets called when uninitializing an Asset Collection for example.
+        """
+
         self.is_asset = False
+
+        self.entity_parent_id = ""
+        self.entity_parent_name = ""
         self.entity_name = ""
         self.entity_id = ""
-        self.version = ""
         self.project_id = ""
+
+        self.is_publish = False
+        self.version = ""
+        self.status = ""
+        self.publish_path = ""
+
         self.rig = None
+
+        self.transfer_suffix = ""
 
     def gen_metadata_class(self) -> MetadataAsset:
         # These keys represent all mandatory arguments for the data class metadata.MetaAsset
         # The idea is, to be able to construct a MetaAsst from this dict.
-        keys = ["entity_name", "entity_id", "project_id", "version", "status"]
+        keys = [
+            "entity_name",
+            "entity_id",
+            "entity_parent_id",
+            "entity_parent_name",
+            "project_id",
+            "version",
+            "status",
+        ]
         d = {}
         for key in keys:
 
@@ -82,6 +118,12 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
                 d[key] = getattr(self, key)
 
         return MetadataAsset.from_dict(d)
+
+    def update_props_by_asset_publish(self, asset_publish: AssetPublish) -> None:
+        self.is_publish = True
+        self.version = asset_publish.get_version()
+        self.status = asset_publish.metadata.meta_asset.status.name
+        self.publish_path = asset_publish.path.as_posix()
 
 
 class BSP_task_layer(bpy.types.PropertyGroup):

@@ -24,9 +24,11 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from types import ModuleType
 
 from pathlib import Path
-from ... import util
 
 import bpy
+
+from ... import util
+from .vis import EnsureVisible
 
 logger = logging.getLogger("BSP")
 
@@ -48,9 +50,30 @@ class TransferCollectionTriplet:
         self.publish_coll = publish_coll
         self.task_coll = task_coll
         self.target_coll = target_coll
+        self._vis_objs: List[EnsureVisible] = []
 
     def get_collections(self) -> List[bpy.types.Collection]:
         return [self.task_coll, self.publish_coll, self.target_coll]
+
+    def ensure_vis(self) -> None:
+        # Apparently Blender does not evaluate objects or collections in the depsgraph
+        # in some cases if they are not visible. This is something Users should not have to take
+        # care about when writing their transfer data instructions. So we will make sure here
+        # that everything is visible and after the transfer the original state will be restored.
+
+        # Catch mistake if someone calls this twice without restoring before.
+        if self._vis_objs:
+            self.restore_vis()
+
+        for coll in self.get_collections():
+            for obj in coll.all_objects:
+                self._vis_objs.append(EnsureVisible(obj))
+
+    def restore_vis(self) -> None:
+        for obj in self._vis_objs:
+            obj.restore()
+
+        self._vis_objs.clear()
 
 
 def rreplace(s: str, old: str, new: str, occurrence: int) -> str:

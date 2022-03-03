@@ -166,7 +166,6 @@ def convert_metadata_obj_to_elements(
 # ----------------------------------------------
 
 
-@dataclass
 class MetadataClass:
     @classmethod
     def from_dict(cls: type[M], env: Dict[str, Any]) -> M:
@@ -245,7 +244,10 @@ class MetadataAsset(MetadataClass):
 
     id: str
     name: str
+    parent_id: str
+    parent_name: str
     project_id: str
+
     version: str
     status: AssetStatus
 

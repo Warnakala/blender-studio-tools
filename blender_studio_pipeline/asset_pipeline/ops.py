@@ -415,7 +415,7 @@ class BSP_ASSET_pull(bpy.types.Operator):
         builder.ASSET_BUILDER = builder.AssetBuilder(builder.BUILD_CONTEXT)
 
         # Pull.
-        builder.ASSET_BUILDER.pull(context, AssetPublish)
+        builder.ASSET_BUILDER.pull_from_publish(context)
 
         return {"FINISHED"}
 
