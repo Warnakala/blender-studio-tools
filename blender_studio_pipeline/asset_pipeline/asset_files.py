@@ -108,6 +108,10 @@ class AssetTask(AssetFile):
     Represents a working file.
     """
 
+    @property
+    def asset_dir(self) -> "AssetDir":
+        return AssetDir(self.path.parent)
+
 
 class AssetPublish(AssetFile):
     """
@@ -123,6 +127,10 @@ class AssetPublish(AssetFile):
         """
         self.metadata_path.unlink()
         self.path.unlink()
+
+    @property
+    def asset_dir(self) -> "AssetDir":
+        return AssetDir(self.path.parent.parent)
 
 
 class AssetDir:

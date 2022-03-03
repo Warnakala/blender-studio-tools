@@ -17,7 +17,7 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Tuple
 
 from pathlib import Path
 
@@ -26,7 +26,12 @@ import bpy
 from . import constants
 from . import builder
 from .builder.metadata import MetadataAsset, MetadataTaskLayer
+from . import asset_files
 from .asset_files import AssetPublish
+
+
+class FailedToGetAssetPublish(Exception):
+    pass
 
 
 class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
@@ -68,7 +73,7 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
     displ_entity_name: bpy.props.StringProperty(name="Asset Name", get=lambda self: self.entity_name)  # type: ignore
     displ_entity_id: bpy.props.StringProperty(name="Asset ID", get=lambda self: self.entity_id)  # type: ignore
 
-    displ_is_publish: bpy.props.StringProperty(name="Is Publish", get=lambda self: self.is_publish)  # type: ignore
+    displ_is_publish: bpy.props.BoolProperty(name="Is Publish", get=lambda self: self.is_publish)  # type: ignore
     displ_version: bpy.props.StringProperty(name="Asset Version", get=lambda self: self.version)  # type: ignore
     displ_publish_path: bpy.props.StringProperty(name="Asset Path", get=lambda self: self.publish_path)  # type: ignore
 
@@ -125,6 +130,19 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
         self.version = asset_publish.get_version()
         self.status = asset_publish.metadata.meta_asset.status.name
         self.publish_path = asset_publish.path.as_posix()
+
+    def get_asset_publish(self) -> AssetPublish:
+        if not self.is_publish:
+            raise FailedToGetAssetPublish(
+                f"The collection {self.id_data.name} is not an asset publish"
+            )
+
+        if not self.publish_path:
+            raise FailedToGetAssetPublish(
+                f"The property '{self.id_data.name}.bsp_asset.publish_path' is invalid"
+            )
+
+        return AssetPublish(Path(self.publish_path))
 
 
 class BSP_task_layer(bpy.types.PropertyGroup):
@@ -190,6 +208,31 @@ class BSP_asset_file(bpy.types.PropertyGroup):
         item.task_layer_id = metadata_task_layer.id
         item.task_layer_name = metadata_task_layer.name
         item.is_locked = metadata_task_layer.is_locked
+
+    def update_props_by_asset_publish(self, asset_publish: AssetPublish) -> None:
+        self.name = asset_publish.path.name
+        self.path_str = asset_publish.path.as_posix()
+        self.status = asset_publish.metadata.meta_asset.status.name
+        # Add task layers.
+        for tl in asset_publish.metadata.meta_task_layers:
+            self.add_task_layer_from_metaclass(tl)
+
+
+class BSP_ASSET_imported_asset_collection(bpy.types.PropertyGroup):
+
+    collection: bpy.props.PointerProperty(type=bpy.types.Collection)  # type: ignore
+
+    asset_publishes: bpy.props.CollectionProperty(type=BSP_asset_file)  # type: ignore
+
+    def get_asset_publishes_as_bl_enum(
+        self, context: bpy.types.Context
+    ) -> List[Tuple[str, str, str]]:
+        return [
+            (p.name, asset_files.get_file_version(p.path), "")
+            for p in self.asset_publishes
+        ]
+
+    target_publish: bpy.props.EnumProperty(items=get_asset_publishes_as_bl_enum)  # type: ignore
 
 
 class BSP_undo_context(bpy.types.PropertyGroup):
@@ -258,6 +301,9 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
 
     task_layer_lock_plans: bpy.props.CollectionProperty(type=BSP_task_layer_lock_plan)  # type: ignore
 
+    imported_asset_collections: bpy.props.CollectionProperty(type=BSP_ASSET_imported_asset_collection)  # type: ignore
+    imported_asset_collections_index: bpy.props.IntProperty(min=0)  # type: ignore
+
 
 def get_asset_publish_source_path(context: bpy.types.Context) -> str:
     if not builder.ASSET_CONTEXT:
@@ -290,6 +336,7 @@ classes = [
     BSP_undo_context,
     BSP_ASSET_asset_collection,
     BSP_task_layer_lock_plan,
+    BSP_ASSET_imported_asset_collection,
     BSP_ASSET_scene_properties,
     BSP_ASSET_tmp_properties,
 ]

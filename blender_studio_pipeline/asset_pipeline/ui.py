@@ -146,6 +146,7 @@ def draw_task_layer_lock_plans_on_new_publish(
 
     return box
 
+# ----------------PANELS--------------.
 
 class BSP_ASSET_main_panel:
     bl_category = "Asset Pipeline"
@@ -155,6 +156,7 @@ class BSP_ASSET_main_panel:
 
 
 class BSP_ASSET_PT_vi3d_asset_pipeline(BSP_ASSET_main_panel, bpy.types.Panel):
+
     def draw(self, context: bpy.types.Context) -> None:
 
         layout: bpy.types.UILayout = self.layout
@@ -184,6 +186,7 @@ class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
 
     bl_label = "Asset Colllection"
     bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context: bpy.types.Context) -> None:
         layout: bpy.types.UILayout = self.layout
@@ -204,6 +207,7 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
 
     bl_label = "Publish Manager"
     bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -281,6 +285,7 @@ class BSP_ASSET_PT_vi3d_task_layers(BSP_ASSET_main_panel, bpy.types.Panel):
 
     bl_label = "Task Layers"
     bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -314,6 +319,7 @@ class BSP_ASSET_PT_vi3d_status_manager(BSP_ASSET_main_panel, bpy.types.Panel):
 
     bl_label = "Status Manager"
     bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -345,6 +351,7 @@ class BSP_ASSET_PT_vi3d_transfer_settings(BSP_ASSET_main_panel, bpy.types.Panel)
 
     bl_label = "Transfer Settings"
     bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -393,6 +400,8 @@ class BSP_ASSET_PT_collection_asset_properties(bpy.types.Panel):
             box.row().prop(coll.bsp_asset, "displ_version")
             box.row().prop(coll.bsp_asset, "displ_publish_path")
 
+
+# ----------------UI-LISTS--------------.
 
 class BSP_UL_task_layers(bpy.types.UIList):
     def draw_item(

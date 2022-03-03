@@ -19,35 +19,31 @@
 # (c) 2021, Blender Foundation - Paul Golter
 import importlib
 
-from . import props, ops, ui, api, updater
+from typing import List, Dict, Union, Any, Set, Optional
+from .asset_updater import AssetUpdater
+
+from . import ops, ui
+
+# Initialize variables.
+ASSET_UPDATER: Optional[AssetUpdater] = None
 
 
 # ----------------REGISTER--------------.
 
 
 def reload() -> None:
-    global props
     global ops
     global ui
-    global api
-    global updater
 
-    props = importlib.reload(props)
     ops = importlib.reload(ops)
     ui = importlib.reload(ui)
-    api = importlib.reload(api)
-    updater.reload()
 
 
 def register() -> None:
-    props.register()
     ops.register()
     ui.register()
-    updater.register()
 
 
 def unregister() -> None:
-    updater.unregister()
     ui.unregister()
     ops.unregister()
-    props.unregister()
