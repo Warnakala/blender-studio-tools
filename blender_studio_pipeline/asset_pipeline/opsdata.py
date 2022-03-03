@@ -213,3 +213,13 @@ def populate_context_with_lock_plans(
             tl_item.name = tl_to_lock.get_id()
             tl_item.task_layer_id = tl_to_lock.get_id()
             tl_item.task_layer_name = tl_to_lock.name
+
+
+def are_any_task_layers_enabled(context: bpy.types.Context) -> bool:
+    """
+    Returns true if any task layers are selected in the task layer list.
+    """
+    enabled_task_layers = [
+        tlg for tlg in context.scene.bsp_asset.task_layers.values() if tlg.use
+    ]
+    return bool(enabled_task_layers)

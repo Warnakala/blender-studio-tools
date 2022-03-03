@@ -394,7 +394,8 @@ class BSP_ASSET_pull(bpy.types.Operator):
             not context.scene.bsp_asset.is_publish_in_progress
             and util.is_file_saved()
             and builder.PROD_CONTEXT
-            and builder.ASSET_CONTEXT,
+            and builder.ASSET_CONTEXT
+            and opsdata.are_any_task_layers_enabled(context)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
