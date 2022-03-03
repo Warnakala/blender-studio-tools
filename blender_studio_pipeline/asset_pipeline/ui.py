@@ -40,6 +40,22 @@ from .ops import (
 from . import builder
 from . import prop_utils
 from . import constants
+from .. import util
+
+
+def poll_error_invalid_task_layer_module_path() -> bool:
+    addon_prefs = util.get_addon_prefs()
+    return bool(not addon_prefs.is_prod_task_layers_module_path_valid())
+
+
+def draw_error_invalid_task_layer_module_path(
+    box: bpy.types.UILayout,
+) -> bpy.types.UILayout:
+    row = box.row(align=True)
+    row.label(text="Invalid Task Layer Module")
+    row.operator(
+        "preferences.addon_show", text="Open Addon Preferences"
+    ).module = "blender_studio_pipeline"
 
 
 def draw_task_layers_list(
@@ -154,6 +170,12 @@ class BSP_ASSET_PT_vi3d_asset_pipeline(BSP_ASSET_main_panel, bpy.types.Panel):
             "displ_entity_name",
             text="Asset",
         )
+
+        # Warning box.
+        if poll_error_invalid_task_layer_module_path():
+            box = layout.box()
+            box.label(text="Warning", icon="ERROR")
+            draw_error_invalid_task_layer_module_path(box)
 
         return
 
@@ -363,6 +385,13 @@ class BSP_ASSET_PT_collection_asset_properties(bpy.types.Panel):
         layout.row().prop(coll.bsp_asset, "displ_entity_id")
 
         layout.row().prop(coll.bsp_asset, "rig")
+
+        # Display publish properties.
+        if coll.bsp_asset.is_publish:
+            box = layout.box()
+            box.row().label(text="Publish Properties")
+            box.row().prop(coll.bsp_asset, "displ_version")
+            box.row().prop(coll.bsp_asset, "displ_publish_path")
 
 
 class BSP_UL_task_layers(bpy.types.UIList):
