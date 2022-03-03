@@ -174,6 +174,7 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
             and builder.PROD_CONTEXT
             and builder.ASSET_CONTEXT
             and builder.ASSET_CONTEXT.asset_publishes
+            and opsdata.are_any_task_layers_enabled(context)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -234,6 +235,7 @@ class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
             and builder.ASSET_CONTEXT
             and builder.ASSET_CONTEXT.asset_publishes
             and context.window_manager.bsp_asset.new_asset_version
+            and opsdata.are_any_task_layers_enabled(context)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
