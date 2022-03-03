@@ -745,6 +745,9 @@ def create_asset_context(_):
         # That means we load a scene with no asset collection
         # assigned. Previous ASSET_CONTEXT should therefore
         # be uninitialized.
+        logger.error(
+            "Failed to initialize Asset Context. bpy.ops.bsp_asset.create_asset_context.poll() failed."
+        )
         builder.ASSET_CONTEXT = None
         opsdata.clear_asset_publishes(bpy.context)
         opsdata.clear_task_layers(bpy.context)
@@ -758,6 +761,9 @@ def create_prod_context(_):
         if bpy.ops.bsp_asset.create_prod_context.poll():
             bpy.ops.bsp_asset.create_prod_context()
         else:
+            logger.error(
+                "Failed to initialize Production Context. bpy.ops.bsp_asset.create_prod_context.poll() failed."
+            )
             builder.PROD_CONTEXT = None
 
 
