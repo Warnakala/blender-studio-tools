@@ -24,21 +24,24 @@ import bpy
 
 from .. import constants
 from .ops import BSP_ASSET_UPDATER_collect_assets, BSP_ASSET_UPDATER_update_asset
+from ..builder.asset_status import AssetStatus
 
 
 def draw_imported_asset_collections_in_scene(
     self: bpy.types.Panel,
     context: bpy.types.Context,
     disable: bool = False,
+    box: Optional[bpy.types.UILayout] = None,
 ) -> bpy.types.UILayout:
     layout: bpy.types.UILayout = self.layout
 
-    box = layout.box()
-    row = box.row(align=True)
-    row.label(text="Asset Collections")
-    row.operator(
-        BSP_ASSET_UPDATER_collect_assets.bl_idname, icon="FILE_REFRESH", text=""
-    )
+    if not box:
+        box = layout.box()
+        row = box.row(align=True)
+        row.label(text="Asset Collections")
+        row.operator(
+            BSP_ASSET_UPDATER_collect_assets.bl_idname, icon="FILE_REFRESH", text=""
+        )
 
     # Ui-list.
     row = box.row()
@@ -77,20 +80,34 @@ class BSP_UL_imported_asset_collections(bpy.types.UIList):
     def draw_item(
         self, context, layout, data, item, icon, active_data, active_propname, index
     ):
+        # item: props.SET_imported_asset_collection
+
         layout: bpy.types.UILayout = layout
         coll = item.collection
         if self.layout_type in {"DEFAULT", "COMPACT"}:
 
-            # row = layout.row(align=True)
-            # row.alignment = "LEFT"
-
             base_split = layout.split(factor=0.3, align=True)
+
+            # Asset name.
             base_split.label(text=coll.bsp_asset.entity_name)
 
-            base_split.label(text=coll.bsp_asset.version)
+            icon = "NONE"
 
+            loaded_asset_publish = item.asset_publishes[
+                Path(coll.bsp_asset.publish_path).name
+            ]
+
+            # If the currently loaded asset publish has deprecated status, display warning icon.
+            if loaded_asset_publish.status == AssetStatus.DEPRECATED.name:
+                icon = "ERROR"
+
+            # Asset version.
+            base_split.label(text=coll.bsp_asset.version, icon=icon)
+
+            # Target version.
             base_split.prop(item, "target_publish", text="")
 
+            # Update operator.
             base_split.operator(
                 BSP_ASSET_UPDATER_update_asset.bl_idname, text="", icon="FILE_REFRESH"
             ).index = index
