@@ -18,6 +18,7 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
+import os
 import logging
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
@@ -26,7 +27,7 @@ from pathlib import Path
 import bpy
 from bpy.app.handlers import persistent
 
-from ... import util
+from ... import util, lib_util
 from .. import updater
 from .asset_updater import AssetUpdater
 from . import opsdata
@@ -65,10 +66,6 @@ class BSP_ASSET_UPDATER_update_asset(bpy.types.Operator):
 
     index: bpy.props.IntProperty(name="Index", min=0)
 
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        return True
-
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         prop_group = context.scene.bsp_asset.imported_asset_collections[self.index]
@@ -77,11 +74,22 @@ class BSP_ASSET_UPDATER_update_asset(bpy.types.Operator):
         target_publish: str = prop_group.target_publish
         asset_file: bpy.types.PropertyGroup = prop_group.asset_publishes[target_publish]
         # asset_publish = AssetPublish(asset_file.path)
+        lib = lib_util.get_item_lib(collection)
+        libpath = Path(os.path.abspath(bpy.path.abspath(lib.filepath)))
+
+        # Check if same version is loaded.
+        if Path(bpy.path.abspath(asset_file.path_str)) == libpath:
+            self.report({"WARNING"}, f"{libpath.name} is already loaded")
+            # lib.reload() # Crashes blender? TODO: report
+            return {"CANCELLED"}
 
         # Collection pointer gets lost after this operation.
         updater.ASSET_UPDATER.update_asset_collection_libpath(
             collection, asset_file.path
         )
+
+        # TODO: save this to metadata file, so we can inspect this information
+        # without opening a blend file.
 
         # Redraw UI.
         util.redraw_ui()
