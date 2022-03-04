@@ -26,8 +26,9 @@ from pathlib import Path
 import bpy
 
 from .asset_updater import AssetUpdater
-from ..asset_files import AssetPublish, AssetDir
-from ..builder.asset_status import AssetStatus
+
+from ..asset_files import AssetPublish
+from ..asset_status import AssetStatus
 
 
 logger = logging.getLogger("BSP")

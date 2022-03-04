@@ -24,7 +24,7 @@ from pathlib import Path
 
 import bpy
 
-from ... import lib_util
+from .. import lib_util
 
 logger = logging.getLogger("BSP")
 

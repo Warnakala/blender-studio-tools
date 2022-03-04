@@ -20,9 +20,9 @@
 import importlib
 
 from typing import List, Dict, Union, Any, Set, Optional
-from .asset_updater import AssetUpdater
 
 from . import ops, ui
+from .asset_updater import AssetUpdater
 
 # Initialize variables.
 ASSET_UPDATER = AssetUpdater()
@@ -35,8 +35,8 @@ def reload() -> None:
     global ops
     global ui
 
-    ops = importlib.reload(ops)
-    ui = importlib.reload(ui)
+    importlib.reload(ops)
+    importlib.reload(ui)
 
 
 def register() -> None:

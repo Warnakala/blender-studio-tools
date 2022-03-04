@@ -24,8 +24,7 @@ import bpy
 
 import importlib
 
-from . import util, prefs
-from . import props, ops, ui, api, updater
+from . import prefs, util, props, api, builder, updater
 
 bl_info = {
     "name": "Asset Pipeline",
@@ -47,22 +46,20 @@ def reload() -> None:
     global util
     global prefs
     global props
-    global ops
-    global ui
     global api
+    global builder
     global updater
 
     importlib.reload(util)
     importlib.reload(prefs)
     importlib.reload(props)
-    importlib.reload(ops)
-    importlib.reload(ui)
     importlib.reload(api)
 
+    builder.reload()
     updater.reload()
 
 
-_need_reload = "asset_pipeline" in locals()
+_need_reload = "prefs" in locals()
 if _need_reload:
     reload()
 
@@ -72,14 +69,12 @@ if _need_reload:
 def register() -> None:
     prefs.register()
     props.register()
-    ops.register()
-    ui.register()
+    builder.register()
     updater.register()
 
 
 def unregister() -> None:
+    builder.unregister()
     updater.unregister()
-    ui.unregister()
-    ops.unregister()
     props.unregister()
     prefs.register()

@@ -30,10 +30,10 @@ import sys
 from typing import List, Dict, Union, Any, Set, Optional
 from pathlib import Path
 
-from blender_studio_pipeline.asset_pipeline import prop_utils
-from blender_studio_pipeline.asset_pipeline.builder import AssetBuilder
-from blender_studio_pipeline.asset_pipeline.builder.context import BuildContext
-from blender_studio_pipeline.asset_pipeline.asset_files import AssetPublish
+from asset_pipeline import prop_utils
+from asset_pipeline.builder import AssetBuilder
+from asset_pipeline.builder.context import BuildContext
+from asset_pipeline.asset_files import AssetPublish
 
 import bpy
 

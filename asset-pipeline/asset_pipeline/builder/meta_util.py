@@ -28,10 +28,10 @@ from pathlib import Path
 
 import bpy
 
-from .. import constants
 from .task_layer import TaskLayer
-from .asset_status import AssetStatus
 from .metadata import MetadataTaskLayer, MetadataUser
+
+from .. import constants
 
 from blender_kitsu import cache
 from blender_kitsu.types import User

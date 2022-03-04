@@ -24,11 +24,12 @@ from pathlib import Path
 
 import bpy
 
-from .context import BuildContext
-from ..asset_files import AssetPublish
-from .asset_mapping import TransferCollectionTriplet
 from . import asset_suffix
+from .context import BuildContext
+from .asset_mapping import TransferCollectionTriplet
+
 from .. import constants
+from ..asset_files import AssetPublish
 
 logger = logging.getLogger("BSP")
 

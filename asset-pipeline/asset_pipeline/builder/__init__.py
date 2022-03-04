@@ -17,7 +17,11 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+import importlib
+
 from typing import List, Dict, Union, Any, Set, Optional
+
+from . import ops, ui
 from .context import ProductionContext, AssetContext, BuildContext, UndoContext
 from .asset_builder import AssetBuilder
 
@@ -27,3 +31,23 @@ ASSET_CONTEXT: Optional[AssetContext] = None
 BUILD_CONTEXT: Optional[BuildContext] = None
 ASSET_BUILDER: Optional[AssetBuilder] = None
 UNDO_CONTEXT: Optional[UndoContext] = None
+
+# ----------------REGISTER--------------.
+
+
+def reload() -> None:
+    global ops
+    global ui
+
+    importlib.reload(ops)
+    importlib.reload(ui)
+
+
+def register() -> None:
+    ops.register()
+    ui.register()
+
+
+def unregister() -> None:
+    ui.unregister()
+    ops.unregister()

@@ -31,7 +31,8 @@ from xml.etree.ElementTree import Element, ElementTree
 from xml.dom import minidom
 
 from .task_layer import TaskLayer
-from .asset_status import AssetStatus
+
+from ..asset_status import AssetStatus
 
 logger = logging.getLogger("BSP")
 

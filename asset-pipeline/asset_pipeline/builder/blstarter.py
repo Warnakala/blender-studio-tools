@@ -42,7 +42,7 @@ class BuilderBlenderStarter:
             f"{cls.path.as_posix()} {filepath.as_posix()}"
             " -b"
             # " --factory-startup"
-            # f" --addons blender_kitsu,blender_studio_pipeline"
+            # f" --addons blender_kitsu,asset_pipeline"
             f" -P {cls.publish_script.as_posix()}"
             f" -- {pickle_path.as_posix()}"
         )

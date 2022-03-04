@@ -25,11 +25,12 @@ from pathlib import Path
 
 import bpy
 
-from .builder.context import AssetContext, BuildContext
-from .builder.task_layer import TaskLayer
-from .builder.lock_plan import TaskLayerLockPlan
-from . import builder
-from .asset_files import AssetPublish
+from .context import AssetContext, BuildContext
+from .task_layer import TaskLayer
+from .lock_plan import TaskLayerLockPlan
+
+from .. import builder
+from ..asset_files import AssetPublish
 
 logger = logging.getLogger("BSP")
 

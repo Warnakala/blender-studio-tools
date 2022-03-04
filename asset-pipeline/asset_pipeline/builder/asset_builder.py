@@ -26,19 +26,16 @@ from datetime import datetime
 
 import bpy
 
+from . import asset_suffix, metadata, meta_util
 from .context import BuildContext
-from .. import constants
-from ..asset_files import AssetTask, AssetPublish
 from .asset_importer import AssetImporter
 from .asset_mapping import TransferCollectionTriplet, AssetTransferMapping
 from .blstarter import BuilderBlenderStarter
-from .vis import EnsureVisible
-from ... import util
-from . import asset_suffix
-from . import metadata
 from .metadata import MetadataTaskLayer, MetadataTreeAsset
-from . import meta_util
 from .hook import HookFunction
+
+from .. import constants, util
+from ..asset_files import AssetPublish
 
 logger = logging.getLogger("BSP")
 

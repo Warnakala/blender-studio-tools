@@ -37,10 +37,7 @@ from .ops import (
     BSP_ASSET_set_task_layer_status,
     BSP_ASSET_set_asset_status,
 )
-from . import builder
-from . import prop_utils
-from . import constants
-from .. import util
+from .. import builder, constants, prop_utils, util
 
 
 def poll_error_invalid_task_layer_module_path() -> bool:
@@ -55,7 +52,7 @@ def draw_error_invalid_task_layer_module_path(
     row.label(text="Invalid Task Layer Module")
     row.operator(
         "preferences.addon_show", text="Open Addon Preferences"
-    ).module = "blender_studio_pipeline"
+    ).module = "asset_pipeline"
 
 
 def draw_task_layers_list(
@@ -146,7 +143,9 @@ def draw_task_layer_lock_plans_on_new_publish(
 
     return box
 
+
 # ----------------PANELS--------------.
+
 
 class BSP_ASSET_main_panel:
     bl_category = "Asset Pipeline"
@@ -156,7 +155,6 @@ class BSP_ASSET_main_panel:
 
 
 class BSP_ASSET_PT_vi3d_asset_pipeline(BSP_ASSET_main_panel, bpy.types.Panel):
-
     def draw(self, context: bpy.types.Context) -> None:
 
         layout: bpy.types.UILayout = self.layout
@@ -402,6 +400,7 @@ class BSP_ASSET_PT_collection_asset_properties(bpy.types.Panel):
 
 
 # ----------------UI-LISTS--------------.
+
 
 class BSP_UL_task_layers(bpy.types.UIList):
     def draw_item(

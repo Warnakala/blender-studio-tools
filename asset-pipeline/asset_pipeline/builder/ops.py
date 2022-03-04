@@ -25,13 +25,13 @@ from pathlib import Path
 
 import bpy
 from bpy.app.handlers import persistent
+
 import blender_kitsu.cache
 
-from .. import util
-from . import builder, opsdata
-from .builder import asset_status
-from .builder.asset_status import AssetStatus
-from .asset_files import AssetPublish
+from . import opsdata
+
+from .. import asset_status, util, builder
+from ..asset_status import AssetStatus
 
 logger = logging.getLogger("BSP")
 

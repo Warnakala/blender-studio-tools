@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Set, Union, Optional
 
 import bpy
-from blender_studio_pipeline.asset_pipeline.api import (
+from asset_pipeline.api import (
     AssetTransferMapping,
     BuildContext,
     TaskLayer,

@@ -23,8 +23,7 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple, Generator
 
 import bpy
 
-from .. import constants
-from ... import util
+from .. import constants, util
 
 logger = logging.getLogger("BSP")
 

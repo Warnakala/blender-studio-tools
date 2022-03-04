@@ -23,6 +23,7 @@ import logging
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 
 from .task_layer import TaskLayer
+
 from ..asset_files import AssetPublish
 
 logger = logging.getLogger("BSP")

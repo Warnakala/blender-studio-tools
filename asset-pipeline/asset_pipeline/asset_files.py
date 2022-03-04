@@ -29,7 +29,7 @@ import bpy
 from . import constants
 from .builder import metadata
 from .builder.metadata import MetadataTreeAsset
-from .builder.asset_status import AssetStatus
+from .asset_status import AssetStatus
 
 logger = logging.getLogger("BSP")
 

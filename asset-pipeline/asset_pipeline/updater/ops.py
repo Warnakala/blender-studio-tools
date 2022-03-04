@@ -27,11 +27,9 @@ from pathlib import Path
 import bpy
 from bpy.app.handlers import persistent
 
-from ... import util, lib_util
-from .. import updater
-from .asset_updater import AssetUpdater
 from . import opsdata
-from ..asset_files import AssetPublish
+
+from .. import util, lib_util, updater
 
 
 class BSP_ASSET_UPDATER_collect_assets(bpy.types.Operator):

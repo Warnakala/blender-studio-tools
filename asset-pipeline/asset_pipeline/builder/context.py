@@ -27,11 +27,12 @@ from pathlib import Path
 
 import bpy
 
-from ..sys_utils import SystemPathInclude
 from .task_layer import TaskLayer, TaskLayerAssembly
-from .. import asset_files, constants, prop_utils
-from ..asset_files import AssetDir, AssetPublish, AssetTask
 from .hook import Hooks
+
+from .. import constants, prop_utils
+from ..sys_utils import SystemPathInclude
+from ..asset_files import AssetDir, AssetPublish, AssetTask
 
 logger = logging.getLogger("BSP")
 

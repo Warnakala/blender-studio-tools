@@ -21,14 +21,14 @@
 import logging
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
-from types import ModuleType
 
 from pathlib import Path
 
 import bpy
 
-from ... import util
 from .vis import EnsureVisible
+
+from .. import util
 
 logger = logging.getLogger("BSP")
 

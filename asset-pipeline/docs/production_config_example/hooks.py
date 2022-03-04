@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Set, Union, Optional
 import bpy
 
-from blender_studio_pipeline.asset_pipeline.builder.hook import hook
-from blender_studio_pipeline.asset_pipeline.builder.hook import Wildcard, DoNotMatch
+from asset_pipeline.builder.hook import hook
+from asset_pipeline.builder.hook import Wildcard, DoNotMatch
 
 # Hooks can be matched with the following parameters.
 # As match input you can use str, list, WildCard, DoNotMatch

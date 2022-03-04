@@ -22,13 +22,14 @@ from typing import List, Dict, Union, Any, Set, Optional
 
 import bpy
 
-from .. import constants
 from .ops import (
     BSP_ASSET_UPDATER_collect_assets,
     BSP_ASSET_UPDATER_update_asset,
     BSP_ASSET_UPDATER_update_all,
 )
-from ..builder.asset_status import AssetStatus
+
+from .. import constants
+from ..asset_status import AssetStatus
 
 
 def draw_imported_asset_collections_in_scene(

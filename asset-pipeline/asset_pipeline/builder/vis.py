@@ -30,7 +30,7 @@ from pathlib import Path
 
 import bpy
 
-from ... import util
+from .. import util
 
 logger = logging.getLogger("BSP")
 
