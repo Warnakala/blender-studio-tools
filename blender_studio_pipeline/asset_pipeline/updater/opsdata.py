@@ -47,6 +47,9 @@ def add_imported_asset_coll_to_context(
         item_publish = item.asset_publishes.add()
         item_publish.update_props_by_asset_publish(publish)
 
+    # Set enum property to latest version.
+    item.target_publish = item.asset_publishes[-1].name
+
 
 def populate_context_with_imported_asset_colls(
     context: bpy.types.Context, asset_updater: AssetUpdater
