@@ -77,4 +77,4 @@ def unregister() -> None:
     builder.unregister()
     updater.unregister()
     props.unregister()
-    prefs.register()
+    prefs.unregister()
