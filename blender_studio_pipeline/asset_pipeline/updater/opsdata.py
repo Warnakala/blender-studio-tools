@@ -27,6 +27,7 @@ import bpy
 
 from .asset_updater import AssetUpdater
 from ..asset_files import AssetPublish, AssetDir
+from ..builder.asset_status import AssetStatus
 
 
 def add_imported_asset_coll_to_context(
@@ -44,11 +45,17 @@ def add_imported_asset_coll_to_context(
     # Collect all publishes on disk for that asset collection.
     asset_dir = asset_publish.asset_dir
     for publish in asset_dir.get_asset_publishes():
+
+        # Dont' offer asset publishes that are still in review.
+        if publish.metadata.meta_asset.status == AssetStatus.REVIEW:
+            continue
+
         item_publish = item.asset_publishes.add()
         item_publish.update_props_by_asset_publish(publish)
 
     # Set enum property to latest version.
-    item.target_publish = item.asset_publishes[-1].name
+    if item.asset_publishes:
+        item.target_publish = item.asset_publishes[-1].name
 
 
 def populate_context_with_imported_asset_colls(
