@@ -39,10 +39,6 @@ class BSP_ASSET_UPDATER_collect_assets(bpy.types.Operator):
     bl_label = "Collect Assets"
     bl_description = "Scans Scene for imported Assets"
 
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        return True
-
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # Initialize Asset Updater and scan for scene.
@@ -97,14 +93,33 @@ class BSP_ASSET_UPDATER_update_asset(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BSP_ASSET_UPDATER_update_all(bpy.types.Operator):
+    bl_idname = "bsp_asset.update_all"
+    bl_label = "Update All Assets"
+    bl_description = (
+        "Updates all Assets to target version that is selected in the list view"
+    )
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        for idx, item in enumerate(context.scene.bsp_asset.imported_asset_collections):
+            bpy.ops.bsp_asset.update_asset(index=idx)
+
+        return {"FINISHED"}
+
+
 @persistent
 def collect_assets_in_scene(_):
-    pass
+    bpy.ops.bsp_asset.collect_assets()
 
 
 # ----------------REGISTER--------------.
 
-classes = [BSP_ASSET_UPDATER_collect_assets, BSP_ASSET_UPDATER_update_asset]
+classes = [
+    BSP_ASSET_UPDATER_collect_assets,
+    BSP_ASSET_UPDATER_update_asset,
+    BSP_ASSET_UPDATER_update_all,
+]
 
 
 def register() -> None:
@@ -112,13 +127,13 @@ def register() -> None:
         bpy.utils.register_class(cls)
 
     # Handlers.
-    # bpy.app.handlers.load_post.append(create_prod_context)
+    bpy.app.handlers.load_post.append(collect_assets_in_scene)
 
 
 def unregister() -> None:
 
     # Handlers.
-    # bpy.app.handlers.load_post.remove(create_undo_context)
+    bpy.app.handlers.load_post.remove(collect_assets_in_scene)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

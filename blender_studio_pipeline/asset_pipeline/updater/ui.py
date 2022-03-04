@@ -23,7 +23,11 @@ from typing import List, Dict, Union, Any, Set, Optional
 import bpy
 
 from .. import constants
-from .ops import BSP_ASSET_UPDATER_collect_assets, BSP_ASSET_UPDATER_update_asset
+from .ops import (
+    BSP_ASSET_UPDATER_collect_assets,
+    BSP_ASSET_UPDATER_update_asset,
+    BSP_ASSET_UPDATER_update_all,
+)
 from ..builder.asset_status import AssetStatus
 
 
@@ -72,7 +76,13 @@ class BSP_ASSET_UPDATER_PT_vi3d_assets(BSP_ASSET_UPDATER_main_panel, bpy.types.P
     def draw(self, context: bpy.types.Context) -> None:
 
         layout: bpy.types.UILayout = self.layout
-        draw_imported_asset_collections_in_scene(self, context)
+        box = draw_imported_asset_collections_in_scene(self, context)
+
+        box.operator(
+            BSP_ASSET_UPDATER_update_all.bl_idname,
+            text="Update All",
+            icon="FILE_REFRESH",
+        )
         return
 
 
