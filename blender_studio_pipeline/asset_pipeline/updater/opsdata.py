@@ -61,9 +61,20 @@ def add_imported_asset_coll_to_context(
 def populate_context_with_imported_asset_colls(
     context: bpy.types.Context, asset_updater: AssetUpdater
 ) -> None:
+    def sorting_keys(coll: bpy.types.Collection) -> Tuple[bool, str]:
+        """
+        This sorting functions moves assets that are deprecated to the top and sorts
+        the rest of the collections in alphabetical order.
+        """
+        asset_publish: AssetPublish = coll.bsp_asset.get_asset_publish()
+        return (
+            asset_publish.metadata.meta_asset.status != AssetStatus.DEPRECATED,
+            coll.name,
+        )
 
     context.scene.bsp_asset.imported_asset_collections.clear()
 
+    asset_collections = sorted(asset_updater.asset_collections, key=sorting_keys)
     # Add asset publishes.
-    for asset_coll in asset_updater.asset_collections:
+    for asset_coll in asset_collections:
         add_imported_asset_coll_to_context(context, asset_coll)
