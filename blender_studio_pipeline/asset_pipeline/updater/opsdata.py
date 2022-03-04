@@ -30,6 +30,9 @@ from ..asset_files import AssetPublish, AssetDir
 from ..builder.asset_status import AssetStatus
 
 
+logger = logging.getLogger("BSP")
+
+
 def add_imported_asset_coll_to_context(
     context: bpy.types.Context, asset_coll: bpy.types.Collection
 ) -> None:
@@ -48,10 +51,21 @@ def add_imported_asset_coll_to_context(
 
         # Dont' offer asset publishes that are still in review.
         if publish.metadata.meta_asset.status == AssetStatus.REVIEW:
+            logger.debug(
+                "Asset-Updater: %s skip %s as status is %s",
+                asset_publish.metadata.meta_asset.name,
+                publish.path.name,
+                AssetStatus.REVIEW.name,
+            )
             continue
 
         item_publish = item.asset_publishes.add()
         item_publish.update_props_by_asset_publish(publish)
+        logger.debug(
+            "Asset-Updater: %s found: %s",
+            asset_publish.metadata.meta_asset.name,
+            publish.path.name,
+        )
 
     # Set enum property to latest version.
     if item.asset_publishes:
