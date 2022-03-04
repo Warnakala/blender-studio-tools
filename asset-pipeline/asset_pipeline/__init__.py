@@ -17,29 +17,60 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+
+import logging
+
+import bpy
+
 import importlib
 
+from . import util, prefs
 from . import props, ops, ui, api, updater
 
+bl_info = {
+    "name": "Asset Pipeline",
+    "author": "Paul Golter",
+    "description": "Blender Studio Asset Pipeline Add-on",
+    "blender": (3, 1, 0),
+    "version": (0, 1, 0),
+    "location": "View3D",
+    "warning": "",
+    "doc_url": "",
+    "tracker_url": "",
+    "category": "Generic",
+}
 
-# ----------------REGISTER--------------.
+logger = logging.getLogger("BSP")
 
 
 def reload() -> None:
+    global util
+    global prefs
     global props
     global ops
     global ui
     global api
     global updater
 
-    props = importlib.reload(props)
-    ops = importlib.reload(ops)
-    ui = importlib.reload(ui)
-    api = importlib.reload(api)
+    importlib.reload(util)
+    importlib.reload(prefs)
+    importlib.reload(props)
+    importlib.reload(ops)
+    importlib.reload(ui)
+    importlib.reload(api)
+
     updater.reload()
 
 
+_need_reload = "asset_pipeline" in locals()
+if _need_reload:
+    reload()
+
+# ----------------REGISTER--------------.
+
+
 def register() -> None:
+    prefs.register()
     props.register()
     ops.register()
     ui.register()
@@ -51,3 +82,4 @@ def unregister() -> None:
     ui.unregister()
     ops.unregister()
     props.unregister()
+    prefs.register()
