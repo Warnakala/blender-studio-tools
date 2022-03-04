@@ -30,6 +30,8 @@ from ... import util
 from .. import updater
 from .asset_updater import AssetUpdater
 from . import opsdata
+from ..asset_files import AssetPublish
+
 
 class BSP_ASSET_UPDATER_collect_assets(bpy.types.Operator):
     bl_idname = "bsp_asset.collect_assets"
@@ -43,10 +45,43 @@ class BSP_ASSET_UPDATER_collect_assets(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # Initialize Asset Updater and scan for scene.
-        updater.ASSET_UPDATER = AssetUpdater(context)
+        updater.ASSET_UPDATER.collect_asset_collections_in_scene(context)
 
         # Populate context with collected asset collections.
-        opsdata.populate_context_with_imported_asset_colls(context, updater.ASSET_UPDATER)
+        opsdata.populate_context_with_imported_asset_colls(
+            context, updater.ASSET_UPDATER
+        )
+
+        # Redraw UI.
+        util.redraw_ui()
+
+        return {"FINISHED"}
+
+
+class BSP_ASSET_UPDATER_update_asset(bpy.types.Operator):
+    bl_idname = "bsp_asset.update_asset"
+    bl_label = "Update Assets"
+    bl_description = "Updates Asset to target version that is selected in the list view"
+
+    index: bpy.props.IntProperty(name="Index", min=0)
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return True
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+
+        prop_group = context.scene.bsp_asset.imported_asset_collections[self.index]
+
+        collection: bpy.types.Collection = prop_group.collection
+        target_publish: str = prop_group.target_publish
+        asset_file: bpy.types.PropertyGroup = prop_group.asset_publishes[target_publish]
+        # asset_publish = AssetPublish(asset_file.path)
+
+        # Collection pointer gets lost after this operation.
+        updater.ASSET_UPDATER.update_asset_collection_libpath(
+            collection, asset_file.path
+        )
 
         # Redraw UI.
         util.redraw_ui()
@@ -61,7 +96,7 @@ def collect_assets_in_scene(_):
 
 # ----------------REGISTER--------------.
 
-classes = [BSP_ASSET_UPDATER_collect_assets]
+classes = [BSP_ASSET_UPDATER_collect_assets, BSP_ASSET_UPDATER_update_asset]
 
 
 def register() -> None:

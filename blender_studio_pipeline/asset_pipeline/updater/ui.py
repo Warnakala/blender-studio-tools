@@ -23,7 +23,7 @@ from typing import List, Dict, Union, Any, Set, Optional
 import bpy
 
 from .. import constants
-from .ops import BSP_ASSET_UPDATER_collect_assets
+from .ops import BSP_ASSET_UPDATER_collect_assets, BSP_ASSET_UPDATER_update_asset
 
 
 def draw_imported_asset_collections_in_scene(
@@ -81,13 +81,19 @@ class BSP_UL_imported_asset_collections(bpy.types.UIList):
         coll = item.collection
         if self.layout_type in {"DEFAULT", "COMPACT"}:
 
-            row = layout.row(align=True)
-            row.alignment = "LEFT"
+            # row = layout.row(align=True)
+            # row.alignment = "LEFT"
 
-            row.label(text=coll.bsp_asset.entity_name)
-            row.label(text=coll.bsp_asset.version)
+            base_split = layout.split(factor=0.3, align=True)
+            base_split.label(text=coll.bsp_asset.entity_name)
 
-            row.prop(item, "target_publish", text="")
+            base_split.label(text=coll.bsp_asset.version)
+
+            base_split.prop(item, "target_publish", text="")
+
+            base_split.operator(
+                BSP_ASSET_UPDATER_update_asset.bl_idname, text="", icon="FILE_REFRESH"
+            ).index = index
 
         elif self.layout_type in {"GRID"}:
             layout.alignment = "CENTER"

@@ -25,7 +25,7 @@ from .asset_updater import AssetUpdater
 from . import ops, ui
 
 # Initialize variables.
-ASSET_UPDATER: Optional[AssetUpdater] = None
+ASSET_UPDATER = AssetUpdater()
 
 
 # ----------------REGISTER--------------.

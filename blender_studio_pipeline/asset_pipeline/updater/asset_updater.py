@@ -24,27 +24,43 @@ from pathlib import Path
 
 import bpy
 
+from ... import lib_util
 
 logger = logging.getLogger("BSP")
 
 
 class AssetUpdater:
-    def __init__(self, context: bpy.types.Context):
+    def __init__(self):
         self._asset_collections: Set[bpy.types.Collection] = set()
-
-        self.collect_asset_collections_in_scene(context)
 
     def collect_asset_collections_in_scene(
         self, context: bpy.types.Context
     ) -> List[bpy.types.Collection]:
-
+        """
+        Collects all asset collections that have coll.bsp_asset.is_publish==True in current scene.
+        Only collects them if they are linked in or library overwritten.
+        """
         self._asset_collections.clear()
 
-        # TODO: only load linked collections, check for that.
         for coll in context.scene.collection.children_recursive:
+
+            # If item is not coming from a library: Skip.
+            if lib_util.is_item_local(coll):
+                continue
+
             if coll.bsp_asset.is_publish:
                 self._asset_collections.add(coll)
 
     @property
     def asset_collections(self) -> Set[bpy.types.Collection]:
         return self._asset_collections
+
+    def update_asset_collection_libpath(
+        self, asset_collection: bpy.types.Collection, libpath: Path
+    ) -> None:
+        lib = lib_util.get_item_lib(asset_collection)
+        bpy.ops.wm.lib_relocate(
+            library=lib.name,
+            directory=libpath.parent.as_posix(),
+            filename=libpath.name,
+        )
