@@ -12,7 +12,7 @@ specific shot files.
 
 blender-kitsu (/blender-kitsu) is a Blender Add-on to interact with Kitsu from within Blender. It also has features that are not directly related to Kitsu but support certain aspects of the Blender Studio Pipeline.
 
-## blender-kitsu
+## asset-pipeline
 
 asset-pipeline (/asset-pipeline) is a Blender Add-on that manages the Asset Pipeline of the Blender Studio. It includes an Asset Builder and an Asset Updater.
 ## blender-purge
