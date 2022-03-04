@@ -56,11 +56,16 @@ class AssetUpdater:
         return self._asset_collections
 
     def update_asset_collection_libpath(
-        self, asset_collection: bpy.types.Collection, libpath: Path
-    ) -> None:
+        self, asset_collection: bpy.types.Collection, new_libpath: Path
+    ) -> bpy.types.Collection:
+        coll_name = asset_collection.name
         lib = lib_util.get_item_lib(asset_collection)
+        self.update_libpath(lib, new_libpath)
+        return bpy.data.collections[coll_name]
+
+    def update_libpath(self, lib: bpy.types.Library, new_libpath: Path) -> None:
         bpy.ops.wm.lib_relocate(
             library=lib.name,
-            directory=libpath.parent.as_posix(),
-            filename=libpath.name,
+            directory=new_libpath.parent.as_posix(),
+            filename=new_libpath.name,
         )
