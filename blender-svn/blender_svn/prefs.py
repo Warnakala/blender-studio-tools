@@ -31,7 +31,6 @@ logger = logging.getLogger(name="SVN")
 def _init_local_svn_client(
     self: bpy.types.AddonPreferences, context: bpy.types.Context
 ) -> None:
-    # TODO: check if path is actual svn repository.
     client.init_local_client(self.svn_directory_path)
 
 

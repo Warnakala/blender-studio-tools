@@ -37,6 +37,15 @@ LOCAL_CLIENT: LocalClient = None
 
 def init_local_client(svn_root_path: Path) -> LocalClient:
     global LOCAL_CLIENT
-    LOCAL_CLIENT = LocalClient(svn_root_path.as_posix())
 
+    # If not .svn in path invalid.
+    if not svn_root_path.joinpath(".svn").exists():
+        logger.warning(
+            "Failed to init local SVN client. Found not SVN repo in: %s",
+            svn_root_path.as_posix(),
+        )
+        LOCAL_CLIENT = None
+        return
+
+    LOCAL_CLIENT = LocalClient(svn_root_path.as_posix())
     logger.info("Initiated local SVN client: %s", LOCAL_CLIENT)

@@ -30,6 +30,7 @@ from . import util, client, opsdata
 
 logger = logging.getLogger("SVN")
 
+
 class SVN_collect_dirty_files_local(bpy.types.Operator):
     bl_idname = "svn.collect_dirty_files_local"
     bl_label = "Collect Dirty Files Local"
@@ -52,7 +53,7 @@ class SVN_collect_dirty_files_local(bpy.types.Operator):
 
 
 @persistent
-def init_svn_client_local(_):
+def init_svn_client_local(_) -> None:
     prefs = util.get_addon_prefs()
     path: Optional[Path] = prefs.svn_directory_path
 
