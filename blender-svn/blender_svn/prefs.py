@@ -31,16 +31,20 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 
     bl_idname = __package__
 
-
     svn_directory: bpy.props.StringProperty(  # type: ignore
         name="SVN Directory",
         default="",
         subtype="DIR_PATH",
     )
 
+    @property
+    def svn_directory_path(self) -> Optional[Path]:
+        if not self.svn_directory:
+            return None
+        return Path(self.svn_directory)
+
     def draw(self, context: bpy.types.Context) -> None:
         layout: bpy.types.UILayout = self.layout
-
 
         # Production Config Dir.
         row = layout.row(align=True)
