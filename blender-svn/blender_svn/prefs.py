@@ -17,46 +17,46 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
-
 import logging
+from typing import Optional, Any, Set, Tuple, List
+from pathlib import Path
 
 import bpy
 
-import importlib
 
-from . import prefs
-
-bl_info = {
-    "name": "Blender SVN",
-    "author": "Paul Golter",
-    "description": "Blender Add-on to interact with Subversion. Used by other add-ons in Blender-Studio-Tools.",
-    "blender": (3, 1, 0),
-    "version": (0, 1, 0),
-    "location": "View3D",
-    "warning": "",
-    "doc_url": "",
-    "tracker_url": "",
-    "category": "Generic",
-}
-
-logger = logging.getLogger("SVN")
+logger = logging.getLogger(name="SVN")
 
 
-def reload() -> None:
-    global prefs
+class SVN_addon_preferences(bpy.types.AddonPreferences):
 
-    importlib.reload(prefs)
+    bl_idname = __package__
 
 
-_need_reload = "prefs" in locals()
-if _need_reload:
-    reload()
+    svn_directory: bpy.props.StringProperty(  # type: ignore
+        name="SVN Directory",
+        default="",
+        subtype="DIR_PATH",
+    )
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+
+
+        # Production Config Dir.
+        row = layout.row(align=True)
+        row.prop(self, "svn_directory")
+
 
 # ----------------REGISTER--------------.
 
+classes = [SVN_addon_preferences]
+
 
 def register() -> None:
-    prefs.register()
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
 
 def unregister() -> None:
-    prefs.unregister()
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
