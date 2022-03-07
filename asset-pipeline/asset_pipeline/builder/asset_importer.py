@@ -137,8 +137,6 @@ class AssetImporter:
         # TODO: Add safety check to verify this function is not run in an
         # asset task. Maybe built context could receive a flag that we can check here?
 
-        # TODO: In theroy nothing speaks against creating a new AssetPublish object here.
-        # we could search it in self.build_context.asset_publishes but whats the point?
         asset_task = self.build_context.asset_task
         asset_publish = AssetPublish(Path(bpy.data.filepath))
 

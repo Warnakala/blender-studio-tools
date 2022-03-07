@@ -281,10 +281,6 @@ class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
             context, builder.BUILD_CONTEXT
         )
 
-        # TODO: something seems to go wrong here, the latest asset version
-        # shows up twice in asset publishes list... mhhh
-        # maybe we should make 2 lists. one AssetContext and one BuildContext
-
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = True
 

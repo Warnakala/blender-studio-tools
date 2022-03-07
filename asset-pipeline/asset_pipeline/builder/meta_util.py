@@ -49,7 +49,7 @@ def init_meta_task_layer(task_layer: type[TaskLayer]) -> MetadataTaskLayer:
     d["name"] = task_layer.name
 
     d["source_revision"] = ""  # TODO:
-    d["source_path"] = bpy.data.filepath  # TODO:
+    d["source_path"] = bpy.data.filepath
     d["is_locked"] = False
 
     d["created_at"] = time.strftime(constants.TIME_FORMAT)

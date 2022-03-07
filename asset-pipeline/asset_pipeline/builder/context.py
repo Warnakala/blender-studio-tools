@@ -52,11 +52,6 @@ class BuildContextFailedToInitialize(Exception):
 class InvalidTaskLayerDefinition(Exception):
     pass
 
-
-# TODO: create global context, that holds Productio TaskLayers
-# BuildContext uses that to create TaskLayerAsssembly
-
-
 class ProcessPair:
     """
     Simple Class that stores a logically connected target and a pull from path.
@@ -143,6 +138,7 @@ class ProductionContext:
 
                 self._module_of_task_layers = prod_task_layers
 
+            # TODO: add check exception handeling if hooks module not existent.
             import hooks
 
             self._module_of_hooks = hooks
