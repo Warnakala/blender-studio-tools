@@ -20,52 +20,26 @@
 
 import logging
 
+from typing import List, Dict, Union, Any, Set, Optional, Tuple
+from pathlib import Path
+
 import bpy
 
-import importlib
-
-from . import prefs, props, ops
-
-bl_info = {
-    "name": "Blender SVN",
-    "author": "Paul Golter",
-    "description": "Blender Add-on to interact with Subversion. Used by other add-ons in Blender-Studio-Tools.",
-    "blender": (3, 1, 0),
-    "version": (0, 1, 0),
-    "location": "View3D",
-    "warning": "",
-    "doc_url": "",
-    "tracker_url": "",
-    "category": "Generic",
-}
+from . import client
 
 logger = logging.getLogger("SVN")
 
 
-def reload() -> None:
-    global prefs
-    global props
-    global ops
+def add_external_file_to_context(context: bpy.types.Context, path: Path) -> None:
 
-    importlib.reload(prefs)
-    importlib.reload(props)
-    importlib.reload(ops)
+    # Add item.
+    item = context.scene.svn.external_files.add()
 
-
-_need_reload = "prefs" in locals()
-if _need_reload:
-    reload()
-
-# ----------------REGISTER--------------.
+    # Set collection property.
+    item.path_str = path.as_posix()
 
 
-def register() -> None:
-    prefs.register()
-    props.register()
-    ops.register()
+def populate_context_with_external_files(context: bpy.types.Context) -> None:
 
+    context.scene.svn.external_files.clear()
 
-def unregister() -> None:
-    ops.unregister()
-    props.unregister()
-    prefs.unregister()
