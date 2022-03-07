@@ -1,13 +1,10 @@
-import svn.constants
-import svn.common
-
-
-class RemoteClient(svn.common.CommonClient):
+from . import constants, common
+class RemoteClient(common.CommonClient):
 
     def __init__(self, url, *args, **kwargs):
         super(RemoteClient, self).__init__(
             url,
-            svn.constants.LT_URL,
+            constants.LT_URL,
             *args, **kwargs)
 
     def checkout(self, path, revision=None):

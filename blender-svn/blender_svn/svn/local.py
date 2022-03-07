@@ -3,8 +3,7 @@ import collections
 
 import xml.etree
 
-import svn.constants
-import svn.common
+from . import constants, common
 
 _STATUS_ENTRY = \
     collections.namedtuple(
@@ -16,14 +15,14 @@ _STATUS_ENTRY = \
         ])
 
 
-class LocalClient(svn.common.CommonClient):
+class LocalClient(common.CommonClient):
     def __init__(self, path_, *args, **kwargs):
         if os.path.exists(path_) is False:
             raise EnvironmentError("Path does not exist: %s" % path_)
 
         super(LocalClient, self).__init__(
             path_,
-            svn.constants.LT_PATH,
+            constants.LT_PATH,
             *args, **kwargs)
 
     def __repr__(self):
@@ -85,7 +84,7 @@ class LocalClient(svn.common.CommonClient):
             wcstatus_attr = wcstatus.attrib
 
             change_type_raw = wcstatus_attr['item']
-            change_type = svn.constants.STATUS_TYPE_LOOKUP[change_type_raw]
+            change_type = constants.STATUS_TYPE_LOOKUP[change_type_raw]
 
             # This will be absent if the file is "unversioned". It'll be "-1"
             # if added but not committed.

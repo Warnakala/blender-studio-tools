@@ -2,8 +2,7 @@ import os
 import subprocess
 import logging
 
-import svn.config
-import svn.exception
+from . import config, exception
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,7 +15,7 @@ class CommonBase(object):
 
         env = os.environ.copy()
 
-        lang = os.environ.get('LANG', svn.config.CONSOLE_ENCODING)
+        lang = os.environ.get('LANG', config.CONSOLE_ENCODING)
         env['LANG'] = lang
 
         env.update(environment)
@@ -47,7 +46,7 @@ class CommonBase(object):
             if stderr is None:
                 stderr = "<combined with STDOUT, above>"
 
-            raise svn.exception.SvnException(
+            raise exception.SvnException(
                 "Command failed with ({}): {}\nSTDOUT:\n\n{}\nSTDERR:\n\n{}".format(
                 return_code, cmd, stdout, stderr))
 

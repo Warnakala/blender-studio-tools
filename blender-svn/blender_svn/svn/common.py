@@ -6,9 +6,7 @@ import xml.etree.ElementTree
 
 import dateutil.parser
 
-import svn.constants
-import svn.exception
-import svn.common_base
+from . import constants, exception, common_base
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,7 +17,7 @@ _HUNK_HEADER_RIGHT_PREFIX = '+++ '
 _HUNK_HEADER_LINE_NUMBERS_PREFIX = '@@ '
 
 
-class CommonClient(svn.common_base.CommonBase):
+class CommonClient(common_base.CommonBase):
     def __init__(self, url_or_path, type_, username=None, password=None,
                  svn_filepath='svn', trust_cert=None, env={}, *args, **kwargs):
         super(CommonClient, self).__init__(*args, **kwargs)
@@ -31,8 +29,8 @@ class CommonClient(svn.common_base.CommonBase):
         self.__trust_cert = trust_cert
         self.__env = env
 
-        if type_ not in (svn.constants.LT_URL, svn.constants.LT_PATH):
-            raise svn.exception.SvnException("Type is invalid: {}".format(type_))
+        if type_ not in (constants.LT_URL, constants.LT_PATH):
+            raise exception.SvnException("Type is invalid: {}".format(type_))
 
         self.__type = type_
 
@@ -332,7 +330,7 @@ class CommonClient(svn.common_base.CommonBase):
                     'kind': kind,
 
                     # To decouple people from the knowledge of the value.
-                    'is_directory': kind == svn.constants.K_DIR,
+                    'is_directory': kind == constants.K_DIR,
 
                     'name': name,
                     'size': size,
@@ -568,7 +566,7 @@ class CommonClient(svn.common_base.CommonBase):
 
     @property
     def url(self):
-        if self.__type != svn.constants.LT_URL:
+        if self.__type != constants.LT_URL:
             raise EnvironmentError(
                 "Only the remote-client has access to the URL.")
 
@@ -576,7 +574,7 @@ class CommonClient(svn.common_base.CommonBase):
 
     @property
     def path(self):
-        if self.__type != svn.constants.LT_PATH:
+        if self.__type != constants.LT_PATH:
             raise EnvironmentError(
                 "Only the local-client has access to the path.")
 

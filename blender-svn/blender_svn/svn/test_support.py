@@ -4,11 +4,7 @@ import tempfile
 import shutil
 import uuid
 
-import svn.constants
-import svn.common
-import svn.remote
-import svn.local
-import svn.admin
+from . import constants, common, remote, local, admin
 
 @contextlib.contextmanager
 def temp_path():
@@ -34,10 +30,10 @@ def temp_repo():
     """Initialize a repository in the current path."""
 
     with temp_path() as repo_path:
-        a = svn.admin.Admin()
+        a = admin.Admin()
         a.create('.')
 
-        rc = svn.remote.RemoteClient('file://{}'.format(repo_path))
+        rc = remote.RemoteClient('file://{}'.format(repo_path))
 
         yield repo_path, rc
 
@@ -50,10 +46,10 @@ def temp_checkout():
     repo_path = os.getcwd()
 
     with temp_path() as working_path:
-        rc = svn.remote.RemoteClient('file://{}'.format(repo_path))
+        rc = remote.RemoteClient('file://{}'.format(repo_path))
         rc.checkout('.')
 
-        lc = svn.local.LocalClient(working_path)
+        lc = local.LocalClient(working_path)
 
         yield working_path, lc
 
@@ -66,9 +62,9 @@ def temp_common():
 
     with temp_repo() as (repo_path, _):
         with temp_checkout() as (working_path, _):
-            cc = svn.common.CommonClient(
+            cc = common.CommonClient(
                     working_path,
-                    svn.constants.LT_PATH)
+                    constants.LT_PATH)
 
             yield repo_path, working_path, cc
 
@@ -81,7 +77,7 @@ def populate_bigger_file_changes1():
         "as the CWD."
 
     working_path = os.getcwd()
-    lc = svn.local.LocalClient(working_path)
+    lc = local.LocalClient(working_path)
 
     # Create a file that will not be committed.
 
@@ -151,7 +147,7 @@ def populate_bigger_file_change1():
         "as the CWD."
 
     working_path = os.getcwd()
-    lc = svn.local.LocalClient(working_path)
+    lc = local.LocalClient(working_path)
 
     # Create a file that will be committed and then changed a lot.
 
