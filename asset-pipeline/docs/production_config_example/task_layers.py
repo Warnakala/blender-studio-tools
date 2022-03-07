@@ -17,6 +17,18 @@ class TransferSettings(bpy.types.PropertyGroup):
         items=[("VERTEX_ORDER", "Vertex Order", ""), ("PROXIMITY", "Proximity", "")],
     )
 
+class RiggingTaskLayer(TaskLayer):
+    name = "Rigging"
+    order = 0
+
+    @classmethod
+    def transfer_data(
+        cls,
+        context: bpy.types.Context,
+        transfer_mapping: AssetTransferMapping,
+        transfer_settings: bpy.types.PropertyGroup,
+    ) -> None:
+        print(f"Processing data from TaskLayer {cls.__name__}")
 
 # Not allowed: 2 TaskLayer Classes with the same ClassName (Note: note 'name' attribute)
 class ShadingTaskLayer(TaskLayer):
@@ -420,17 +432,3 @@ class GroomingTaskLayer(TaskLayer):
         return
 
 
-class RiggingTaskLayer(TaskLayer):
-    name = "Rigging"
-    order = 0
-
-    # TODO: make TaskLayerStack tls = [RiggingTaskLayer, GroomingTaskLayer, ShadingTaskLayer]
-
-    @classmethod
-    def transfer_data(
-        cls,
-        context: bpy.types.Context,
-        transfer_mapping: AssetTransferMapping,
-        transfer_settings: bpy.types.PropertyGroup,
-    ) -> None:
-        print(f"Processing data from TaskLayer {cls.__name__}")
