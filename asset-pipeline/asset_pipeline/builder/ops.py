@@ -41,7 +41,7 @@ class BSP_ASSET_init_asset_collection(bpy.types.Operator):
     bl_label = "Init Asset Collection"
     bl_description = (
         "Initializes a Collection as an Asset Collection. "
-        "This fills out the required metadata properties. "
+        "This fills out the required metadata properties"
     )
 
     @classmethod
@@ -87,7 +87,7 @@ class BSP_ASSET_init_asset_collection(bpy.types.Operator):
 class BSP_ASSET_clear_asset_collection(bpy.types.Operator):
     bl_idname = "bsp_asset.clear_asset_collection"
     bl_label = "Clear Asset Collection"
-    bl_description = "Clears the Asset Collection. Removes all metadata properties. "
+    bl_description = "Clears the Asset Collection. Removes all metadata properties"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -331,7 +331,7 @@ class BSP_ASSET_push_task_layers(bpy.types.Operator):
     bl_idname = "bsp_asset.push_task_layers"
     bl_label = "Apply Changes"
     bl_description = (
-        "Calls the publish function of the Asset Builder with the current Build Context"
+        "Calls the push function of the Asset Builder with the current Build Context"
     )
 
     @classmethod

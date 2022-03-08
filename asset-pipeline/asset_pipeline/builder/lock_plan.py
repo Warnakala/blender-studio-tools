@@ -31,9 +31,10 @@ logger = logging.getLogger("BSP")
 
 class TaskLayerLockPlan:
     """
-    When creating a new incrementing of an asset publish we need to somehow store
-    from which previous asset publish which task layer will be locked to display that info
-    in the UI. This class helps with that.
+    When creating a new incrementation of an asset publish we need to somehow store
+    from which previous asset publishes which task layer will be locked.
+    This is automatically calculated, but this information should also be displayed in the UI.
+    This class helps with that. This class can also actually lock the task layers.
     """
 
     def __init__(

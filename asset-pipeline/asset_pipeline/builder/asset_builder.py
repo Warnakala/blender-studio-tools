@@ -53,6 +53,18 @@ class AssetBuilderFailedToPublish(Exception):
 
 
 class AssetBuilder:
+    """
+    The AssetBuilder contains the actual logic how to process the BuildContext.
+    It has 3 main functions:
+
+    push: Starts process of opening a new Blender Instance and pickling the BuildContext. New Blender Instance
+    actually then loads the BuildContext and calls AssetBuilder.pull_from_task().
+
+    pull_from_publish: Pulls the selected TaskLayers from the AssetPublish in to the current AssetTask.
+    Does not require a new Blender Instance.
+
+    pull_from_task: Pulls the selected TaskLayers from the AssetTask in to the current AssetPublish.
+    """
     def __init__(self, build_context: BuildContext):
         if not build_context:
             raise AssetBuilderFailedToInitialize(
@@ -76,6 +88,27 @@ class AssetBuilder:
         return self._transfer_settings
 
     def push(self) -> None:
+        """
+        Starts process of opening a new Blender Instance and pickling the BuildContext. New Blender Instance
+        actually then loads the BuildContext and calls AssetBuilder.pull_from_task(). That means pickling the BuildContext
+        and restoring it in the other Blender Instance.
+        """
+
+        # No here it gets a little tricky. We cannot just simply
+        # perform a libraries.write() operation. The merge process
+        # requires additional operations to happen so we need to actually
+        # open the asset version blend file and perform them.
+
+        # Now we already assembled this huge BuildContext, in which we have
+        # all the information we need for whatever needs to be done.
+        # The question is how can we share this info with the new Blender Instance
+        # that knows nothing about it.
+
+        # A very effective and easy ways seems to be pickling the BuildContext
+        # and unpickling  it in the new Blender Instance again.
+        # Some objects cannot be pickled (like the blender context or a collection)
+        # (We can add custom behavior to work around this please see: ./context.py)
+
         # Catch special case first version.
         if not self.build_context.asset_publishes:
             asset_publish = self._create_first_version()
@@ -96,22 +129,6 @@ class AssetBuilder:
             return
 
         # Normal publish process.
-
-        # No here it gets a little tricky. We cannot just simply
-        # perform a libraries.write() operation. The merge process
-        # requires additional operations to happen so we need to actually
-        # open the asset version blend file and perform them.
-
-        # Now we already assembled this huge BuildContext, in which we have
-        # all the information we need for whatever needs to be done.
-        # The question is how can we share this info with the new Blender Instance
-        # that knows nothing about it.
-
-        # A very effective and easy ways seems to be pickling the BuildContext
-        # and unpickling  it in the new Blender Instance again.
-        # Some objects cannot be pickled (like the blender context or a collection)
-        # (We can add custom behavior to work around this please see: ./context.py)
-
         for process_pair in self.build_context.process_pairs:
 
             asset_publish = process_pair.asset_publish
@@ -136,6 +153,10 @@ class AssetBuilder:
         self,
         context: bpy.types.Context,
     ) -> None:
+
+        """
+        Pulls the selected TaskLayers from the AssetPublish in to the current AssetTask.
+        """
 
         # Here we don't need to open another blender instance. We can use the current
         # one. We pull in the asset collection from the latest asset publish and
@@ -237,9 +258,7 @@ class AssetBuilder:
     ) -> None:
 
         """
-        This function is used to pull task layers from an asset publish in to an asset task
-        but also to pull an asset task in to an asset publish. The source_type argument controls
-        the direction.
+        Pulls the selected TaskLayers from the AssetTask in to the current AssetPublish.
         """
 
         # User does a publish/push. This code runs ins AssetPublish file.

@@ -18,6 +18,8 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 """
+As the publish process requires a number of more complex operations, we need to actually have a Blender Instance
+opening that file and then executing the operations.
 This script can be passed as -P option when starting a blender exe.
 It needs a pickle_path after -- . The pickle path contains a pickled BuildContext from the AssetTask.
 This BuildContext will be unpickled in this script and processed, which means performing

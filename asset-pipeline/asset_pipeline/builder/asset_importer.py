@@ -92,7 +92,10 @@ def import_data_from_lib(
 
 class AssetImporter:
     """
-    Class that handles the suffixing logic when importing another asset collection.
+    Class that handles the creation of the TransferCollectionTriplet.
+    Depending on the operation (push/pull) and depending on the selected TaskLayers
+    we need to import and suffix the Asset Collections from the AssetTask and the AssetPublish
+    after a certain logic.
     """
 
     def __init__(self, build_context: BuildContext):

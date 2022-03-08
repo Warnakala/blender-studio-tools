@@ -17,6 +17,24 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+
+"""
+The asset-pipeline works heavily with the concept of Contexts.
+There are 3 types of contexts:
+
+ProductionContext: Global production level context, gets loaded on startup, processes all the config files.
+
+AssetContext: Local Asset Context, gets loaded on each scene load. Stores settings and information for active Asset.
+
+BuildContext: Gets loaded when starting a publish or a pull. Contains both the ProductionContext and AssetContext
+as well as some other data. Is the actual context that gets processed by the AssetBuilder.
+
+A key feature is that we need to be able to 'exchange' this information with another blend file. As the actual
+transfer process requires to:
+open another blend file -> load the build context there -> process it -> close it again.
+This can be achieved by using the `pickle` library and pickle the Contexts. All the contexts are pickleable.
+"""
+
 import importlib
 import logging
 
@@ -78,7 +96,8 @@ class ProductionContext:
 
     """
     A context that represents configuration on a Production Level.
-    Independent from Blender, no bpy access.
+    Independent from Blender, no bpy access. This context mostly holds
+    the defined TaskLayers in the config files, the transfer settings and the hooks.
     """
 
     def __init__(self, config_folder: Path):
@@ -316,7 +335,10 @@ class ProductionContext:
 class AssetContext:
 
     """
-    Should be updated on each scene load.
+    The Asset Context gets updated on each scene load. It holds all information that are related
+    to the current Asset. This includes the current Asset Collection, Asset Task, available Asset Publishes,
+    the Asset Directory, the configuration of Task Layers (which ones are enabled and disabled)
+    and the Transfer Settings.
     """
 
     def __init__(self, bl_context: bpy.types.Context, prod_context: ProductionContext):
