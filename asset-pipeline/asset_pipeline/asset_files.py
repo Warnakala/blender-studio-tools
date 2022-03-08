@@ -86,7 +86,7 @@ class AssetFile:
         # Its handy to use this class for in the 'future'
         # existing files, to query paths etc.
         if not self.metadata_path.exists():
-            logger.info(
+            logger.warning(
                 f"Metadata file does not exist: {self.metadata_path.as_posix()}"
             )
             return

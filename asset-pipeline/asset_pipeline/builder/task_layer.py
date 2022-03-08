@@ -41,7 +41,11 @@ logger = logging.getLogger("BSP")
 
 
 class TaskLayer:
-
+    """
+    This class is more or less boilerplate so Users can easily write their TaskLayer
+    in the production config file. Users need to implement the transfer_data function
+    and fille out the class attributes.
+    """
     name: str = ""
     description: str = ""
     order: int = -1
@@ -129,9 +133,9 @@ class TaskLayerConfig:
 class TaskLayerAssembly:
 
     """
-    This Class holds all TaskLayers relevant for build.
-    Each TaskLayer is stored as TaskLayerConfig object which provides
-    the built additional information.
+    This Class holds all TaskLayers relevant for the build.
+    Each TaskLayer is stored as a TaskLayerConfig object which provides
+    the additional information.
     """
 
     def __init__(self, task_layers: List[type[TaskLayer]]):

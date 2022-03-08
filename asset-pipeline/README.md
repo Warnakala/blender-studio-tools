@@ -5,10 +5,14 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
 - [Installation](#installation)
 - [How to get started](#how-to-get-started)
 - [Configuration](#configuration)
-- [Features](#features)
-    - TODO
+    - [Task Layers](#task_layers.py)
+    - [Hooks](#hooks.py)
 - [Development](#development)
-    - [Getting Started as a Developer](#getting-started-as-a-developer)
+- [Getting Started as a Developer](#getting-started-as-a-developer)
+    - [Context](#context)
+    - [UI](#ui)
+    - [Asset Files](#asset-files)
+    - [Metadata](#metadata)
 
 
 ## Installation
@@ -36,7 +40,7 @@ The config files need to be named a certain way and contain certain content.
 
 <!--  TODO: Add note about autocomplete extra path feature of VSCode -->
 
-### task_layer.py
+### task_layers.py
 In this file you can define the Task Layers and TransferSettings for this project.
 For an example config check out: `docs/production_config_example/task_layers.py`
 
@@ -278,4 +282,126 @@ Basic Usage: https://python-poetry.org/docs/basic-usage/
 
 Create a sym link in your blender addons directory to the asset_pipeline folder.
 
-### Getting Started as a Developer
+## Getting Started as a Developer
+
+The asset-pipeline contains two main packages.
+
+1. **builder**: The Asset Builder which contains most of the core definitions and logic of Task Layers, Asset publishing, pulling and metadata handling.
+
+2. **updater**: The Asset Updater is quite light weight. It handles detecting imported asset collections and fetching available asset publishes. It also handles the logic of the actual updating.
+
+Both packages share a couple of modules that you can find on the top level.
+
+Let's have a closer look at the **builder** package.
+
+The Pipeline of **publishing** an Asset looks roughly like the following:
+
+- Loading a .blend file
+- Creating a Production Context
+- Creating an Asset Context
+- Selecting TaskLayers to publish
+- Start publish: Create Build Context
+- Fetch all asset publishes and their metadata
+- Apply changes: Pushes the selected TaskLayer to the affected asset publishes, updates metadata.
+- Publish: Finalizes the publish process, commits changes to svn.
+
+The Pipeline of **pulling** TaskLayers from the latest asset publish goes down roughly like this:
+- Loading a .blend file
+- Creating a Production Context
+- Creating an Asset Context
+- Selecting TaskLayers to pull
+- Pull: Pulls the selected TaskLayers from the latest Asset Publish in to the current Asset Task and updates metadata.
+
+---
+
+### Context
+
+The asset-pipeline strongly works with Context objects, that get populated with
+information and are used by the AssetBuilder to perform the actual logic of
+building an Asset.
+
+There are 3 types of contexts:
+
+- **ProductionContext**: Global production level context, gets loaded on startup,
+processes all the config files. This context collects all the TaskLayers and
+registers TransferSettings that are defined in the `task_layers.py` config file.
+It also searches for the `hooks.py` file and collects all valid hooks.
+
+- **AssetContext**: Local Asset Context, gets loaded on each scene load. Stores
+settings and information for active Asset. It holds all information that are
+related to the current Asset. This includes the current Asset Collection, Asset
+Task, available Asset Publishes, the Asset Directory, the configuration of Task
+Layers (which ones are enabled and disabled) and the Transfer Settings.
+
+- **BuildContext**: Gets loaded when starting a publish or a pull. Contains both the
+ProductionContext and AssetContext as well as some other data. Is the actual
+context that gets processed by the AssetBuilder.
+
+A key feature is that we need to be able to 'exchange' this information with
+another blend file. As the actual transfer process requires to:
+
+Open another blend file -> load the build context there -> process it -> close it again.
+
+This can be achieved by using the
+[pickle](https://docs.python.org/3/library/pickle.html) library and pickle the
+Contexts. All the contexts are pickle-able. The **\_\_setstate\_\_**,
+**\_\_getstate\_\_** functions ensure that.
+
+
+### UI
+
+All of this information that hides in these Context Objects needs to be partially visible for
+Users in the UI. In the `props.py` module there are a whole lot of PropertyGroups that can store this
+information with native Blender Properties to display it in the UI.
+
+This requires some sort of sync process between the Context and the PropertyGroups.
+This sync process happens in a couple of places:
+
+- On startup
+- On scene load
+- On start publish
+- After push task layers
+- After abort publish
+- After pull task layers
+- After publish
+- After updating statuses (metadata)
+
+Which PropertyGroups get updated depends a little bit on the operations. In general the asset-pipeline
+only tries to update the parts that were altered and are therefore outdated.
+
+Not only are PropertyGroups updated by the Context objects, sometimes it also goes the other way.
+For example: The last selected TaskLayers are saved on Scene level. On load this selection is restored,
+which also updates the AssetContext.
+
+### Asset Files
+
+Often we have to interact with files on disk and do the same operations over and
+over again.  For this consider using the: **asset_file.py** module. It contains
+the **AssetTask**, **AssetPublish** and
+**AssetDir** classes that are very useful and an important part of the System.
+
+
+### Metadata
+
+An asset file is always paired with a metadata file. The metadata file contains various information
+about that particular asset file. It saves all the TaskLayers that are contained in this file and where
+they came from. It also holds all kinds of information that make the Asset cleary identifieable.
+
+The AssetFile Classes automatically load this metadata on creation.
+
+The file format of this metadata is `xmp`. For that the asset-pipeline uses the `xml.etree` library.
+In the `metadata.py` file are Schemas that represent the different Metadata blocks.
+
+The idea here is to have Schemas in the form of Python `Dataclasses` that can be converted to their equivalent as XML Element. That way we have a clear definition of what kind of field are expected and available.
+Schemas can have nested Dataclasses. The conversion from Dataclass to XML Element happens in the `ElementMetadata` class and is automated.
+Metadata Classes can also be generated from ElementClasses. This conversion is happening in the `from_element()` function.
+
+The code base should only work with Dataclasses as they are much easier to handle.
+That means it is forbidden to import Element[] classes, the conversion from and to Dataclasses is only handled in this module.
+
+That results in this logic:
+A: Saving Metadata to file:
+   -> MetadataClass -> ElementClass -> XML File on Disk
+B: Loading Metadata from file:
+   -> XML File on Disk -> ElementClass -> MetadataClass
+

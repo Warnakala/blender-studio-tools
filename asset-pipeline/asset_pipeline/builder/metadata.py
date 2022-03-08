@@ -19,16 +19,19 @@
 # (c) 2021, Blender Foundation - Paul Golter
 
 """
-The idea here is to have Schemas in the form of Python Dataclasses that can be converted to their equivalent as XML Element.
-Schemas can have nested Dataclasses. The conversion happens in ElementMetadata and can handle that.
-Metadata Classes can also be generated from ElementClasses. This conversion is happening in the .from_element() function.
-The idea is that the code rest of the code only works with dataclasses and adjusts their data. That results in this
-logic. That means it is forbidden to import Element[] classes in the rest of the code base, the conversion from and to Dataclasses
-is only handled in this module.
+The idea here is to have Schemas in the form of Python `Dataclasses` that can be converted to their equivalent as XML Element. That way we have a clear definition of what kind of field are expected and available.
+Schemas can have nested Dataclasses. The conversion from Dataclass to XML Element happens in the `ElementMetadata` class and is automated.
+Metadata Classes can also be generated from ElementClasses. This conversion is happening in the `from_element()` function.
+
+The code base should only work with Dataclasses.
+That means it is forbidden to import Element[] classes, the conversion from and to Dataclasses is only handled in this module.
+
+That results in this logic:
 A: Saving Metadata to file:
    -> MetadataClass -> ElementClass -> XML File on Disk
 B: Loading Metadata from file:
    -> XML File on Disk -> ElementClass -> MetadataClass
+
 """
 
 import inspect
