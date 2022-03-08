@@ -4,10 +4,9 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
 ## Table of Contents
 - [Installation](#installation)
 - [How to get started](#how-to-get-started)
+- [Configuration](#configuration)
 - [Features](#features)
     - TODO
-- [Troubleshoot](#troubleshoot)
-- [Credits](#credits)
 - [Development](#development)
     - [Getting Started as a Developer](#getting-started-as-a-developer)
 
@@ -48,13 +47,15 @@ For an example config check out: `docs/production_config_example/task_layers.py`
 To define a Task Layer import:
 
 ```
+import bpy
+
 from asset_pipeline.api import (
     AssetTransferMapping,
     TaskLayer,
 )
 ```
 
-And declare a TaskLayer class:
+And declare a TaskLayer class that Inherits from TaskLayer:
 
 ```
 class RiggingTaskLayer(TaskLayer):
@@ -130,6 +131,7 @@ for mat_source, mat_target in transfer_mapping.material_map.items():
 ...
 ```
 - **transfer_settings**: Is the `TransferSettings` PropertyGroup that was defined in the task_layer.py module. More to that in the next section. If the PropertyGroup was defined you can just query its values as you would regularily do it inside of Blender: `transfer_settings.my_value`
+
 ---
 **Defining Transfer Settings**
 
@@ -147,6 +149,127 @@ class TransferSettings(bpy.types.PropertyGroup):
     )
 ```
 You can use every native Blender Property type. These properties are automatically exposed in the `Transfer Settings` tab UI in the Asset Pipeline Panel.
+
+
+### hooks.py
+The Asset Pipeline supports post transfer hooks that can be defined in the `hooks.py` file. Post Transfer hooks are simple Python functions that get executed **after** the successful transfer of all TaskLayers.
+
+> **_NOTE:_** Post Transfer Hooks are only executed on a push from Asset Task to Asset Publish. **Not** on a pull.
+
+These hooks could do anything but the the intent of a post merge hook is to bring the asset in the correct publish state. These are usually repetitive steps that the task artist has to do to prepare data for publishing (and often revert it again for working).
+
+For an example config check out: `docs/production_config_example/hooks.py`
+
+Start by importing these classes.
+
+```
+import bpy
+
+from asset_pipeline.api import hook, Wildcard, DoNotMatch
+
+```
+
+An example definition of a hook can look like this:
+
+```
+@hook(match_asset="Generic Sprite")
+def my_hook(asset_collection: bpy.types.Collection, **kwargs) -> None:
+    pass
+
+```
+
+You define a regular python function and decorate it with the **hook()** decorator.
+Note: The decorator needs to be executed.
+
+The hook decorator as well as the function itself can specify arguments.
+
+Let's first have a look at the hook decorator.
+The Idea is that you can use the hook decorator to
+
+first: Let the asset-pipeline know that this is an actual hook it should register
+
+second: to filter under which conditions the hook gets executed.
+
+For filtering you can use these key word arguments inside of the hook decorator braces:
+- `match_asset_type`
+- `match_asset match_asset`
+- `match_task_layers`
+
+For each of these keys you can supply these values:
+* `str`: would perform an exact string match.
+* `Iterator[str]`: would perform an exact string match with any of the given strings.
+* `Type[Wildcard]`: would match any type for this parameter. This would be used so a hook
+  is called for any value.
+* `Type[DoNotMatch]`: would ignore this hook when matching the hook parameter. This is the default
+  value for the matching criteria and would normally not be set directly in a
+  production configuration.
+
+With that in mind let's look at some more example hooks:
+
+```
+@hook()
+def test_hook_A(**kwargs) -> None:
+    pass
+```
+This hook has no filtering parameters so it is considered to be a **global** hook that always gets executed.
+
+```
+@hook(match_asset_type="Character")
+def test_hook_B(**kwargs) -> None:
+    pass
+```
+
+This hook will only be executed if current Asset is of type "Character".
+
+
+```
+@hook(match_task_layers="ShadingTaskLayer")
+def test_hook_C(**kwargs) -> None:
+    pass
+```
+
+This hook will only be executed if the Task Layer: "ShadingTaskLayer" was amongst the Task Layers that were selected for this transfer operation.
+
+```
+@hook(match_asset="Ellie")
+def test_hook_D(**kwargs) -> None:
+    pass
+```
+This hook will only be executed if the asset "Ellie" is processed.
+
+```
+@hook(
+    match_asset="Generic Sprite",
+    match_task_layers=["RiggingTaskLayer", "ShadingTaskLayer],
+)
+def test_hook_E(**kwargs) -> None:
+    pass
+```
+This hook will only be executed if the asset "Generic Sprite" is processed and the "RiggingTaskLayer" or
+"ShadingTaskLayer" was amongst the Task Layers that were selected for this transfer operation.
+
+
+
+It is important to note that the asset-pipeline follows a certain order to execute the hooks. And that is exactly the one of the examples hook described above:
+
+1. Global hooks
+2. Asset Type Hooks
+3. Task Layer Hooks
+4. Asset Hooks
+5. Asset + TaskLayer specific Hooks
+
+The function itself should always have **\*\*kwargs** as a parameter. The asset-pipeline automatically passes a couple of useful keyword arguments to the function:
+- `asset_collection`: bpy.types.Collection
+- `context`: bpy.types.Context
+- `asset_task`: asset_pipeline.asset_files.AssetTask
+- `asset_dir`: asset_pipeline.asset_files.AssetDir
+
+By exposing these parameters in the hook function you can use them in your code:
+```
+@hook()
+def test_hook_F(context: bpy.types.Context, asset_collection: bpy.types.Collection, **kwargs) -> None:
+    print(asset_collection.name)
+```
 
 ## Development
 In the project root you will find a `pyproject.toml` and `peotry.lock` file.

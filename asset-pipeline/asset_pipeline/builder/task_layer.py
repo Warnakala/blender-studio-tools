@@ -70,8 +70,9 @@ class TaskLayer:
         # TransferSettings class in the task layer module. We should update this.
         """
         The AssetTranfserMapping class represents a mapping between a source and a target.
-        It contains an object mapping which connects each source object with a target
-        object as well as a collection mapping.
+        It contains an object mapping which connects each source object with a target.
+        The maps are just dictionaries where the key is the source and the value the target.
+        Both key and target are actual Blender ID Datablocks.
         This makes it easy to write Merge Instructions.
         With it you can do access things like:
 
