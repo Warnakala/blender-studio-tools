@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Set, Union, Optional
 import bpy
 from asset_pipeline.api import (
     AssetTransferMapping,
-    BuildContext,
     TaskLayer,
 )
 
