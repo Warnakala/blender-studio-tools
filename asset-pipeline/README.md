@@ -13,6 +13,7 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
     - [UI](#ui)
     - [Asset Files](#asset-files)
     - [Metadata](#metadata)
+    - [Asset Importer](#asset-importer)
 
 
 ## Installation
@@ -405,3 +406,8 @@ A: Saving Metadata to file:
 B: Loading Metadata from file:
    -> XML File on Disk -> ElementClass -> MetadataClass
 
+### Asset Importer
+
+The `AssetImporter` is responsible for importing the right collections from the right source file
+so the data transfer can happen as expected.
+The output is a `TransferCollectionTriplet` which holds a reference to the collection from the AssetTask, collection from the AssetPublish and the actual target Collection on which the data is transferred.
