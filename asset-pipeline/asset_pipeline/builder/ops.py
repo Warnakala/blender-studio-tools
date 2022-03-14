@@ -295,6 +295,13 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
     bl_label = "Abort Publish"
     bl_description = "Aborts publish of the Asset Collection"
 
+    new_files_handeling: bpy.props.EnumProperty(
+        items=[
+            ("DELETE", "Delete", "This will delete newly created files on abort"),
+            ("KEEP", "Keep", "This will keep newly created files on abort")
+        ]
+    )
+
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(context.scene.bsp_asset.is_publish_in_progress)
@@ -303,7 +310,10 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
 
         # Undo.
         # This will undo all steps that were done between start publish and the call of this function.
-        builder.UNDO_CONTEXT.undo(context)
+        if self.new_files_handeling == "DELETE":
+            builder.UNDO_CONTEXT.undo(context)
+        else:
+            builder.UNDO_CONTEXT.clear(context)
 
         # Update Asset context after undo.
         builder.ASSET_CONTEXT.reload_asset_publishes()
@@ -325,6 +335,26 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
         util.redraw_ui()
 
         return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        if builder.UNDO_CONTEXT.has_steps_files_create():
+            return context.window_manager.invoke_props_dialog(self, width=400)
+        return self.execute(context)
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout: bpy.types.UILayout = self.layout
+
+        # Target.
+        layout.row(align=True).label(text="This Operation can delete files on disk", icon="ERROR")
+        layout.row(align=True).separator()
+
+        for asset_publish in builder.UNDO_CONTEXT.asset_publishes:
+            layout.row(align=True).label(text=f"- {asset_publish.path.name}")
+
+        layout.row(align=True).separator()
+        layout.row(align=True).label(text="How do you want to proceed?")
+
+        layout.row(align=True).prop(self, "new_files_handeling", expand=True)
 
 
 class BSP_ASSET_push_task_layers(bpy.types.Operator):
@@ -453,6 +483,9 @@ class BSP_ASSET_publish(bpy.types.Operator):
         # Update properties.
         context.scene.bsp_asset.is_publish_in_progress = False
         context.scene.bsp_asset.are_task_layers_pushed = False
+
+        # Clear undo context.
+        builder.UNDO_CONTEXT.clear(context)
 
         # Redraw UI.
         util.redraw_ui()

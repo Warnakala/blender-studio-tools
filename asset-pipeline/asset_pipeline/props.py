@@ -243,6 +243,7 @@ class BSP_undo_context(bpy.types.PropertyGroup):
 
     def add_step_asset_publish_create(self, asset_publish: AssetPublish) -> None:
         item = self.files_created.add()
+        item.name = asset_publish.path.name
         item.path_str = asset_publish.path.as_posix()
 
     def clear(self):

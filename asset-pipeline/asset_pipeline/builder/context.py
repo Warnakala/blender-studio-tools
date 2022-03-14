@@ -598,6 +598,13 @@ class UndoContext:
     def __init__(self):
         self._asset_publishes: List[AssetPublish] = []
 
+    @property
+    def asset_publishes(self) -> List[AssetPublish]:
+        return self._asset_publishes
+
+    def has_steps_files_create(self) -> bool:
+        return bool(self._asset_publishes)
+
     def add_step_publish_create(
         self, bl_context: bpy.types.Context, asset_publish: AssetPublish
     ) -> None:
@@ -623,11 +630,8 @@ class UndoContext:
                 )
                 asset_publish.unlink()
 
-        # Clear self steps.
-        self._asset_publishes.clear()
-
-        # Clear scene.
-        bl_context.scene.bsp_asset.undo_context.clear()
+        # Clear.
+        self.clear(bl_context)
 
     def update_from_bl_context(self, bl_context: bpy.types.Context) -> None:
 
@@ -635,3 +639,10 @@ class UndoContext:
 
         for item in bl_context.scene.bsp_asset.undo_context.files_created:
             self._asset_publishes.append(AssetPublish(item.path))
+
+    def clear(self, bl_context: bpy.types.Context) -> None:
+        # Clear self steps.
+        self._asset_publishes.clear()
+
+        # Clear scene.
+        bl_context.scene.bsp_asset.undo_context.clear()
