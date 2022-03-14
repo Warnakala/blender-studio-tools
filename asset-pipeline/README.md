@@ -138,6 +138,17 @@ for mat_source, mat_target in transfer_mapping.material_map.items():
 
 ...
 ```
+You can also access the root Asset source and Target Collection:
+```
+transfer_mapping.source_coll: bpy.types.Collection
+transfer_mapping.target_coll: bpy.types.Collection
+```
+
+Further than that you can access to objects which had no match.
+```
+transfer_mapping.no_match_target: Set[bpy.types.Object] (all objs that exist in target but not in source)
+transfer_mapping.no_match_source: Set[bpy.types.Object] (vice versa)
+```
 - **transfer_settings**: Is the `TransferSettings` PropertyGroup that was defined in the task_layer.py module. More to that in the next section. If the PropertyGroup was defined you can just query its values as you would regularily do it inside of Blender: `transfer_settings.my_value`
 
 ---

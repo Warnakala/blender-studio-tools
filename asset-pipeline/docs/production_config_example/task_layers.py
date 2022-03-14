@@ -6,6 +6,37 @@ from asset_pipeline.api import (
     TaskLayer,
 )
 
+"""
+The AssetTranfserMapping class represents a mapping between a source and a target.
+It contains an object mapping which connects each source object with a target.
+The maps are just dictionaries where the key is the source and the value the target.
+Both key and target are actual Blender ID Datablocks.
+This makes it easy to write Merge Instructions.
+With it you can do access things like:
+
+transfer_mapping.object_map: Dict[bpy.types.Object, bpy.types.Object]
+transfer_mapping.collection_map: Dict[bpy.types.Collection, bpy.types.Collection]
+transfer_mapping.material_map: Dict[bpy.types.Material, bpy.types.Material]
+
+For all mappings:
+Key: Source
+Value: Target
+
+You can also access the root Asset source and Target Collection:
+transfer_mapping.source_coll: bpy.types.Collection
+transfer_mapping.target_coll: bpy.types.Collection
+
+Further than that you can access to objects which had no match.
+transfer_mapping.no_match_target: Set[bpy.types.Object] (all objs that exist in target but not in source)
+transfer_mapping.no_match_source: Set[bpy.types.Object] (vice versa)
+
+
+Further then that Users can define custom transfer settings by defining a TransferSettings
+Class which inherits from a PropertyGroup in the task_layer module. Users can query these settings
+by checking the transfer_settings argument.
+
+transfer_settings.custom_option
+"""
 
 class TransferSettings(bpy.types.PropertyGroup):
     imp_mat: bpy.props.BoolProperty(name="Materials", default=True)  # type: ignore

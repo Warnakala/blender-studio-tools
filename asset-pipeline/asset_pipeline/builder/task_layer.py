@@ -88,6 +88,15 @@ class TaskLayer:
         Key: Source
         Value: Target
 
+        You can also access the root Asset source and Target Collection:
+        transfer_mapping.source_coll: bpy.types.Collection
+        transfer_mapping.target_coll: bpy.types.Collection
+
+        Further than that you can access to objects which had no match.
+        transfer_mapping.no_match_target: Set[bpy.types.Object] (all objs that exist in target but not in source)
+        transfer_mapping.no_match_source: Set[bpy.types.Object] (vice versa)
+
+
         Further then that Users can define custom transfer settings by defining a TransferSettings
         Class which inherits from a PropertyGroup in the task_layer module. Users can query these settings
         by checking the transfer_settings argument.

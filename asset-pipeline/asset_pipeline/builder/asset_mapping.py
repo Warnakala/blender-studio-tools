@@ -108,6 +108,9 @@ class AssetTransferMapping:
         self._collection_map = self._gen_collection_map()
         self._material_map = self._gen_material_map()
 
+        self._no_match_source_objs: Set[bpy.types.Object] = set()
+        self._no_match_target_objs: Set[bpy.types.Object] = set()
+
     @property
     def source_coll(self) -> bpy.types.Collection:
         return self._source_coll
@@ -115,6 +118,20 @@ class AssetTransferMapping:
     @property
     def target_coll(self) -> bpy.types.Collection:
         return self._target_coll
+
+    @property
+    def no_match_source_objs(self) -> Set[bpy.types.Object]:
+        """
+        All objects that exist in source but not in target
+        """
+        return self._no_match_source_objs
+
+    @property
+    def no_match_target_objs(self) -> Set[bpy.types.Object]:
+        """
+        All objects that exist in target but not in source
+        """
+        return self._no_match_target_objs
 
     def _gen_object_map(self) -> Dict[bpy.types.Object, bpy.types.Object]:
 
@@ -144,14 +161,19 @@ class AssetTransferMapping:
                     target_obj_name,
                     source_obj.name,
                 )
+                self._no_match_source_objs.add(source_obj)
                 continue
             else:
                 object_map[source_obj] = target_obj
-                logger.debug(
-                    "Found match: source: %s target: %s",
-                    source_obj.name,
-                    target_obj.name,
-                )
+                # logger.debug(
+                #     "Found match: source: %s target: %s",
+                #     source_obj.name,
+                #     target_obj.name,
+                # )
+
+        # Populate no match target set.
+        match_target_objs = set([obj for obj in object_map.values()])
+        self._no_match_target_objs = set(self.target_coll.all_objects) - match_target_objs
 
         return object_map
 
@@ -188,11 +210,11 @@ class AssetTransferMapping:
                 continue
             else:
                 coll_map[s_coll] = t_coll
-                logger.debug(
-                    "Found match: source: %s target: %s",
-                    s_coll.name,
-                    t_coll.name,
-                )
+                # logger.debug(
+                #     "Found match: source: %s target: %s",
+                #     s_coll.name,
+                #     t_coll.name,
+                # )
 
         return coll_map
 
@@ -229,11 +251,11 @@ class AssetTransferMapping:
                 continue
             else:
                 material_map[s_mat] = t_mat
-                logger.debug(
-                    "Found match: source: %s target: %s",
-                    s_mat.name,
-                    t_mat.name,
-                )
+                # logger.debug(
+                #     "Found match: source: %s target: %s",
+                #     s_mat.name,
+                #     t_mat.name,
+                # )
 
         return material_map
 
