@@ -26,7 +26,7 @@ from pathlib import Path
 
 import bpy
 
-from .vis import EnsureVisible
+from .vis import EnsureCollectionVisibility
 
 from .. import util
 
@@ -50,7 +50,7 @@ class TransferCollectionTriplet:
         self.publish_coll = publish_coll
         self.task_coll = task_coll
         self.target_coll = target_coll
-        self._vis_objs: List[EnsureVisible] = []
+        self._vis_colls: List[EnsureCollectionVisibility] = []
 
     def get_collections(self) -> List[bpy.types.Collection]:
         return [self.task_coll, self.publish_coll, self.target_coll]
@@ -62,18 +62,17 @@ class TransferCollectionTriplet:
         # that everything is visible and after the transfer the original state will be restored.
 
         # Catch mistake if someone calls this twice without restoring before.
-        if self._vis_objs:
+        if self._vis_colls:
             self.restore_vis()
 
-        for coll in self.get_collections():
-            for obj in coll.all_objects:
-                self._vis_objs.append(EnsureVisible(obj))
+        for main_coll in self.get_collections():
+            self._vis_colls.append(EnsureCollectionVisibility(main_coll))
 
     def restore_vis(self) -> None:
-        for obj in self._vis_objs:
-            obj.restore()
+        for vis_coll in self._vis_colls:
+            vis_coll.restore()
 
-        self._vis_objs.clear()
+        self._vis_colls.clear()
 
 
 def rreplace(s: str, old: str, new: str, occurrence: int) -> str:

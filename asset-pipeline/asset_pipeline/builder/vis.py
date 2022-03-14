@@ -52,68 +52,87 @@ def set_active_collection(collection: bpy.types.Collection) -> None:
     bpy.context.view_layer.active_layer_collection = layer_collection
 
 
-class EnsureVisible:
-    """Ensure an object is visible, then reset it to how it was before."""
+class EnsureObjectVisibility:
+    def get_visibility_driver(self) -> Optional[bpy.types.FCurve]:
+        obj = bpy.data.objects.get(self.obj_name)
+        assert obj, "Object was renamed while its visibility was being ensured?"
+        if hasattr(obj, "animation_data") and obj.animation_data:
+            return obj.animation_data.drivers.find("hide_viewport")
 
+    
     def __init__(self, obj: bpy.types.Object):
-        """Ensure an object is visible, and create this small object to manage that object's visibility-ensured-ness."""
-        self.obj_name: str = obj.name
-        self.obj_hide: bool = obj.hide_get()
-        self.obj_hide_viewport: bool = obj.hide_viewport
-        self.temp_coll: Optional[bpy.types.Collection] = None
-        self.drv_state: bool = (
-            False  # Original state of the hide_viewport driver, if exists
-        )
+        self.obj_name = obj.name
 
-        if not obj.visible_get():
-            # Mute driver on object visibility if there is one
-            if hasattr(obj, "animation_data") and obj.animation_data:
-                drv = obj.animation_data.drivers.find("hide_viewport")
-                if drv:
-                    self.drv_state = drv.mute
-                    drv.mute = True
+        # Eye icon
+        self.hide = obj.hide_get()
+        obj.hide_set(False)
 
-            obj.hide_set(False)
-            obj.hide_viewport = False
+        # Screen icon driver
+        self.drv_mute = None
+        drv = self.get_visibility_driver()
+        if drv:
+            self.drv_mute = drv.mute
+            drv.mute = True
 
-        if not obj.visible_get():
-            # If the object is still not visible, we need to move it to a visible collection. To not break other scripts though, we should restore the active collection afterwards.
-            active_coll = bpy.context.collection
+        # Screen icon
+        self.hide_viewport = obj.hide_viewport
+        obj.hide_viewport = False
 
-            coll_name = "temp_visible"
-            temp_coll = bpy.data.collections.get(coll_name)
-            if not temp_coll:
-                temp_coll = bpy.data.collections.new(coll_name)
-            if coll_name not in bpy.context.scene.collection.children:
-                bpy.context.scene.collection.children.link(temp_coll)
 
-            if obj.name not in temp_coll.objects:
-                temp_coll.objects.link(obj)
+    def restore(self):
+        obj = bpy.data.objects.get(self.obj_name)
+        assert obj, f"Error: Object {self.obj_name} was renamed or removed before its visibility was restored!"
+        obj.hide_set(self.obj_hide)
 
-            self.temp_coll = temp_coll
+        if self.drv_mute != None: # We want to catch both True and False here.
+            drv = self.get_visibility_driver()
+            drv.mute = self.drv_mute
 
-            set_active_collection(active_coll)
+        obj.hide_viewport = self.obj_hide_viewport
+
+
+class EnsureCollectionVisibility:
+    """Ensure a collection and all objects within it are visible.
+    The original visibility states can be restored using .restore().
+    NOTE: Collection and Object names must not change until restore() is called!!!
+    """
+
+    def __init__(self, coll: bpy.types.Collection, do_objects=True):
+        self.coll_name = coll.name
+
+        # Screen icon
+        self.hide_viewport = coll.hide_viewport
+        coll.hide_viewport = False
+
+        # Exclude
+        layer_coll = get_layer_coll_from_coll(coll)
+        self.exclude = layer_coll.exclude
+        layer_coll.exclude = False
+
+        # Eye icon
+        self.hide = layer_coll.hide_viewport
+        layer_coll.hide_viewport = False
+
+        # Objects
+        self.object_visibilities = []
+        if do_objects:
+            for ob in coll.objects:
+                self.object_visibilities.append(EnsureObjectVisibility(ob))
 
     def restore(self) -> None:
         """Restore visibility settings to their original state."""
-        obj = bpy.data.objects.get(self.obj_name)
-        if not obj:
-            return
+        coll = bpy.data.collections.get(self.coll_name)
 
-        # Restore driver on object visibility if there is one
-        if hasattr(obj, "animation_data") and obj.animation_data:
-            drv = obj.animation_data.drivers.find("hide_viewport")
-            if drv:
-                drv.mute = self.drv_state
+        # Screen icon
+        coll.hide_viewport = self.hide_viewport
 
-        obj.hide_set(self.obj_hide)
-        obj.hide_viewport = self.obj_hide_viewport
+        # Exclude
+        layer_coll = get_layer_coll_from_coll(coll)
+        layer_coll.exclude = self.exclude
 
-        # Remove object from temp collection
-        if self.temp_coll and obj.name in self.temp_coll.objects:
-            self.temp_coll.objects.unlink(obj)
+        # Eye icon
+        layer_coll.hide_viewport = self.hide
 
-            # Delete temp collection if it's empty now.
-            if len(self.temp_coll.objects) == 0:
-                bpy.data.collections.remove(self.temp_coll)
-                self.temp_coll = None
+        # Objects
+        for ob_vis in self.object_visibilities:
+            ob_vis.restore()
