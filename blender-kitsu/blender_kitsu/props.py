@@ -386,7 +386,10 @@ def _get_strip_filepath(self):
 
 @persistent
 def update_sequence_colors_coll_prop(dummy: Any) -> None:
-    sequences = bpy.context.scene.sequence_editor.sequences_all
+    sqe = bpy.context.scene.sequence_editor
+    if not sqe:
+        return
+    sequences = sqe.sequences_all
     sequence_colors = bpy.context.scene.kitsu.sequence_colors
     existings_seq_ids: List[str] = []
 
