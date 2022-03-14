@@ -14,6 +14,7 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
     - [Asset Files](#asset-files)
     - [Metadata](#metadata)
     - [Asset Importer](#asset-importer)
+    - [Asset Mapping](#asset-mapping)
 
 
 ## Installation
@@ -85,7 +86,7 @@ The `order` attribute will be used to determine in which order the TaskLayers ar
 
 > **_NOTE:_** The TaskLayer with the lowest order is a special TaskLayer. In the code it will be considered as the **base** TaskLayer.
 
-The `transfer_data()` function of the base TaskLayer will never be called as it provides the base for other task layers to transfer their data to.
+The `transfer_data()` function of the base TaskLayer will **never** be called as it provides the base for other task layers to transfer their data to.
 
 When Users push one or multiple TaskLayers from an Asset Task to an Asset Publish or pull vice versa, we need a base on which we can transfer the data.
 
@@ -94,7 +95,7 @@ During the transfer process there will be 3 Asset Collections:
 - The Asset Collection of the Asset Publish
 - The Target Asset Collection
 
-The Target Asset Collection is a duplicate of either the Task or Publish Asset Collection and is the base on which we transfer data to. The decision to duplicate the Publish or Task Collection depends if the **base** Task Layer (Task Layer with lowers order) was enabled or not before the push or the pull.
+The Target Asset Collection is a duplicate of either the Task or Publish Asset Collection and is the base on which we transfer data to. The decision to duplicate the Publish or Task Collection depends on if the **base** Task Layer (Task Layer with lowers order) was enabled or not before the push or the pull.
 
 If we push from an Asset Task to an Asset Publish and the base TaskLayer is among the selection we take the Asset Collection from the Asset Task as a base. If it is not selected we take the Asset Collection od the Asset Publish as a base.
 
@@ -287,7 +288,7 @@ Create a sym link in your blender addons directory to the asset_pipeline folder.
 
 The asset-pipeline contains two main packages.
 
-1. **builder**: The Asset Builder which contains most of the core definitions and logic of Task Layers, Asset publishing, pulling and metadata handling.
+1. **builder**: The Asset Builder which contains most of the core definitions and logic of Task Layers, Asset publishing, pulling, the import process for that and metadata handling.
 
 2. **updater**: The Asset Updater is quite light weight. It handles detecting imported asset collections and fetching available asset publishes. It also handles the logic of the actual updating.
 
@@ -303,13 +304,14 @@ The Pipeline of **publishing** an Asset looks roughly like the following:
 - Selecting TaskLayers to publish
 - Start publish: Create Build Context
 - Fetch all asset publishes and their metadata
-- Apply changes: Pushes the selected TaskLayer to the affected asset publishes, updates metadata.
+- Apply changes: Pushes the selected TaskLayer to the affected asset publishes, updates metadata (In separate Blender instances)
 - Publish: Finalizes the publish process, commits changes to svn.
 
 The Pipeline of **pulling** TaskLayers from the latest asset publish goes down roughly like this:
 - Loading a .blend file
 - Creating a Production Context
 - Creating an Asset Context
+- Creating Build Context
 - Selecting TaskLayers to pull
 - Pull: Pulls the selected TaskLayers from the latest Asset Publish in to the current Asset Task and updates metadata.
 
@@ -332,14 +334,14 @@ It also searches for the `hooks.py` file and collects all valid hooks.
 settings and information for active Asset. It holds all information that are
 related to the current Asset. This includes the current Asset Collection, Asset
 Task, available Asset Publishes, the Asset Directory, the configuration of Task
-Layers (which ones are enabled and disabled) and the Transfer Settings.
+Layers (which ones are enabled and disabled) and the Transfer Settings values.
 
 - **BuildContext**: Gets loaded when starting a publish or a pull. Contains both the
 ProductionContext and AssetContext as well as some other data. Is the actual
 context that gets processed by the AssetBuilder.
 
 A key feature is that we need to be able to 'exchange' this information with
-another blend file. As the actual transfer process requires to:
+another blend file. As the 'push' or publish process requires to:
 
 Open another blend file -> load the build context there -> process it -> close it again.
 
@@ -381,6 +383,9 @@ over again.  For this consider using the: **asset_file.py** module. It contains
 the **AssetTask**, **AssetPublish** and
 **AssetDir** classes that are very useful and an important part of the System.
 
+In fact every interaction with asset files happens via these classes as they automatically load
+metadata, which is in integral part of the pipeline.
+
 
 ### Metadata
 
@@ -398,7 +403,8 @@ Schemas can have nested Dataclasses. The conversion from Dataclass to XML Elemen
 Metadata Classes can also be generated from ElementClasses. This conversion is happening in the `from_element()` function.
 
 The code base should only work with Dataclasses as they are much easier to handle.
-That means it is forbidden to import Element[] classes, the conversion from and to Dataclasses is only handled in this module.
+That means it is forbidden to import `Element[]` classes from `metadata.py`.
+The conversion from and to Dataclasses is only handled in this module.
 
 That results in this logic:
 A: Saving Metadata to file:
@@ -411,3 +417,45 @@ B: Loading Metadata from file:
 The `AssetImporter` is responsible for importing the right collections from the right source file
 so the data transfer can happen as expected.
 The output is a `TransferCollectionTriplet` which holds a reference to the collection from the AssetTask, collection from the AssetPublish and the actual target Collection on which the data is transferred.
+
+The target Collection is either a duplicate of the the AssetTask Collection or the AssetPublish Collection.
+Which it is depends on a number of factors. Is it pull or a push and which Task Layers are selected. The exact logic is described in the [configuration](#configuration) section.
+
+The important takeaway here is that during a transfer we always have these 3 Collections present and each TaskLayer is either transferred from the AssetTask or the AssetPublish Collection to the Target.
+
+The logic of figuring out what needs to be target is happening in the AssetImporter. To avoid naming collisions the AssetImporter uses a suffix system. Each of the collections, all their children (including materials and node trees) receive a suffix during import.
+
+### Asset Mapping
+
+To transfer data we need a source and a target. Users can describe what should happen during this transfer for each Task Layer in the:
+
+```
+@classmethod
+def transfer_data(
+    cls,
+    context: bpy.types.Context,
+    transfer_mapping: AssetTransferMapping,
+    transfer_settings: bpy.types.PropertyGroup,
+) -> None:
+```
+
+method. Users can have access to this `source` and `target` via the `transfer_mapping`. The TransferMapping is a class that has a couple of properties, which hold dictionaries.
+
+In these dictionaries the key is the source and the value the target.
+Both key and target are actual Blender ID Datablocks.
+This makes it easy to write Merge Instructions.
+With it you can do access things like:
+
+```
+transfer_mapping.object_map: Dict[bpy.types.Object, bpy.types.Object]
+transfer_mapping.collection_map: Dict[bpy.types.Collection, bpy.types.Collection]
+transfer_mapping.material_map: Dict[bpy.types.Material, bpy.types.Material]
+```
+
+This TransferMapping is created in the AssetBuilder in the `pull_from_task` and `pull_from_publish` functions. We always create 2 mappings:
+
+asset_task -> target
+asset_publish -> target
+
+And when we finally loop through all the TaskLayers we decide for each TaskLayer which mapping to use (which will decide if we either transfer from the AssetTask Collection to the target Collection or AssetPublish Collection to target Collection).
+And that is the mapping we pass to `TaskLayer.transfer_data()`.
