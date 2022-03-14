@@ -16,6 +16,7 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
     - [Asset Importer](#asset-importer)
     - [Asset Mapping](#asset-mapping)
     - [Asset Builder](#asset-builder)
+    - [Asset Updater](#asset-updater)
 
 
 ## Installation
@@ -490,6 +491,19 @@ This Python script is inside of the repository: `asset_pipeline/builder/scripts/
 The scripts basically just restores the BuildContext and calls the `pull_from_task` function.
 
 
+### Asset Updater
+
+The Asset Updater is very light weight compared to the Asset Builder.
+
+The main process how the Asset Updater collects its data goes like this:
+
+1. Scanning Scene for found Assets
+2. For each Asset check the Asset Publish Directory for all versions (Ignore Assets Publishes in Review State)
+
+The most trickiest part here is to save this information nicely in native Blender Properties. Checkout the `props.py` module if you want to have a look.
+
+The update process itself is very straightforward:
+Calling the `bpy.ops.wm.lib_relocate()` operator.
 
 
 
