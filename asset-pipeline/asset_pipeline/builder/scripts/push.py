@@ -87,6 +87,11 @@ if not BUILD_CONTEXT.asset_publishes:
     bpy.context.scene.collection.children.link(asset_coll)
     bpy.context.scene.bsp_asset.asset_collection = asset_coll
 
+    # Delete pickle.
+    pickle_path.unlink()
+    logger.info("Deleted pickle: %s", pickle_path.name)
+
+    # Shutdown Blender.
     bpy.ops.wm.save_mainfile()
     bpy.ops.wm.quit_blender()
     sys.exit(0)
@@ -120,7 +125,7 @@ ASSET_BUILDER.pull_from_task(bpy.context)
 pickle_path.unlink()
 logger.info("Deleted pickle: %s", pickle_path.name)
 
-# Quit.
+# Shutdown Blender.
 bpy.ops.wm.save_mainfile()
 bpy.ops.wm.quit_blender()
 sys.exit(0)

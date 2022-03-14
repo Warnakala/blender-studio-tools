@@ -117,6 +117,7 @@ class AssetBuilder:
             pickle_path = asset_publish.pickle_path
             with open(pickle_path.as_posix(), "wb") as f:
                 pickle.dump(self.build_context, f)
+
             logger.info(f"Pickled to {pickle_path.as_posix()}")
 
             # Open new blender instance, with publish script.
