@@ -15,6 +15,7 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
     - [Metadata](#metadata)
     - [Asset Importer](#asset-importer)
     - [Asset Mapping](#asset-mapping)
+    - [Asset Builder](#asset-builder)
 
 
 ## Installation
@@ -459,3 +460,36 @@ asset_publish -> target
 
 And when we finally loop through all the TaskLayers we decide for each TaskLayer which mapping to use (which will decide if we either transfer from the AssetTask Collection to the target Collection or AssetPublish Collection to target Collection).
 And that is the mapping we pass to `TaskLayer.transfer_data()`.
+
+### Asset Builder
+
+The AssetBuilder class contains the actual logic that can process the BuildContext.
+
+That means that this ist the final place where we call the AssetImporter to import all the Collections and create the TransferCollectionTriplet. We also create the AssetTransferMappings here, we make sure that all objects are visible, we load the metadata, we loop through all the TaskLayers and call their `transfer_data()` functions and finally update the metadata.
+
+
+The Asset Builder contains 3 functions:
+
+- `push`
+- `pull_from_publish`
+- `pull_from_task`
+
+You might wonder why we have one push function and two pulls?
+This is because the push process requires us to start another Blender Instance that opens a .blend file. This Blender Instance then actually performs a pull, a `pull_from_task`.
+
+The `push` function prepares everything so the `pull_from_task` can be called in the new Blender Instance.
+It  does a couple of things:
+
+- pickles the `BuildContext` to disk
+- starts a new Blender Instance with a Python script as `-P` argument
+
+(It does this for all the affected publishes)
+
+This Python script is inside of the repository: `asset_pipeline/builder/scripts/push.py`
+
+The scripts basically just restores the BuildContext and calls the `pull_from_task` function.
+
+
+
+
+
