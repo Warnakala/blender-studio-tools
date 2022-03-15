@@ -59,7 +59,7 @@ class EnsureObjectVisibility:
         if hasattr(obj, "animation_data") and obj.animation_data:
             return obj.animation_data.drivers.find("hide_viewport")
 
-    
+
     def __init__(self, obj: bpy.types.Object):
         self.obj_name = obj.name
 
@@ -82,13 +82,13 @@ class EnsureObjectVisibility:
     def restore(self):
         obj = bpy.data.objects.get(self.obj_name)
         assert obj, f"Error: Object {self.obj_name} was renamed or removed before its visibility was restored!"
-        obj.hide_set(self.obj_hide)
+        obj.hide_set(self.hide)
 
         if self.drv_mute != None: # We want to catch both True and False here.
             drv = self.get_visibility_driver()
             drv.mute = self.drv_mute
 
-        obj.hide_viewport = self.obj_hide_viewport
+        obj.hide_viewport = self.hide_viewport
 
 
 class EnsureCollectionVisibility:
