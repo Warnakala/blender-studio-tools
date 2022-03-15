@@ -298,7 +298,7 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
     new_files_handeling: bpy.props.EnumProperty(
         items=[
             ("DELETE", "Delete", "This will delete newly created files on abort"),
-            ("KEEP", "Keep", "This will keep newly created files on abort")
+            ("KEEP", "Keep", "This will keep newly created files on abort"),
         ]
     )
 
@@ -345,7 +345,9 @@ class BSP_ASSET_abort_publish(bpy.types.Operator):
         layout: bpy.types.UILayout = self.layout
 
         # Target.
-        layout.row(align=True).label(text="This Operation can delete files on disk", icon="ERROR")
+        layout.row(align=True).label(
+            text="This Operation can delete files on disk", icon="ERROR"
+        )
         layout.row(align=True).separator()
 
         for asset_publish in builder.UNDO_CONTEXT.asset_publishes:
@@ -397,11 +399,14 @@ class BSP_ASSET_push_task_layers(bpy.types.Operator):
         # Publish.
         builder.ASSET_BUILDER.push()
 
-        # TODO: There can be a case where new task layers are added during production
+        # There can be a case where new task layers are added during production
         # While the pushing will add the new task layer to the metadata file
         # the task layer list for each asset publish does not update that change.
-        # And it's not as trivial to do because the new blender instance will update
-        # that in a subprocess and we don't know when its finished.
+        # This fixes that.
+        builder.BUILD_CONTEXT.asset_context.reload_asset_publishes_metadata()
+        opsdata.populate_asset_publishes_by_build_context(
+            context, builder.BUILD_CONTEXT
+        )
 
         # TODO: Add undo step for metadata adjustment
         # and task layer push to make it undoable on abort.

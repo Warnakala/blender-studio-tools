@@ -47,4 +47,4 @@ class BuilderBlenderStarter:
             f" -- {pickle_path.as_posix()}"
         )
         popen = subprocess.Popen(cmd_str, shell=True)
-        # popen.wait()
+        popen.wait()
