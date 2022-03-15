@@ -33,7 +33,7 @@ def remove_suffix_from_collection_recursive(
 ) -> None:
     """Recursively remove a suffix to a hierarchy of collections."""
     for coll in util.traverse_collection_tree(collection):
-        coll.name = delimiter.join(collection.name.split(delimiter)[:-1])
+        coll.name = delimiter.join(coll.name.split(delimiter)[:-1])
 
 
 def remove_suffix_from_node_tree_recursive(
