@@ -40,13 +40,10 @@ import logging
 from typing import List, Dict, Union, Any, Set, Optional, Tuple, TypeVar, Callable
 from dataclasses import dataclass, asdict, field, fields
 from pathlib import Path
-from enum import Enum, auto
 
 from xml.etree import ElementTree as ET
 from xml.etree.ElementTree import Element, ElementTree
 from xml.dom import minidom
-
-from .task_layer import TaskLayer
 
 from ..asset_status import AssetStatus
 
@@ -300,6 +297,11 @@ class MetadataTreeAsset(MetadataClass):
     def get_task_layer_ids(self) -> List[str]:
         return [tl.id for tl in self.meta_task_layers]
 
+    def add_metadata_task_layer(self, meta_tl: MetadataTaskLayer) -> None:
+        if meta_tl.id in self.get_task_layer_ids():
+            logger.warning("Will not add metadata task layer. %s already in list", meta_tl.id)
+            return
+        self.meta_task_layers.append(meta_tl)
 
 # ELEMENT CLASSES
 # ----------------------------------------------

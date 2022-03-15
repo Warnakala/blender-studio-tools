@@ -397,6 +397,12 @@ class BSP_ASSET_push_task_layers(bpy.types.Operator):
         # Publish.
         builder.ASSET_BUILDER.push()
 
+        # TODO: There can be a case where new task layers are added during production
+        # While the pushing will add the new task layer to the metadata file
+        # the task layer list for each asset publish does not update that change.
+        # And it's not as trivial to do because the new blender instance will update
+        # that in a subprocess and we don't know when its finished.
+
         # TODO: Add undo step for metadata adjustment
         # and task layer push to make it undoable on abort.
 

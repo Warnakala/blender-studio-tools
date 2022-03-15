@@ -223,6 +223,13 @@ class AssetBuilder:
             # Get metadata task layer for current task layer.
             meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
 
+            # Task Layer might not exist in metadata if it was added midway production
+            # if so add it here.
+            if not meta_tl:
+                logger.warning("Detected TaskLayer that was not in metadata file yet: %s. Will be added.", task_layer.get_id())
+                meta_tl = meta_util.init_meta_task_layer(task_layer)
+                meta_asset_tree.add_metadata_task_layer(meta_tl)
+
             # Transfer selected task layers from Publish Coll -> Target Coll.
             if task_layer in used_task_layers:
 
@@ -307,6 +314,13 @@ class AssetBuilder:
 
             # Get metadata task layer for current task layer.
             meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
+
+            # Task Layer might not exist in metadata if it was added midway production
+            # if so add it here.
+            if not meta_tl:
+                logger.warning("Detected TaskLayer that was not in metadata file yet: %s. Will be added.", task_layer.get_id())
+                meta_tl = meta_util.init_meta_task_layer(task_layer)
+                meta_asset_tree.add_metadata_task_layer(meta_tl)
 
             # Transfer selected task layers from AssetTask Coll -> Target Coll.
             # Skip any Task Layers that are locked in this AssetPublish.

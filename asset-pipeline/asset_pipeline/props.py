@@ -213,6 +213,10 @@ class BSP_asset_file(bpy.types.PropertyGroup):
         self.name = asset_publish.path.name
         self.path_str = asset_publish.path.as_posix()
         self.status = asset_publish.metadata.meta_asset.status.name
+
+        # Clear task layers.
+        self.task_layers.clear()
+
         # Add task layers.
         for tl in asset_publish.metadata.meta_task_layers:
             self.add_task_layer_from_metaclass(tl)
