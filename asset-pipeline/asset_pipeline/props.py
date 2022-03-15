@@ -129,7 +129,7 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
         self.is_publish = True
         self.version = asset_publish.get_version()
         self.status = asset_publish.metadata.meta_asset.status.name
-        self.publish_path = asset_publish.path.as_posix()
+        self.publish_path = asset_publish.path_relative_to_asset_dir.as_posix()
 
     def get_asset_publish(self) -> AssetPublish:
         if not self.is_publish:

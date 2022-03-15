@@ -112,6 +112,10 @@ class AssetTask(AssetFile):
     def asset_dir(self) -> "AssetDir":
         return AssetDir(self.path.parent)
 
+    @property
+    def path_relative_to_asset_dir(self) -> Path:
+        return self._path.relative_to(self.asset_dir.path)
+
 
 class AssetPublish(AssetFile):
     """
@@ -131,6 +135,10 @@ class AssetPublish(AssetFile):
     @property
     def asset_dir(self) -> "AssetDir":
         return AssetDir(self.path.parent.parent)
+
+    @property
+    def path_relative_to_asset_dir(self) -> Path:
+        return self._path.relative_to(self.asset_dir.path)
 
 
 class AssetDir:

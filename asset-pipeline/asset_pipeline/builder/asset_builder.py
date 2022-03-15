@@ -65,6 +65,7 @@ class AssetBuilder:
 
     pull_from_task: Pulls the selected TaskLayers from the AssetTask in to the current AssetPublish.
     """
+
     def __init__(self, build_context: BuildContext):
         if not build_context:
             raise AssetBuilderFailedToInitialize(
@@ -226,8 +227,11 @@ class AssetBuilder:
             # Task Layer might not exist in metadata if it was added midway production
             # if so add it here.
             if not meta_tl:
-                logger.warning("Detected TaskLayer that was not in metadata file yet: %s. Will be added.", task_layer.get_id())
-                meta_tl = meta_util.init_meta_task_layer(task_layer)
+                logger.warning(
+                    "Detected TaskLayer that was not in metadata file yet: %s. Will be added.",
+                    task_layer.get_id(),
+                )
+                meta_tl = meta_util.init_meta_task_layer(task_layer, asset_publish)
                 meta_asset_tree.add_metadata_task_layer(meta_tl)
 
             # Transfer selected task layers from Publish Coll -> Target Coll.
@@ -240,7 +244,11 @@ class AssetBuilder:
                     context, mapping_publish_target, self.transfer_settings
                 )
                 # Update source meta task layer source path.
-                meta_tl.source_path = asset_publish.path.as_posix()
+                # Save path relative to asset directory, otherwise we have system paths in the start
+                # which might differ on various systems.
+                meta_tl.source_path = (
+                    asset_publish.path_relative_to_asset_dir.as_posix()
+                )
                 meta_tl.updated_at = time.strftime(constants.TIME_FORMAT)
 
             # Transfer unselected task layers from Task Coll -> Target Coll. Retain them.
@@ -318,8 +326,13 @@ class AssetBuilder:
             # Task Layer might not exist in metadata if it was added midway production
             # if so add it here.
             if not meta_tl:
-                logger.warning("Detected TaskLayer that was not in metadata file yet: %s. Will be added.", task_layer.get_id())
-                meta_tl = meta_util.init_meta_task_layer(task_layer)
+                logger.warning(
+                    "Detected TaskLayer that was not in metadata file yet: %s. Will be added.",
+                    task_layer.get_id(),
+                )
+                meta_tl = meta_util.init_meta_task_layer(
+                    task_layer, self.build_context.asset_task
+                )
                 meta_asset_tree.add_metadata_task_layer(meta_tl)
 
             # Transfer selected task layers from AssetTask Coll -> Target Coll.
@@ -339,7 +352,11 @@ class AssetBuilder:
                 )
 
                 # Update source meta task layer source path.
-                meta_tl.source_path = self.build_context.asset_task.path.as_posix()
+                # Save path relative to asset directory, otherwise we have system paths in the start
+                # which might differ on various systems.
+                meta_tl.source_path = (
+                    self.build_context.asset_task.path_relative_to_asset_dir.as_posix()
+                )
                 meta_tl.updated_at = time.strftime(constants.TIME_FORMAT)
 
             else:
@@ -498,7 +515,9 @@ class AssetBuilder:
         meta_task_layers: List[MetadataTaskLayer] = []
 
         for task_layer in self.build_context.prod_context.task_layers:
-            meta_tl = meta_util.init_meta_task_layer(task_layer)
+            meta_tl = meta_util.init_meta_task_layer(
+                task_layer, self.build_context.asset_task
+            )
             meta_task_layers.append(meta_tl)
 
         meta_tree_asset = MetadataTreeAsset(

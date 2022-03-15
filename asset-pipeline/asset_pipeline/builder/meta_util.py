@@ -30,6 +30,7 @@ import bpy
 
 from .task_layer import TaskLayer
 from .metadata import MetadataTaskLayer, MetadataUser
+from ..asset_files import AssetTask, AssetPublish
 
 from .. import constants
 
@@ -39,7 +40,9 @@ from blender_kitsu.types import User
 logger = logging.getLogger("BSP")
 
 
-def init_meta_task_layer(task_layer: type[TaskLayer]) -> MetadataTaskLayer:
+def init_meta_task_layer(
+    task_layer: type[TaskLayer], source_asset_file: Union[AssetTask, AssetPublish]
+) -> MetadataTaskLayer:
 
     d: Dict[str, Any] = {}
     time = datetime.now()
@@ -49,7 +52,7 @@ def init_meta_task_layer(task_layer: type[TaskLayer]) -> MetadataTaskLayer:
     d["name"] = task_layer.name
 
     d["source_revision"] = ""  # TODO:
-    d["source_path"] = bpy.data.filepath
+    d["source_path"] = source_asset_file.path_relative_to_asset_dir.as_posix()
     d["is_locked"] = False
 
     d["created_at"] = time.strftime(constants.TIME_FORMAT)
