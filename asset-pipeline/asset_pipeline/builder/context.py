@@ -70,6 +70,7 @@ class BuildContextFailedToInitialize(Exception):
 class InvalidTaskLayerDefinition(Exception):
     pass
 
+
 class ProcessPair:
     """
     Simple Class that stores a logically connected target and a pull from path.
@@ -154,6 +155,7 @@ class ProductionContext:
                 )
             else:
                 import task_layers as prod_task_layers
+
                 self._module_of_task_layers = prod_task_layers
 
             # Crawl module for TaskLayers.
@@ -164,13 +166,14 @@ class ProductionContext:
                 import hooks
 
             except ModuleNotFoundError:
-                logger.debug("Found no 'hooks' module in: %s", self._config_folder.as_posix())
+                logger.debug(
+                    "Found no 'hooks' module in: %s", self._config_folder.as_posix()
+                )
                 self._module_of_hooks = None
 
             else:
                 self._module_of_hooks = hooks
                 self._collect_prod_hooks()
-
 
     def _collect_prod_task_layers(self) -> None:
 
@@ -331,7 +334,12 @@ class ProductionContext:
         # Restore module object.
         with SystemPathInclude([self.config_folder]):
             import task_layers as prod_task_layers
-            import hooks
+
+            try:
+                import hooks
+
+            except ModuleNotFoundError:
+                hooks = None
 
             self._module_of_task_layers = prod_task_layers
             self._module_of_hooks = hooks
