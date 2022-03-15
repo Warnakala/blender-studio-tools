@@ -417,12 +417,6 @@ class AssetContext:
     def transfer_settings(self) -> Dict[str, Any]:
         return self._transfer_settings
 
-    def update_from_bl_context(self, bl_context: bpy.types.Context) -> None:
-        self._bl_context = bl_context
-        self._asset_collection = bl_context.scene.bsp_asset.asset_collection
-        self._update_task_layer_assembly_from_context(bl_context)
-        self._update_transfer_settings_from_context(bl_context)
-
     def reload_asset_publishes(self) -> None:
         self._collect_asset_publishes()
 
@@ -430,11 +424,23 @@ class AssetContext:
         for asset_publish in self.asset_publishes:
             asset_publish.reload_metadata()
 
+    def update_from_bl_context_pull(self, bl_context: bpy.types.Context) -> None:
+        self._bl_context = bl_context
+        self._asset_collection = bl_context.scene.bsp_asset.asset_collection
+        self._update_task_layer_assembly_from_context_pull(bl_context)
+        self._update_transfer_settings_from_context(bl_context)
+
+    def update_from_bl_context_push(self, bl_context: bpy.types.Context) -> None:
+        self._bl_context = bl_context
+        self._asset_collection = bl_context.scene.bsp_asset.asset_collection
+        self._update_task_layer_assembly_from_context_push(bl_context)
+        self._update_transfer_settings_from_context(bl_context)
+
     def _collect_asset_publishes(self) -> None:
         self._asset_publishes.clear()
         self._asset_publishes.extend(self._asset_dir.get_asset_publishes())
 
-    def _update_task_layer_assembly_from_context(
+    def _update_task_layer_assembly_from_context_pull(
         self, bl_context: bpy.types.Context
     ) -> None:
         # Update TaskLayerAssembly, to load the
@@ -443,7 +449,16 @@ class AssetContext:
 
         # TODO: we should take in to account that in the meantime
         # production TaskLayers could have been updated.
-        for item in bl_context.scene.bsp_asset.task_layers:
+        for item in bl_context.scene.bsp_asset.task_layers_pull:
+            task_layer_config = self.task_layer_assembly.get_task_layer_config(
+                item.task_layer_id
+            )
+            task_layer_config.use = item.use
+
+    def _update_task_layer_assembly_from_context_push(
+        self, bl_context: bpy.types.Context
+    ) -> None:
+        for item in bl_context.scene.bsp_asset.task_layers_push:
             task_layer_config = self.task_layer_assembly.get_task_layer_config(
                 item.task_layer_id
             )

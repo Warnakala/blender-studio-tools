@@ -294,11 +294,13 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
     is_publish_in_progress: bpy.props.BoolProperty()  # type: ignore
     are_task_layers_pushed: bpy.props.BoolProperty()  # type: ignore
 
-    task_layers: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
+    task_layers_push: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
+    task_layers_pull: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
 
     asset_publishes: bpy.props.CollectionProperty(type=BSP_asset_file)  # type: ignore
 
-    task_layers_index: bpy.props.IntProperty(name="Task Layers Index", min=0)  # type: ignore
+    task_layers_push_index: bpy.props.IntProperty(name="Task Layers Push Index", min=0)  # type: ignore
+    task_layers_pull_index: bpy.props.IntProperty(name="Task Layers Pull Index", min=0)  # type: ignore
     asset_publishes_index: bpy.props.IntProperty(name="Asset Publishes Index", min=0)  # type: ignore
     task_layer_lock_plans_index: bpy.props.IntProperty(name="Task Layer Lock Plans Index", min=0)  # type: ignore
 

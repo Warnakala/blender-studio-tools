@@ -106,7 +106,7 @@ class BSP_ASSET_clear_asset_collection(bpy.types.Operator):
 
         # Unitialize Asset Context.
         builder.ASSET_CONTEXT = None
-        context.scene.bsp_asset.task_layers.clear()
+        opsdata.clear_task_layers()
 
         # Redraw UI.
         util.redraw_ui()
@@ -134,7 +134,7 @@ class BSP_ASSET_initial_publish(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
-        builder.ASSET_CONTEXT.update_from_bl_context(context)
+        builder.ASSET_CONTEXT.update_from_bl_context_push(context)
 
         # Create Build Context.
         builder.BUILD_CONTEXT = builder.BuildContext(
@@ -174,13 +174,13 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
             and builder.PROD_CONTEXT
             and builder.ASSET_CONTEXT
             and builder.ASSET_CONTEXT.asset_publishes
-            and opsdata.are_any_task_layers_enabled(context)
+            and opsdata.are_any_task_layers_enabled_push(context)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
-        builder.ASSET_CONTEXT.update_from_bl_context(context)
+        builder.ASSET_CONTEXT.update_from_bl_context_push(context)
 
         # Update the asset publishes again.
         builder.ASSET_CONTEXT.reload_asset_publishes()
@@ -235,13 +235,13 @@ class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
             and builder.ASSET_CONTEXT
             and builder.ASSET_CONTEXT.asset_publishes
             and context.window_manager.bsp_asset.new_asset_version
-            and opsdata.are_any_task_layers_enabled(context)
+            and opsdata.are_any_task_layers_enabled_push(context)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
-        builder.ASSET_CONTEXT.update_from_bl_context(context)
+        builder.ASSET_CONTEXT.update_from_bl_context_push(context)
 
         # Copy latest asset publish and increment.
         asset_publish = builder.ASSET_CONTEXT.asset_dir.increment_latest_publish()
@@ -434,13 +434,13 @@ class BSP_ASSET_pull(bpy.types.Operator):
             and util.is_file_saved()
             and builder.PROD_CONTEXT
             and builder.ASSET_CONTEXT
-            and opsdata.are_any_task_layers_enabled(context)
+            and opsdata.are_any_task_layers_enabled_pull(context)
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
-        builder.ASSET_CONTEXT.update_from_bl_context(context)
+        builder.ASSET_CONTEXT.update_from_bl_context_pull(context)
 
         # Update the asset publishes again.
         # builder.ASSET_CONTEXT.update_asset_publishes()
@@ -561,7 +561,7 @@ class BSP_ASSET_create_asset_context(bpy.types.Operator):
 
         # Update Asset Context from bl context again, as populate
         # task layers tries to restore previous task layer selection states.
-        builder.ASSET_CONTEXT.update_from_bl_context(context)
+        builder.ASSET_CONTEXT.update_from_bl_context_push(context)
 
         # print(builder.ASSET_CONTEXT)
         return {"FINISHED"}

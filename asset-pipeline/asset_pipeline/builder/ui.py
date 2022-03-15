@@ -89,9 +89,16 @@ def draw_error_asset_collection_not_init(
 def draw_task_layers_list(
     self: bpy.types.Panel,
     context: bpy.types.Context,
+    prop_name: str,
     disable: bool = False,
 ) -> bpy.types.UILayout:
     layout: bpy.types.UILayout = self.layout
+
+    """
+    Draws the task layers that are saved as a collection property on
+    context.bsp_asset.task_layers_pull or context.bsp_asset.task_layers_push.
+    `prop_name`: str has to be either: 'task_layer_pull' or 'task_layer_push'
+    """
 
     box = layout.box()
     row = box.row(align=True)
@@ -102,11 +109,11 @@ def draw_task_layers_list(
     row = box.row()
     row.template_list(
         "BSP_UL_task_layers",
-        "task_layers_list",
+        f"{prop_name}_list",
         context.scene.bsp_asset,
-        "task_layers",
+        prop_name,
         context.scene.bsp_asset,
-        "task_layers_index",
+        f"{prop_name}_index",
         rows=constants.DEFAULT_ROWS,
         type="DEFAULT",
     )
@@ -239,9 +246,9 @@ class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
         return
 
 
-class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
+class BSP_ASSET_PT_vi3d_publish(BSP_ASSET_main_panel, bpy.types.Panel):
 
-    bl_label = "Publish Manager"
+    bl_label = "Publish"
     bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
     bl_options = {"DEFAULT_CLOSED"}
 
@@ -267,7 +274,7 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
         if context.scene.bsp_asset.is_publish_in_progress:
 
             # Draw Task Layer List.
-            box = draw_task_layers_list(self, context, disable=True)
+            box = draw_task_layers_list(self, context, "task_layers_push", disable=True)
 
             # Draw abort button.
             layout.row().operator(BSP_ASSET_abort_publish.bl_idname)
@@ -299,7 +306,7 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
             return
 
         # Draw Task Layer List.
-        draw_task_layers_list(self, context)
+        draw_task_layers_list(self, context, "task_layers_push")
 
         # Production Context is initialized.
         row = layout.row(align=True)
@@ -317,9 +324,9 @@ class BSP_ASSET_PT_vi3d_publish_manager(BSP_ASSET_main_panel, bpy.types.Panel):
         return
 
 
-class BSP_ASSET_PT_vi3d_task_layers(BSP_ASSET_main_panel, bpy.types.Panel):
+class BSP_ASSET_PT_vi3d_pull(BSP_ASSET_main_panel, bpy.types.Panel):
 
-    bl_label = "Task Layers"
+    bl_label = "Pull"
     bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
     bl_options = {"DEFAULT_CLOSED"}
 
@@ -339,7 +346,7 @@ class BSP_ASSET_PT_vi3d_task_layers(BSP_ASSET_main_panel, bpy.types.Panel):
             layout.row().label(text="Blend files needs to be saved", icon="ERROR")
             return
 
-        draw_task_layers_list(self, context, disable=False)
+        draw_task_layers_list(self, context, "task_layers_pull", disable=False)
 
         box = layout.box()
         box.label(text="Pull")
@@ -351,9 +358,9 @@ class BSP_ASSET_PT_vi3d_task_layers(BSP_ASSET_main_panel, bpy.types.Panel):
         row.operator(BSP_ASSET_pull.bl_idname)
 
 
-class BSP_ASSET_PT_vi3d_status_manager(BSP_ASSET_main_panel, bpy.types.Panel):
+class BSP_ASSET_PT_vi3d_status(BSP_ASSET_main_panel, bpy.types.Panel):
 
-    bl_label = "Status Manager"
+    bl_label = "Status"
     bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
     bl_options = {"DEFAULT_CLOSED"}
 
@@ -508,7 +515,7 @@ class BSP_UL_task_layer_lock_plans(bpy.types.UIList):
             label_text = item.path.name
             base_split.label(text=label_text)
 
-            for tl_item in context.scene.bsp_asset.task_layers:
+            for tl_item in context.scene.bsp_asset.task_layers_push:
 
                 # Draw label for each task layer to align spacing.
                 if tl_item.task_layer_id in [
@@ -539,9 +546,9 @@ classes = [
     BSP_UL_affected_asset_publishes,
     BSP_ASSET_PT_vi3d_asset_pipeline,
     BSP_ASSET_PT_vi3d_asset_collection,
-    BSP_ASSET_PT_vi3d_publish_manager,
-    BSP_ASSET_PT_vi3d_task_layers,
-    BSP_ASSET_PT_vi3d_status_manager,
+    BSP_ASSET_PT_vi3d_publish,
+    BSP_ASSET_PT_vi3d_pull,
+    BSP_ASSET_PT_vi3d_status,
     BSP_ASSET_PT_vi3d_transfer_settings,
     BSP_UL_task_layer_lock_plans,
 ]

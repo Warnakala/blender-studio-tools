@@ -38,35 +38,40 @@ logger = logging.getLogger("BSP")
 def populate_task_layers(
     context: bpy.types.Context, asset_context: AssetContext
 ) -> None:
-    # Make a backup to restore task layer settings as good as possible.
-    tmp_backup: Dict[str, Dict[str, Any]] = {}
-    for (
-        task_layer_id,
-        task_layer_prop_group,
-    ) in context.scene.bsp_asset.task_layers.items():
-        tmp_backup[task_layer_id] = task_layer_prop_group.as_dict()
 
-    # Clear task layer collection property.
-    clear_task_layers(context)
+    for prop_group in [
+        context.scene.bsp_asset.task_layers_push,
+        context.scene.bsp_asset.task_layers_pull,
+    ]:
+        # Make a backup to restore task layer settings as good as possible.
+        tmp_backup: Dict[str, Dict[str, Any]] = {}
+        for (
+            task_layer_id,
+            task_layer_prop_group,
+        ) in prop_group.items():
+            tmp_backup[task_layer_id] = task_layer_prop_group.as_dict()
 
-    # Load Task Layers from Production Context, try to restore
-    # previous task layer settings
-    for (
-        key,
-        task_layer_config,
-    ) in asset_context.task_layer_assembly.task_layer_config_dict.items():
-        item = context.scene.bsp_asset.task_layers.add()
-        item.name = key
-        item.task_layer_id = key
-        item.task_layer_name = task_layer_config.task_layer.name
+        # Clear task layer collection property.
+        prop_group.clear()
 
-        # Restore previous settings.
-        if key in tmp_backup:
-            item.use = tmp_backup[key]["use"]
+        # Load Task Layers from Production Context, try to restore
+        # previous task layer settings
+        for (
+            key,
+            task_layer_config,
+        ) in asset_context.task_layer_assembly.task_layer_config_dict.items():
+            item = prop_group.add()
+            item.name = key
+            item.task_layer_id = key
+            item.task_layer_name = task_layer_config.task_layer.name
 
-            # Update actual ASSET_CONTEXT, which will transfer the task layer settings,
-            # which we restored from scene level.
-            task_layer_config.use = tmp_backup[key]["use"]
+            # Restore previous settings.
+            if key in tmp_backup:
+                item.use = tmp_backup[key]["use"]
+
+                # Update actual ASSET_CONTEXT, which will transfer the task layer settings,
+                # which we restored from scene level.
+                task_layer_config.use = tmp_backup[key]["use"]
 
 
 def add_asset_publish_to_context(
@@ -113,7 +118,8 @@ def populate_asset_publishes_by_build_context(
 
 
 def clear_task_layers(context: bpy.types.Context) -> None:
-    context.scene.bsp_asset.task_layers.clear()
+    context.scene.bsp_asset.task_layers_push.clear()
+    context.scene.bsp_asset.task_layers_pull.clear()
 
 
 def clear_task_layer_lock_plans(context: bpy.types.Context) -> None:
@@ -205,11 +211,21 @@ def populate_context_with_lock_plans(
             tl_item.task_layer_name = tl_to_lock.name
 
 
-def are_any_task_layers_enabled(context: bpy.types.Context) -> bool:
+def are_any_task_layers_enabled_push(context: bpy.types.Context) -> bool:
     """
-    Returns true if any task layers are selected in the task layer list.
+    Returns true if any task layers are selected in the task layer push list.
     """
     enabled_task_layers = [
-        tlg for tlg in context.scene.bsp_asset.task_layers.values() if tlg.use
+        tlg for tlg in context.scene.bsp_asset.task_layers_push.values() if tlg.use
+    ]
+    return bool(enabled_task_layers)
+
+
+def are_any_task_layers_enabled_pull(context: bpy.types.Context) -> bool:
+    """
+    Returns true if any task layers are selected in the task layer pull list.
+    """
+    enabled_task_layers = [
+        tlg for tlg in context.scene.bsp_asset.task_layers_pull.values() if tlg.use
     ]
     return bool(enabled_task_layers)
