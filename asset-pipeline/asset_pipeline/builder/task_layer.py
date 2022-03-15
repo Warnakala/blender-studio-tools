@@ -93,8 +93,8 @@ class TaskLayer:
         transfer_mapping.target_coll: bpy.types.Collection
 
         Further than that you can access to objects which had no match.
-        transfer_mapping.no_match_target: Set[bpy.types.Object] (all objs that exist in target but not in source)
-        transfer_mapping.no_match_source: Set[bpy.types.Object] (vice versa)
+        transfer_mapping.no_match_target_objs: Set[bpy.types.Object] (all objs that exist in target but not in source)
+        transfer_mapping.no_match_source_objs: Set[bpy.types.Object] (vice versa)
 
 
         Further then that Users can define custom transfer settings by defining a TransferSettings

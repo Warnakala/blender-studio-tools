@@ -101,14 +101,15 @@ class AssetTransferMapping:
         self._source_coll = source_coll
         self._target_coll = target_coll
 
+        self._no_match_source_objs: Set[bpy.types.Object] = set()
+        self._no_match_target_objs: Set[bpy.types.Object] = set()
+
         # TODO: gen_map functions almost have the same code,
         # refactor it to one function with the right parameters.
         self._object_map = self._gen_object_map()
         self._collection_map = self._gen_collection_map()
         self._material_map = self._gen_material_map()
 
-        self._no_match_source_objs: Set[bpy.types.Object] = set()
-        self._no_match_target_objs: Set[bpy.types.Object] = set()
 
     @property
     def source_coll(self) -> bpy.types.Collection:
