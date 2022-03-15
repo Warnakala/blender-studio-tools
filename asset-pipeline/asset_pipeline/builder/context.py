@@ -154,18 +154,23 @@ class ProductionContext:
                 )
             else:
                 import task_layers as prod_task_layers
-
                 self._module_of_task_layers = prod_task_layers
-
-            # TODO: add check exception handeling if hooks module not existent.
-            import hooks
-
-            self._module_of_hooks = hooks
 
             # Crawl module for TaskLayers.
             self._collect_prod_task_layers()
-            self._collect_prod_hooks()
             self._collect_prod_transfer_settings()
+
+            try:
+                import hooks
+
+            except ModuleNotFoundError:
+                logger.debug("Found no 'hooks' module in: %s", self._config_folder.as_posix())
+                self._module_of_hooks = None
+
+            else:
+                self._module_of_hooks = hooks
+                self._collect_prod_hooks()
+
 
     def _collect_prod_task_layers(self) -> None:
 
