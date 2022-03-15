@@ -39,6 +39,8 @@ from .ops import (
 )
 from .. import builder, constants, prop_utils, util
 
+import blender_kitsu.cache
+
 
 def poll_asset_collection_not_init(context: bpy.types.Context) -> bool:
     return not bool(context.scene.bsp_asset.asset_collection)
@@ -221,6 +223,11 @@ class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
         layout: bpy.types.UILayout = self.layout
 
         if not context.scene.bsp_asset.asset_collection:
+            if not blender_kitsu.cache.asset_active_get():
+                box = layout.box()
+                box.label(text="Warning", icon="ERROR")
+                box.row(align=True).label(text="Select Asset in Kitsu Context Browser")
+
             layout.row().prop(context.scene.bsp_asset, "tmp_asset_collection", text="")
             layout.row().operator(BSP_ASSET_init_asset_collection.bl_idname)
         else:
