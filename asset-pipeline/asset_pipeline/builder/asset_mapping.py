@@ -106,10 +106,7 @@ class AssetTransferMapping:
 
         # TODO: gen_map functions almost have the same code,
         # refactor it to one function with the right parameters.
-        self._object_map = self._gen_object_map()
-        self._collection_map = self._gen_collection_map()
-        self._material_map = self._gen_material_map()
-
+        self.generate_mapping()
 
     @property
     def source_coll(self) -> bpy.types.Collection:
@@ -132,6 +129,11 @@ class AssetTransferMapping:
         All objects that exist in target but not in source
         """
         return self._no_match_target_objs
+
+    def generate_mapping(self)-> None:
+        self._object_map = self._gen_object_map()
+        self._collection_map = self._gen_collection_map()
+        self._material_map = self._gen_material_map()
 
     def _gen_object_map(self) -> Dict[bpy.types.Object, bpy.types.Object]:
 
