@@ -40,9 +40,25 @@ from .ops import (
 from .. import builder, constants, prop_utils, util
 
 
+def poll_asset_collection_not_init(context: bpy.types.Context) -> bool:
+    return not bool(context.scene.bsp_asset.asset_collection)
+
+
 def poll_error_invalid_task_layer_module_path() -> bool:
     addon_prefs = util.get_addon_prefs()
     return bool(not addon_prefs.is_prod_task_layers_module_path_valid())
+
+
+def poll_error_file_not_saved() -> bool:
+    return not bool(bpy.data.filepath)
+
+
+def poll_error(context: bpy.types.Context) -> bool:
+    return (
+        poll_asset_collection_not_init(context)
+        or poll_error_file_not_saved()
+        or poll_error_invalid_task_layer_module_path()
+    )
 
 
 def draw_error_invalid_task_layer_module_path(
@@ -53,6 +69,19 @@ def draw_error_invalid_task_layer_module_path(
     row.operator(
         "preferences.addon_show", text="Open Addon Preferences"
     ).module = "asset_pipeline"
+
+
+def draw_error_file_not_saved(
+    box: bpy.types.UILayout,
+) -> bpy.types.UILayout:
+    row = box.row(align=True)
+    row.label(text="File needs to be saved")
+
+
+def draw_error_asset_collection_not_init(
+    box: bpy.types.UILayout,
+) -> bpy.types.UILayout:
+    box.row().label(text="Initialize Asset Collection")
 
 
 def draw_task_layers_list(
@@ -159,25 +188,27 @@ class BSP_ASSET_PT_vi3d_asset_pipeline(BSP_ASSET_main_panel, bpy.types.Panel):
 
         layout: bpy.types.UILayout = self.layout
 
-        # If no asset collection set, display warning.
-        if not context.scene.bsp_asset.asset_collection:
-            layout.row().label(text="Initialize Asset Collection", icon="ERROR")
-            return
-
-        # Display Asset Collection.
-        layout.row().prop(
-            context.scene.bsp_asset.asset_collection.bsp_asset,
-            "displ_entity_name",
-            text="Asset",
-        )
-
         # Warning box.
-        if poll_error_invalid_task_layer_module_path():
+        if poll_error(context):
             box = layout.box()
             box.label(text="Warning", icon="ERROR")
-            draw_error_invalid_task_layer_module_path(box)
 
-        return
+            if poll_error_file_not_saved:
+                draw_error_file_not_saved(box)
+
+            if poll_error_invalid_task_layer_module_path():
+                draw_error_invalid_task_layer_module_path(box)
+
+            if poll_asset_collection_not_init(context):
+                draw_error_asset_collection_not_init(box)
+
+        # Display Asset Collection.
+        if context.scene.bsp_asset.asset_collection:
+            layout.row().prop(
+                context.scene.bsp_asset.asset_collection.bsp_asset,
+                "displ_entity_name",
+                text="Asset",
+            )
 
 
 class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
