@@ -11,6 +11,7 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
 - [Getting Started as a Developer](#getting-started-as-a-developer)
     - [Context](#context)
     - [UI](#ui)
+    - [Asset Collection](#asset-collection)
     - [Asset Files](#asset-files)
     - [Metadata](#metadata)
     - [Asset Importer](#asset-importer)
@@ -389,6 +390,34 @@ Not only are PropertyGroups updated by the Context objects, sometimes it also go
 For example: The last selected TaskLayers are saved on Scene level. On load this selection is restored,
 which also updates the AssetContext.
 
+### Asset Collection
+
+Per task file there is only **one** Asset Collection. The Asset Collection and all its children and
+dependencies is the final data that is being worked with in the Asset Builder.
+
+An Asset Collection needs to be initialized which fills out a whole lot of properties that get fetched from Kitsu.
+
+The properties are saved on the Collection at:
+
+`collection.bsp_asset`
+
+as a PropertyGroup. Some properties you can access via Python Scripts are:
+
+```
+entity_parent_id: bpy.props.StringProperty(name="Asset Type ID")
+entity_parent_name: bpy.props.StringProperty(name="Asset Type")
+entity_name: bpy.props.StringProperty(name="Asset Name")
+entity_id: bpy.props.StringProperty(name="Asset ID")
+project_id: bpy.props.StringProperty(name="Project ID")
+is_publish: bpy.props.BoolProperty(
+    name="Is Publish",
+    description="Controls if this Collection is an Asset Publish to distinguish it from a 'working' Collection",
+)
+version: bpy.props.StringProperty(name="Asset Version")
+publish_path: bpy.props.StringProperty(name="Asset Publish")
+rig: bpy.props.PointerProperty(type=bpy.types.Armature, name="Rig")
+```
+
 ### Asset Files
 
 Often we have to interact with files on disk and do the same operations over and
@@ -465,13 +494,15 @@ transfer_mapping.collection_map: Dict[bpy.types.Collection, bpy.types.Collection
 transfer_mapping.material_map: Dict[bpy.types.Material, bpy.types.Material]
 ```
 
-This TransferMapping is created in the AssetBuilder in the `pull_from_task` and `pull_from_publish` functions. We always create 2 mappings:
+This TransferMapping is created in the AssetBuilder in the `pull_from_task` and `pull_from_publish` functions. We always create **2** mappings:
 
-asset_task -> target
-asset_publish -> target
+- asset_task -> target
+- asset_publish -> target
 
 And when we finally loop through all the TaskLayers we decide for each TaskLayer which mapping to use (which will decide if we either transfer from the AssetTask Collection to the target Collection or AssetPublish Collection to target Collection).
 And that is the mapping we pass to `TaskLayer.transfer_data()`.
+
+> **_NOTE:_** If Users are adjusting the Mapping in a `transfer_data()` function they have to be aware that they are working with **2** mappings.
 
 ### Asset Builder
 
