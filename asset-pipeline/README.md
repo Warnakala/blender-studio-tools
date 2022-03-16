@@ -89,7 +89,7 @@ The `order` attribute will be used to determine in which order the TaskLayers ar
 
 > **_NOTE:_** The TaskLayer with the lowest order is a special TaskLayer. In the code it will be considered as the **base** TaskLayer.
 
-The `transfer_data()` function of the base TaskLayer will **never** be called as it provides the base for other task layers to transfer their data to.
+The `transfer_data()` function of the base TaskLayer should be empty as it provides the base for other task layers to transfer their data to. But it will still be called as there are cases where Users might need that functionality.
 
 When Users push one or multiple TaskLayers from an Asset Task to an Asset Publish or pull vice versa, we need a base on which we can transfer the data.
 
