@@ -130,7 +130,7 @@ class AssetTransferMapping:
         """
         return self._no_match_target_objs
 
-    def generate_mapping(self)-> None:
+    def generate_mapping(self) -> None:
         self._object_map = self._gen_object_map()
         self._collection_map = self._gen_collection_map()
         self._material_map = self._gen_material_map()
@@ -175,7 +175,9 @@ class AssetTransferMapping:
 
         # Populate no match target set.
         match_target_objs = set([obj for obj in object_map.values()])
-        self._no_match_target_objs = set(self.target_coll.all_objects) - match_target_objs
+        self._no_match_target_objs = (
+            set(self.target_coll.all_objects) - match_target_objs
+        )
 
         return object_map
 
