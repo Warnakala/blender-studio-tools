@@ -17,6 +17,7 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+import os
 from typing import Optional, Dict, Any, List, Tuple
 
 from pathlib import Path
@@ -26,7 +27,7 @@ import bpy
 from . import constants
 from . import builder
 from .builder.metadata import MetadataAsset, MetadataTaskLayer
-from . import asset_files
+from . import asset_files, lib_util
 from .asset_files import AssetPublish
 
 
@@ -92,7 +93,6 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
 
         self.is_publish = False
         self.version = ""
-        self.publish_path = ""
 
         self.rig = None
 
@@ -129,7 +129,6 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
         self.is_publish = True
         self.version = asset_publish.get_version()
         self.status = asset_publish.metadata.meta_asset.status.name
-        self.publish_path = asset_publish.path_relative_to_asset_dir.as_posix()
 
     def get_asset_publish(self) -> AssetPublish:
         if not self.is_publish:
@@ -137,12 +136,10 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
                 f"The collection {self.id_data.name} is not an asset publish"
             )
 
-        if not self.publish_path:
-            raise FailedToGetAssetPublish(
-                f"The property '{self.id_data.name}.bsp_asset.publish_path' is invalid"
-            )
+        # Will throw error if item is not lib.
+        lib = lib_util.get_item_lib(self.id_data)
 
-        return AssetPublish(Path(self.publish_path))
+        return AssetPublish(Path(os.path.abspath(bpy.path.abspath(lib.filepath))))
 
 
 class BSP_task_layer(bpy.types.PropertyGroup):

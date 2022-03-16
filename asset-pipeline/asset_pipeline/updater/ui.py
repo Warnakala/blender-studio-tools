@@ -28,7 +28,7 @@ from .ops import (
     BSP_ASSET_UPDATER_update_all,
 )
 
-from .. import constants
+from .. import constants, lib_util
 from ..asset_status import AssetStatus
 
 
@@ -104,9 +104,8 @@ class BSP_UL_imported_asset_collections(bpy.types.UIList):
 
             icon = "NONE"
 
-            loaded_asset_publish = item.asset_publishes[
-                Path(coll.bsp_asset.publish_path).name
-            ]
+            lib = lib_util.get_item_lib(coll)
+            loaded_asset_publish = item.asset_publishes[Path(lib.filepath).name]
 
             # If the currently loaded asset publish has deprecated status, display warning icon.
             if loaded_asset_publish.status == AssetStatus.DEPRECATED.name:

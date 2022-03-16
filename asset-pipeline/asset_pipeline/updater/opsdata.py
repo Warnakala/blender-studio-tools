@@ -51,7 +51,11 @@ def add_imported_asset_coll_to_context(
     for publish in asset_dir.get_asset_publishes():
 
         # Dont' offer asset publishes that are still in review.
-        if publish.metadata.meta_asset.status == AssetStatus.REVIEW:
+        # But still append the current imported version (if its in review state)
+        if (
+            publish.metadata.meta_asset.status == AssetStatus.REVIEW
+            and asset_publish != publish
+        ):
             logger.debug(
                 "Asset-Updater: %s skip %s as status is %s",
                 asset_publish.metadata.meta_asset.name,
