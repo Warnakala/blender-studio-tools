@@ -374,9 +374,7 @@ class AssetContext:
         self._task_layer_assembly = TaskLayerAssembly(prod_context._task_layers)
         self._asset_dir = AssetDir(Path(bpy.data.filepath).parent)
         self._asset_task = AssetTask(Path(bpy.data.filepath))
-        self._asset_publishes: List[
-            AssetPublish
-        ] = []  # TODO: could convert in to  set.
+        self._asset_publishes: List[AssetPublish] = []
 
         # Transfer settings are stored in a PropertyGroup on scene level.
         # We cannot pickle those. So what we do is write them in a dictionary here
@@ -534,7 +532,7 @@ class BuildContext:
 
         self._prod_context: ProductionContext = prod_context
         self._asset_context: AssetContext = asset_context
-        self._process_pairs: Set[ProcessPair] = set()
+        self._process_pairs: List[ProcessPair] = []
 
         self._collect_process_pairs()
 
@@ -549,6 +547,8 @@ class BuildContext:
         # the AssetBuilder needs to process
         self._process_pairs.clear()
 
+        process_pairs_set = set()
+
         tl_assembly = self._asset_context.task_layer_assembly
         task_layers_enabled = tl_assembly.get_used_task_layers()
 
@@ -560,7 +560,10 @@ class BuildContext:
             # Check if there is any enabled Task Layer ID that is not in the locked IDs.
             for tl in task_layers_enabled:
                 if tl.get_id() not in locked_task_layer_ids:
-                    self._process_pairs.add(ProcessPair(self.asset_task, asset_publish))
+                    process_pairs_set.add(ProcessPair(self.asset_task, asset_publish))
+
+        self._process_pairs.extend(list(process_pairs_set))
+        self._process_pairs.sort(key=lambda x: x.asset_publish.path.name)
 
     @property
     def prod_context(self) -> ProductionContext:
