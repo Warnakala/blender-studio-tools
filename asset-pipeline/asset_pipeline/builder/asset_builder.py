@@ -443,7 +443,7 @@ class AssetBuilder:
 
         asset_coll = context.scene.bsp_asset.asset_collection
         asset_data = asset_coll.bsp_asset
-        params = self.build_context.get_hook_kwargs()
+        params = self.build_context.get_hook_kwargs(context)
         hooks_to_run: Set[HookFunction] = set()
 
         # Collect global hooks first.

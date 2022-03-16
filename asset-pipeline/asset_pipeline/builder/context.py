@@ -607,10 +607,10 @@ class BuildContext:
             ]
         )
 
-    def get_hook_kwargs(self) -> Dict[str, Any]:
+    def get_hook_kwargs(self, context: bpy.types.Context) -> Dict[str, Any]:
         return {
-            "asset_collection": self.asset_context.asset_collection,
-            "context": bpy.context,
+            "asset_collection": context.scene.bsp_asset.asset_collection,
+            "context": context,
             "asset_task": self.asset_task,
             "asset_dir": self.asset_context.asset_dir,
         }
