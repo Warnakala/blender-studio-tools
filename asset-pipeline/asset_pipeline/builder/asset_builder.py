@@ -202,7 +202,10 @@ class AssetBuilder:
         # Note: We always want to apply all TaskLayers except for the Task Layer with the lowest order
         # aka 'Base Task Layer'. This Task Layer gives us the starting point on which to apply all other Task Layers
         # on. The asset importer already handles this logic by supplying as with the right TARGET collection
-        # after import. That's why we exclude the first task layer here in the loop.
+        # after import. That's why we could exclude the first task layer here in the loop.
+        # But people at the Studio pointed out it might still be useful sometimes to still let
+        # this task layer run the transfer_data() functions as there can be cases like:
+        # Prefixing modififers that are coming from a task layer with the task layer name.
         logger.info(f"Using {prod_task_layers[0].name} as base.")
 
         # If metafile does not exist yet create it.
@@ -219,7 +222,7 @@ class AssetBuilder:
         # Get time for later metadata update.
         time = datetime.now()
 
-        for task_layer in prod_task_layers[1:]:
+        for task_layer in prod_task_layers:
 
             # Get metadata task layer for current task layer.
             meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
@@ -312,13 +315,16 @@ class AssetBuilder:
         # Note: We always want to apply all TaskLayers except for the Task Layer with the lowest order
         # aka 'Base Task Layer'. This Task Layer gives us the starting point on which to apply all other Task Layers
         # on. The asset importer already handles this logic by supplying as with the right TARGET collection
-        # after import. That's why we exclude the first task layer here in the loop.
+        # after import. That's why we could exclude the first task layer here in the loop.
+        # But people at the Studio pointed out it might still be useful sometimes to still let
+        # this task layer run the transfer_data() functions as there can be cases like:
+        # Prefixing modififers that are coming from a task layer with the task layer name.
         logger.info(f"Using {prod_task_layers[0].name} as base.")
 
         # Get time for later metadata update.
         time = datetime.now()
 
-        for task_layer in prod_task_layers[1:]:
+        for task_layer in prod_task_layers:
 
             # Get metadata task layer for current task layer.
             meta_tl = meta_asset_tree.get_metadata_task_layer(task_layer.get_id())
