@@ -162,7 +162,7 @@ class BSP_ASSET_initial_publish(bpy.types.Operator):
 class BSP_ASSET_start_publish(bpy.types.Operator):
     bl_idname = "bsp_asset.start_publish"
     bl_label = "Start Publish"
-    bl_description = "Starts publish of the Asset Collection"
+    bl_description = "Saves .blend file and starts publish of the Asset Collection"
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -178,6 +178,8 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        # Save blend file.
+        bpy.ops.wm.save_mainfile()
 
         # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
         builder.ASSET_CONTEXT.update_from_bl_context_push(context)
@@ -222,7 +224,9 @@ class BSP_ASSET_start_publish(bpy.types.Operator):
 class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
     bl_idname = "bsp_asset.start_publish_new_version"
     bl_label = "Start Publish New Version"
-    bl_description = "Starts publish of the Asset Collection as a new Version"
+    bl_description = (
+        "Saves .blend file and starts publish of the Asset Collection as a new Version"
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -239,6 +243,8 @@ class BSP_ASSET_start_publish_new_version(bpy.types.Operator):
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        # Save blend file.
+        bpy.ops.wm.save_mainfile()
 
         # Update Asset Context from context so BUILD_CONTEXT works with up to date data.
         builder.ASSET_CONTEXT.update_from_bl_context_push(context)
