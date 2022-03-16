@@ -54,38 +54,89 @@ logger.info("------------------------------------")
 try:
     argv[0]
 except IndexError:
-    raise ValueError("Supply pickle path as first argument after '--'.")
+    logger.error("Supply pickle path as first argument after '--'.")
     sys.exit(1)
 
 # Check if pickle path is valid.
 pickle_path: str = argv[0]
 
 if not pickle_path:
-    raise ValueError("Supply valid pickle path as first argument after '--'.")
+    logger.error("Supply valid pickle path as first argument after '--'.")
+    sys.exit(1)
 
 pickle_path: Path = Path(pickle_path)
 
 if not pickle_path.exists():
-    raise ValueError(f"Pickle path does not exist: {pickle_path.as_posix()}")
+    logger.error(f"Pickle path does not exist: {pickle_path.as_posix()}")
+    sys.exit(1)
 
-# Load pickle
-logger.info(f"LOADING PICKLE: %s", pickle_path.as_posix())
-with open(pickle_path.as_posix(), "rb") as f:
-    BUILD_CONTEXT: BuildContext = pickle.load(f)
 
-# If first publish, only link in asset collection and update properties.
-if not BUILD_CONTEXT.asset_publishes:
-    asset_publish = AssetPublish(Path(bpy.data.filepath))
-    asset_coll = BUILD_CONTEXT.asset_context.asset_collection
-    # Update scene asset collection.
-    bpy.context.scene.bsp_asset.asset_collection = asset_coll
+def exception_handler(func):
+    def func_wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
 
-    # Update asset collection properties.
-    asset_coll.bsp_asset.update_props_by_asset_publish(asset_publish)
+        except Exception as error:
+            print(error)
+            sys.exit(1)  # Enables us to show warning in UI
 
-    # Link in asset collection in scene.
-    bpy.context.scene.collection.children.link(asset_coll)
-    bpy.context.scene.bsp_asset.asset_collection = asset_coll
+    return func_wrapper
+
+
+@exception_handler
+def run():
+    # Load pickle
+    logger.info(f"LOADING PICKLE: %s", pickle_path.as_posix())
+    with open(pickle_path.as_posix(), "rb") as f:
+        BUILD_CONTEXT: BuildContext = pickle.load(f)
+
+    # If first publish, only link in asset collection and update properties.
+    if not BUILD_CONTEXT.asset_publishes:
+        asset_publish = AssetPublish(Path(bpy.data.filepath))
+        asset_coll = BUILD_CONTEXT.asset_context.asset_collection
+        # Update scene asset collection.
+        bpy.context.scene.bsp_asset.asset_collection = asset_coll
+
+        # Update asset collection properties.
+        asset_coll.bsp_asset.update_props_by_asset_publish(asset_publish)
+
+        # Link in asset collection in scene.
+        bpy.context.scene.collection.children.link(asset_coll)
+        bpy.context.scene.bsp_asset.asset_collection = asset_coll
+
+        # Delete pickle.
+        pickle_path.unlink()
+        logger.info("Deleted pickle: %s", pickle_path.name)
+
+        # Shutdown Blender.
+        bpy.ops.wm.save_mainfile()
+        bpy.ops.wm.quit_blender()
+        sys.exit(0)
+
+    logger.info("LOAD TRANSFER SETTINGS")
+
+    # Fetch transfer settings from AssetContext and update scene settings
+    # as they are the ones that are used by the pull() process.
+    TRANSFER_SETTINGS = bpy.context.scene.bsp_asset_transfer_settings
+    for prop_name, prop in prop_utils.get_property_group_items(TRANSFER_SETTINGS):
+        try:
+            value = BUILD_CONTEXT.asset_context.transfer_settings[prop_name]
+        except KeyError:
+            continue
+        else:
+            setattr(TRANSFER_SETTINGS, prop_name, value)
+            logger.info("Loaded setting(%s: %s)", prop_name, str(value))
+
+    logger.info(BUILD_CONTEXT)
+
+    logger.info(
+        f"IMPORTING ASSET COLLECTION FROM TASK: %s",
+        BUILD_CONTEXT.asset_task.path.as_posix(),
+    )
+
+    ASSET_BUILDER = AssetBuilder(BUILD_CONTEXT)
+
+    ASSET_BUILDER.pull_from_task(bpy.context)
 
     # Delete pickle.
     pickle_path.unlink()
@@ -96,36 +147,5 @@ if not BUILD_CONTEXT.asset_publishes:
     bpy.ops.wm.quit_blender()
     sys.exit(0)
 
-logger.info("LOAD TRANSFER SETTINGS")
 
-# Fetch transfer settings from AssetContext and update scene settings
-# as they are the ones that are used by the pull() process.
-TRANSFER_SETTINGS = bpy.context.scene.bsp_asset_transfer_settings
-for prop_name, prop in prop_utils.get_property_group_items(TRANSFER_SETTINGS):
-    try:
-        value = BUILD_CONTEXT.asset_context.transfer_settings[prop_name]
-    except KeyError:
-        continue
-    else:
-        setattr(TRANSFER_SETTINGS, prop_name, value)
-        logger.info("Loaded setting(%s: %s)", prop_name, str(value))
-
-logger.info(BUILD_CONTEXT)
-
-logger.info(
-    f"IMPORTING ASSET COLLECTION FROM TASK: %s",
-    BUILD_CONTEXT.asset_task.path.as_posix(),
-)
-
-ASSET_BUILDER = AssetBuilder(BUILD_CONTEXT)
-
-ASSET_BUILDER.pull_from_task(bpy.context)
-
-# Delete pickle.
-pickle_path.unlink()
-logger.info("Deleted pickle: %s", pickle_path.name)
-
-# Shutdown Blender.
-bpy.ops.wm.save_mainfile()
-bpy.ops.wm.quit_blender()
-sys.exit(0)
+run()

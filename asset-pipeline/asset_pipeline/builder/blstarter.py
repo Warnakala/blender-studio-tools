@@ -37,7 +37,7 @@ class BuilderBlenderStarter:
     publish_script: Path = Path(__file__).parent.joinpath("scripts/push.py")
 
     @classmethod
-    def start_publish(cls, filepath: Path, pickle_path: Path) -> None:
+    def start_publish(cls, filepath: Path, pickle_path: Path) -> subprocess.Popen:
         cmd_str = (
             f"{cls.path.as_posix()} {filepath.as_posix()}"
             " -b"
@@ -47,4 +47,4 @@ class BuilderBlenderStarter:
             f" -- {pickle_path.as_posix()}"
         )
         popen = subprocess.Popen(cmd_str, shell=True)
-        popen.wait()
+        return popen

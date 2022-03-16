@@ -82,6 +82,16 @@ def add_asset_publish_to_context(
     item.update_props_by_asset_publish(asset_publish)
 
 
+def update_asset_publishes_by_build_context(
+    context: bpy.types.Context, build_context: BuildContext
+) -> None:
+
+    for asset_publish in build_context.asset_publishes:
+        item = context.scene.bsp_asset.asset_publishes.get(asset_publish.path.name)
+        if item:
+            item.update_props_by_asset_publish(asset_publish)
+
+
 def populate_asset_publishes_by_asset_context(
     context: bpy.types.Context, asset_context: AssetContext
 ) -> None:

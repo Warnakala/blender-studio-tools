@@ -479,7 +479,20 @@ class BSP_UL_affected_asset_publishes(bpy.types.UIList):
 
             label_text = item.path.name
             label_text += f"({item.status[:1]})".upper()
-            base_split.label(text=label_text)
+
+            # Calculate icon depending on the subprocess return code.
+            # This is a nice way to indicate User if something went wrong
+            # during push through UI.
+            icon = "NONE"
+            if context.scene.bsp_asset.is_publish_in_progress:
+                if item.returncode_publish == 0:
+                    icon = "CHECKMARK"
+                elif item.returncode_publish == -1:
+                    icon = "NONE"
+                else:
+                    icon = "ERROR"
+
+            base_split.label(text=label_text, icon=icon)
 
             # Draw each task layer.
             for tl_item in item.task_layers:

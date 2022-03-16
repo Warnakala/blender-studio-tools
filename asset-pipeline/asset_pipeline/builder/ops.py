@@ -145,7 +145,7 @@ class BSP_ASSET_initial_publish(bpy.types.Operator):
         builder.ASSET_BUILDER = builder.AssetBuilder(builder.BUILD_CONTEXT)
 
         # Publish
-        builder.ASSET_BUILDER.push()
+        builder.ASSET_BUILDER.push(context)
 
         # Update Asset Context publish files.
         builder.ASSET_CONTEXT.reload_asset_publishes()
@@ -397,16 +397,14 @@ class BSP_ASSET_push_task_layers(bpy.types.Operator):
             return {"CANCELLED"}
 
         # Publish.
-        builder.ASSET_BUILDER.push()
+        builder.ASSET_BUILDER.push(context)
 
         # There can be a case where new task layers are added during production
         # While the pushing will add the new task layer to the metadata file
         # the task layer list for each asset publish does not update that change.
         # This fixes that.
         builder.BUILD_CONTEXT.asset_context.reload_asset_publishes_metadata()
-        opsdata.populate_asset_publishes_by_build_context(
-            context, builder.BUILD_CONTEXT
-        )
+        opsdata.update_asset_publishes_by_build_context(context, builder.BUILD_CONTEXT)
 
         # TODO: Add undo step for metadata adjustment
         # and task layer push to make it undoable on abort.

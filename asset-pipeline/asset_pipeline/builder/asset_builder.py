@@ -88,7 +88,7 @@ class AssetBuilder:
     def transfer_settings(self) -> bpy.types.PropertyGroup:
         return self._transfer_settings
 
-    def push(self) -> None:
+    def push(self, context: bpy.types.Context) -> None:
         """
         Starts process of opening a new Blender Instance and pickling the BuildContext. New Blender Instance
         actually then loads the BuildContext and calls AssetBuilder.pull_from_task(). That means pickling the BuildContext
@@ -146,10 +146,26 @@ class AssetBuilder:
             logger.info(f"Pickled to {pickle_path.as_posix()}")
 
             # Open new blender instance, with publish script.
-            BuilderBlenderStarter.start_publish(
+            popen = BuilderBlenderStarter.start_publish(
                 asset_publish.path,
                 pickle_path,
             )
+            return_code = popen.wait()
+
+            # Update returncode property. This will be displayed
+            # as icon in the UI and shows Users if something went wrong
+            # during push.
+            asset_file = context.scene.bsp_asset.asset_publishes.get(
+                asset_publish.path.name
+            )
+            asset_file.returncode_publish = return_code
+            print(f"Set {asset_file.path_str} to returncode {return_code}")
+            if return_code != 0:
+                logger.error(
+                    "Push to %s exited with error code: %i",
+                    asset_publish.path.name,
+                    return_code,
+                )
 
     def pull_from_publish(
         self,

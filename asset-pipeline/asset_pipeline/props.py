@@ -190,6 +190,15 @@ class BSP_asset_file(bpy.types.PropertyGroup):
 
     status: bpy.props.StringProperty(name="Status")  # type: ignore
 
+    returncode_publish: bpy.props.IntProperty(
+        name="Return Code",
+        description=(
+            "This code represents the return code of the subprocess that gets "
+            "started when publishing. Is used to display a warning in UI if something went wrong"
+        ),
+        default=-1,
+    )
+
     @property
     def path(self) -> Optional[Path]:
         if not self.path_str:
