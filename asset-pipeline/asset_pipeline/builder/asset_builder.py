@@ -260,7 +260,7 @@ class AssetBuilder:
                     f"Transferring {task_layer.name} from {transfer_triplet.publish_coll.name} to {transfer_triplet.target_coll.name}."
                 )
                 task_layer.transfer_data(
-                    context, mapping_publish_target, self.transfer_settings
+                    context, self.build_context, mapping_publish_target, self.transfer_settings
                 )
                 # Update source meta task layer source path.
                 # Save path relative to asset directory, otherwise we have system paths in the start
@@ -276,7 +276,7 @@ class AssetBuilder:
                     f"Transferring {task_layer.name} from {transfer_triplet.task_coll.name} to {transfer_triplet.target_coll.name}."
                 )
                 task_layer.transfer_data(
-                    context, mapping_task_target, self.transfer_settings
+                    context, self.build_context, mapping_task_target, self.transfer_settings
                 )
 
                 # Here we don't want to update source path, we keep it as is, as we are just 'retaining' here.
@@ -370,7 +370,7 @@ class AssetBuilder:
                     f"Transferring {task_layer.name} from {transfer_triplet.task_coll.name} to {transfer_triplet.target_coll.name}."
                 )
                 task_layer.transfer_data(
-                    context, mapping_task_target, self.transfer_settings
+                    context, self.build_context, mapping_task_target, self.transfer_settings
                 )
 
                 # Update source meta task layer source path.
@@ -387,7 +387,7 @@ class AssetBuilder:
                     f"Transferring {task_layer.name} from {transfer_triplet.publish_coll.name} to {transfer_triplet.target_coll.name}."
                 )
                 task_layer.transfer_data(
-                    context, mapping_publish_target, self.transfer_settings
+                    context, self.build_context, mapping_publish_target, self.transfer_settings
                 )
 
                 # Here we don't want to update source path, we keep it as is, as we are just 'retaining' here.

@@ -4,6 +4,7 @@ import bpy
 from asset_pipeline.api import (
     AssetTransferMapping,
     TaskLayer,
+    BuildContext
 )
 
 """
@@ -55,6 +56,7 @@ class RiggingTaskLayer(TaskLayer):
     def transfer_data(
         cls,
         context: bpy.types.Context,
+        build_context: BuildContext,
         transfer_mapping: AssetTransferMapping,
         transfer_settings: bpy.types.PropertyGroup,
     ) -> None:
@@ -69,6 +71,7 @@ class ShadingTaskLayer(TaskLayer):
     def transfer_data(
         cls,
         context: bpy.types.Context,
+        build_context: BuildContext,
         transfer_mapping: AssetTransferMapping,
         transfer_settings: bpy.types.PropertyGroup,
     ) -> None:
@@ -349,6 +352,7 @@ class GroomingTaskLayer(TaskLayer):
     def transfer_data(
         cls,
         context: bpy.types.Context,
+        build_context: BuildContext,
         transfer_mapping: AssetTransferMapping,
         transfer_settings: bpy.types.PropertyGroup,
     ) -> None:

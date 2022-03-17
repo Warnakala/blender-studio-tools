@@ -66,6 +66,7 @@ class TaskLayer:
     def transfer_data(
         cls,
         context: bpy.types.Context,
+        build_context: "BuildContext", # Otherwise get stupid circular import errors.
         transfer_mapping: AssetTransferMapping,
         transfer_settings: bpy.types.PropertyGroup,
     ) -> None:

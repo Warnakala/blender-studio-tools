@@ -75,6 +75,7 @@ class RiggingTaskLayer(TaskLayer):
     def transfer_data(
         cls,
         context: bpy.types.Context,
+        build_context: BuildContext,
         transfer_mapping: AssetTransferMapping,
         transfer_settings: bpy.types.PropertyGroup,
     ) -> None:
@@ -111,6 +112,7 @@ The `transfer_data()` function contains 3 parameters that are useful when writin
     def transfer_data(
         cls,
         context: bpy.types.Context,
+        build_context: BuildContext,
         transfer_mapping: AssetTransferMapping,
         transfer_settings: bpy.types.PropertyGroup,
     ) -> None:
@@ -476,6 +478,7 @@ To transfer data we need a source and a target. Users can describe what should h
 def transfer_data(
     cls,
     context: bpy.types.Context,
+    build_context: BuildContext,
     transfer_mapping: AssetTransferMapping,
     transfer_settings: bpy.types.PropertyGroup,
 ) -> None:
