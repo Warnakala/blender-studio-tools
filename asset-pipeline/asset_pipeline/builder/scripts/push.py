@@ -25,6 +25,7 @@ It needs a pickle_path after -- . The pickle path contains a pickled BuildContex
 This BuildContext will be unpickled in this script and processed, which means performing
 the publish of the selected TaskLayers in the AssetTask.
 """
+import traceback
 import logging
 import pickle
 import sys
@@ -77,7 +78,12 @@ def exception_handler(func):
             return func(*args, **kwargs)
 
         except Exception as error:
-            print(error)
+            print("\n" *2)
+            print(f"------------------------EXCEPTION({Path(bpy.data.filepath).name})------------------------")
+            exc_info = sys.exc_info()
+            traceback.print_exception(*exc_info)
+            del exc_info
+            print("\n" *2)
             sys.exit(1)  # Enables us to show warning in UI
 
     return func_wrapper
