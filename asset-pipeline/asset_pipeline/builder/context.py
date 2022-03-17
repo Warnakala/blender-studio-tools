@@ -533,6 +533,7 @@ class BuildContext:
         self._prod_context: ProductionContext = prod_context
         self._asset_context: AssetContext = asset_context
         self._process_pairs: List[ProcessPair] = []
+        self.is_push: bool = False # Only for TaskLayer.transfer_data() to know if its push or pull.
 
         self._collect_process_pairs()
 

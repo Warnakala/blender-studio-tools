@@ -180,6 +180,9 @@ class AssetBuilder:
         # one. We pull in the asset collection from the latest asset publish and
         # perform the required data transfers depending on what was selected.
 
+        # Set is_push attribute.
+        self.build_context.is_push = False
+
         # User does a pull. This code runs in AssetTask file.
         # Check if there are any publishes.
         if not self.build_context.asset_publishes:
@@ -295,6 +298,8 @@ class AssetBuilder:
         """
         Pulls the selected TaskLayers from the AssetTask in to the current AssetPublish.
         """
+        # Set is_push attribute.
+        self.build_context.is_push = True
 
         # User does a publish/push. This code runs ins AssetPublish file.
         # Import Asset Collection from Asset Task.
