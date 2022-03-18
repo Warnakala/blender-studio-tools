@@ -33,7 +33,7 @@ then
 fi
 
 # Zip it all up.
-zip -r $OUTPUT_PATH.zip $SLUG
+zip -r $OUTPUT_PATH.zip $SLUG docs
 
 echo
 echo "Zipped $SLUG to $OUTPUT_PATH"
