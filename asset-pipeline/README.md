@@ -107,7 +107,7 @@ If we push from an Asset Task to an Asset Publish and the base TaskLayer is amon
 
 If we pull from an Asset Publish to an Asset Task and the base TaskLayer is among the selection we take the Asset Collection from the Asset Publish as base. If it is not selected we take the Asset Collection of the Asset Task as a base.
 
-The `transfer_data()` function contains 3 parameters that are useful when writing the transfer instructions.
+The `transfer_data()` function contains 4 parameters that are useful when writing the transfer instructions.
 
 ```
     @classmethod
@@ -122,6 +122,8 @@ The `transfer_data()` function contains 3 parameters that are useful when writin
 ```
 
 - **context**: Regular bpy.context
+
+- **build_context**: Is an instance of type `asset_pipeline.builder.context.BuildContext`. It contains all information that the Asset Builder needs to process the transfer. You can for example query the selected TaskLayers with `build_context.asset_context.task_layer_assembly.get_used_task_layers()`. Or find out if the current operation was a `push` or a `pull` with `build_context.is_push`.
 
 - **transfer_mapping**: Will be an instance of type `AssetTransferMapping`. This is a mapping between source and target for: **objects**, **materials** and **collections**. The maps are just dictionaries where the key is the source and the value the target. Both key and target are actual Blender ID Datablocks.
 
