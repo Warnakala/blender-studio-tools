@@ -38,6 +38,8 @@ The asset-pipeline add-on can be configured with some config files. The idea is 
 
 In the add-on preferences you need to setup the `Production Config Directory`. In this folder the add-on expects to find a file called `task_layers.py`. What exactly you need to define in this file is something you will learn in the [Configuration](#configuration) section.
 
+To understand the underlying concepts of the Asset Pipeline it is recommended to read [this](https://studio.blender.org/blog/asset-pipeline/) article.
+
 ## Configuration
 The add-on can be configured on a per project basis, by pointing the the `Production Config Directory` property in the add-on preferences to a folder that contains the config files.
 
