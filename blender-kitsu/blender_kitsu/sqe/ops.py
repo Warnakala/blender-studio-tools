@@ -1989,7 +1989,9 @@ class KITSU_OT_sqe_scan_for_media_updates(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.scene.sequence_editor.sequences_all)
+        sqe = context.scene.sequence_editor
+        if not sqe: return False
+        return bool(sqe.sequences_all)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
