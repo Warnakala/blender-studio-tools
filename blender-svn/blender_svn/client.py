@@ -18,9 +18,13 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
+import bpy
+from bpy.app.handlers import load_post, persistent
+
 import logging
 
 from . import wheels
+from .util import get_addon_prefs
 
 # This will load the dateutil and svn wheel file.
 wheels.preload_dependencies()
@@ -34,18 +38,38 @@ logger = logging.getLogger("SVN")
 
 LOCAL_CLIENT: LocalClient = None
 
-
-def init_local_client(svn_root_path: Path) -> LocalClient:
+@persistent
+def init_local_client(context, dummy):
+    """Attempt to initialize an SVN LocalClient object when opening a .blend file."""
     global LOCAL_CLIENT
 
-    # If not .svn in path invalid.
-    if not svn_root_path.joinpath(".svn").exists():
-        logger.warning(
-            "Failed to init local SVN client. Found not SVN repo in: %s",
-            svn_root_path.as_posix(),
-        )
-        LOCAL_CLIENT = None
+    if not bpy.data.filepath:
         return
 
-    LOCAL_CLIENT = LocalClient(svn_root_path.as_posix())
-    logger.info("Initiated local SVN client: %s", LOCAL_CLIENT)
+    LOCAL_CLIENT = LocalClient(bpy.data.filepath)
+    # TODO: What happens when the file is not in an SVN repository directory? We should catch that case, reset the prefs, and early exit!
+    logger.info("SVN client done: %s", LOCAL_CLIENT)
+    prefs = get_addon_prefs(context)
+
+    try:
+        info = LOCAL_CLIENT.info()
+
+        # Populate the addon prefs with the info provided by the LocalClient object.
+        prefs.is_in_repo = True
+        prefs.svn_url = info['repository_root']
+        prefs.svn_directory = info['wc-info/wcroot-abspath']
+        prefs.relative_filepath = info['relative_url'][1:]
+        prefs.revision_number = int(info['entry_revision'])
+        prefs.revision_date = str(info['commit_date']) # TODO: format this nicely.
+        prefs.revision_author = info['commit_author']
+    except Exception:
+        # TODO: Would be nice to have a better way to determine if the current 
+        # file is NOT in a repository...
+        prefs.reset()
+
+
+def register():
+    load_post.append(init_local_client)
+
+def unregister():
+    load_post.remove(init_local_client)

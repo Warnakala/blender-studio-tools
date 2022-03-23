@@ -32,8 +32,10 @@ def redraw_ui() -> None:
             area.tag_redraw()
 
 
-def get_addon_prefs() -> bpy.types.AddonPreferences:
-    return bpy.context.preferences.addons[__package__].preferences
+def get_addon_prefs(context: bpy.types.Context=None) -> bpy.types.AddonPreferences:
+    if not context:
+        context = bpy.context
+    return context.preferences.addons[__package__].preferences
 
 
 def is_file_saved() -> bool:

@@ -22,28 +22,69 @@ from typing import Optional, Any, Set, Tuple, List
 from pathlib import Path
 
 import bpy
+from bpy.props import StringProperty, IntProperty, BoolProperty
 
 from . import client
 
 logger = logging.getLogger(name="SVN")
 
 
-def _init_local_svn_client(
-    self: bpy.types.AddonPreferences, context: bpy.types.Context
-) -> None:
-    client.init_local_client(self.svn_directory_path)
-
-
 class SVN_addon_preferences(bpy.types.AddonPreferences):
-
     bl_idname = __package__
 
-    svn_directory: bpy.props.StringProperty(  # type: ignore
-        name="SVN Directory",
+    enable_ui: BoolProperty(
+        name="Enable UI",
+        default=True,
+        description="Enable UI in sidebar for debugging/testing"
+    )
+    is_in_repo: BoolProperty(
+        name="is_in_repo",
+        default=False,
+        description="To store whether the current file was deemed to be in an SVN repository on file save/load. For internal use only"
+    )
+
+    # Following properties are not user-editable. They are filled in on file-load,
+    # when the loaded file is in an SVN repository. They are used to display
+    # info in the sidebar UI.
+    svn_directory: StringProperty(
+        name="Root Directory",
         default="",
         subtype="DIR_PATH",
-        update=_init_local_svn_client,
+        description="Absolute directory path of the SVN repository's root in the file system"
     )
+    svn_url: StringProperty(
+        name="Remote URL",
+        default="",
+        description="URL of the remote SVN repository"
+    )
+    relative_filepath: StringProperty(
+        name="Relative Filepath",
+        default="",
+        description="Path of the currently open .blend file, relative to the SVN root directory"
+    )
+    revision_number: IntProperty(
+        name="Revision Number",
+        description="Revision number of the current .blend file"
+    )
+    revision_date: StringProperty(
+        name="Revision Date",
+        default="",
+        description="Date when the current revision was committed"
+    )
+    revision_author: StringProperty(
+        name="Revision Author",
+        default="",
+        description="SVN username of the revision author"
+    )
+
+    def reset(self):
+        self.svn_directory = ""
+        self.svn_url = ""
+        self.relative_filepath = ""
+        self.revision_number = -1
+        self.revision_date = ""
+        self.revision_author = ""
+        self.is_in_repo = False
 
     @property
     def svn_directory_path(self) -> Optional[Path]:
@@ -56,19 +97,11 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 
         # Production Config Dir.
         row = layout.row(align=True)
-        row.prop(self, "svn_directory")
+        row.prop(self, "enable_ui")
 
 
 # ----------------REGISTER--------------.
 
-classes = [SVN_addon_preferences]
-
-
-def register() -> None:
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def unregister() -> None:
-    for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
+registry = [
+    SVN_addon_preferences
+]

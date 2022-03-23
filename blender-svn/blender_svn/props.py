@@ -51,17 +51,15 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
 # ----------------REGISTER--------------.
 
-classes = [SVN_file, SVN_scene_properties]
-
+registry = [
+    SVN_file,
+    SVN_scene_properties
+]
 
 def register() -> None:
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
     # Scene Properties.
     bpy.types.Scene.svn = bpy.props.PointerProperty(type=SVN_scene_properties)
 
 
 def unregister() -> None:
-    for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
+    del bpy.types.Scene.svn

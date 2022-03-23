@@ -28,8 +28,40 @@ from bpy.app.handlers import persistent
 
 from . import util, client, opsdata
 
+import functools
+from blender_asset_tracer import cli, trace, bpathlib
+
 logger = logging.getLogger("SVN")
 
+def get_referenced_filepaths() -> Set[Path]:
+    """Return a flat list of files referenced either directly or indirectly
+    by this .blend file, as a flat list.
+    This uses the Blender Asset Tracer, so we rely on that to catch everything;
+    Images, video files, mesh sequence caches, blender libraries, everything.
+    """
+    bpath = Path(bpy.data.filepath)
+
+    reported_assets: Set[Path] = set()
+    last_reported_bfile = None
+    shorten = functools.partial(cli.common.shorten, Path.cwd())
+
+    for usage in trace.deps(bpath):
+        filepath = usage.block.bfile.filepath.absolute()
+        # if filepath != last_reported_bfile:
+            # print(shorten(filepath))
+
+        last_reported_bfile = filepath
+
+        for assetpath in usage.files():
+            assetpath = bpathlib.make_absolute(assetpath)
+            if assetpath in reported_assets:
+                logger.debug("Already reported %s", assetpath)
+                continue
+
+            # print("   ", shorten(assetpath))
+            reported_assets.add(assetpath)
+
+    return reported_assets
 
 class SVN_collect_dirty_files_local(bpy.types.Operator):
     bl_idname = "svn.collect_dirty_files_local"
@@ -40,6 +72,11 @@ class SVN_collect_dirty_files_local(bpy.types.Operator):
     )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        print("Here be all the files, courtesy of BAT:")
+        files = get_referenced_filepaths()
+
+        for f in files:
+            print(f)
 
         # Populate context with collected asset collections.
         opsdata.populate_context_with_external_files(
@@ -51,36 +88,8 @@ class SVN_collect_dirty_files_local(bpy.types.Operator):
 
         return {"FINISHED"}
 
-
-@persistent
-def init_svn_client_local(_) -> None:
-    prefs = util.get_addon_prefs()
-    path: Optional[Path] = prefs.svn_directory_path
-
-    # If path not set yet in add-on preferences.
-    if not path:
-        return
-
-    client.init_local_client(path)
-
-
 # ----------------REGISTER--------------.
 
-classes = [SVN_collect_dirty_files_local]
-
-
-def register() -> None:
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-    # Handlers.
-    bpy.app.handlers.load_post.append(init_svn_client_local)
-
-
-def unregister() -> None:
-
-    # Handlers.
-    bpy.app.handlers.load_post.remove(init_svn_client_local)
-
-    for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
+registry = [
+    SVN_collect_dirty_files_local
+]

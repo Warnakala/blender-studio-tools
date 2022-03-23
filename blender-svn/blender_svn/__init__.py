@@ -24,7 +24,7 @@ import bpy
 
 import importlib
 
-from . import prefs, props, ops
+from . import prefs, props, ops, client, ui
 
 bl_info = {
     "name": "Blender SVN",
@@ -41,15 +41,19 @@ bl_info = {
 
 logger = logging.getLogger("SVN")
 
+modules = [
+    prefs,
+    props,
+    ops,
+    client,
+    ui,
+]
 
 def reload() -> None:
-    global prefs
-    global props
-    global ops
+    global modules
 
-    importlib.reload(prefs)
-    importlib.reload(props)
-    importlib.reload(ops)
+    for m in modules:
+        importlib.reload(m)
 
 
 _need_reload = "prefs" in locals()
@@ -60,12 +64,17 @@ if _need_reload:
 
 
 def register() -> None:
-    prefs.register()
-    props.register()
-    ops.register()
-
+    for m in modules:
+        if hasattr(m, 'registry'):
+            for c in m.registry:
+                bpy.utils.register_class(c)
+        if hasattr(m, 'register'):
+            m.register()
 
 def unregister() -> None:
-    ops.unregister()
-    props.unregister()
-    prefs.unregister()
+    for m in modules:
+        if hasattr(m, 'registry'):
+            for c in m.registry:
+                bpy.utils.unregister_class(c)
+        if hasattr(m, 'unregister'):
+            m.unregister()
