@@ -24,8 +24,6 @@ from pathlib import Path
 import bpy
 from bpy.props import StringProperty, IntProperty, BoolProperty
 
-from . import client
-
 logger = logging.getLogger(name="SVN")
 
 

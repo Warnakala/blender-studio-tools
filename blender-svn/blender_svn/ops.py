@@ -24,64 +24,23 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
 import bpy
-from bpy.app.handlers import persistent
 
-from . import util, client, opsdata
-
-import functools
-from blender_asset_tracer import cli, trace, bpathlib
+from . import util, opsdata
 
 logger = logging.getLogger("SVN")
 
-def get_referenced_filepaths() -> Set[Path]:
-    """Return a flat list of files referenced either directly or indirectly
-    by this .blend file, as a flat list.
-    This uses the Blender Asset Tracer, so we rely on that to catch everything;
-    Images, video files, mesh sequence caches, blender libraries, everything.
-    """
-    bpath = Path(bpy.data.filepath)
-
-    reported_assets: Set[Path] = set()
-    last_reported_bfile = None
-    shorten = functools.partial(cli.common.shorten, Path.cwd())
-
-    for usage in trace.deps(bpath):
-        filepath = usage.block.bfile.filepath.absolute()
-        # if filepath != last_reported_bfile:
-            # print(shorten(filepath))
-
-        last_reported_bfile = filepath
-
-        for assetpath in usage.files():
-            assetpath = bpathlib.make_absolute(assetpath)
-            if assetpath in reported_assets:
-                logger.debug("Already reported %s", assetpath)
-                continue
-
-            # print("   ", shorten(assetpath))
-            reported_assets.add(assetpath)
-
-    return reported_assets
-
-class SVN_collect_dirty_files_local(bpy.types.Operator):
-    bl_idname = "svn.collect_dirty_files_local"
-    bl_label = "Collect Dirty Files Local"
-    bl_description = (
-        "Checks this .blend file and all its external references for uncommitted changes "
-        "Populates a scene property with those files so they can be displayed in the UI"
-    )
+class SVN_refresh_file_list(bpy.types.Operator):
+    bl_idname = "svn.refresh_file_list"
+    bl_label = "Refresh File List"
+    bl_description = "Refresh the file list and check for any changes that should be committed to the SVN"
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        print("Here be all the files, courtesy of BAT:")
-        files = get_referenced_filepaths()
-
-        for f in files:
-            print(f)
+        if bpy.data.is_dirty:
+            self.report({'ERROR'}, "The file must be saved first.")
+            return {'CANCELLED'}
 
         # Populate context with collected asset collections.
-        opsdata.populate_context_with_external_files(
-            context,
-        )
+        opsdata.populate_context_with_external_files(context)
 
         # Redraw UI.
         util.redraw_ui()
@@ -91,5 +50,5 @@ class SVN_collect_dirty_files_local(bpy.types.Operator):
 # ----------------REGISTER--------------.
 
 registry = [
-    SVN_collect_dirty_files_local
+    SVN_refresh_file_list
 ]

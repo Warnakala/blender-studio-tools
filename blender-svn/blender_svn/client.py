@@ -24,8 +24,6 @@ from bpy.app.handlers import load_post, persistent
 import logging
 
 from . import wheels
-from .util import get_addon_prefs
-
 # This will load the dateutil and svn wheel file.
 wheels.preload_dependencies()
 
@@ -33,6 +31,8 @@ from svn.local import LocalClient
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
+
+from .util import get_addon_prefs
 
 logger = logging.getLogger("SVN")
 

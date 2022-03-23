@@ -47,7 +47,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     """
 
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
-
+    external_files_active_index: bpy.props.IntProperty()
 
 # ----------------REGISTER--------------.
 

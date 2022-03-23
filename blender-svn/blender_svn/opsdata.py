@@ -27,8 +27,41 @@ import bpy
 
 from . import client
 
+import functools
+from blender_asset_tracer import cli, trace, bpathlib
+
 logger = logging.getLogger("SVN")
 
+
+def get_referenced_filepaths() -> Set[Path]:
+    """Return a flat list of files referenced either directly or indirectly
+    by this .blend file, as a flat list.
+    This uses the Blender Asset Tracer, so we rely on that to catch everything;
+    Images, video files, mesh sequence caches, blender libraries, everything.
+    """
+    bpath = Path(bpy.data.filepath)
+
+    reported_assets: Set[Path] = set()
+    last_reported_bfile = None
+    shorten = functools.partial(cli.common.shorten, Path.cwd())
+
+    for usage in trace.deps(bpath):
+        filepath = usage.block.bfile.filepath.absolute()
+        # if filepath != last_reported_bfile:
+            # print(shorten(filepath))
+
+        last_reported_bfile = filepath
+
+        for assetpath in usage.files():
+            assetpath = bpathlib.make_absolute(assetpath)
+            if assetpath in reported_assets:
+                logger.debug("Already reported %s", assetpath)
+                continue
+
+            # print("   ", shorten(assetpath))
+            reported_assets.add(assetpath)
+
+    return reported_assets
 
 def add_external_file_to_context(context: bpy.types.Context, path: Path) -> None:
 
@@ -37,9 +70,12 @@ def add_external_file_to_context(context: bpy.types.Context, path: Path) -> None
 
     # Set collection property.
     item.path_str = path.as_posix()
+    item.name = path.name
 
 
 def populate_context_with_external_files(context: bpy.types.Context) -> None:
-
     context.scene.svn.external_files.clear()
-
+    files = get_referenced_filepaths()
+    for f in files:
+        print(f)
+        add_external_file_to_context(context, f)
