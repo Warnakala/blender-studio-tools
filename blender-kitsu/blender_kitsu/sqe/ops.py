@@ -152,7 +152,10 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         # Needs to be logged in, active project.
-        nr_of_shots = len(context.selected_sequences)
+        sequences = context.selected_sequences
+        if not sequences:
+            return False
+        nr_of_shots = len(sequences)
         if nr_of_shots == 1:
             strip = context.scene.sequence_editor.active_strip
             return bool(
@@ -466,7 +469,10 @@ class KITSU_OT_sqe_link_sequence(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        strip = context.scene.sequence_editor.active_strip
+        sqe = context.scene.sequence_editor
+        if not sqe:
+            return False
+        strip = sqe.active_strip
         return bool(
             prefs.session_auth(context)
             and cache.project_active_get()
@@ -523,7 +529,10 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        strip = context.scene.sequence_editor.active_strip
+        sqe = context.scene.sequence_editor
+        if not sqe:
+            return False
+        strip = sqe.active_strip
         return bool(
             prefs.session_auth(context)
             and cache.project_active_get()
@@ -625,9 +634,11 @@ class KITSU_OT_sqe_multi_edit_strip(bpy.types.Operator):
         # Only if all selected strips are initialized but not linked
         # and they all have the same sequence name.
         sel_shots = context.selected_sequences
+        if not sel_shots:
+            return False
         nr_of_shots = len(sel_shots)
 
-        if not nr_of_shots > 1:
+        if nr_of_shots < 1:
             return False
 
         seq_name = sel_shots[0].kitsu.sequence_name
@@ -1955,7 +1966,10 @@ class KITSU_OT_sqe_add_sequence_color(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        active_strip = context.scene.sequence_editor.active_strip
+        sqe = context.scene.sequence_editor
+        if not sqe:
+            return False
+        active_strip = sqe.active_strip
         return bool(active_strip and active_strip.kitsu.sequence_id)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -2112,7 +2126,10 @@ class KITSU_OT_sqe_clear_update_indicators(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.scene.sequence_editor.sequences_all)
+        sqe = context.scene.sequence_editor
+        if not sqe:
+            return False
+        return bool(sqe.sequences_all)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
@@ -2155,7 +2172,10 @@ class KITSU_OT_sqe_change_strip_source(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.scene.sequence_editor.active_strip)
+        sqe = context.scene.sequence_editor
+        if not sqe:
+            return False
+        return bool(sqe.active_strip)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         strip = context.scene.sequence_editor.active_strip
