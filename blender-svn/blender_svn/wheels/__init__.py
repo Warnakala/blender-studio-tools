@@ -146,6 +146,8 @@ def preload_dependencies() -> None:
     _log.debug("Loaded wheel: %s", module.__name__)
     module = load_wheel_global("svn", "svn")
     _log.debug("Loaded wheel: %s", module.__name__)
+    module = load_wheel_global("blender_asset_tracer", "blender_asset_tracer")
+    _log.debug("Loaded wheel: %s", module.__name__)
 
 
 if __name__ == "__main__":
