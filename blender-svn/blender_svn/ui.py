@@ -1,6 +1,8 @@
 import bpy
 from .util import get_addon_prefs
 
+from bpy.props import BoolProperty
+
 class VIEW3D_PT_svn(bpy.types.Panel):
     """SVN UI panel in the 3D View Sidebar."""
     bl_space_type = 'VIEW_3D'
@@ -30,6 +32,12 @@ class VIEW3D_PT_svn(bpy.types.Panel):
 
 
 class SVN_UL_file_list(bpy.types.UIList):
+    include_normal: BoolProperty(
+        name = "Show All Files",
+        description = "Include files whose SVN status is normal",
+        default = False
+    )
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if self.layout_type != 'DEFAULT':
             raise NotImplemented
@@ -53,6 +61,47 @@ class SVN_UL_file_list(bpy.types.UIList):
         row.prop(file_entry, 'name', text="", emboss=False, icon=icon)
         row.prop(file_entry, 'status', text="", emboss=False)
 
+    def filter_items(self, context, data, propname):
+        """Default filtering functionality:
+            - Filter by name
+            - Sort alphabetical by name
+        """
+        flt_flags = []
+        flt_neworder = []
+        list_items = getattr(data, propname)
+
+        helper_funcs = bpy.types.UI_UL_list
+
+        # This list should ALWAYS be sorted alphabetically.
+        flt_neworder = helper_funcs.sort_items_by_name(list_items, "name")
+
+        if self.filter_name:
+            flt_flags = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, list_items, "name",
+                                                            reverse=False)
+
+        if not flt_flags:
+            flt_flags = [self.bitflag_filter_item] * len(list_items)
+
+        if not self.include_normal:
+            for i, item in enumerate(list_items):
+                flt_flags[i] *= int(item.status != "normal")
+
+        return flt_flags, flt_neworder
+
+    def draw_filter(self, context, layout):
+        """Default filtering UI:
+        - String input for name filtering
+        - Toggles for invert, sort alphabetical, reverse sort
+        """
+        main_row = layout.row()
+        row = main_row.row(align=True)
+
+        row.prop(self, 'filter_name', text="")
+
+        row = main_row.row(align=True)
+        row.use_property_split=True
+        row.use_property_decorate=False
+        row.prop(self, 'include_normal', toggle=True, text="", icon="HIDE_OFF" if self.include_normal else "HIDE_ON")
 
 class VIEW3D_PT_svn_files(bpy.types.Panel):
     """Display a list of files that the current .blend file depends on"""
