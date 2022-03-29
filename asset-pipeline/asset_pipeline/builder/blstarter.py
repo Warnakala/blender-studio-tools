@@ -39,12 +39,12 @@ class BuilderBlenderStarter:
     @classmethod
     def start_publish(cls, filepath: Path, pickle_path: Path) -> subprocess.Popen:
         cmd_str = (
-            f"{cls.path.as_posix()} {filepath.as_posix()}"
-            " -b"
-            # " --factory-startup"
-            # f" --addons blender_kitsu,asset_pipeline"
-            f" -P {cls.publish_script.as_posix()}"
-            f" -- {pickle_path.as_posix()}"
+            f'"{cls.path.as_posix()}" "{filepath.as_posix()}"'
+            ' -b'
+            # ' --factory-startup'
+            # f' --addons blender_kitsu,asset_pipeline'
+            f' -P "{cls.publish_script.as_posix()}"'
+            f' -- "{pickle_path.as_posix()}"'
         )
         popen = subprocess.Popen(cmd_str, shell=True)
         return popen
