@@ -43,6 +43,7 @@ class SVN_UL_file_list(bpy.types.UIList):
             raise NotImplemented
 
         file_entry = item
+        prefs = get_addon_prefs(context)
 
         row = layout.row()
         extension = file_entry.name.split(".")[-1] if "." in file_entry.name else ""
@@ -60,6 +61,10 @@ class SVN_UL_file_list(bpy.types.UIList):
 
         row.prop(file_entry, 'name', text="", emboss=False, icon=icon)
         row.prop(file_entry, 'status', text="", emboss=False)
+        if file_entry.status == 'modified':
+            revert = row.operator('svn.revert_file', text="", icon='LOOP_BACK')
+            revert.svn_root_abs_path = prefs.svn_directory
+            revert.file_rel_path = file_entry.svn_relative_path
 
     def filter_items(self, context, data, propname):
         """Default filtering functionality:

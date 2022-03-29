@@ -98,8 +98,7 @@ def populate_context_with_external_files(context: bpy.types.Context) -> None:
     statuses = {s.name : (s.type_raw_name, s.revision) for s in local_client.status()}
 
     for f in files:
-        status = 'normal'
+        status = ('normal', 0) # TODO: We currently don't show a revision number for Normal status files!
         if str(f) in statuses:
             status = statuses[str(f)]
-            print("STATUS: ", str(f), status)
         add_external_file_to_context(context, f, status)

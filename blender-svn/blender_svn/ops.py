@@ -23,7 +23,8 @@ import logging
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
-import bpy
+import bpy, subprocess
+from bpy.props import StringProperty
 
 from . import util, opsdata
 
@@ -48,8 +49,28 @@ class SVN_refresh_file_list(bpy.types.Operator):
 
         return {"FINISHED"}
 
+class SVN_revert_file(bpy.types.Operator):
+    bl_idname = "svn.revert_file"
+    bl_label = "Revert File"
+    bl_description = "Discard local changes to the file and return it to the state of the last revision. Local changes are PERMANENTLY DELETED"
+    bl_options = {'INTERNAL'}
+
+    svn_root_abs_path: StringProperty()
+    file_rel_path: StringProperty()
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        cmd = f'svn revert "{self.file_rel_path}"'
+        subprocess.call(
+            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
+        )
+        bpy.ops.svn.refresh_file_list()
+        # TODO: Do anything special if we're reverting the current .blend file?
+
+        return {"FINISHED"}
+
 # ----------------REGISTER--------------.
 
 registry = [
-    SVN_refresh_file_list
+    SVN_refresh_file_list,
+    SVN_revert_file
 ]

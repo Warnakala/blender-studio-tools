@@ -24,6 +24,8 @@ from pathlib import Path
 import bpy
 from bpy.props import StringProperty, EnumProperty, IntProperty
 
+from .util import get_addon_prefs
+
 def setter(prop):
     """A setter function for read-only Python properties.
     We use a 'lock' toggle to prevent changing properties in the UI.
@@ -49,15 +51,15 @@ class SVN_file(bpy.types.PropertyGroup):
 
     name: StringProperty(
         name = "File Name",
-        get = getter('name', ""),
-        set = setter('name')
+        # get = getter('name', ""),
+        # set = setter('name')
     )
     path_str: StringProperty(
         name="File Path",
-        description="File path that this file was referenced by. Can be both absolute or relative",
+        description="Absolute file path",
         subtype='FILE_PATH',
-        get = getter('path_str', ""),
-        set = setter('path_str')
+        # get = getter('path_str', ""),
+        # set = setter('path_str')
     )
     status: EnumProperty(
         name="Status",
@@ -78,14 +80,14 @@ class SVN_file(bpy.types.PropertyGroup):
             ('unversioned', 'Unversioned', 'This file is new in file system, but not yet added to the local repository. It needs to be added before it can be pushed to the remote repository'),
         ]
         ,default='normal',
-        get = getter('status', 10),
-        set = setter('status')
+        # get = getter('status', 10),
+        # set = setter('status')
     )
     revision: IntProperty(
         name="Revision",
         description="Revision number",
-        get = getter('revision', 0),
-        set = setter('revision')
+        # get = getter('revision', 0),
+        # set = setter('revision')
     )
 
     @property
@@ -96,6 +98,11 @@ class SVN_file(bpy.types.PropertyGroup):
 
     def lock(self):
         self._lock = True
+    
+    @property
+    def svn_relative_path(self) -> str:
+        prefs = get_addon_prefs(bpy.context)
+        return self.path_str.replace(prefs.svn_directory, "")[1:]
 
 
 class SVN_scene_properties(bpy.types.PropertyGroup):
