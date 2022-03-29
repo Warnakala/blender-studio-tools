@@ -46,6 +46,9 @@ def get_referenced_filepaths() -> Set[Path]:
     shorten = functools.partial(cli.common.shorten, Path.cwd())
 
     for usage in trace.deps(bpath):
+        print(usage)
+        files = [f for f in usage.files()]
+        print(files)
         filepath = usage.block.bfile.filepath.absolute()
         # if filepath != last_reported_bfile:
             # print(shorten(filepath))
@@ -63,7 +66,7 @@ def get_referenced_filepaths() -> Set[Path]:
 
     return reported_assets
 
-def add_external_file_to_context(context: bpy.types.Context, path: Path) -> None:
+def add_external_file_to_context(context: bpy.types.Context, path: Path, status: Tuple[str, int]) -> None:
 
     # Add item.
     item = context.scene.svn.external_files.add()
@@ -72,10 +75,21 @@ def add_external_file_to_context(context: bpy.types.Context, path: Path) -> None
     item.path_str = path.as_posix()
     item.name = path.name
 
+    if status:
+        item.status = status[0]
+        if status[1]:
+            item.revision = status[1]
+
 
 def populate_context_with_external_files(context: bpy.types.Context) -> None:
     context.scene.svn.external_files.clear()
     files = get_referenced_filepaths()
+    local_client = client.get_local_client()
+    statuses = {s.name : (s.type_raw_name, s.revision) for s in local_client.status()}
+
     for f in files:
-        print(f)
-        add_external_file_to_context(context, f)
+        status = None
+        if str(f) in statuses:
+            status = statuses[str(f)]
+            print("STATUS: ", str(f), status)
+        add_external_file_to_context(context, f, status)

@@ -38,6 +38,14 @@ logger = logging.getLogger("SVN")
 
 LOCAL_CLIENT: LocalClient = None
 
+def get_local_client():
+    global LOCAL_CLIENT
+    prefs = get_addon_prefs()
+    if not LOCAL_CLIENT:
+        LOCAL_CLIENT = LocalClient(prefs.svn_directory)
+
+    return LOCAL_CLIENT
+
 @persistent
 def init_local_client(context, dummy):
     """Attempt to initialize an SVN LocalClient object when opening a .blend file."""
@@ -46,18 +54,18 @@ def init_local_client(context, dummy):
     if not bpy.data.filepath:
         return
 
-    LOCAL_CLIENT = LocalClient(bpy.data.filepath)
-    # TODO: What happens when the file is not in an SVN repository directory? We should catch that case, reset the prefs, and early exit!
+    file_client = LocalClient(bpy.data.filepath)
     logger.info("SVN client done: %s", LOCAL_CLIENT)
     prefs = get_addon_prefs(context)
 
     try:
-        info = LOCAL_CLIENT.info()
+        info = file_client.info()
 
         # Populate the addon prefs with the info provided by the LocalClient object.
         prefs.is_in_repo = True
         prefs.svn_url = info['repository_root']
         prefs.svn_directory = info['wc-info/wcroot-abspath']
+        LOCAL_CLIENT = LocalClient(prefs.svn_directory)
         prefs.relative_filepath = info['relative_url'][1:]
         prefs.revision_number = int(info['entry_revision'])
         prefs.revision_date = str(info['commit_date']) # TODO: format this nicely.
@@ -66,7 +74,6 @@ def init_local_client(context, dummy):
         # TODO: Would be nice to have a better way to determine if the current 
         # file is NOT in a repository...
         prefs.reset()
-
 
 def register():
     load_post.append(init_local_client)

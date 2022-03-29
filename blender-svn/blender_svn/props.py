@@ -22,7 +22,7 @@ from typing import Optional, Dict, Any, List, Tuple
 from pathlib import Path
 
 import bpy
-
+from bpy.props import StringProperty, EnumProperty, IntProperty
 
 class SVN_file(bpy.types.PropertyGroup):
 
@@ -30,8 +30,35 @@ class SVN_file(bpy.types.PropertyGroup):
     Property Group that can represent a minimal version of a File in a SVN repository.
     """
 
-    path_str: bpy.props.StringProperty(  # type: ignore
-        name="Path",
+    name: StringProperty(
+        name = "File Name"
+    )
+    path_str: StringProperty(
+        name="Absolute File Path"
+    )
+    status: EnumProperty(
+        name="Status",
+        items = [   # Based on PySVN/svn/constants.py/STATUS_TYPE_LOOKUP.
+            ('added', 'New', 'This file was added to the local repository, and will be added to the remote repository when committing'),
+            ('conflicted', 'Conflict', 'This file was modified locally, and a newer version has appeared on the remote repository at the same time. One of the changes will be lost'),
+            ('deleted', 'Deleted', 'This file was deleted locally, but still exists on the remote repository'),
+            ('external', 'External', 'TODO'),
+            ('ignored', 'Ignored', 'TODO'),
+            ('incomplete', 'Incomplete', 'TODO'),
+            ('merged', 'Merged', 'TODO'),
+            ('missing', 'Missing', 'TODO'),
+            ('modified', 'Modified', 'This file was modified locally, and can be pushed to the remote repository without a conflict'),
+            ('none', 'None', 'TODO'),
+            ('normal', 'Normal', 'TODO'),
+            ('obstructed', 'Obstructed', 'TODO'),
+            ('replaced', 'Replaced', 'TODO'),
+            ('unversioned', 'Unversioned', 'This file is new in file system, but not yet added to the local repository. It needs to be added before it can be pushed to the remote repository'),
+        ]
+        ,default='normal'
+    )
+    revision: IntProperty(
+        name="Revision",
+        description="Revision number"
     )
 
     @property
