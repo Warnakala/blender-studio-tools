@@ -32,12 +32,14 @@ from blender_asset_tracer import cli, trace, bpathlib
 
 logger = logging.getLogger("SVN")
 
-
 def get_referenced_filepaths() -> Set[Path]:
-    """Return a flat list of files referenced either directly or indirectly
+    """Return a flat list of existing files referenced either directly or indirectly
     by this .blend file, as a flat list.
     This uses the Blender Asset Tracer, so we rely on that to catch everything;
     Images, video files, mesh sequence caches, blender libraries, everything.
+
+    Deleted files are not handled here; They are grabbed with PySVN instead, for the entire repository.
+    The returned list also does not include the currently opened .blend file itself.
     """
     bpath = Path(bpy.data.filepath)
 
@@ -46,17 +48,17 @@ def get_referenced_filepaths() -> Set[Path]:
     shorten = functools.partial(cli.common.shorten, Path.cwd())
 
     for usage in trace.deps(bpath):
-        print(usage)
         files = [f for f in usage.files()]
-        print(files)
-        filepath = usage.block.bfile.filepath.absolute()
-        # if filepath != last_reported_bfile:
-            # print(shorten(filepath))
 
-        last_reported_bfile = filepath
+        # Path of the blend file that references this BlockUsage.
+        blend_path = usage.block.bfile.filepath.absolute()
+        # if blend_path != last_reported_bfile:
+            # print(shorten(blend_path))
+
+        last_reported_bfile = blend_path
 
         for assetpath in usage.files():
-            assetpath = bpathlib.make_absolute(assetpath)
+            # assetpath = bpathlib.make_absolute(assetpath)
             if assetpath in reported_assets:
                 logger.debug("Already reported %s", assetpath)
                 continue
@@ -80,15 +82,23 @@ def add_external_file_to_context(context: bpy.types.Context, path: Path, status:
         if status[1]:
             item.revision = status[1]
 
+    item.lock = True
+
 
 def populate_context_with_external_files(context: bpy.types.Context) -> None:
     context.scene.svn.external_files.clear()
-    files = get_referenced_filepaths()
+
+    files: Set[Path] = get_referenced_filepaths()
+    files.add(Path(bpy.data.filepath))
+
     local_client = client.get_local_client()
+
+    # Calls `svn status` to get a list of files that have been added, modified, etc.
+    # Match each file name with a tuple that is the modification type and revision number.
     statuses = {s.name : (s.type_raw_name, s.revision) for s in local_client.status()}
 
     for f in files:
-        status = None
+        status = 'normal'
         if str(f) in statuses:
             status = statuses[str(f)]
             print("STATUS: ", str(f), status)

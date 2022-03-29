@@ -87,8 +87,8 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
 
         active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
         col = layout.column()
-        col.enabled=False
         col.prop(active_file, 'status')
+        col.prop(active_file, 'path_str')
         col.prop(active_file, 'revision')
 
 

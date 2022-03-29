@@ -33,6 +33,7 @@ class SVN_refresh_file_list(bpy.types.Operator):
     bl_idname = "svn.refresh_file_list"
     bl_label = "Refresh File List"
     bl_description = "Refresh the file list and check for any changes that should be committed to the SVN"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if bpy.data.is_dirty:

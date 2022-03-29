@@ -24,17 +24,40 @@ from pathlib import Path
 import bpy
 from bpy.props import StringProperty, EnumProperty, IntProperty
 
-class SVN_file(bpy.types.PropertyGroup):
+def setter(prop):
+    """A setter function for read-only Python properties.
+    We use a 'lock' toggle to prevent changing properties in the UI.
+    This way we can avoid graying out the UI.
+    """
+    def set_readonly(self, value):
+        if self.lock:
+            return
+        else:
+            self[prop] = value
+    return set_readonly
 
-    """
-    Property Group that can represent a minimal version of a File in a SVN repository.
-    """
+def getter(prop, default):
+    """Does nothing special, but is required when we specify a setter, so it has to exist."""
+    def get(self):
+        if prop in self:
+            return self[prop]
+        return default
+    return get
+
+class SVN_file(bpy.types.PropertyGroup):
+    """Property Group that can represent a version of a File in an SVN repository."""
 
     name: StringProperty(
-        name = "File Name"
+        name = "File Name",
+        get = getter('name', ""),
+        set = setter('name')
     )
     path_str: StringProperty(
-        name="Absolute File Path"
+        name="File Path",
+        description="File path that this file was referenced by. Can be both absolute or relative",
+        subtype='FILE_PATH',
+        get = getter('path_str', ""),
+        set = setter('path_str')
     )
     status: EnumProperty(
         name="Status",
@@ -54,11 +77,15 @@ class SVN_file(bpy.types.PropertyGroup):
             ('replaced', 'Replaced', 'TODO'),
             ('unversioned', 'Unversioned', 'This file is new in file system, but not yet added to the local repository. It needs to be added before it can be pushed to the remote repository'),
         ]
-        ,default='normal'
+        ,default='normal',
+        get = getter('status', 10),
+        set = setter('status')
     )
     revision: IntProperty(
         name="Revision",
-        description="Revision number"
+        description="Revision number",
+        get = getter('revision', 0),
+        set = setter('revision')
     )
 
     @property
@@ -66,6 +93,9 @@ class SVN_file(bpy.types.PropertyGroup):
         if not self.path_str:
             return None
         return Path(self.path_str)
+
+    def lock(self):
+        self._lock = True
 
 
 class SVN_scene_properties(bpy.types.PropertyGroup):
