@@ -64,12 +64,23 @@ class SVN_UL_file_list(bpy.types.UIList):
             icon = 'SPEAKER'
 
         row.prop(file_entry, 'name', text="", emboss=False, icon=icon)
-        row.prop(file_entry, 'status', text="", emboss=False)
-        if file_entry.status == 'modified':
-            revert = row.operator('svn.revert_file', text="", icon='LOOP_BACK')
-            revert.svn_root_abs_path = prefs.svn_directory
-            revert.file_rel_path = file_entry.svn_relative_path
+        row.prop(file_entry, 'status', emboss=False, text="")
 
+        # SVN operations
+        ops = []
+        if file_entry.status == 'modified':
+            ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
+        if file_entry.status == 'added':
+            ops.append(row.operator('svn.unadd_file', text="", icon='REMOVE'))
+        if file_entry.status == 'unversioned':
+            ops.append(row.operator('svn.add_file', text="", icon='ADD'))
+            ops.append(row.operator('svn.trash_file', text="", icon='TRASH'))
+
+        if ops:
+            for op in ops:
+                op.svn_root_abs_path = prefs.svn_directory
+                op.file_rel_path = file_entry.svn_relative_path
+        
     def filter_items(self, context, data, propname):
         """Default filtering functionality:
             - Filter by name

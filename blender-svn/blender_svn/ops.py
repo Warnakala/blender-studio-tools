@@ -26,6 +26,7 @@ from pathlib import Path
 import bpy, subprocess
 from bpy.props import StringProperty
 
+from send2trash import send2trash
 from . import util, opsdata
 
 logger = logging.getLogger("SVN")
@@ -87,9 +88,67 @@ class SVN_revert_file(OperatorWithWarning, bpy.types.Operator):
     def get_warning_text(self, context) -> str:
         return "You will irreversibly and permanently revert local modifications on this file:\n    " + self.file_rel_path
 
+
+class SVN_add_file(bpy.types.Operator):
+    bl_idname = "svn.add_file"
+    bl_label = "Add File"
+    bl_description = "Mark a locally added file as being added to the remote repository. It will be committed"
+    bl_options = {'INTERNAL'}
+
+    svn_root_abs_path: StringProperty()
+    file_rel_path: StringProperty()
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        cmd = f'svn add "{self.file_rel_path}"'
+        subprocess.call(
+            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
+        )
+        bpy.ops.svn.refresh_file_list()
+
+        return {"FINISHED"}
+
+class SVN_unadd_file(bpy.types.Operator):
+    bl_idname = "svn.unadd_file"
+    bl_label = "Un-Add File"
+    bl_description = "Un-mark a locally added file as being added to the remote repository. It will not be committed"
+    bl_options = {'INTERNAL'}
+
+    svn_root_abs_path: StringProperty()
+    file_rel_path: StringProperty()
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        cmd = f'svn rm --keep-local "{self.file_rel_path}"'
+        subprocess.call(
+            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
+        )
+        bpy.ops.svn.refresh_file_list()
+
+        return {"FINISHED"}
+
+
+class SVN_trash_file(bpy.types.Operator):
+    bl_idname = "svn.trash_file"
+    bl_label = "Trash File"
+    bl_description = "Move a local file to the recycle bin"
+    bl_options = {'INTERNAL'}
+
+    svn_root_abs_path: StringProperty()
+    file_rel_path: StringProperty()
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        file_full_path = Path.joinpath(Path(self.svn_root_abs_path), Path(self.file_rel_path))
+        send2trash([file_full_path])
+        bpy.ops.svn.refresh_file_list()
+
+        return {"FINISHED"}
+
+
 # ----------------REGISTER--------------.
 
 registry = [
     SVN_refresh_file_list,
-    SVN_revert_file
+    SVN_revert_file,
+    SVN_unadd_file,
+    SVN_add_file,
+    SVN_trash_file
 ]
