@@ -32,8 +32,13 @@ class VIEW3D_PT_svn(bpy.types.Panel):
 
 class SVN_UL_file_list(bpy.types.UIList):
     include_normal: BoolProperty(
+        name = "Show Normal Files",
+        description = "Include files whose SVN status is Normal",
+        default = False
+    )
+    include_entire_repo: BoolProperty(
         name = "Show All Files",
-        description = "Include files whose SVN status is normal",
+        description = "Include all modified files in the repository, even if they are not referenced by this .blend file",
         default = False
     )
 
@@ -90,6 +95,10 @@ class SVN_UL_file_list(bpy.types.UIList):
             for i, item in enumerate(list_items):
                 flt_flags[i] *= int(item.status != "normal")
 
+        if not self.include_entire_repo:
+            for i, item in enumerate(list_items):
+                flt_flags[i] *= int(item.is_referenced)
+
         return flt_flags, flt_neworder
 
     def draw_filter(self, context, layout):
@@ -105,7 +114,8 @@ class SVN_UL_file_list(bpy.types.UIList):
         row = main_row.row(align=True)
         row.use_property_split=True
         row.use_property_decorate=False
-        row.prop(self, 'include_normal', toggle=True, text="", icon="HIDE_OFF" if self.include_normal else "HIDE_ON")
+        row.prop(self, 'include_normal', toggle=True, text="", icon="CHECKMARK")
+        row.prop(self, 'include_entire_repo', toggle=True, text="", icon='DISK_DRIVE')
 
 class VIEW3D_PT_svn_files(bpy.types.Panel):
     """Display a list of files that the current .blend file depends on"""

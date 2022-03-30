@@ -26,6 +26,7 @@ from pathlib import Path
 import bpy
 
 from . import client
+from .props import SVN_file
 
 import functools
 from blender_asset_tracer import cli, trace, bpathlib
@@ -33,8 +34,9 @@ from blender_asset_tracer import cli, trace, bpathlib
 logger = logging.getLogger("SVN")
 
 def get_referenced_filepaths() -> Set[Path]:
-    """Return a flat list of existing files referenced either directly or indirectly
-    by this .blend file, as a flat list.
+    """Return a flat list of absolute filepaths of existing files referenced 
+    either directly or indirectly by this .blend file, as a flat list.
+
     This uses the Blender Asset Tracer, so we rely on that to catch everything;
     Images, video files, mesh sequence caches, blender libraries, everything.
 
@@ -68,7 +70,8 @@ def get_referenced_filepaths() -> Set[Path]:
 
     return reported_assets
 
-def add_external_file_to_context(context: bpy.types.Context, path: Path, status: Tuple[str, int]) -> None:
+
+def add_external_file_to_context(context: bpy.types.Context, path: Path, status: Tuple[str, int]) -> SVN_file:
 
     # Add item.
     item = context.scene.svn.external_files.add()
@@ -84,6 +87,7 @@ def add_external_file_to_context(context: bpy.types.Context, path: Path, status:
 
     # Prevent editing values in the UI.
     item.lock = True
+    return item
 
 
 def populate_context_with_external_files(context: bpy.types.Context) -> None:
@@ -99,8 +103,18 @@ def populate_context_with_external_files(context: bpy.types.Context) -> None:
     # Match each file name with a tuple that is the modification type and revision number.
     statuses = {s.name : (s.type_raw_name, s.revision) for s in local_client.status()}
 
+    # Add file entries that are referenced by this .blend file,
+    # even if the file's status is normal (un-modified)
     for f in files:
         status = ('normal', 0) # TODO: We currently don't show a revision number for Normal status files!
         if str(f) in statuses:
             status = statuses[str(f)]
-        add_external_file_to_context(context, f, status)
+            del statuses[str(f)]
+        file_entry = add_external_file_to_context(context, f, status)
+        file_entry.is_referenced = True
+
+    # Add file entries in the entire SVN repository for files whose status isn't
+    # normal. Do this even for files not referenced by this .blend file.
+    for f in statuses.keys():
+        file_entry = add_external_file_to_context(context, Path(f), statuses[f])
+        file_entry.is_referenced = False

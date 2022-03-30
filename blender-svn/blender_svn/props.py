@@ -40,7 +40,7 @@ class SVN_file(bpy.types.PropertyGroup):
         set = make_setter_func_readonly('name')
     )
     path_str: StringProperty(
-        name="File Path",
+        name="Absolute Path",
         description="Absolute file path",
         subtype='FILE_PATH',
         get = make_getter_func('path_str', ""),
@@ -49,20 +49,20 @@ class SVN_file(bpy.types.PropertyGroup):
     status: EnumProperty(
         name="Status",
         items = [   # Based on PySVN/svn/constants.py/STATUS_TYPE_LOOKUP.
-            ('added', 'New', 'This file was added to the local repository, and will be added to the remote repository when committing'),
-            ('conflicted', 'Conflict', 'This file was modified locally, and a newer version has appeared on the remote repository at the same time. One of the changes will be lost'),
-            ('deleted', 'Deleted', 'This file was deleted locally, but still exists on the remote repository'),
-            ('external', 'External', 'TODO'),
-            ('ignored', 'Ignored', 'TODO'),
-            ('incomplete', 'Incomplete', 'TODO'),
-            ('merged', 'Merged', 'TODO'),
-            ('missing', 'Missing', 'TODO'),
-            ('modified', 'Modified', 'This file was modified locally, and can be pushed to the remote repository without a conflict'),
-            ('none', 'None', 'TODO'),
-            ('normal', 'Normal', 'TODO'),
-            ('obstructed', 'Obstructed', 'TODO'),
-            ('replaced', 'Replaced', 'TODO'),
-            ('unversioned', 'Unversioned', 'This file is new in file system, but not yet added to the local repository. It needs to be added before it can be pushed to the remote repository'),
+            ('added', 'Added', 'This file was added to the local repository, and will be added to the remote repository when committing', 'FILE', 0),
+            ('conflicted', 'Conflict', 'This file was modified locally, and a newer version has appeared on the remote repository at the same time. To resolve the conflict, one of the changes must be discarded', 'ERROR', 1),
+            ('deleted', 'Deleted', 'This file was deleted locally, but still exists on the remote repository', 'TRASH', 2),
+            ('external', 'External', 'This file is present because of an externals definition', 'EXTERNAL_DRIVE', 3),
+            ('ignored', 'Ignored', 'This file is being ignored (e.g., with the svn:ignore property)', 'RADIOBUT_OFF', 4),
+            ('incomplete', 'Incomplete', 'A directory is incomplete (a checkout or update was interrupted)', 'FOLDER_REDIRECT', 5),
+            ('merged', 'Merged', 'TODO', 'AUTOMERGE_ON', 6),
+            ('missing', 'Missing', 'This file is missing (e.g., you moved or deleted it without using svn)', 'FILE_HIDDEN', 7),
+            ('modified', 'Modified', 'This file was modified locally, and can be pushed to the remote repository without a conflict', 'MODIFIER', 8),
+            ('none', 'None', 'This file has no status. This should never happen', 'QUESTION', 9),
+            ('normal', 'Normal', 'This file is in the repository. There are no local modifications to commit', 'CHECKMARK', 10),
+            ('obstructed', 'Obstructed', 'Something has gone horribly wrong. Try svn cleanup', 'ERROR', 11),
+            ('replaced', 'Replaced', 'This file has been replaced in your local repository. This means the file was scheduled for deletion, and then a new file with the same name was scheduled for addition in its place', 'FILE_REFRESH', 12),
+            ('unversioned', 'Unversioned', 'This file is new in file system, but not yet added to the local repository. It needs to be added before it can be committed to the remote repository', 'FILE_NEW', 13),
         ]
         ,default='normal',
         get = make_getter_func('status', 10),
@@ -73,6 +73,10 @@ class SVN_file(bpy.types.PropertyGroup):
         description="Revision number",
         get = make_getter_func('revision', 0),
         set = make_setter_func_readonly('revision')
+    )
+    is_referenced: BoolProperty(
+        name="Is Referenced",
+        description="True when this file is referenced by this .blend file either directly or indirectly. Flag used for list filtering",
     )
 
     @property
