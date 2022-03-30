@@ -38,7 +38,7 @@ class SVN_refresh_file_list(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if bpy.data.is_dirty:
-            self.report({'ERROR'}, "The file must be saved first.")
+            self.report({'ERROR'}, "The .blend file must be saved first.")
             return {'CANCELLED'}
 
         # Populate context with collected asset collections.
@@ -49,7 +49,23 @@ class SVN_refresh_file_list(bpy.types.Operator):
 
         return {"FINISHED"}
 
-class SVN_revert_file(bpy.types.Operator):
+class OperatorWithWarning:
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def draw(self, context):
+        layout = self.layout.column(align=True)
+
+        warning = self.get_warning_text(context)
+        for line in warning.split("\n"):
+            row = layout.row()
+            row.alert = True
+            row.label(text=line)
+
+    def get_warning_text(self, context):
+        raise NotImplemented
+
+class SVN_revert_file(OperatorWithWarning, bpy.types.Operator):
     bl_idname = "svn.revert_file"
     bl_label = "Revert File"
     bl_description = "Discard local changes to the file and return it to the state of the last revision. Local changes are PERMANENTLY DELETED"
@@ -67,6 +83,9 @@ class SVN_revert_file(bpy.types.Operator):
         # TODO: Do anything special if we're reverting the current .blend file?
 
         return {"FINISHED"}
+
+    def get_warning_text(self, context) -> str:
+        return "You will irreversibly and permanently revert local modifications on this file:\n    " + self.file_rel_path
 
 # ----------------REGISTER--------------.
 
