@@ -70,6 +70,8 @@ class SVN_UL_file_list(bpy.types.UIList):
         ops = []
         if file_entry.status == 'modified':
             ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
+        if file_entry.status == 'missing':
+            ops.append(row.operator('svn.restore_file', text="", icon='LOOP_BACK'))
         if file_entry.status == 'added':
             ops.append(row.operator('svn.unadd_file', text="", icon='REMOVE'))
         if file_entry.status == 'unversioned':

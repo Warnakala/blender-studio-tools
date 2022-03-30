@@ -26,7 +26,7 @@ from pathlib import Path
 import bpy, subprocess
 from bpy.props import StringProperty
 
-from send2trash import send2trash
+from send2trash import send2trash   # NOTE: For some reason, when there's any error in this file, this line seems to take the blame for it?
 from . import opsdata
 
 logger = logging.getLogger("SVN")
@@ -65,10 +65,12 @@ class SVN_file_operator:
     svn_root_abs_path: StringProperty()
     file_rel_path: StringProperty()
 
+    missing_file_allowed = False
+
     def execute(self, context: bpy.types.Context) -> Set[str]:
         """All of these operators want to make sure that the file exists,
         before trying to execute."""
-        if not self.file_exists():
+        if not self.file_exists() and not type(self).missing_file_allowed:
             return {'CANCELLED'}
         ret = self._execute(context)
         opsdata.refresh_file_list(context.scene)
@@ -83,22 +85,38 @@ class SVN_file_operator:
 
     def file_exists(self) -> bool:
         exists = self.file_full_path.exists()
-        if not exists:
+        if not exists and not type(self).missing_file_allowed:
             self.report({'INFO'}, "File was not found, cancelling.")
         return exists
 
 
-class SVN_revert_file(SVN_file_operator, OperatorWithWarning, bpy.types.Operator):
-    bl_idname = "svn.revert_file"
-    bl_label = "Revert File"
-    bl_description = "Discard local changes to the file and return it to the state of the last revision. Local changes are PERMANENTLY DELETED"
+class SVN_restore_file(SVN_file_operator, bpy.types.Operator):
+    bl_idname = "svn.restore_file"
+    bl_label = "Restore File"
+    bl_description = "Restore a file that was deleted"
     bl_options = {'INTERNAL'}
+
+    missing_file_allowed = True
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         cmd = f'svn revert "{self.file_rel_path}"'
         subprocess.call(
             (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
         )
+
+        return {"FINISHED"}
+
+
+class SVN_revert_file(SVN_restore_file, OperatorWithWarning):
+    bl_idname = "svn.revert_file"
+    bl_label = "Revert File"
+    bl_description = "Discard local changes to the file and return it to the state of the last revision. Local changes are PERMANENTLY DELETED"
+    bl_options = {'INTERNAL'}
+
+    missing_file_allowed = False
+
+    def _execute(self, context: bpy.types.Context) -> Set[str]:
+        super()._execute(context)
         # TODO: Do anything special if we're reverting the current .blend file?
 
         return {"FINISHED"}
@@ -156,6 +174,7 @@ class SVN_trash_file(SVN_file_operator, bpy.types.Operator):
 registry = [
     SVN_refresh_file_list,
     SVN_revert_file,
+    SVN_restore_file,
     SVN_unadd_file,
     SVN_add_file,
     SVN_trash_file
