@@ -71,8 +71,7 @@ def get_referenced_filepaths() -> Set[Path]:
     return reported_assets
 
 
-def add_file_entry(scene: bpy.types.Scene, path: Path, status: Tuple[str, int]) -> SVN_file:
-
+def add_file_entry(scene: bpy.types.Scene, path: Path, status: Tuple[str, int], is_referenced=False) -> SVN_file:
     # Add item.
     item = scene.svn.external_files.add()
 
@@ -87,6 +86,7 @@ def add_file_entry(scene: bpy.types.Scene, path: Path, status: Tuple[str, int]) 
 
     # Prevent editing values in the UI.
     item.lock = True
+    item.is_referenced = is_referenced
     return item
 
 @bpy.app.handlers.persistent
@@ -94,7 +94,12 @@ def refresh_file_list(scene) -> None:
     if not scene:
         # When called from save_post() handler, which apparently does not pass context
         scene = bpy.context.scene
-    scene.svn.external_files.clear()
+
+    # Remove all files from the list except the ones with the Outdated status.
+    for i, file_entry in reversed(list(enumerate(scene.svn.external_files))):
+        if file_entry.status != 'none':
+            scene.svn.external_files.remove(i)
+
     scene.svn.external_files_active_index = -1
 
     files: Set[Path] = get_referenced_filepaths()
@@ -113,11 +118,9 @@ def refresh_file_list(scene) -> None:
         if str(f) in statuses:
             status = statuses[str(f)]
             del statuses[str(f)]
-        file_entry = add_file_entry(scene, f, status)
-        file_entry.is_referenced = True
+        file_entry = add_file_entry(scene, f, status, is_referenced=True)
 
     # Add file entries in the entire SVN repository for files whose status isn't
     # normal. Do this even for files not referenced by this .blend file.
     for f in statuses.keys():
         file_entry = add_file_entry(scene, Path(f), statuses[f])
-        file_entry.is_referenced = False

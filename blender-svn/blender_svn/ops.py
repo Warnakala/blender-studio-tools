@@ -33,8 +33,8 @@ logger = logging.getLogger("SVN")
 
 class SVN_refresh_file_list(bpy.types.Operator):
     bl_idname = "svn.refresh_file_list"
-    bl_label = "Refresh File List"
-    bl_description = "Refresh the file list and check for any changes that should be committed to the SVN"
+    bl_label = "Check For Local Changes"
+    bl_description = "Refresh the file list and create an entry for any changes in the local repository"
     bl_options = {'INTERNAL'}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -42,6 +42,53 @@ class SVN_refresh_file_list(bpy.types.Operator):
         opsdata.refresh_file_list(context.scene)
 
         return {"FINISHED"}
+
+class SVN_check_for_updates(bpy.types.Operator):
+    bl_idname = "svn.check_for_updates"
+    bl_label = "Check For Remote Changes"
+    bl_description = "Check the remote repository for any new file versions that might be available. This can take a few seconds"
+    bl_options = {'INTERNAL'}
+
+    svn_root_abs_path: StringProperty()
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        opsdata.refresh_file_list(context.scene)
+
+        cmd = f'svn status --show-updates'
+        outp = str(
+            subprocess.check_output(
+                (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
+            ),
+            'utf-8'
+        )
+        # Discard the last 2 lines that just shows current revision number.
+        lines = outp.split("\n")[:-2]
+        # Only keep files with no status indicator ("none" status).
+        lines = [l for l in lines if l.startswith(" ")]
+
+        # Remove empty lines.
+        while True:
+            try:
+                lines.remove("")
+            except ValueError:
+                break
+
+        files: List[Tuple[int, str]] = [] # Revision number, filepath
+        for line in lines:
+            split = [s for s in line.split(" ") if s]
+            files.append((int(split[1]), split[2]))
+
+        # Remove all outdated files currently in the list
+        scene = context.scene
+        for i, file_entry in reversed(list(enumerate(scene.svn.external_files))):
+            if file_entry.status == 'none':
+                scene.svn.external_files.remove(i)
+
+        for file in files:
+            opsdata.add_file_entry(context.scene, Path(file[1]), status=('none', file[0]))
+
+        return {"FINISHED"}
+
 
 class OperatorWithWarning:
     def invoke(self, context, event):
@@ -173,6 +220,7 @@ class SVN_trash_file(SVN_file_operator, bpy.types.Operator):
 
 registry = [
     SVN_refresh_file_list,
+    SVN_check_for_updates,
     SVN_revert_file,
     SVN_restore_file,
     SVN_unadd_file,

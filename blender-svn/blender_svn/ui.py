@@ -147,12 +147,13 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        layout.operator("svn.refresh_file_list", icon='FILE_REFRESH')
-
         if len(context.scene.svn.external_files) == 0:
+            layout.operator("svn.refresh_file_list", icon='FILE_REFRESH')
             return
 
-        layout.template_list(
+        row = layout.row()
+
+        row.template_list(
             "SVN_UL_file_list",
             "svn_file_list",
             context.scene.svn,
@@ -160,6 +161,11 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
             context.scene.svn,
             "external_files_active_index",
         )
+        col = row.column()
+        col.operator("svn.refresh_file_list", icon='FILE_REFRESH', text="")
+        up = col.operator("svn.check_for_updates", icon='URL', text="")
+        prefs = get_addon_prefs(context)
+        up.svn_root_abs_path = prefs.svn_directory
 
         active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
         col = layout.column()

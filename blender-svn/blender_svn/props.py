@@ -58,11 +58,12 @@ class SVN_file(bpy.types.PropertyGroup):
             ('merged', 'Merged', 'TODO', 'AUTOMERGE_ON', 6),
             ('missing', 'Missing', 'This file is missing (e.g., you moved or deleted it without using svn)', 'FILE_HIDDEN', 7),
             ('modified', 'Modified', 'This file was modified locally, and can be pushed to the remote repository without a conflict', 'MODIFIER', 8),
-            ('none', 'None', 'This file has no status. This should never happen', 'QUESTION', 9),
+            ('none', 'Outdated', 'There is a newer version of this file available on the remote repository. You should update it', 'TIME',  9),
             ('normal', 'Normal', 'This file is in the repository. There are no local modifications to commit', 'CHECKMARK', 10),
             ('obstructed', 'Obstructed', 'Something has gone horribly wrong. Try svn cleanup', 'ERROR', 11),
             ('replaced', 'Replaced', 'This file has been replaced in your local repository. This means the file was scheduled for deletion, and then a new file with the same name was scheduled for addition in its place', 'FILE_REFRESH', 12),
             ('unversioned', 'Unversioned', 'This file is new in file system, but not yet added to the local repository. It needs to be added before it can be committed to the remote repository', 'FILE_NEW', 13),
+            # A custom status for files that have a newer version available.
         ]
         ,default='normal',
         get = make_getter_func('status', 10),
@@ -77,6 +78,7 @@ class SVN_file(bpy.types.PropertyGroup):
     is_referenced: BoolProperty(
         name="Is Referenced",
         description="True when this file is referenced by this .blend file either directly or indirectly. Flag used for list filtering",
+        default=False
     )
 
     @property
