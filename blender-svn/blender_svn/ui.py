@@ -68,6 +68,8 @@ class SVN_UL_file_list(bpy.types.UIList):
 
         # SVN operations
         ops = []
+        if file_entry.status == 'none':
+            ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
         if file_entry.status == 'modified':
             ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
         if file_entry.status == 'missing':
@@ -82,7 +84,7 @@ class SVN_UL_file_list(bpy.types.UIList):
             for op in ops:
                 op.svn_root_abs_path = prefs.svn_directory
                 op.file_rel_path = file_entry.svn_relative_path
-        
+
     def filter_items(self, context, data, propname):
         """Default filtering functionality:
             - Filter by name
@@ -130,6 +132,14 @@ class SVN_UL_file_list(bpy.types.UIList):
         row.prop(self, 'include_normal', toggle=True, text="", icon="CHECKMARK")
         row.prop(self, 'include_entire_repo', toggle=True, text="", icon='DISK_DRIVE')
 
+    def get_good_active_index(self, context) -> int:
+        """Return the index of the first available item that is not being filtered out"""
+        flt_flags, flt_neworder = self.filter_items(context, context.scene.svn, 'external_files')
+        for i, flag in flt_flags:
+            if flag != 0:
+                return i
+        return 0
+
 class VIEW3D_PT_svn_files(bpy.types.Panel):
     """Display a list of files that the current .blend file depends on"""
     bl_space_type = 'VIEW_3D'
@@ -148,7 +158,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_decorate = False
 
         if len(context.scene.svn.external_files) == 0:
-            layout.operator("svn.refresh_file_list", icon='FILE_REFRESH')
+            layout.operator("svn.check_for_local_changes", icon='FILE_REFRESH')
             return
 
         row = layout.row()
@@ -162,9 +172,12 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
             "external_files_active_index",
         )
         col = row.column()
-        col.operator("svn.refresh_file_list", icon='FILE_REFRESH', text="")
-        up = col.operator("svn.check_for_updates", icon='URL', text="")
+        col.operator("svn.check_for_local_changes", icon='FILE_REFRESH', text="")
+        check_up = col.operator("svn.check_for_updates", icon='URL', text="")
         prefs = get_addon_prefs(context)
+        check_up.svn_root_abs_path = prefs.svn_directory
+        col.separator()
+        up = col.operator("svn.update_all", icon='IMPORT', text="")
         up.svn_root_abs_path = prefs.svn_directory
 
         active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]

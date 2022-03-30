@@ -27,21 +27,22 @@ import bpy, subprocess
 from bpy.props import StringProperty
 
 from send2trash import send2trash   # NOTE: For some reason, when there's any error in this file, this line seems to take the blame for it?
-from . import opsdata
+
+from .util import get_addon_prefs
 
 logger = logging.getLogger("SVN")
 
-class SVN_refresh_file_list(bpy.types.Operator):
-    bl_idname = "svn.refresh_file_list"
+class SVN_check_for_local_changes(bpy.types.Operator):
+    bl_idname = "svn.check_for_local_changes"
     bl_label = "Check For Local Changes"
     bl_description = "Refresh the file list and create an entry for any changes in the local repository"
     bl_options = {'INTERNAL'}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # Populate context with collected asset collections.
-        opsdata.refresh_file_list(context.scene)
+        context.scene.svn.check_for_local_changes()
 
         return {"FINISHED"}
+
 
 class SVN_check_for_updates(bpy.types.Operator):
     bl_idname = "svn.check_for_updates"
@@ -52,7 +53,8 @@ class SVN_check_for_updates(bpy.types.Operator):
     svn_root_abs_path: StringProperty()
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        opsdata.refresh_file_list(context.scene)
+        svn_props = context.scene.svn
+        svn_props.check_for_local_changes()
 
         cmd = f'svn status --show-updates'
         outp = str(
@@ -78,17 +80,31 @@ class SVN_check_for_updates(bpy.types.Operator):
             split = [s for s in line.split(" ") if s]
             files.append((int(split[1]), split[2]))
 
-        # Remove all outdated files currently in the list
-        scene = context.scene
-        for i, file_entry in reversed(list(enumerate(scene.svn.external_files))):
-            if file_entry.status == 'none':
-                scene.svn.external_files.remove(i)
+        svn_props.remove_outdated_file_entries()
 
+        prefs = get_addon_prefs(context)
         for file in files:
-            opsdata.add_file_entry(context.scene, Path(file[1]), status=('none', file[0]))
+            abspath = Path.joinpath(Path(prefs.svn_directory), Path(file[1]))
+            svn_props.add_file_entry(abspath, status=('none', file[0]))
 
         return {"FINISHED"}
 
+class SVN_update_all(bpy.types.Operator):
+    bl_idname = "svn.update_all"
+    bl_label = "SVN Update All"
+    bl_description = "Download all the latest updates from the remote repository"
+    bl_options = {'INTERNAL'}
+
+    svn_root_abs_path: StringProperty()
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        cmd = f'svn up'
+        subprocess.call(
+            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
+        )
+        context.scene.svn.remove_outdated_file_entries()
+
+        return {"FINISHED"}
 
 class OperatorWithWarning:
     def invoke(self, context, event):
@@ -120,7 +136,7 @@ class SVN_file_operator:
         if not self.file_exists() and not type(self).missing_file_allowed:
             return {'CANCELLED'}
         ret = self._execute(context)
-        opsdata.refresh_file_list(context.scene)
+        context.scene.svn.check_for_local_changes()
         return ret
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
@@ -136,6 +152,25 @@ class SVN_file_operator:
             self.report({'INFO'}, "File was not found, cancelling.")
         return exists
 
+
+class SVN_update_single(SVN_file_operator, bpy.types.Operator):
+    bl_idname = "svn.update_single"
+    bl_label = "Update File"
+    bl_description = "Download the latest available version of this file from the remote repository"
+    bl_options = {'INTERNAL'}
+
+    missing_file_allowed = True
+
+    def _execute(self, context: bpy.types.Context) -> Set[str]:
+        cmd = f'svn up "{self.file_rel_path}"'
+        subprocess.call(
+            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
+        )
+
+        # Remove the file entry for this file
+        context.scene.svn.remove_by_path(str(self.file_full_path))
+
+        return {"FINISHED"}
 
 class SVN_restore_file(SVN_file_operator, bpy.types.Operator):
     bl_idname = "svn.restore_file"
@@ -186,6 +221,7 @@ class SVN_add_file(SVN_file_operator, bpy.types.Operator):
 
         return {"FINISHED"}
 
+
 class SVN_unadd_file(SVN_file_operator, bpy.types.Operator):
     bl_idname = "svn.unadd_file"
     bl_label = "Un-Add File"
@@ -219,17 +255,13 @@ class SVN_trash_file(SVN_file_operator, bpy.types.Operator):
 # ----------------REGISTER--------------.
 
 registry = [
-    SVN_refresh_file_list,
+    SVN_check_for_local_changes,
     SVN_check_for_updates,
+    SVN_update_all,
+    SVN_update_single,
     SVN_revert_file,
     SVN_restore_file,
     SVN_unadd_file,
     SVN_add_file,
     SVN_trash_file
 ]
-
-def register():
-    bpy.app.handlers.save_pre.append(opsdata.refresh_file_list)
-
-def unregister():
-    bpy.app.handlers.save_pre.remove(opsdata.refresh_file_list)

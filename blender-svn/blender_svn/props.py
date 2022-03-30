@@ -17,14 +17,20 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
-from typing import Optional, Dict, Any, List, Tuple
+
+from typing import Optional, Dict, Any, List, Tuple, Set
 
 from pathlib import Path
 
-import bpy
+import bpy, functools, logging
 from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty
 
 from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly
+from . import client
+
+from blender_asset_tracer import cli, trace, bpathlib
+
+logger = logging.getLogger("SVN")
 
 class SVN_file(bpy.types.PropertyGroup):
     """Property Group that can represent a version of a File in an SVN repository."""
@@ -94,12 +100,121 @@ class SVN_file(bpy.types.PropertyGroup):
 
 
 class SVN_scene_properties(bpy.types.PropertyGroup):
-    """
-    Scene Properties for SVN
-    """
+    """Scene Properties for SVN"""
+
+    @staticmethod
+    def get_referenced_filepaths() -> Set[Path]:
+        """Return a flat list of absolute filepaths of existing files referenced 
+        either directly or indirectly by this .blend file, as a flat list.
+
+        This uses the Blender Asset Tracer, so we rely on that to catch everything;
+        Images, video files, mesh sequence caches, blender libraries, everything.
+
+        Deleted files are not handled here; They are grabbed with PySVN instead, for the entire repository.
+        The returned list also does not include the currently opened .blend file itself.
+        """
+        bpath = Path(bpy.data.filepath)
+
+        reported_assets: Set[Path] = set()
+        last_reported_bfile = None
+        shorten = functools.partial(cli.common.shorten, Path.cwd())
+
+        for usage in trace.deps(bpath):
+            files = [f for f in usage.files()]
+
+            # Path of the blend file that references this BlockUsage.
+            blend_path = usage.block.bfile.filepath.absolute()
+            # if blend_path != last_reported_bfile:
+                # print(shorten(blend_path))
+
+            last_reported_bfile = blend_path
+
+            for assetpath in usage.files():
+                # assetpath = bpathlib.make_absolute(assetpath)
+                if assetpath in reported_assets:
+                    logger.debug("Already reported %s", assetpath)
+                    continue
+
+                # print("   ", shorten(assetpath))
+                reported_assets.add(assetpath)
+
+        return reported_assets
+
+    def remove_outdated_file_entries(self):
+        """Remove all outdated files currently in the file list."""
+        for i, file_entry in reversed(list(enumerate(self.external_files))):
+            if file_entry.status == 'none':
+                self.external_files.remove(i)
+
+    def remove_by_path(self, path_to_remove: str):
+        """Remove a file entry from the file list, based on its filepath."""
+        for i, file_entry in enumerate(self.external_files):
+            filepath = file_entry.path_str
+            if filepath == path_to_remove:
+                self.external_files.remove(i)
+                return
+
+    def check_for_local_changes(self) -> None:
+        """Update the status of file entries by checking for changes in the 
+        local repository."""
+
+        # Remove all files from the list except the ones with the Outdated status.
+        for i, file_entry in reversed(list(enumerate(self.external_files))):
+            if file_entry.status != 'none':
+                self.external_files.remove(i)
+
+        self.external_files_active_index = -1
+
+        files: Set[Path] = self.get_referenced_filepaths()
+        files.add(Path(bpy.data.filepath))
+
+        local_client = client.get_local_client()
+
+        # Calls `svn status` to get a list of files that have been added, modified, etc.
+        # Match each file name with a tuple that is the modification type and revision number.
+        statuses = {s.name : (s.type_raw_name, s.revision) for s in local_client.status()}
+
+        # Add file entries that are referenced by this .blend file,
+        # even if the file's status is normal (un-modified)
+        for f in files:
+            status = ('normal', 0) # TODO: We currently don't show a revision number for Normal status files!
+            if str(f) in statuses:
+                status = statuses[str(f)]
+                del statuses[str(f)]
+            file_entry = self.add_file_entry(f, status, is_referenced=True)
+
+        # Add file entries in the entire SVN repository for files whose status isn't
+        # normal. Do this even for files not referenced by this .blend file.
+        for f in statuses.keys():
+            file_entry = self.add_file_entry(Path(f), statuses[f])
+
+    def add_file_entry(self, path: Path, status: Tuple[str, int], is_referenced=False) -> SVN_file:
+        # Add item.
+        item = self.external_files.add()
+
+        # Set collection property.
+        item.path_str = path.as_posix()
+        item.name = path.name
+
+        if status:
+            item.status = status[0]
+            if status[1]:
+                item.revision = status[1]
+
+        # Prevent editing values in the UI.
+        item.lock = True
+        item.is_referenced = is_referenced
+        return item
 
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
     external_files_active_index: bpy.props.IntProperty()
+
+@bpy.app.handlers.persistent
+def check_for_local_changes(scene):
+    if not scene:
+        # When called from save_post() handler, which apparently does not pass context
+        scene = bpy.context.scene
+    scene.svn.check_for_local_changes()
 
 # ----------------REGISTER--------------.
 
@@ -111,7 +226,9 @@ registry = [
 def register() -> None:
     # Scene Properties.
     bpy.types.Scene.svn = bpy.props.PointerProperty(type=SVN_scene_properties)
+    bpy.app.handlers.save_pre.append(check_for_local_changes)
 
 
 def unregister() -> None:
     del bpy.types.Scene.svn
+    bpy.app.handlers.save_pre.remove(check_for_local_changes)
