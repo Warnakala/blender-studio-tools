@@ -22,7 +22,6 @@ class VIEW3D_PT_svn(bpy.types.Panel):
         layout.use_property_decorate = False
 
         col = layout.column()
-        col.enabled = False
         col.prop(prefs, 'svn_url')
         col.prop(prefs, 'svn_directory')
         col.prop(prefs, 'relative_filepath')

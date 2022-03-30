@@ -24,6 +24,8 @@ from pathlib import Path
 import bpy
 from bpy.props import StringProperty, IntProperty, BoolProperty
 
+from .util import make_getter_func, make_setter_func_readonly
+
 logger = logging.getLogger(name="SVN")
 
 
@@ -33,7 +35,7 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
     enable_ui: BoolProperty(
         name="Enable UI",
         default=True,
-        description="Enable UI in sidebar for debugging/testing"
+        description="Enable UI in sidebar for debugging/testing",
     )
     is_in_repo: BoolProperty(
         name="is_in_repo",
@@ -48,31 +50,43 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         name="Root Directory",
         default="",
         subtype="DIR_PATH",
-        description="Absolute directory path of the SVN repository's root in the file system"
+        description="Absolute directory path of the SVN repository's root in the file system",
+        get = make_getter_func("svn_directory", ""),
+        set = make_setter_func_readonly("svn_directory")
     )
     svn_url: StringProperty(
         name="Remote URL",
         default="",
-        description="URL of the remote SVN repository"
+        description="URL of the remote SVN repository",
+        get = make_getter_func("svn_url", ""),
+        set = make_setter_func_readonly("svn_url")
     )
     relative_filepath: StringProperty(
         name="Relative Filepath",
         default="",
-        description="Path of the currently open .blend file, relative to the SVN root directory"
+        description="Path of the currently open .blend file, relative to the SVN root directory",
+        get = make_getter_func("relative_filepath", ""),
+        set = make_setter_func_readonly("relative_filepath")
     )
     revision_number: IntProperty(
         name="Revision Number",
-        description="Revision number of the current .blend file"
+        description="Revision number of the current .blend file",
+        get = make_getter_func("revision_number", 0),
+        set = make_setter_func_readonly("revision_number")
     )
     revision_date: StringProperty(
         name="Revision Date",
         default="",
-        description="Date when the current revision was committed"
+        description="Date when the current revision was committed",
+        get = make_getter_func("revision_date", ""),
+        set = make_setter_func_readonly("revision_date")
     )
     revision_author: StringProperty(
         name="Revision Author",
         default="",
-        description="SVN username of the revision author"
+        description="SVN username of the revision author",
+        get = make_getter_func("revision_author", ""),
+        set = make_setter_func_readonly("revision_author")
     )
 
     def reset(self):

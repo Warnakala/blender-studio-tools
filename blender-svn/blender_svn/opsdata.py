@@ -82,11 +82,13 @@ def add_external_file_to_context(context: bpy.types.Context, path: Path, status:
         if status[1]:
             item.revision = status[1]
 
+    # Prevent editing values in the UI.
     item.lock = True
 
 
 def populate_context_with_external_files(context: bpy.types.Context) -> None:
     context.scene.svn.external_files.clear()
+    context.scene.svn.external_files_active_index = -1
 
     files: Set[Path] = get_referenced_filepaths()
     files.add(Path(bpy.data.filepath))

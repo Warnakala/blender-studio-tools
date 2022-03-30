@@ -18,7 +18,7 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
-from typing import List, Dict, Union, Any, Set, Optional, Tuple, Generator
+from typing import List, Dict, Union, Any, Set, Optional, Tuple, Generator, Callable
 
 import bpy
 
@@ -36,6 +36,34 @@ def get_addon_prefs(context: bpy.types.Context=None) -> bpy.types.AddonPreferenc
     if not context:
         context = bpy.context
     return context.preferences.addons[__package__].preferences
+
+def make_setter_func_readonly(prop: str) -> Callable:
+    """A setter function for read-only Python properties.
+    We can use a 'lock' toggle to prevent changing properties in the UI.
+    This way we can avoid graying out read-only properties in the UI.
+    """
+    def set_readonly(self, value: Any):
+        if hasattr(self, 'lock'):
+            if self.lock:
+                return
+        else:
+            # If there is no lock property, always prevent changing the property.
+            # In this case the property can still be changed via Python dictionary syntax.
+            return
+        self[prop] = value
+
+    return set_readonly
+
+def make_getter_func(prop: str, default: Any) -> Callable:
+    """Does nothing special, but property definitions require a getter 
+    if we want to give them a setter, so this has to exist as well."""
+
+    def get(self):
+        if prop in self:
+            return self[prop]
+        return default
+
+    return get
 
 
 def is_file_saved() -> bool:

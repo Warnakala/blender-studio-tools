@@ -31,6 +31,7 @@ from svn.local import LocalClient
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
+from urllib.parse import unquote
 
 from .util import get_addon_prefs
 
@@ -63,13 +64,13 @@ def init_local_client(context, dummy):
 
         # Populate the addon prefs with the info provided by the LocalClient object.
         prefs.is_in_repo = True
-        prefs.svn_url = info['repository_root']
-        prefs.svn_directory = info['wc-info/wcroot-abspath']
+        prefs['svn_url'] = info['repository_root']
+        prefs['svn_directory'] = info['wc-info/wcroot-abspath']
         LOCAL_CLIENT = LocalClient(prefs.svn_directory)
-        prefs.relative_filepath = info['relative_url'][1:]
-        prefs.revision_number = int(info['entry_revision'])
-        prefs.revision_date = str(info['commit_date']) # TODO: format this nicely.
-        prefs.revision_author = info['commit_author']
+        prefs['relative_filepath'] = unquote(info['relative_url'][1:])
+        prefs['revision_number'] = int(info['entry_revision'])
+        prefs['revision_date'] = str(info['commit_date']) # TODO: format this nicely.
+        prefs['revision_author'] = info['commit_author']
     except Exception:
         # TODO: Would be nice to have a better way to determine if the current 
         # file is NOT in a repository...

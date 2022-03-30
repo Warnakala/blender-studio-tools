@@ -22,44 +22,29 @@ from typing import Optional, Dict, Any, List, Tuple
 from pathlib import Path
 
 import bpy
-from bpy.props import StringProperty, EnumProperty, IntProperty
+from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty
 
-from .util import get_addon_prefs
-
-def setter(prop):
-    """A setter function for read-only Python properties.
-    We use a 'lock' toggle to prevent changing properties in the UI.
-    This way we can avoid graying out the UI.
-    """
-    def set_readonly(self, value):
-        if self.lock:
-            return
-        else:
-            self[prop] = value
-    return set_readonly
-
-def getter(prop, default):
-    """Does nothing special, but is required when we specify a setter, so it has to exist."""
-    def get(self):
-        if prop in self:
-            return self[prop]
-        return default
-    return get
+from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly
 
 class SVN_file(bpy.types.PropertyGroup):
     """Property Group that can represent a version of a File in an SVN repository."""
 
+    lock: BoolProperty(
+        name = "Lock Editing",
+        description = "Flag used to keep the properties read-only without graying them out in the UI. Purely for aesthetic purpose",
+        default = False
+    )
     name: StringProperty(
         name = "File Name",
-        # get = getter('name', ""),
-        # set = setter('name')
+        get = make_getter_func('name', ""),
+        set = make_setter_func_readonly('name')
     )
     path_str: StringProperty(
         name="File Path",
         description="Absolute file path",
         subtype='FILE_PATH',
-        # get = getter('path_str', ""),
-        # set = setter('path_str')
+        get = make_getter_func('path_str', ""),
+        set = make_setter_func_readonly('path_str')
     )
     status: EnumProperty(
         name="Status",
@@ -80,14 +65,14 @@ class SVN_file(bpy.types.PropertyGroup):
             ('unversioned', 'Unversioned', 'This file is new in file system, but not yet added to the local repository. It needs to be added before it can be pushed to the remote repository'),
         ]
         ,default='normal',
-        # get = getter('status', 10),
-        # set = setter('status')
+        get = make_getter_func('status', 10),
+        set = make_setter_func_readonly('status')
     )
     revision: IntProperty(
         name="Revision",
         description="Revision number",
-        # get = getter('revision', 0),
-        # set = setter('revision')
+        get = make_getter_func('revision', 0),
+        set = make_setter_func_readonly('revision')
     )
 
     @property
@@ -95,9 +80,6 @@ class SVN_file(bpy.types.PropertyGroup):
         if not self.path_str:
             return None
         return Path(self.path_str)
-
-    def lock(self):
-        self._lock = True
     
     @property
     def svn_relative_path(self) -> str:
