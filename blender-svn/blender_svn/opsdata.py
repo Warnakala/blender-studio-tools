@@ -71,10 +71,10 @@ def get_referenced_filepaths() -> Set[Path]:
     return reported_assets
 
 
-def add_external_file_to_context(context: bpy.types.Context, path: Path, status: Tuple[str, int]) -> SVN_file:
+def add_file_entry(scene: bpy.types.Scene, path: Path, status: Tuple[str, int]) -> SVN_file:
 
     # Add item.
-    item = context.scene.svn.external_files.add()
+    item = scene.svn.external_files.add()
 
     # Set collection property.
     item.path_str = path.as_posix()
@@ -89,10 +89,13 @@ def add_external_file_to_context(context: bpy.types.Context, path: Path, status:
     item.lock = True
     return item
 
-
-def populate_context_with_external_files(context: bpy.types.Context) -> None:
-    context.scene.svn.external_files.clear()
-    context.scene.svn.external_files_active_index = -1
+@bpy.app.handlers.persistent
+def refresh_file_list(scene) -> None:
+    if not scene:
+        # When called from save_post() handler, which apparently does not pass context
+        scene = bpy.context.scene
+    scene.svn.external_files.clear()
+    scene.svn.external_files_active_index = -1
 
     files: Set[Path] = get_referenced_filepaths()
     files.add(Path(bpy.data.filepath))
@@ -110,11 +113,11 @@ def populate_context_with_external_files(context: bpy.types.Context) -> None:
         if str(f) in statuses:
             status = statuses[str(f)]
             del statuses[str(f)]
-        file_entry = add_external_file_to_context(context, f, status)
+        file_entry = add_file_entry(scene, f, status)
         file_entry.is_referenced = True
 
     # Add file entries in the entire SVN repository for files whose status isn't
     # normal. Do this even for files not referenced by this .blend file.
     for f in statuses.keys():
-        file_entry = add_external_file_to_context(context, Path(f), statuses[f])
+        file_entry = add_file_entry(scene, Path(f), statuses[f])
         file_entry.is_referenced = False
