@@ -65,11 +65,17 @@ def init_local_client(context, dummy):
         # Populate the addon prefs with the info provided by the LocalClient object.
         prefs.is_in_repo = True
         prefs['svn_url'] = info['repository_root']
-        prefs['svn_directory'] = info['wc-info/wcroot-abspath']
+        prefs['svn_directory'] = unquote(info['wc-info/wcroot-abspath'])
         LOCAL_CLIENT = LocalClient(prefs.svn_directory)
         prefs['relative_filepath'] = unquote(info['relative_url'][1:])
         prefs['revision_number'] = int(info['entry_revision'])
-        prefs['revision_date'] = str(info['commit_date']) # TODO: format this nicely.
+
+        rev_datetime = info['commit_date']
+        month_name = rev_datetime.strftime("%b")
+        date_str = f"{rev_datetime.year}-{month_name}-{rev_datetime.day}"
+        time_str = f"{str(rev_datetime.hour).zfill(2)}:{str(rev_datetime.minute).zfill(2)}"
+
+        prefs['revision_date'] = date_str + " " + time_str
         prefs['revision_author'] = info['commit_author']
     except Exception:
         # TODO: Would be nice to have a better way to determine if the current 

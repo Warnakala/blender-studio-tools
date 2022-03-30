@@ -90,13 +90,13 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
     )
 
     def reset(self):
-        self.svn_directory = ""
-        self.svn_url = ""
-        self.relative_filepath = ""
-        self.revision_number = -1
-        self.revision_date = ""
-        self.revision_author = ""
-        self.is_in_repo = False
+        self['svn_directory'] = ""
+        self['svn_url'] = ""
+        self['relative_filepath'] = ""
+        self['revision_number'] = -1
+        self['revision_date'] = ""
+        self['revision_author'] = ""
+        self['is_in_repo'] = False
 
     @property
     def svn_directory_path(self) -> Optional[Path]:
