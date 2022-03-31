@@ -8,7 +8,7 @@ class VIEW3D_PT_svn(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'SVN'
-    bl_label = 'Repository'
+    bl_label = 'SVN Repository'
 
     @classmethod
     def poll(cls, context):
@@ -63,8 +63,15 @@ class SVN_UL_file_list(bpy.types.UIList):
         elif extension in ['mp3', 'ogg', 'wav']:
             icon = 'SPEAKER'
 
-        row.prop(file_entry, 'name', text="", emboss=False, icon=icon)
-        row.prop(file_entry, 'status', emboss=False, text="")
+        split = row.split(factor=0.5)
+        split.prop(file_entry, 'name', text="", emboss=False, icon=icon)
+
+        row = split.row()
+        split = row.split(factor=0.6)
+        split.label(text=file_entry.status_name, icon=file_entry.status_icon)
+
+        row = split.row(align=True)
+        row.alignment = 'RIGHT'
 
         # SVN operations
         ops = []
@@ -72,8 +79,10 @@ class SVN_UL_file_list(bpy.types.UIList):
             ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
         if file_entry.status == 'modified':
             ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
-        if file_entry.status == 'missing':
+        if file_entry.status in ['missing', 'deleted']:
             ops.append(row.operator('svn.restore_file', text="", icon='LOOP_BACK'))
+            if file_entry.status == 'missing':
+                ops.append(row.operator('svn.remove_file', text="", icon='TRASH'))
         if file_entry.status == 'added':
             ops.append(row.operator('svn.unadd_file', text="", icon='REMOVE'))
         if file_entry.status == 'unversioned':
@@ -145,7 +154,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'SVN'
-    bl_label = 'Files'
+    bl_label = 'SVN Files'
 
     @classmethod
     def poll(cls, context):
@@ -179,10 +188,15 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         col.separator()
         up = col.operator("svn.update_all", icon='IMPORT', text="")
         up.svn_root_abs_path = prefs.svn_directory
+        col.operator("svn.commit", icon='CHECKMARK', text="")
 
         active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
         col = layout.column()
-        col.prop(active_file, 'status')
+        split = col.row().split(factor=0.4)
+        row = split.row()
+        row.alignment = 'RIGHT'
+        row.label(text="Status")
+        split.label(text=active_file.status_name, icon=active_file.status_icon)
         col.prop(active_file, 'path_str')
         col.prop(active_file, 'revision')
 
