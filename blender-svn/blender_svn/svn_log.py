@@ -26,7 +26,6 @@ import bpy
 from bpy.props import IntProperty, StringProperty
 from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly
 
-from . import client
 from .ops import SVN_Operator_Single_File
 
 class SVN_log(bpy.types.PropertyGroup):
@@ -130,7 +129,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         layout.prop(active_log, 'revision_author')
 
 
-def update_svn_log_data(context, filepath: Path):
+def read_svn_log_file(context, filepath: Path):
     """Read the svn.log file (written by this addon) into the log entry list."""
 
     svn = context.scene.svn
@@ -138,6 +137,9 @@ def update_svn_log_data(context, filepath: Path):
 
     # Read file into lists of lines where each list is one log entry
     chunks = []
+    if not filepath.exists():
+        # Nothing to read!
+        return
     with open(filepath, 'r') as f:
         next(f)
         chunk = []
@@ -154,13 +156,13 @@ def update_svn_log_data(context, filepath: Path):
 
     for chunk in chunks:
         r_number, r_author, r_date, _r_msg_length = chunk[0].split(" | ")
-        date, time, timezone, _day, _n_day, _mo, _y = r_date.split(" ")
+        date, time, _timezone, _day, _n_day, _mo, _y = r_date.split(" ")
 
         log_entry = svn.log.add()
         log_entry['revision_number'] = int(r_number[1:])
         log_entry['revision_author'] = r_author
 
-        rev_datetime = datetime.strptime(date +" "+ time, '%Y-%m-%d %H:%M:%S')
+        rev_datetime = datetime.strptime(f"{date} {time}", '%Y-%m-%d %H:%M:%S')
         month_name = rev_datetime.strftime("%b")
         date_str = f"{rev_datetime.year}-{month_name}-{rev_datetime.day}"
         time_str = f"{str(rev_datetime.hour).zfill(2)}:{str(rev_datetime.minute).zfill(2)}"
@@ -177,40 +179,40 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
 
     missing_file_allowed = True
 
-    # TODO: This is a good start, but if we want this to passively stay up to 
-    # date for everyone, we can't just have everybody updating their log file 
-    # and committing it, it will create conflicts constantly. 
-
-    # Idea 1: The SVN Commit operator would always update the log file, write 
-    # the commit that's about to happen into it, and then include it in the commit. 
-    # So, absolutely every commit to the SVN will include the log file as well.
-    # Might work, but seems tricky.
-
-    # Idea 2: We store the commit log in the .svn folder, which is ignored by svn,
-    # and we update it when running the SVN Update operator, making it a bit slower.
-
     def execute(self, context):
         # Create the log file if it doesn't already exist.
         self.file_rel_path = ".svn/svn.log"
         filepath = self.get_file_full_path(context)
 
+        file_existed = False
         if filepath.exists():
-            update_svn_log_data(context, filepath)
+            file_existed = True
+            read_svn_log_file(context, filepath)
 
-        return {'FINISHED'}
-
+        svn = self.get_svn_data(context)
         prefs = get_addon_prefs(context)
         current_rev = prefs.revision_number
         latest_log_rev = svn.log[-1].revision_number
 
-        new_log = self.execute_svn_command(context, f"svn log -r {latest_log_rev}:{current_rev}")
+        if latest_log_rev >= current_rev:
+            self.report({'INFO'}, "Log is already up to date, cancelling.")
+            return {'CANCELLED'}
 
-        with open(filepath, 'w+') as f:
+        new_log = self.execute_svn_command(context, f"svn log -r {latest_log_rev+1}:{current_rev}")
+
+        with open(filepath, 'a+') as f:
+            if file_existed:
+                # We want to skip the first line of the svn log when continuing
+                # to avoid duplicate dashed lines, which would also mess up our
+                # parsing logic.
+                new_log = new_log[73:] # 72 dashes and a newline
+
             f.write(new_log)
+
+        read_svn_log_file(context, filepath)
 
         self.report({'INFO'}, "Local copy of the SVN log updated.")
 
         return {'FINISHED'}
-
 
 registry = [SVN_log, VIEW3D_PT_svn_log, SVN_UL_log, SVN_update_log]

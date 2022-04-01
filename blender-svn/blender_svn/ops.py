@@ -38,7 +38,8 @@ class SVN_Operator:
     def get_svn_data(self, context):
         return context.scene.svn
     
-    def get_svn_root_path(self, context):
+    @staticmethod
+    def get_svn_root_path(context):
         prefs = get_addon_prefs(context)
         return prefs.svn_directory
 

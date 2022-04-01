@@ -35,6 +35,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from .util import get_addon_prefs
+from .svn_log import read_svn_log_file
 
 logger = logging.getLogger("SVN")
 
@@ -52,6 +53,9 @@ def get_local_client():
 def init_local_client(context, dummy):
     """Attempt to initialize an SVN LocalClient object when opening a .blend file."""
     global LOCAL_CLIENT
+
+    if not context:
+        context = bpy.context
 
     if not bpy.data.filepath:
         return
@@ -82,6 +86,12 @@ def init_local_client(context, dummy):
         # TODO: Would be nice to have a better way to determine if the current 
         # file is NOT in a repository...
         prefs.reset()
+
+    context.scene.svn.check_for_local_changes()
+    context.scene.svn.remove_outdated_file_entries()
+    context.scene.svn.external_files_active_index = 0
+    context.scene.svn.log_active_index = 0
+    read_svn_log_file(context, Path(prefs.svn_directory+"/.svn/svn.log"))
 
 def register():
     load_post.append(init_local_client)
