@@ -29,6 +29,29 @@ from .util import make_getter_func, make_setter_func_readonly
 logger = logging.getLogger(name="SVN")
 
 
+def get_visible_indicies(context) -> List[int]:
+    svn_prop = context.scene.svn
+    flt_flags, _flt_neworder = bpy.types.SVN_UL_file_list.cls_filter_items(context, svn_prop, 'external_files')
+
+    visible_indicies = [i for i, flag in enumerate(flt_flags) if flag != 0]
+    return visible_indicies
+
+
+def force_good_active_index(context) -> bool:
+    """If the active element is being filtered out, set the active element to 
+    something that is visible.
+    Return False if no elements are visible.
+    """
+    svn_prop = context.scene.svn
+    visible_indicies = get_visible_indicies(context)
+    if len(visible_indicies) == 0:
+        svn_prop.external_files_active_index = 0
+        return False
+    if svn_prop.external_files_active_index not in visible_indicies:
+        svn_prop.external_files_active_index = visible_indicies[0]
+
+    return True
+
 class SVN_addon_preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
@@ -41,6 +64,35 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         name="is_in_repo",
         default=False,
         description="To store whether the current file was deemed to be in an SVN repository on file save/load. For internal use only"
+    )
+
+    def update_filters(dummy, context):
+        """Should run when any of the SVN file list search filters are changed."""
+        force_good_active_index(context)
+
+    ### SVN Search filter properties.
+    # These are normally stored on the UIList, but then they cannot be accessed
+    # from anywhere else, since template_list() does not return the UIList instance.
+    # We need to be able to access them to be able to tell which entries are 
+    # visible, outside of the drawing code, for ensuring that a filtered out 
+    # entry can never be the active one.
+    # This is important in this case to avoid user confusion.
+    include_normal: BoolProperty(
+        name = "Show Normal Files",
+        description = "Include files whose SVN status is Normal",
+        default = False,
+        update = update_filters
+    )
+    include_entire_repo: BoolProperty(
+        name = "Show All Files",
+        description = "Include all modified files in the repository, even if they are not referenced by this .blend file",
+        default = False,
+        update = update_filters
+    )
+    search_filter: StringProperty(
+        name = "Search Filter",
+        description = "Only show entries that contain this string",
+        update = update_filters
     )
 
     # Following properties are not user-editable. They are filled in on file-load,

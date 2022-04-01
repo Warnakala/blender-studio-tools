@@ -3,6 +3,7 @@ from .util import get_addon_prefs
 
 from bpy.props import BoolProperty
 
+from .prefs import get_visible_indicies
 class VIEW3D_PT_svn(bpy.types.Panel):
     """SVN UI panel in the 3D View Sidebar."""
     bl_space_type = 'VIEW_3D'
@@ -31,18 +32,12 @@ class VIEW3D_PT_svn(bpy.types.Panel):
 
 
 class SVN_UL_file_list(bpy.types.UIList):
-    include_normal: BoolProperty(
-        name = "Show Normal Files",
-        description = "Include files whose SVN status is Normal",
-        default = False
-    )
-    include_entire_repo: BoolProperty(
-        name = "Show All Files",
-        description = "Include all modified files in the repository, even if they are not referenced by this .blend file",
-        default = False
-    )
+    UILST_FLT_ITEM = 1 << 30 # Value that indicates that this item has passed the filter process successfully. See rna_ui.c.
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        # As long as there are any items, always draw the filters.
+        self.use_filter_show = True
+
         if self.layout_type != 'DEFAULT':
             raise NotImplemented
 
@@ -94,11 +89,12 @@ class SVN_UL_file_list(bpy.types.UIList):
                 op.svn_root_abs_path = prefs.svn_directory
                 op.file_rel_path = file_entry.svn_relative_path
 
-    def filter_items(self, context, data, propname):
-        """Default filtering functionality:
-            - Filter by name
-            - Sort alphabetical by name
-        """
+    @classmethod
+    def cls_filter_items(cls, context, data, propname):
+        """By moving all of this logic to a classmethod (and all the filter 
+        properties to the addon preferences) we can find a visible entry
+        from other UI code, allowing us to avoid situations where the active
+        element becomes hidden."""
         flt_flags = []
         flt_neworder = []
         list_items = getattr(data, propname)
@@ -108,22 +104,36 @@ class SVN_UL_file_list(bpy.types.UIList):
         # This list should ALWAYS be sorted alphabetically.
         flt_neworder = helper_funcs.sort_items_by_name(list_items, "name")
 
-        if self.filter_name:
-            flt_flags = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, list_items, "name",
+        prefs = get_addon_prefs(context)
+        if prefs.search_filter:
+            flt_flags = helper_funcs.filter_items_by_name(prefs.search_filter, cls.UILST_FLT_ITEM, list_items, "name",
                                                             reverse=False)
 
         if not flt_flags:
-            flt_flags = [self.bitflag_filter_item] * len(list_items)
+            flt_flags = [cls.UILST_FLT_ITEM] * len(list_items)
 
-        if not self.include_normal:
+        if not prefs.include_normal:
             for i, item in enumerate(list_items):
                 flt_flags[i] *= int(item.status != "normal")
 
-        if not self.include_entire_repo:
+        if not prefs.include_entire_repo:
             for i, item in enumerate(list_items):
                 flt_flags[i] *= int(item.is_referenced)
 
         return flt_flags, flt_neworder
+
+    def filter_items(self, context, data, propname):
+        if not self.use_filter_show:
+            # Prevent hiding the filter options when there are any file entries.
+            # This is done by disabling filtering when the filtering UI would be
+            # hidden. If there are any entries, draw_item() switches the
+            # filtering UI back on with self.use_filter_show=True.
+            list_items = getattr(data, propname)
+            helper_funcs = bpy.types.UI_UL_list
+            flt_neworder = helper_funcs.sort_items_by_name(list_items, "name")
+            flt_flags = [type(self).UILST_FLT_ITEM] * len(list_items)
+            return flt_flags, flt_neworder
+        return type(self).cls_filter_items(context, data, propname)
 
     def draw_filter(self, context, layout):
         """Default filtering UI:
@@ -133,21 +143,15 @@ class SVN_UL_file_list(bpy.types.UIList):
         main_row = layout.row()
         row = main_row.row(align=True)
 
-        row.prop(self, 'filter_name', text="")
+        prefs = get_addon_prefs(context)
+        row.prop(prefs, 'search_filter', text="")
 
         row = main_row.row(align=True)
         row.use_property_split=True
         row.use_property_decorate=False
-        row.prop(self, 'include_normal', toggle=True, text="", icon="CHECKMARK")
-        row.prop(self, 'include_entire_repo', toggle=True, text="", icon='DISK_DRIVE')
+        row.prop(prefs, 'include_normal', toggle=True, text="", icon="CHECKMARK")
+        row.prop(prefs, 'include_entire_repo', toggle=True, text="", icon='DISK_DRIVE')
 
-    def get_good_active_index(self, context) -> int:
-        """Return the index of the first available item that is not being filtered out"""
-        flt_flags, flt_neworder = self.filter_items(context, context.scene.svn, 'external_files')
-        for i, flag in flt_flags:
-            if flag != 0:
-                return i
-        return 0
 
 class VIEW3D_PT_svn_files(bpy.types.Panel):
     """Display a list of files that the current .blend file depends on"""
@@ -180,6 +184,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
             context.scene.svn,
             "external_files_active_index",
         )
+
         col = row.column()
         col.operator("svn.check_for_local_changes", icon='FILE_REFRESH', text="")
         check_up = col.operator("svn.check_for_updates", icon='URL', text="")
@@ -191,6 +196,10 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         col.operator("svn.commit", icon='CHECKMARK', text="")
 
         active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
+
+        any_visible = get_visible_indicies(context)
+        if not any_visible:
+            return
         col = layout.column()
         split = col.row().split(factor=0.4)
         row = split.row()

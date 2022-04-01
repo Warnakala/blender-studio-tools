@@ -318,15 +318,15 @@ class SVN_commit(bpy.types.Operator):
 
         row = layout.row()
         row.label(text="Commit message:")
-        if len(self.commit_message) < 15:
+        if 0 < len(self.commit_message) < 15:
             row = row.row()
             row.alert = True
-            row.label(text="(min 15 characters)")
+            row.label(text="(min 15 characters!)")
         layout.prop(self, 'commit_message', text="")
 
     def invoke(self, context, event):
         wm = context.window_manager
-        wm.invoke_props_dialog(self)
+        wm.invoke_props_dialog(self, width=400)
         return {'RUNNING_MODAL'}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:

@@ -27,9 +27,9 @@ import bpy, functools, logging
 from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty
 
 from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly
-from . import client
+from . import client, prefs
 
-from blender_asset_tracer import cli, trace, bpathlib
+from blender_asset_tracer import cli, trace
 
 logger = logging.getLogger("SVN")
 
@@ -256,8 +256,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             if file_entry.status != "none":
                 self.external_files.remove(i)
 
-        self.external_files_active_index = -1
-
         files: Set[Path] = self.get_referenced_filepaths()
         files.add(Path(bpy.data.filepath))
 
@@ -285,6 +283,8 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         # normal. Do this even for files not referenced by this .blend file.
         for f in statuses.keys():
             file_entry = self.add_file_entry(Path(f), statuses[f])
+        
+        prefs.force_good_active_index(bpy.context)
 
     def add_file_entry(
         self, path: Path, status: Tuple[str, int], is_referenced=False
