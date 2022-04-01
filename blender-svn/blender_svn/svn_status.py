@@ -124,7 +124,7 @@ ENUM_SVN_STATUS = [
 
 class SVN_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
-    bl_label = ""
+    bl_label = "" # Don't want the first line of the tooltip on mouse hover.
     bl_description = "Show an explanation of this status, using a dynamic tooltip"
     bl_options = {'INTERNAL'}
 

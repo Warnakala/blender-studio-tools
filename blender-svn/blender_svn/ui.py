@@ -42,6 +42,15 @@ class VIEW3D_PT_svn(bpy.types.Panel):
         layout.use_property_decorate = False
 
         col = layout.column()
+
+        # TODO: Use this code if Blender gets selectable text in labels.
+        # row = col.row()
+        # split = row.split(factor=0.4)
+        # row = split.row()
+        # row.alignment = 'RIGHT'
+        # row.label(text="URL")
+        # split.row().label(text=prefs.svn_url)
+
         col.prop(prefs, 'svn_url')
         col.prop(prefs, 'svn_directory')
         col.prop(prefs, 'relative_filepath')
@@ -76,12 +85,12 @@ class SVN_UL_file_list(bpy.types.UIList):
         elif extension in ['mp3', 'ogg', 'wav']:
             icon = 'SPEAKER'
 
-        split = row.split(factor=0.5)
+        split = row.split(factor=0.8)
         split.prop(file_entry, 'name', text="", emboss=False, icon=icon)
 
         row = split.row()
-        split = row.split(factor=0.6)
-        explainer = split.operator('svn.explain_status', text=file_entry.status_name, icon=file_entry.status_icon)
+        split = row.split(factor=0.2)
+        explainer = split.operator('svn.explain_status', text="", icon=file_entry.status_icon)
         explainer.status = file_entry.status
         explainer.filepath = file_entry.path_str
 
