@@ -278,23 +278,26 @@ class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Oper
 
         return {"FINISHED"}
 
+commit_message = StringProperty(
+    name = "Commit Message",
+    description = "Describe the changes being committed",
+    options={'SKIP_SAVE'}
+)
 
 class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     bl_idname = "svn.commit"
     bl_label = "SVN Commit"
     bl_description = "Commit a selection of files to the remote repository"
     bl_options = {'INTERNAL'}
-    bl_property = "commit_message"  # Focus the text input box
+    bl_property = "commit_message_0"  # Focus the text input box
+
+    MAX_LINES = 32
+    __annotations__ = {f'commit_message_{i}' : commit_message for i in range(MAX_LINES)}
 
     selection: BoolVectorProperty(
         size=32,
         options={'SKIP_SAVE'},
         default = [True]*32
-    )
-    commit_message: StringProperty(
-        name = "Commit Message",
-        description = "Describe the changes being committed",
-        options={'SKIP_SAVE'}
     )
 
     def get_committable_files(self, context) -> List[str]:
@@ -316,11 +319,13 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         row = layout.row()
         row.label(text="Commit message:")
-        if 0 < len(self.commit_message) < 15:
-            row = row.row()
-            row.alert = True
-            row.label(text="(min 15 characters!)")
-        layout.prop(self, 'commit_message', text="")
+        layout.prop(self, f'commit_message_0', text="")
+        for i in range(1, type(self).MAX_LINES):
+            if getattr(self, f'commit_message_{i-1}') != "" or \
+                getattr(self, f'commit_message_{i}') != "":
+                # If the previous or current line has any content, draw this input box.
+                layout.prop(self, f'commit_message_{i}', text="")
+                continue
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         committable_files = self.get_committable_files(context)
@@ -330,9 +335,12 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             self.report({'ERROR'}, "No files were selected, nothing to commit.")
             return {'CANCELLED'}
 
-        if len(self.commit_message) < 15:
+        if len(self.commit_message_0) < 2:
             self.report({'ERROR'}, "Please describe your changes in the commit message!")
             return {'CANCELLED'}
+        
+        commit_message_lines = [getattr(self, f'commit_message_{i}') for i in range(type(self).MAX_LINES)]
+        commit_message = "\n".join([m for m in commit_message_lines if m])
 
         report = f"{(len(files_to_commit))} files."
         if len(files_to_commit) == 1:
@@ -341,7 +349,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         filepaths = " ".join([f'"{f.svn_relative_path}"' for f in files_to_commit])
 
-        self.execute_svn_command(context, f'svn commit -m "{self.commit_message}" {filepaths}')
+        self.execute_svn_command(context, f'svn commit -m "{commit_message}" {filepaths}')
 
         # Update the file list.
         # The freshly committed files should now have the 'normal' status.
