@@ -32,6 +32,37 @@ from .util import get_addon_prefs
 
 logger = logging.getLogger("SVN")
 
+
+class SVN_file_operator:
+    """Base class for SVN operators operating on a single file."""
+    svn_root_abs_path: StringProperty()
+    file_rel_path: StringProperty()
+
+    missing_file_allowed = False
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        """All of these operators want to make sure that the file exists,
+        before trying to execute."""
+        if not self.file_exists() and not type(self).missing_file_allowed:
+            return {'CANCELLED'}
+        ret = self._execute(context)
+        context.scene.svn.check_for_local_changes()
+        return ret
+
+    def _execute(self, context: bpy.types.Context) -> Set[str]:
+        raise NotImplementedError
+
+    @property
+    def file_full_path(self) -> Path:
+        return Path.joinpath(Path(self.svn_root_abs_path), Path(self.file_rel_path))
+
+    def file_exists(self) -> bool:
+        exists = self.file_full_path.exists()
+        if not exists and not type(self).missing_file_allowed:
+            self.report({'INFO'}, "File was not found, cancelling.")
+        return exists
+
+
 class SVN_check_for_local_changes(bpy.types.Operator):
     # TODO: Maybe this operator doesn't need to be in the UI, since it runs on file save anyways, and
     # having two different types of refresh buttons may be confusing.
@@ -91,6 +122,7 @@ class SVN_check_for_updates(bpy.types.Operator):
 
         return {"FINISHED"}
 
+
 class SVN_update_all(bpy.types.Operator):
     bl_idname = "svn.update_all"
     bl_label = "SVN Update All"
@@ -108,6 +140,7 @@ class SVN_update_all(bpy.types.Operator):
 
         return {"FINISHED"}
 
+
 class OperatorWithWarning:
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=400)
@@ -123,36 +156,6 @@ class OperatorWithWarning:
 
     def get_warning_text(self, context):
         raise NotImplemented
-
-
-class SVN_file_operator:
-    """Base class for SVN operators operating on a single file."""
-    svn_root_abs_path: StringProperty()
-    file_rel_path: StringProperty()
-
-    missing_file_allowed = False
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        """All of these operators want to make sure that the file exists,
-        before trying to execute."""
-        if not self.file_exists() and not type(self).missing_file_allowed:
-            return {'CANCELLED'}
-        ret = self._execute(context)
-        context.scene.svn.check_for_local_changes()
-        return ret
-
-    def _execute(self, context: bpy.types.Context) -> Set[str]:
-        raise NotImplementedError
-
-    @property
-    def file_full_path(self) -> Path:
-        return Path.joinpath(Path(self.svn_root_abs_path), Path(self.file_rel_path))
-
-    def file_exists(self) -> bool:
-        exists = self.file_full_path.exists()
-        if not exists and not type(self).missing_file_allowed:
-            self.report({'INFO'}, "File was not found, cancelling.")
-        return exists
 
 
 class SVN_update_single(SVN_file_operator, bpy.types.Operator):
@@ -363,6 +366,24 @@ class SVN_commit(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SVN_cleanup(bpy.types.Operator):
+    bl_idname = "svn.cleanup"
+    bl_label = "SVN Cleanup"
+    bl_description = "Resolve issues that can arise from previous SVN processes having been interrupted"
+    bl_options = {'INTERNAL'}
+
+    svn_root_abs_path: StringProperty()
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        cmd = f'svn cleanup'
+        subprocess.call(
+            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
+        )
+        self.report({'INFO'}, "SVN Cleanup complete.")
+
+        return {"FINISHED"}
+
+
 # ----------------REGISTER--------------.
 
 registry = [
@@ -377,5 +398,5 @@ registry = [
     SVN_trash_file,
     SVN_remove_file,
     SVN_commit,
-
+    SVN_cleanup,
 ]

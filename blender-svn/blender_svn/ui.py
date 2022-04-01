@@ -1,9 +1,8 @@
 import bpy
 from .util import get_addon_prefs
-
-from bpy.props import BoolProperty
-
 from .prefs import get_visible_indicies
+
+
 class VIEW3D_PT_svn(bpy.types.Panel):
     """SVN UI panel in the 3D View Sidebar."""
     bl_space_type = 'VIEW_3D'
@@ -190,10 +189,15 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         check_up = col.operator("svn.check_for_updates", icon='URL', text="")
         prefs = get_addon_prefs(context)
         check_up.svn_root_abs_path = prefs.svn_directory
+
         col.separator()
         up = col.operator("svn.update_all", icon='IMPORT', text="")
         up.svn_root_abs_path = prefs.svn_directory
         col.operator("svn.commit", icon='CHECKMARK', text="")
+
+        col.separator()
+        cleanup = col.operator("svn.cleanup", icon='BRUSH_DATA', text="")
+        cleanup.svn_root_abs_path = prefs.svn_directory
 
         active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
 
