@@ -23,9 +23,10 @@ import logging
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
-import bpy, subprocess, os
+import bpy, subprocess
 from bpy.props import StringProperty, BoolVectorProperty
 
+from datetime import datetime
 from send2trash import send2trash   # NOTE: For some reason, when there's any error in this file, this line seems to take the blame for it?
 
 from .util import get_addon_prefs
@@ -61,8 +62,7 @@ class SVN_Operator_Single_File(SVN_Operator):
     missing_file_allowed = False
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        """All of these operators want to make sure that the file exists,
-        before trying to execute."""
+        """Most operators want to make sure that the file exists pre-execute."""
         if not self.file_exists(context) and not type(self).missing_file_allowed:
             return {'CANCELLED'}
         ret = self._execute(context)
@@ -389,11 +389,13 @@ class SVN_explain_status(Popup_Operator, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class SVN_update_log(SVN_Operator, bpy.types.Operator):
+class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
     bl_idname = "svn.update_log"
     bl_label = "Update SVN Log"
     bl_description = "Update the SVN Log file with new log entries grabbed from the remote repository"
     bl_options = {'INTERNAL'}
+
+    missing_file_allowed = True
 
     # TODO: This is a good start, but if we want this to passively stay up to 
     # date for everyone, we can't just have everybody updating their log file 
@@ -409,22 +411,58 @@ class SVN_update_log(SVN_Operator, bpy.types.Operator):
 
     def execute(self, context):
         # Create the log file if it doesn't already exist.
+        self.file_rel_path = ".svn/svn.log"
+        filepath = self.get_file_full_path(context)
 
-        filepath = Path(self.get_svn_root_path(context)).joinpath(Path(".svn/svn.log"))
+        if filepath.exists():
+            # Read the existing SVN log into the log entry list. 
+            # TODO: Move out of this operator, into load_post() handler.
+
+            svn = self.get_svn_data(context)
+            svn.log.clear()
+
+            # Read file into lists of lines where each list is one log entry
+            chunks = []
+            with open(filepath, 'r') as f:
+                next(f)
+                chunk = []
+                for line in f:
+                    line = line.replace("\n", "")
+                    if len(line) == 0:
+                        continue
+                    if line == "-" * 72:
+                        # The previous log entry is over.
+                        chunks.append(chunk)
+                        chunk = []
+                        continue
+                    chunk.append(line)
+
+            for chunk in chunks:
+                r_number, r_author, r_date, _r_msg_length = chunk[0].split(" | ")
+                date, time, timezone, _day, _n_day, _mo, _y = r_date.split(" ")
+
+                log_entry = svn.log.add()
+                log_entry['revision_number'] = int(r_number[1:])
+                log_entry['revision_author'] = r_author
+
+                rev_datetime = datetime.strptime(date +" "+ time, '%Y-%m-%d %H:%M:%S')
+                month_name = rev_datetime.strftime("%b")
+                date_str = f"{rev_datetime.year}-{month_name}-{rev_datetime.day}"
+                time_str = f"{str(rev_datetime.hour).zfill(2)}:{str(rev_datetime.minute).zfill(2)}"
+
+                log_entry['revision_date'] = date_str + " " + time_str
+                log_entry['commit_message'] = "\n".join(chunk[1:])
+
+        return {'FINISHED'}
 
         prefs = get_addon_prefs(context)
         current_rev = prefs.revision_number
+        latest_log_rev = svn.log[-1].revision_number
 
-        read_log = "We will read the log file into this..."
-        revisions = ["Then we split the log file into individual revisions here. Revision might be a class with all sorts of data and function; Perhaps even stored in context.scene.svn."]
-
-        first_rev = 1 # revisions[-1].revision_number
-        last_rev = 10 # might be just HEAD
-
-        full_log = self.execute_svn_command(context, f"svn log -r {first_rev}:{last_rev}")
+        new_log = self.execute_svn_command(context, f"svn log -r {latest_log_rev}:{current_rev}")
 
         with open(filepath, 'w+') as f:
-            f.write(full_log)
+            f.write(new_log)
 
         self.report({'INFO'}, "Local copy of the SVN log updated.")
 

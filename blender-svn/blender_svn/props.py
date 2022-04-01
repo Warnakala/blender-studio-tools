@@ -338,8 +338,8 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
     external_files_active_index: bpy.props.IntProperty()
 
-    svn_log: bpy.props.CollectionProperty(type=SVN_log)
-    svn_log_active_index: bpy.props.IntProperty()
+    log: bpy.props.CollectionProperty(type=SVN_log)
+    log_active_index: bpy.props.IntProperty()
 
 @bpy.app.handlers.persistent
 def check_for_local_changes(scene):
