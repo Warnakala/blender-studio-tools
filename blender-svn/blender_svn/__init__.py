@@ -17,6 +17,7 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+# (c) 2022, Blender Foundation - Demeter Dzadik
 
 import logging
 
@@ -24,12 +25,12 @@ import bpy
 
 import importlib
 
-from . import prefs, props, ops, client, ui
+from . import prefs, props, ops, client, ui, svn_log, svn_status
 
 bl_info = {
     "name": "Blender SVN",
-    "author": "Paul Golter",
-    "description": "Blender Add-on to interact with Subversion. Used by other add-ons in Blender-Studio-Tools.",
+    "author": "Demeter Dzadik, Paul Golter",
+    "description": "Blender Add-on to interact with Subversion.",
     "blender": (3, 1, 0),
     "version": (0, 1, 0),
     "location": "View3D",
@@ -43,10 +44,12 @@ logger = logging.getLogger("SVN")
 
 modules = [
     prefs,
-    props,
     ops,
-    client,
     ui,
+    svn_log,
+    svn_status,
+    props,
+    client,
 ]
 
 def reload() -> None:

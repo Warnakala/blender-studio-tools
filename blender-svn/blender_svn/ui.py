@@ -1,3 +1,23 @@
+# ***** BEGIN GPL LICENSE BLOCK *****
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
+# ***** END GPL LICENCE BLOCK *****
+#
+# (c) 2022, Blender Foundation - Demeter Dzadik
+
 import bpy
 from .util import get_addon_prefs
 from .prefs import get_visible_indicies
@@ -152,39 +172,6 @@ class SVN_UL_file_list(bpy.types.UIList):
         row.prop(prefs, 'include_entire_repo', toggle=True, text="", icon='DISK_DRIVE')
 
 
-def layout_log_split(layout):
-    main = layout.split(factor=0.2)
-    num_and_auth = main.row()
-    date_and_msg = main.row()
-    
-    num_and_auth_split = num_and_auth.split(factor=0.3)
-    num = num_and_auth_split.row()
-    auth = num_and_auth_split.row()
-
-    date_and_msg_split = date_and_msg.split(factor=0.2)
-    date = date_and_msg_split.row()
-    msg = date_and_msg_split.row()
-
-    return num, auth, date, msg
-
-class SVN_UL_log(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if self.layout_type != 'DEFAULT':
-            raise NotImplemented
-        
-        log_entry = item
-
-        num, auth, date, msg = layout_log_split(layout.row())
-
-        num.label(text=str(log_entry.revision_number))
-        auth.label(text=log_entry.revision_author)
-        date.label(text=log_entry.revision_date.split(" ")[0][5:])
-
-        commit_msg = log_entry.commit_message
-        commit_msg = commit_msg[:60]+".." if len(commit_msg) > 62 else commit_msg
-        msg.label(text=commit_msg)
-
-
 class SVN_MT_context_menu(bpy.types.Menu):
     bl_label = "SVN Operations"
 
@@ -248,49 +235,9 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.prop(active_file, 'revision')
 
 
-
-class VIEW3D_PT_svn_log(bpy.types.Panel):
-    """Display the revision history of the selected file."""
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = 'SVN'
-    bl_label = 'Revision History'
-    bl_parent_id = "VIEW3D_PT_svn_files"
-
-    @classmethod
-    def poll(cls, context):
-        return len(context.scene.svn.log) > 0
-
-    def draw(self, context):
-        # TODO: SVN log only makes sense for files with certain statuses (eg., not "Unversioned")
-        layout = self.layout
-        layout.use_property_split = True
-        layout.use_property_decorate = False
-
-        num, auth, date, msg = layout_log_split(layout.row())
-        num.label(text="r#")
-        auth.label(text="Author")
-        date.label(text="Date")
-        msg.label(text="Message")
-        layout.template_list(
-            "SVN_UL_log",
-            "svn_log",
-            context.scene.svn,
-            "log",
-            context.scene.svn,
-            "log_active_index",
-        )
-
-        active_log = context.scene.svn.log[context.scene.svn.log_active_index]
-        layout.prop(active_log, 'revision_number')
-        layout.prop(active_log, 'revision_date')
-        layout.prop(active_log, 'revision_author')
-
 registry = [
     SVN_UL_file_list,
-    SVN_UL_log,
     SVN_MT_context_menu,
     VIEW3D_PT_svn,
     VIEW3D_PT_svn_files,
-    VIEW3D_PT_svn_log,
 ]

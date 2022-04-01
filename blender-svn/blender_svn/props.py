@@ -17,6 +17,7 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+# (c) 2022, Blender Foundation - Demeter Dzadik
 
 from typing import Optional, Dict, Any, List, Tuple, Set
 
@@ -27,137 +28,12 @@ import bpy, functools, logging
 from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty
 
 from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly
-from . import client, prefs
+from . import client, prefs, svn_status
+from .svn_log import SVN_log
 
 from blender_asset_tracer import cli, trace
 
 logger = logging.getLogger("SVN")
-
-SVN_STATUS_DATA = OrderedDict(
-    [
-        (
-            "added",
-            (
-                "ADD",
-                "This file was added to the local repository, and will be added to the remote repository when committing",
-            ),
-        ),
-        (
-            "conflicted",
-            (
-                "ERROR",
-                "This file was modified locally, and a newer version has appeared on the remote repository at the same time. To resolve the conflict, one of the changes must be discarded",
-            ),
-        ),
-        (
-            "deleted",
-            (
-                "TRASH",
-                "This file was deleted locally, but still exists on the remote repository",
-            ),
-        ),
-        (
-            "external",
-            (
-                "EXTERNAL_DRIVE",
-                "This file is present because of an externals definition",
-            ),
-        ),
-        (
-            "ignored",
-            (
-                "RADIOBUT_OFF",
-                "This file is being ignored (e.g., with the svn:ignore property)",
-            ),
-        ),
-        (
-            "incomplete",
-            (
-                "FOLDER_REDIRECT",
-                "A directory is incomplete (a checkout or update was interrupted)",
-            ),
-        ),
-        ("merged", ("AUTOMERGE_ON", "TODO")),
-        (
-            "missing",
-            (
-                "FILE_HIDDEN",
-                "This file is missing (e.g., you moved or deleted it without using svn)",
-            ),
-        ),
-        (
-            "modified",
-            (
-                "MODIFIER",
-                "This file was modified locally, and can be pushed to the remote repository without a conflict",
-            ),
-        ),
-        (
-            "none",
-            (
-                "TIME",
-                "There is a newer version of this file available on the remote repository. You should update it",
-            ),
-        ),
-        (
-            "normal",
-            (
-                "CHECKMARK",
-                "This file is in the repository. There are no local modifications to commit",
-            ),
-        ),
-        ("obstructed", ("ERROR", "Something has gone horribly wrong. Try svn cleanup")),
-        (
-            "replaced",
-            (
-                "FILE_REFRESH",
-                "This file has been replaced in your local repository. This means the file was scheduled for deletion, and then a new file with the same name was scheduled for addition in its place",
-            ),
-        ),
-        (
-            "unversioned",
-            (
-                "FILE_NEW",
-                "This file is new in file system, but not yet added to the local repository. It needs to be added before it can be committed to the remote repository",
-            ),
-        ),
-    ]
-)
-
-# Based on PySVN/svn/constants.py/STATUS_TYPE_LOOKUP.
-ENUM_SVN_STATUS = [
-    (status, status.title(), SVN_STATUS_DATA[status][1], SVN_STATUS_DATA[status][0], i)
-    for i, status in enumerate(SVN_STATUS_DATA.keys())
-]
-
-
-class SVN_log(bpy.types.PropertyGroup):
-    """Property Group that can represent an SVN log entry."""
-
-    revision_number: IntProperty(
-        name="Revision Number",
-        description="Revision number of the current .blend file",
-        get = make_getter_func("revision_number", 0),
-        set = make_setter_func_readonly("revision_number")
-    )
-    revision_date: StringProperty(
-        name="Revision Date",
-        description="Date when the current revision was committed",
-        get = make_getter_func("revision_date", ""),
-        set = make_setter_func_readonly("revision_date")
-    )
-    revision_author: StringProperty(
-        name="Revision Author",
-        description="SVN username of the revision author",
-        get = make_getter_func("revision_author", ""),
-        set = make_setter_func_readonly("revision_author")
-    )
-    commit_message: StringProperty(
-        name = "Commit Message",
-        description="Commit message written by the commit author to describe the changes in this revision",
-        get = make_getter_func("commit_message", ""),
-        set = make_setter_func_readonly("commit_message")
-    )
 
 
 class SVN_file(bpy.types.PropertyGroup):
@@ -182,7 +58,7 @@ class SVN_file(bpy.types.PropertyGroup):
     )
     status: EnumProperty(
         name="Status",
-        items=ENUM_SVN_STATUS,
+        items=svn_status.ENUM_SVN_STATUS,
         default="normal",
         get=make_getter_func("status", 10),
         set=make_setter_func_readonly("status"),
@@ -207,7 +83,7 @@ class SVN_file(bpy.types.PropertyGroup):
 
     @property
     def status_icon(self) -> str:
-        return SVN_STATUS_DATA[self.status][0]
+        return svn_status.SVN_STATUS_DATA[self.status][0]
 
     @property
     def status_name(self) -> str:
@@ -341,6 +217,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     log: bpy.props.CollectionProperty(type=SVN_log)
     log_active_index: bpy.props.IntProperty()
 
+
 @bpy.app.handlers.persistent
 def check_for_local_changes(scene):
     if not scene:
@@ -351,7 +228,7 @@ def check_for_local_changes(scene):
 
 # ----------------REGISTER--------------.
 
-registry = [SVN_file, SVN_log, SVN_scene_properties]
+registry = [SVN_file, SVN_scene_properties]
 
 def register() -> None:
     # Scene Properties.

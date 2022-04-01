@@ -17,6 +17,7 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+# (c) 2022, Blender Foundation - Demeter Dzadik
 
 import logging
 
@@ -26,11 +27,9 @@ from pathlib import Path
 import bpy, subprocess
 from bpy.props import StringProperty, BoolVectorProperty
 
-from datetime import datetime
 from send2trash import send2trash   # NOTE: For some reason, when there's any error in this file, this line seems to take the blame for it?
 
 from .util import get_addon_prefs
-from .props import SVN_STATUS_DATA
 
 logger = logging.getLogger("SVN")
 
@@ -366,117 +365,8 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SVN_explain_status(bpy.types.Operator):
-    bl_idname = "svn.explain_status"
-    bl_label = "Explain SVN Status"
-    bl_description = "Show an explanation of this status, using a dynamic tooltip"
-    bl_options = {'INTERNAL'}
-
-    popup_width = 600
-
-    status: StringProperty(
-        description = "Identifier of the status to show an explanation for"
-    )
-    filepath: StringProperty(
-        description = "Path of the file to select in the list when clicking this explanation, to act as if it was click-through-able"
-    )
-
-    @staticmethod
-    def get_explanation(status: str):
-        return SVN_STATUS_DATA[status][1]
-
-    @classmethod
-    def description(cls, context, properties):
-        return cls.get_explanation(properties.status)
-
-    def draw(self, context):
-        self.layout.label(text=self.get_explanation(self.status))
-
-    def execute(self, context):
-        for i, f in enumerate(context.scene.svn.external_files):
-            if f.path_str == self.filepath:
-                context.scene.svn.external_files_active_index = i
-        return {'FINISHED'}
 
 
-class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
-    bl_idname = "svn.update_log"
-    bl_label = "Update SVN Log"
-    bl_description = "Update the SVN Log file with new log entries grabbed from the remote repository"
-    bl_options = {'INTERNAL'}
-
-    missing_file_allowed = True
-
-    # TODO: This is a good start, but if we want this to passively stay up to 
-    # date for everyone, we can't just have everybody updating their log file 
-    # and committing it, it will create conflicts constantly. 
-
-    # Idea 1: The SVN Commit operator would always update the log file, write 
-    # the commit that's about to happen into it, and then include it in the commit. 
-    # So, absolutely every commit to the SVN will include the log file as well.
-    # Might work, but seems tricky.
-
-    # Idea 2: We store the commit log in the .svn folder, which is ignored by svn,
-    # and we update it when running the SVN Update operator, making it a bit slower.
-
-    def execute(self, context):
-        # Create the log file if it doesn't already exist.
-        self.file_rel_path = ".svn/svn.log"
-        filepath = self.get_file_full_path(context)
-
-        if filepath.exists():
-            # Read the existing SVN log into the log entry list. 
-            # TODO: Move out of this operator, into load_post() handler.
-
-            svn = self.get_svn_data(context)
-            svn.log.clear()
-
-            # Read file into lists of lines where each list is one log entry
-            chunks = []
-            with open(filepath, 'r') as f:
-                next(f)
-                chunk = []
-                for line in f:
-                    line = line.replace("\n", "")
-                    if len(line) == 0:
-                        continue
-                    if line == "-" * 72:
-                        # The previous log entry is over.
-                        chunks.append(chunk)
-                        chunk = []
-                        continue
-                    chunk.append(line)
-
-            for chunk in chunks:
-                r_number, r_author, r_date, _r_msg_length = chunk[0].split(" | ")
-                date, time, timezone, _day, _n_day, _mo, _y = r_date.split(" ")
-
-                log_entry = svn.log.add()
-                log_entry['revision_number'] = int(r_number[1:])
-                log_entry['revision_author'] = r_author
-
-                rev_datetime = datetime.strptime(date +" "+ time, '%Y-%m-%d %H:%M:%S')
-                month_name = rev_datetime.strftime("%b")
-                date_str = f"{rev_datetime.year}-{month_name}-{rev_datetime.day}"
-                time_str = f"{str(rev_datetime.hour).zfill(2)}:{str(rev_datetime.minute).zfill(2)}"
-
-                log_entry['revision_date'] = date_str + " " + time_str
-                log_entry['commit_message'] = "\n".join(chunk[1:])
-
-        return {'FINISHED'}
-
-        prefs = get_addon_prefs(context)
-        current_rev = prefs.revision_number
-        latest_log_rev = svn.log[-1].revision_number
-
-        new_log = self.execute_svn_command(context, f"svn log -r {latest_log_rev}:{current_rev}")
-
-        with open(filepath, 'w+') as f:
-            f.write(new_log)
-
-        self.report({'INFO'}, "Local copy of the SVN log updated.")
-
-        return {'FINISHED'}
 
 # ----------------REGISTER--------------.
 
@@ -493,6 +383,4 @@ registry = [
     SVN_remove_file,
     SVN_commit,
     SVN_cleanup,
-    SVN_explain_status,
-    SVN_update_log,
 ]

@@ -17,6 +17,8 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+# (c) 2022, Blender Foundation - Demeter Dzadik
+
 import logging
 from typing import Optional, Any, Set, Tuple, List
 from pathlib import Path

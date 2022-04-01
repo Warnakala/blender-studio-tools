@@ -17,6 +17,7 @@
 # ***** END GPL LICENCE BLOCK *****
 #
 # (c) 2021, Blender Foundation - Paul Golter
+# (c) 2022, Blender Foundation - Demeter Dzadik
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple, Generator, Callable
 
