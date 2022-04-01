@@ -23,7 +23,7 @@ import logging
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
-import bpy, subprocess
+import bpy, subprocess, os
 from bpy.props import StringProperty, BoolVectorProperty
 
 from send2trash import send2trash   # NOTE: For some reason, when there's any error in this file, this line seems to take the blame for it?
@@ -412,6 +412,36 @@ class SVN_explain_status(OperatorWithPopup, bpy.types.Operator):
         return {'FINISHED'}
 
 
+class SVN_update_log(bpy.types.Operator):
+    bl_idname = "svn.update_log"
+    bl_label = "Update SVN Log"
+    bl_description = "Update the SVN Log file with new log entries grabbed from the remote repository"
+    bl_options = {'INTERNAL'}
+
+    # TODO: This is a good start, but if we want this to passively stay up to 
+    # date for everyone, we can't just have everybody updating their log file 
+    # and committing it, it will create conflicts constantly. 
+
+    # Idea 1: The SVN Commit operator would always update the log file, write 
+    # the commit that's about to happen into it, and then include it in the commit. 
+    # So, absolutely every commit to the SVN will include the log file as well.
+    # Might work, but seems tricky.
+
+    # Idea 2: We store the commit log in the .svn folder, which is ignored by svn,
+    # and we update it when running the SVN Update operator, making it a bit slower.
+
+    svn_root_abs_path: StringProperty()
+
+    def execute(self, context):
+        # Create the log file if it doesn't already exist.
+        filepath = Path.joinpath(Path(self.svn_root_abs_path), Path("/.svn/svn.log"))
+        with open(filepath, 'w') as f:
+            f.write("Hello there")
+
+        self.report({'INFO'}, "Local copy of the SVN log updated.")
+
+        return {'FINISHED'}
+
 # ----------------REGISTER--------------.
 
 registry = [
@@ -428,4 +458,5 @@ registry = [
     SVN_commit,
     SVN_cleanup,
     SVN_explain_status,
+    SVN_update_log,
 ]

@@ -152,6 +152,19 @@ class SVN_UL_file_list(bpy.types.UIList):
         row.prop(prefs, 'include_entire_repo', toggle=True, text="", icon='DISK_DRIVE')
 
 
+class SVN_MT_context_menu(bpy.types.Menu):
+    bl_label = "SVN Operations"
+
+    def draw(self, context):
+        layout = self.layout
+        prefs = get_addon_prefs(context)
+
+        layout.operator("svn.check_for_local_changes", icon='FILE_REFRESH')
+        cleanup = layout.operator("svn.cleanup", icon='BRUSH_DATA')
+        cleanup.svn_root_abs_path = prefs.svn_directory
+        layout.operator("svn.update_log", icon="TEXT")
+
+
 class VIEW3D_PT_svn_files(bpy.types.Panel):
     """Display a list of files that the current .blend file depends on"""
     bl_space_type = 'VIEW_3D'
@@ -184,10 +197,10 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
             "external_files_active_index",
         )
 
-        col = row.column()
-        col.operator("svn.check_for_local_changes", icon='FILE_REFRESH', text="")
-        check_up = col.operator("svn.check_for_updates", icon='URL', text="")
         prefs = get_addon_prefs(context)
+
+        col = row.column()
+        check_up = col.operator("svn.check_for_updates", icon='URL', text="")
         check_up.svn_root_abs_path = prefs.svn_directory
 
         col.separator()
@@ -196,8 +209,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         col.operator("svn.commit", icon='CHECKMARK', text="")
 
         col.separator()
-        cleanup = col.operator("svn.cleanup", icon='BRUSH_DATA', text="")
-        cleanup.svn_root_abs_path = prefs.svn_directory
+        col.row().menu(menu='SVN_MT_context_menu', text="", icon='TRIA_DOWN')
 
         active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
 
@@ -223,4 +235,5 @@ registry = [
     VIEW3D_PT_svn,
     SVN_UL_file_list,
     VIEW3D_PT_svn_files,
+    SVN_MT_context_menu,
 ]
