@@ -43,20 +43,12 @@ class VIEW3D_PT_svn(bpy.types.Panel):
 
         col = layout.column()
 
-        # TODO: Use this code if Blender gets selectable text in labels.
-        # row = col.row()
-        # split = row.split(factor=0.4)
-        # row = split.row()
-        # row.alignment = 'RIGHT'
-        # row.label(text="URL")
-        # split.row().label(text=prefs.svn_url)
-
-        col.prop(prefs, 'svn_url')
-        col.prop(prefs, 'svn_directory')
-        col.prop(prefs, 'relative_filepath')
-        col.prop(prefs, 'revision_number')
-        col.prop(prefs, 'revision_date')
-        col.prop(prefs, 'revision_author')
+        col.prop(prefs, 'svn_url', emboss=False)
+        col.prop(prefs, 'svn_directory', emboss=False)
+        col.prop(prefs, 'relative_filepath', emboss=False)
+        col.prop(prefs, 'revision_number', emboss=False)
+        col.prop(prefs, 'revision_date', emboss=False)
+        col.prop(prefs, 'revision_author', emboss=False)
 
 
 class SVN_UL_file_list(bpy.types.UIList):
