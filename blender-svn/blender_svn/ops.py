@@ -366,7 +366,7 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SVN_explain_status(Popup_Operator, bpy.types.Operator):
+class SVN_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
     bl_label = "Explain SVN Status"
     bl_description = "Show an explanation of this status, using a dynamic tooltip"
@@ -376,6 +376,9 @@ class SVN_explain_status(Popup_Operator, bpy.types.Operator):
 
     status: StringProperty(
         description = "Identifier of the status to show an explanation for"
+    )
+    filepath: StringProperty(
+        description = "Path of the file to select in the list when clicking this explanation, to act as if it was click-through-able"
     )
 
     @staticmethod
@@ -390,6 +393,9 @@ class SVN_explain_status(Popup_Operator, bpy.types.Operator):
         self.layout.label(text=self.get_explanation(self.status))
 
     def execute(self, context):
+        for i, f in enumerate(context.scene.svn.external_files):
+            if f.path_str == self.filepath:
+                context.scene.svn.external_files_active_index = i
         return {'FINISHED'}
 
 
