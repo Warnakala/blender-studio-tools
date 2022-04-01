@@ -29,6 +29,7 @@ from bpy.props import StringProperty, BoolVectorProperty
 from send2trash import send2trash   # NOTE: For some reason, when there's any error in this file, this line seems to take the blame for it?
 
 from .util import get_addon_prefs
+from .props import SVN_STATUS_DATA
 
 logger = logging.getLogger("SVN")
 
@@ -141,9 +142,14 @@ class SVN_update_all(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class OperatorWithWarning:
+class OperatorWithPopup:
+    popup_width = 400
+
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        return context.window_manager.invoke_props_dialog(self, width=type(self).popup_width)
+
+
+class OperatorWithWarning(OperatorWithPopup):
 
     def draw(self, context):
         layout = self.layout.column(align=True)
@@ -284,7 +290,7 @@ class SVN_remove_file(SVN_file_operator, OperatorWithWarning, bpy.types.Operator
         return {"FINISHED"}
 
 
-class SVN_commit(bpy.types.Operator):
+class SVN_commit(OperatorWithPopup, bpy.types.Operator):
     bl_idname = "svn.commit"
     bl_label = "SVN Commit"
     bl_description = "Commit a selection of files to the remote repository"
@@ -326,11 +332,6 @@ class SVN_commit(bpy.types.Operator):
             row.alert = True
             row.label(text="(min 15 characters!)")
         layout.prop(self, 'commit_message', text="")
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.invoke_props_dialog(self, width=400)
-        return {'RUNNING_MODAL'}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         committable_files = self.get_committable_files(context)
@@ -384,6 +385,33 @@ class SVN_cleanup(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SVN_explain_status(OperatorWithPopup, bpy.types.Operator):
+    bl_idname = "svn.explain_status"
+    bl_label = "Explain SVN Status"
+    bl_description = "Show an explanation of this status, using a dynamic tooltip"
+    bl_options = {'INTERNAL'}
+
+    popup_width = 600
+
+    status: StringProperty(
+        description = "Identifier of the status to show an explanation for"
+    )
+
+    @staticmethod
+    def get_explanation(status: str):
+        return SVN_STATUS_DATA[status][1]
+
+    @classmethod
+    def description(cls, context, properties):
+        return cls.get_explanation(properties.status)
+
+    def draw(self, context):
+        self.layout.label(text=self.get_explanation(self.status))
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
 # ----------------REGISTER--------------.
 
 registry = [
@@ -399,4 +427,5 @@ registry = [
     SVN_remove_file,
     SVN_commit,
     SVN_cleanup,
+    SVN_explain_status,
 ]

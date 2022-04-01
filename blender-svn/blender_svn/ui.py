@@ -204,12 +204,17 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         any_visible = get_visible_indicies(context)
         if not any_visible:
             return
+
         col = layout.column()
+
         split = col.row().split(factor=0.4)
         row = split.row()
         row.alignment = 'RIGHT'
         row.label(text="Status")
-        split.label(text=active_file.status_name, icon=active_file.status_icon)
+
+        row = split.row()
+        row.operator('svn.explain_status', text=active_file.status_name, icon=active_file.status_icon).status = active_file.status
+
         col.prop(active_file, 'path_str')
         col.prop(active_file, 'revision')
 
