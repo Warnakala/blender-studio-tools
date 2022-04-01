@@ -48,7 +48,7 @@ class SVN_Operator:
         So any file paths that are part of the commend should be relative to the
         SVN root.
         """
-        str(
+        return str(
             subprocess.check_output(
                 (command), shell=True, cwd=self.get_svn_root_path(context)+"/"
             ),
@@ -122,7 +122,11 @@ class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
         files: List[Tuple[int, str]] = [] # Revision number, filepath
         for line in lines:
             split = [s for s in line.split(" ") if s]
-            files.append((int(split[1]), split[2]))
+            if len(split)==2:
+                rev_no = 0 # If the file is not currently on the local repository, set the revision number is 0. TODO: A revision number of 0 should show some explanation in the interface.
+            else:
+                rev_no = int(split[1])
+            files.append((rev_no, split[-1]))
 
         svn_props.remove_outdated_file_entries()
 
