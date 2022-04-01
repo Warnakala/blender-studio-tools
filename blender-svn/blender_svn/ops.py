@@ -34,9 +34,28 @@ from .props import SVN_STATUS_DATA
 logger = logging.getLogger("SVN")
 
 
-class SVN_file_operator:
+class SVN_Operator:
+    def get_svn_data(self, context):
+        return context.scene.svn
+    
+    def get_svn_root_path(self, context):
+        prefs = get_addon_prefs(context)
+        return prefs.svn_directory
+
+    def execute_svn_command(self, context, command: str) -> str:
+        """Execute an svn command in the root of the current svn repository.
+        So any file paths that are part of the commend should be relative to the
+        SVN root.
+        """
+        str(
+            subprocess.check_output(
+                (command), shell=True, cwd=self.get_svn_root_path(context)+"/"
+            ),
+            'utf-8'
+        )
+
+class SVN_Operator_Single_File(SVN_Operator):
     """Base class for SVN operators operating on a single file."""
-    svn_root_abs_path: StringProperty()
     file_rel_path: StringProperty()
 
     missing_file_allowed = False
@@ -44,7 +63,7 @@ class SVN_file_operator:
     def execute(self, context: bpy.types.Context) -> Set[str]:
         """All of these operators want to make sure that the file exists,
         before trying to execute."""
-        if not self.file_exists() and not type(self).missing_file_allowed:
+        if not self.file_exists(context) and not type(self).missing_file_allowed:
             return {'CANCELLED'}
         ret = self._execute(context)
         context.scene.svn.check_for_local_changes()
@@ -53,18 +72,17 @@ class SVN_file_operator:
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         raise NotImplementedError
 
-    @property
-    def file_full_path(self) -> Path:
-        return Path.joinpath(Path(self.svn_root_abs_path), Path(self.file_rel_path))
+    def get_file_full_path(self, context) -> Path:
+        return Path.joinpath(Path(self.get_svn_root_path(context)), Path(self.file_rel_path))
 
-    def file_exists(self) -> bool:
-        exists = self.file_full_path.exists()
+    def file_exists(self, context) -> bool:
+        exists = self.get_file_full_path(context).exists()
         if not exists and not type(self).missing_file_allowed:
             self.report({'INFO'}, "File was not found, cancelling.")
         return exists
 
 
-class SVN_check_for_local_changes(bpy.types.Operator):
+class SVN_check_for_local_changes(SVN_Operator, bpy.types.Operator):
     # TODO: Maybe this operator doesn't need to be in the UI, since it runs on file save anyways, and
     # having two different types of refresh buttons may be confusing.
     bl_idname = "svn.check_for_local_changes"
@@ -78,25 +96,17 @@ class SVN_check_for_local_changes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SVN_check_for_updates(bpy.types.Operator):
+class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.check_for_updates"
     bl_label = "Check For All Changes"
     bl_description = "Refresh the file list completely, including asking the remote repository for available updates. This may take a few seconds"
     bl_options = {'INTERNAL'}
 
-    svn_root_abs_path: StringProperty()
-
     def execute(self, context: bpy.types.Context) -> Set[str]:
         svn_props = context.scene.svn
         svn_props.check_for_local_changes()
 
-        cmd = f'svn status --show-updates'
-        outp = str(
-            subprocess.check_output(
-                (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
-            ),
-            'utf-8'
-        )
+        outp = self.execute_svn_command(context, 'svn status --show-updates')
         # Discard the last 2 lines that just shows current revision number.
         lines = outp.split("\n")[:-2]
         # Only keep files with no status indicator ("none" status).
@@ -124,32 +134,27 @@ class SVN_check_for_updates(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SVN_update_all(bpy.types.Operator):
+class SVN_update_all(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.update_all"
     bl_label = "SVN Update All"
     bl_description = "Download all the latest updates from the remote repository"
     bl_options = {'INTERNAL'}
 
-    svn_root_abs_path: StringProperty()
-
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        cmd = f'svn up'
-        subprocess.call(
-            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
-        )
+        self.execute_svn_command(context, 'svn up')
         context.scene.svn.remove_outdated_file_entries()
 
         return {"FINISHED"}
 
 
-class OperatorWithPopup:
+class Popup_Operator:
     popup_width = 400
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=type(self).popup_width)
 
 
-class OperatorWithWarning(OperatorWithPopup):
+class Warning_Operator(Popup_Operator):
 
     def draw(self, context):
         layout = self.layout.column(align=True)
@@ -164,7 +169,7 @@ class OperatorWithWarning(OperatorWithPopup):
         raise NotImplemented
 
 
-class SVN_update_single(SVN_file_operator, bpy.types.Operator):
+class SVN_update_single(SVN_Operator_Single_File, bpy.types.Operator):
     bl_idname = "svn.update_single"
     bl_label = "Update File"
     bl_description = "Download the latest available version of this file from the remote repository"
@@ -173,18 +178,14 @@ class SVN_update_single(SVN_file_operator, bpy.types.Operator):
     missing_file_allowed = True
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        cmd = f'svn up "{self.file_rel_path}"'
-        subprocess.call(
-            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
-        )
-
+        self.execute_svn_command(context, f'svn up "{self.file_rel_path}"')
         # Remove the file entry for this file
-        context.scene.svn.remove_by_path(str(self.file_full_path))
+        context.scene.svn.remove_by_path(str(self.get_file_full_path(context)))
 
         return {"FINISHED"}
 
 
-class SVN_restore_file(SVN_file_operator, bpy.types.Operator):
+class SVN_restore_file(SVN_Operator_Single_File, bpy.types.Operator):
     bl_idname = "svn.restore_file"
     bl_label = "Restore File"
     bl_description = "Restore this deleted file to its previous revision"
@@ -193,15 +194,12 @@ class SVN_restore_file(SVN_file_operator, bpy.types.Operator):
     missing_file_allowed = True
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        cmd = f'svn revert "{self.file_rel_path}"'
-        subprocess.call(
-            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
-        )
+        self.execute_svn_command(context, f'svn revert "{self.file_rel_path}"')
 
         return {"FINISHED"}
 
 
-class SVN_revert_file(SVN_restore_file, OperatorWithWarning):
+class SVN_revert_file(SVN_restore_file, Warning_Operator):
     bl_idname = "svn.revert_file"
     bl_label = "Revert File"
     bl_description = "PREMANENTLY DISCARD local changes to this file and return it to the state of the last revision. Cannot be undone"
@@ -211,7 +209,6 @@ class SVN_revert_file(SVN_restore_file, OperatorWithWarning):
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         super()._execute(context)
-        # TODO: Do anything special if we're reverting the current .blend file?
 
         return {"FINISHED"}
 
@@ -219,55 +216,48 @@ class SVN_revert_file(SVN_restore_file, OperatorWithWarning):
         return "You will irreversibly and permanently lose the changes you've made to this file:\n    " + self.file_rel_path
 
 
-class SVN_add_file(SVN_file_operator, bpy.types.Operator):
+class SVN_add_file(SVN_Operator_Single_File, bpy.types.Operator):
     bl_idname = "svn.add_file"
     bl_label = "Add File"
     bl_description = "Mark this file for addition to the remote repository. It can then be committed"
     bl_options = {'INTERNAL'}
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        cmd = f'svn add "{self.file_rel_path}"'
-        subprocess.call(
-            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
-        )
+        self.execute_svn_command(context, f'svn add "{self.file_rel_path}"')
 
         return {"FINISHED"}
 
 
-class SVN_unadd_file(SVN_file_operator, bpy.types.Operator):
+class SVN_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
     bl_idname = "svn.unadd_file"
     bl_label = "Un-Add File"
     bl_description = "Un-mark this file as being added to the remote repository. It will not be committed"
     bl_options = {'INTERNAL'}
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        cmd = f'svn rm --keep-local "{self.file_rel_path}"'
-        subprocess.call(
-            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
-        )
+        self.execute_svn_command(context, f'svn rm --keep-local "{self.file_rel_path}"')
 
         return {"FINISHED"}
 
 
-class SVN_trash_file(SVN_file_operator, OperatorWithWarning, bpy.types.Operator):
+class SVN_trash_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Operator):
     bl_idname = "svn.trash_file"
     bl_label = "Trash File"
     bl_description = "Move this file to the recycle bin"
     bl_options = {'INTERNAL'}
 
-    svn_root_abs_path: StringProperty()
     file_rel_path: StringProperty()
 
     def get_warning_text(self, context):
         return "Are you sure you want to move this file to the recycle bin?\n    " + self.file_rel_path
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        send2trash([self.file_full_path])
+        send2trash([self.get_file_full_path(context)])
 
         return {"FINISHED"}
 
 
-class SVN_remove_file(SVN_file_operator, OperatorWithWarning, bpy.types.Operator):
+class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Operator):
     bl_idname = "svn.remove_file"
     bl_label = "Remove File"
     bl_description = "Mark this file for removal from the remote repository"
@@ -275,22 +265,18 @@ class SVN_remove_file(SVN_file_operator, OperatorWithWarning, bpy.types.Operator
 
     missing_file_allowed = True
 
-    svn_root_abs_path: StringProperty()
     file_rel_path: StringProperty()
 
     def get_warning_text(self, context):
         return "This file will be deleted for everyone:\n    " + self.file_rel_path + "\nAre you sure?"
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        cmd = f'svn remove "{self.file_rel_path}"'
-        subprocess.call(
-            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
-        )
+        self.execute_svn_command(context, f'svn remove "{self.file_rel_path}"')
 
         return {"FINISHED"}
 
 
-class SVN_commit(OperatorWithPopup, bpy.types.Operator):
+class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     bl_idname = "svn.commit"
     bl_label = "SVN Commit"
     bl_description = "Commit a selection of files to the remote repository"
@@ -350,13 +336,9 @@ class SVN_commit(OperatorWithPopup, bpy.types.Operator):
             report = files_to_commit[0].svn_relative_path
         print(f"Committing {report}")
 
-        svn_root_abs_path = get_addon_prefs(context).svn_directory
         filepaths = " ".join([f'"{f.svn_relative_path}"' for f in files_to_commit])
 
-        cmd = f'svn commit -m "{self.commit_message}" {filepaths}'
-        subprocess.call(
-            (cmd), shell=True, cwd=svn_root_abs_path+"/"
-        )
+        self.execute_svn_command(context, f'svn commit -m "{self.commit_message}" {filepaths}')
 
         # Update the file list.
         # The freshly committed files should now have the 'normal' status.
@@ -367,25 +349,20 @@ class SVN_commit(OperatorWithPopup, bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SVN_cleanup(bpy.types.Operator):
+class SVN_cleanup(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.cleanup"
     bl_label = "SVN Cleanup"
     bl_description = "Resolve issues that can arise from previous SVN processes having been interrupted"
     bl_options = {'INTERNAL'}
 
-    svn_root_abs_path: StringProperty()
-
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        cmd = f'svn cleanup'
-        subprocess.call(
-            (cmd), shell=True, cwd=self.svn_root_abs_path+"/"
-        )
+        self.execute_svn_command(context, 'svn cleanup')
         self.report({'INFO'}, "SVN Cleanup complete.")
 
         return {"FINISHED"}
 
 
-class SVN_explain_status(OperatorWithPopup, bpy.types.Operator):
+class SVN_explain_status(Popup_Operator, bpy.types.Operator):
     bl_idname = "svn.explain_status"
     bl_label = "Explain SVN Status"
     bl_description = "Show an explanation of this status, using a dynamic tooltip"
@@ -412,7 +389,7 @@ class SVN_explain_status(OperatorWithPopup, bpy.types.Operator):
         return {'FINISHED'}
 
 
-class SVN_update_log(bpy.types.Operator):
+class SVN_update_log(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.update_log"
     bl_label = "Update SVN Log"
     bl_description = "Update the SVN Log file with new log entries grabbed from the remote repository"
@@ -430,13 +407,24 @@ class SVN_update_log(bpy.types.Operator):
     # Idea 2: We store the commit log in the .svn folder, which is ignored by svn,
     # and we update it when running the SVN Update operator, making it a bit slower.
 
-    svn_root_abs_path: StringProperty()
-
     def execute(self, context):
         # Create the log file if it doesn't already exist.
-        filepath = Path.joinpath(Path(self.svn_root_abs_path), Path("/.svn/svn.log"))
-        with open(filepath, 'w') as f:
-            f.write("Hello there")
+
+        filepath = Path(self.get_svn_root_path(context)).joinpath(Path(".svn/svn.log"))
+
+        prefs = get_addon_prefs(context)
+        current_rev = prefs.revision_number
+
+        read_log = "We will read the log file into this..."
+        revisions = ["Then we split the log file into individual revisions here. Revision might be a class with all sorts of data and function; Perhaps even stored in context.scene.svn."]
+
+        first_rev = 1 # revisions[-1].revision_number
+        last_rev = 10 # might be just HEAD
+
+        full_log = self.execute_svn_command(context, f"svn log -r {first_rev}:{last_rev}")
+
+        with open(filepath, 'w+') as f:
+            f.write(full_log)
 
         self.report({'INFO'}, "Local copy of the SVN log updated.")
 

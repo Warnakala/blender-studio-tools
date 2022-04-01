@@ -131,6 +131,35 @@ ENUM_SVN_STATUS = [
 ]
 
 
+class SVN_log(bpy.types.PropertyGroup):
+    """Property Group that can represent an SVN log entry."""
+
+    revision_number: IntProperty(
+        name="Revision Number",
+        description="Revision number of the current .blend file",
+        get = make_getter_func("revision_number", 0),
+        set = make_setter_func_readonly("revision_number")
+    )
+    revision_date: StringProperty(
+        name="Revision Date",
+        description="Date when the current revision was committed",
+        get = make_getter_func("revision_date", ""),
+        set = make_setter_func_readonly("revision_date")
+    )
+    revision_author: StringProperty(
+        name="Revision Author",
+        description="SVN username of the revision author",
+        get = make_getter_func("revision_author", ""),
+        set = make_setter_func_readonly("revision_author")
+    )
+    commit_message: StringProperty(
+        name = "Commit Message",
+        description="Commit message written by the commit author to describe the changes in this revision",
+        get = make_getter_func("commit_message", ""),
+        set = make_setter_func_readonly("commit_message")
+    )
+
+
 class SVN_file(bpy.types.PropertyGroup):
     """Property Group that can represent a version of a File in an SVN repository."""
 
@@ -309,6 +338,8 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
     external_files_active_index: bpy.props.IntProperty()
 
+    svn_log: bpy.props.CollectionProperty(type=SVN_log)
+    svn_log_active_index: bpy.props.IntProperty()
 
 @bpy.app.handlers.persistent
 def check_for_local_changes(scene):
@@ -320,7 +351,7 @@ def check_for_local_changes(scene):
 
 # ----------------REGISTER--------------.
 
-registry = [SVN_file, SVN_scene_properties]
+registry = [SVN_file, SVN_log, SVN_scene_properties]
 
 def register() -> None:
     # Scene Properties.

@@ -41,7 +41,6 @@ class SVN_UL_file_list(bpy.types.UIList):
             raise NotImplemented
 
         file_entry = item
-        prefs = get_addon_prefs(context)
 
         row = layout.row()
         extension = file_entry.name.split(".")[-1] if "." in file_entry.name else ""
@@ -85,7 +84,6 @@ class SVN_UL_file_list(bpy.types.UIList):
 
         if ops:
             for op in ops:
-                op.svn_root_abs_path = prefs.svn_directory
                 op.file_rel_path = file_entry.svn_relative_path
 
     @classmethod
@@ -157,11 +155,9 @@ class SVN_MT_context_menu(bpy.types.Menu):
 
     def draw(self, context):
         layout = self.layout
-        prefs = get_addon_prefs(context)
 
         layout.operator("svn.check_for_local_changes", icon='FILE_REFRESH')
-        cleanup = layout.operator("svn.cleanup", icon='BRUSH_DATA')
-        cleanup.svn_root_abs_path = prefs.svn_directory
+        layout.operator("svn.cleanup", icon='BRUSH_DATA')
         layout.operator("svn.update_log", icon="TEXT")
 
 
@@ -197,15 +193,11 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
             "external_files_active_index",
         )
 
-        prefs = get_addon_prefs(context)
-
         col = row.column()
-        check_up = col.operator("svn.check_for_updates", icon='URL', text="")
-        check_up.svn_root_abs_path = prefs.svn_directory
+        col.operator("svn.check_for_updates", icon='URL', text="")
 
         col.separator()
-        up = col.operator("svn.update_all", icon='IMPORT', text="")
-        up.svn_root_abs_path = prefs.svn_directory
+        col.operator("svn.update_all", icon='IMPORT', text="")
         col.operator("svn.commit", icon='CHECKMARK', text="")
 
         col.separator()

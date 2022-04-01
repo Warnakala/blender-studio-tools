@@ -128,20 +128,19 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
     )
     revision_date: StringProperty(
         name="Revision Date",
-        default="",
         description="Date when the current revision was committed",
         get = make_getter_func("revision_date", ""),
         set = make_setter_func_readonly("revision_date")
     )
     revision_author: StringProperty(
         name="Revision Author",
-        default="",
         description="SVN username of the revision author",
         get = make_getter_func("revision_author", ""),
         set = make_setter_func_readonly("revision_author")
     )
 
     def reset(self):
+        """We must use dictionary syntax to avoid the setter callback."""
         self['svn_directory'] = ""
         self['svn_url'] = ""
         self['relative_filepath'] = ""
