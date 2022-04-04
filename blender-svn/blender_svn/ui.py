@@ -132,13 +132,13 @@ class SVN_UL_file_list(bpy.types.UIList):
         if not flt_flags:
             flt_flags = [cls.UILST_FLT_ITEM] * len(list_items)
 
-        if not prefs.include_normal:
-            for i, item in enumerate(list_items):
-                flt_flags[i] *= int(item.status != "normal")
-
-        if not prefs.include_entire_repo:
+        if prefs.only_referenced_files:
             for i, item in enumerate(list_items):
                 flt_flags[i] *= int(item.is_referenced)
+
+        if not prefs.only_referenced_files or not prefs.include_normal:
+            for i, item in enumerate(list_items):
+                flt_flags[i] *= int(item.status != "normal")
 
         return flt_flags, flt_neworder
 
@@ -169,8 +169,10 @@ class SVN_UL_file_list(bpy.types.UIList):
         row = main_row.row(align=True)
         row.use_property_split=True
         row.use_property_decorate=False
-        row.prop(prefs, 'include_normal', toggle=True, text="", icon="CHECKMARK")
-        row.prop(prefs, 'include_entire_repo', toggle=True, text="", icon='DISK_DRIVE')
+        row.prop(prefs, 'only_referenced_files', toggle=True, text="", icon='APPEND_BLEND')
+        col = row.column(align=True)
+        col.enabled = prefs.only_referenced_files
+        col.prop(prefs, 'include_normal', toggle=True, text="", icon="CHECKMARK")
 
 
 class SVN_MT_context_menu(bpy.types.Menu):

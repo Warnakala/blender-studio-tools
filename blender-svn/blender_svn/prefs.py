@@ -85,9 +85,9 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         default = False,
         update = update_filters
     )
-    include_entire_repo: BoolProperty(
-        name = "Show All Files",
-        description = "Include all modified files in the repository, even if they are not referenced by this .blend file",
+    only_referenced_files: BoolProperty(
+        name = "Only Referenced Files",
+        description = "Only show modified files referenced by this .blend file, rather than the entire repository",
         default = False,
         update = update_filters
     )
