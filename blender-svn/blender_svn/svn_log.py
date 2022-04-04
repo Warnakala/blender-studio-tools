@@ -141,6 +141,41 @@ class SVN_UL_log(bpy.types.UIList):
         commit_msg = commit_msg[:60]+".." if len(commit_msg) > 62 else commit_msg
         msg.label(text=commit_msg)
 
+    def filter_items(self, context, data, propname):
+        """Default filtering functionality:
+            - Filter by name
+            - Invert filter
+            - Sort alphabetical by name
+        """
+        flt_flags = []
+        flt_neworder = []
+        list_items = getattr(data, propname)
+
+        helper_funcs = bpy.types.UI_UL_list
+
+        # if self.use_filter_sort_alpha:
+        #     flt_neworder = helper_funcs.sort_items_by_name(list_items, "name")
+
+        # if self.filter_name:
+        #     flt_flags = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, list_items, "name",
+        #                                                     reverse=self.use_filter_sort_reverse)
+
+        if not flt_flags:
+            # Start off with all entries being filtered out.
+            flt_flags = [0] * len(list_items)
+
+        svn = context.scene.svn
+        active_file = svn.external_files[svn.external_files_active_index]
+        for idx, log_entry in enumerate(svn.log):
+            for affected_file in log_entry.changed_files:
+                if affected_file.svn_path == "/"+active_file.svn_path:
+                    # If the active file is one of the files affected by this log
+                    # entry, show it in the list.
+                    flt_flags[idx] = self.bitflag_filter_item
+                    break
+    
+        return flt_flags, flt_neworder
+
 
 class VIEW3D_PT_svn_log(bpy.types.Panel):
     """Display the revision history of the selected file."""
@@ -149,6 +184,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
     bl_category = 'SVN'
     bl_label = 'Revision History'
     bl_parent_id = "VIEW3D_PT_svn_files"
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -175,9 +211,10 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         )
 
         active_log = context.scene.svn.log[context.scene.svn.log_active_index]
-        layout.prop(active_log, 'revision_number')
-        layout.prop(active_log, 'revision_date')
-        layout.prop(active_log, 'revision_author')
+        col = layout.column(align=True)
+        col.prop(active_log, 'revision_number', emboss=False)
+        col.prop(active_log, 'revision_date', emboss=False)
+        col.prop(active_log, 'revision_author', emboss=False)
 
 
 def read_svn_log_file(context, filepath: Path):
@@ -206,11 +243,15 @@ def read_svn_log_file(context, filepath: Path):
             chunk.append(line)
 
     for chunk in chunks:
-        r_number, r_author, r_date, _r_msg_length = chunk[0].split(" | ")
+        # Read the first line of the svn log containing revision number, author,
+        # date and commit message length.
+        r_number, r_author, r_date, r_msg_length = chunk[0].split(" | ")
+        r_number = int(r_number[1:])
+        r_msg_length = int(r_msg_length.split(" ")[0])
         date, time, _timezone, _day, _n_day, _mo, _y = r_date.split(" ")
 
         log_entry = svn.log.add()
-        log_entry['revision_number'] = int(r_number[1:])
+        log_entry['revision_number'] = r_number
         log_entry['revision_author'] = r_author
 
         rev_datetime = datetime.strptime(f"{date} {time}", '%Y-%m-%d %H:%M:%S')
@@ -219,7 +260,20 @@ def read_svn_log_file(context, filepath: Path):
         time_str = f"{str(rev_datetime.hour).zfill(2)}:{str(rev_datetime.minute).zfill(2)}"
 
         log_entry['revision_date'] = date_str + " " + time_str
-        log_entry['commit_message'] = "\n".join(chunk[1:])
+
+        # File change set is on line 3 until the commit message begins...
+        file_change_lines = chunk[2:-r_msg_length]
+        for line in file_change_lines:
+            status_char = line[3]
+            file_path = line[5:]
+
+            log_file_entry = log_entry.changed_files.add()
+            log_file_entry['svn_path'] = file_path
+            log_file_entry['revision'] = r_number
+            log_file_entry['name'] = Path(file_path).name
+            log_file_entry.status = svn_status.SVN_STATUS_CHAR[status_char]
+
+        log_entry['commit_message'] = "\n".join(chunk[-r_msg_length:])
 
 
 class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
@@ -229,6 +283,7 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     missing_file_allowed = True
+    MAX_REVS_TO_DOWNLOAD = 100  # SVN log is so slow that I'd rather not wait for 1500 entry logs in one go right now while Blender UI is left frozen.
 
     def execute(self, context):
         # Create the log file if it doesn't already exist.
@@ -252,10 +307,11 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
             return {'CANCELLED'}
 
         num_logs_to_get = current_rev - latest_log_rev
-        if num_logs_to_get > 50:
+        if num_logs_to_get > self.MAX_REVS_TO_DOWNLOAD:
             # Do some clamping here while testing. TODO: remove later!
-            num_logs_to_get = 50
+            num_logs_to_get = self.MAX_REVS_TO_DOWNLOAD
 
+        goal_rev = latest_log_rev + num_logs_to_get
         goal_rev = current_rev + num_logs_to_get
         new_log = self.execute_svn_command(context, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")
 

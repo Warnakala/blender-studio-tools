@@ -41,7 +41,7 @@ class VIEW3D_PT_svn(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        col = layout.column()
+        col = layout.column(align=True)
 
         col.prop(prefs, 'svn_url', emboss=False)
         col.prop(prefs, 'svn_directory', emboss=False)

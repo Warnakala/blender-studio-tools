@@ -55,6 +55,14 @@ class SVN_Operator:
             'utf-8'
         )
 
+    def execute_svn_command_nofreeze(self, context, command: str) -> subprocess.Popen:
+        """Execute an svn command in the root of the current svn repository using
+        Popen(), which avoids freezing the Blender UI.
+        """
+        return subprocess.Popen(
+            (command), shell=True, cwd=self.get_svn_root_path(context)+"/"
+        ),
+
 class SVN_Operator_Single_File(SVN_Operator):
     """Base class for SVN operators operating on a single file."""
     file_rel_path: StringProperty()
