@@ -133,7 +133,7 @@ class SVN_explain_status(bpy.types.Operator):
     status: StringProperty(
         description = "Identifier of the status to show an explanation for"
     )
-    filepath: StringProperty(
+    file_rel_path: StringProperty(
         description = "Path of the file to select in the list when clicking this explanation, to act as if it was click-through-able"
     )
 
@@ -150,7 +150,7 @@ class SVN_explain_status(bpy.types.Operator):
 
     def execute(self, context):
         for i, f in enumerate(context.scene.svn.external_files):
-            if f.path_str == self.filepath:
+            if f.svn_path == self.file_rel_path:
                 context.scene.svn.external_files_active_index = i
         return {'FINISHED'}
 

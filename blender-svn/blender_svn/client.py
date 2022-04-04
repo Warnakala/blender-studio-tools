@@ -43,8 +43,15 @@ LOCAL_CLIENT: LocalClient = None
 
 def get_local_client():
     global LOCAL_CLIENT
-    prefs = get_addon_prefs()
-    if not LOCAL_CLIENT:
+    prefs = get_addon_prefs(bpy.context)
+
+    if not bpy.data.filepath:
+        prefs.reset()
+        LOCAL_CLIENT = None
+        return
+
+    if not LOCAL_CLIENT and prefs.svn_directory:
+        # TODO: Not sure when this might happen, maybe this should be removed.
         LOCAL_CLIENT = LocalClient(prefs.svn_directory)
 
     return LOCAL_CLIENT
@@ -53,16 +60,18 @@ def get_local_client():
 def init_local_client(context, dummy):
     """Attempt to initialize an SVN LocalClient object when opening a .blend file."""
     global LOCAL_CLIENT
+    LOCAL_CLIENT = None
 
     if not context:
         context = bpy.context
 
+    prefs = get_addon_prefs(context)
     if not bpy.data.filepath:
+        prefs.reset()
         return
 
     file_client = LocalClient(bpy.data.filepath)
     logger.info("SVN client done: %s", LOCAL_CLIENT)
-    prefs = get_addon_prefs(context)
 
     try:
         info = file_client.info()

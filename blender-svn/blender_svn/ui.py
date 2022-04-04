@@ -84,7 +84,7 @@ class SVN_UL_file_list(bpy.types.UIList):
         split = row.split(factor=0.2)
         explainer = split.operator('svn.explain_status', text="", icon=file_entry.status_icon)
         explainer.status = file_entry.status
-        explainer.filepath = file_entry.path_str
+        explainer.file_rel_path = file_entry.svn_path
 
         row = split.row(align=True)
         row.alignment = 'RIGHT'
@@ -107,7 +107,7 @@ class SVN_UL_file_list(bpy.types.UIList):
 
         if ops:
             for op in ops:
-                op.file_rel_path = file_entry.svn_relative_path
+                op.file_rel_path = file_entry.svn_path
 
     @classmethod
     def cls_filter_items(cls, context, data, propname):
@@ -232,7 +232,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         if not any_visible:
             return
 
-        layout.prop(active_file, 'path_str')
+        layout.prop(active_file, 'svn_path')
         layout.prop(active_file, 'revision')
 
 

@@ -34,8 +34,6 @@ def redraw_ui() -> None:
 
 
 def get_addon_prefs(context: bpy.types.Context=None) -> bpy.types.AddonPreferences:
-    if not context:
-        context = bpy.context
     return context.preferences.addons[__package__].preferences
 
 def make_setter_func_readonly(prop: str) -> Callable:

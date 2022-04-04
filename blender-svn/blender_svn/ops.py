@@ -184,7 +184,7 @@ class SVN_update_single(SVN_Operator_Single_File, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn up "{self.file_rel_path}"')
         # Remove the file entry for this file
-        context.scene.svn.remove_by_path(str(self.get_file_full_path(context)))
+        context.scene.svn.remove_by_rel_path(self.file_rel_path)
 
         return {"FINISHED"}
 
@@ -345,10 +345,10 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         report = f"{(len(files_to_commit))} files."
         if len(files_to_commit) == 1:
-            report = files_to_commit[0].svn_relative_path
+            report = files_to_commit[0].svn_path
         print(f"Committing {report}")
 
-        filepaths = " ".join([f'"{f.svn_relative_path}"' for f in files_to_commit])
+        filepaths = " ".join([f'"{f.svn_path}"' for f in files_to_commit])
 
         self.execute_svn_command(context, f'svn commit -m "{commit_message}" {filepaths}')
 

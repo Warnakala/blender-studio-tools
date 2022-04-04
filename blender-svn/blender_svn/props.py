@@ -24,6 +24,8 @@ from typing import Optional, Dict, Any, List, Tuple, Set
 from collections import OrderedDict
 from pathlib import Path
 
+from blender_svn.util import get_addon_prefs
+
 import bpy, logging
 from . import client, prefs
 from .svn_log import SVN_log, SVN_file
@@ -72,10 +74,10 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             if file_entry.status == "none":
                 self.external_files.remove(i)
 
-    def remove_by_path(self, path_to_remove: str):
+    def remove_by_svn_path(self, path_to_remove: str):
         """Remove a file entry from the file list, based on its filepath."""
         for i, file_entry in enumerate(self.external_files):
-            filepath = file_entry.path_str
+            filepath = file_entry.svn_path
             if filepath == path_to_remove:
                 self.external_files.remove(i)
                 return
@@ -84,6 +86,10 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         """Update the status of file entries by checking for changes in the
         local repository."""
 
+        local_client = client.get_local_client()
+        if not local_client:
+            return
+
         # Remove all files from the list except the ones with the Outdated status.
         for i, file_entry in reversed(list(enumerate(self.external_files))):
             if file_entry.status != "none":
@@ -91,8 +97,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
         files: Set[Path] = self.get_referenced_filepaths()
         files.add(Path(bpy.data.filepath))
-
-        local_client = client.get_local_client()
 
         # Calls `svn status` to get a list of files that have been added, modified, etc.
         # Match each file name with a tuple that is the modification type and revision number.
@@ -110,7 +114,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             if str(f) in statuses:
                 status = statuses[str(f)]
                 del statuses[str(f)]
-            file_entry = self.add_file_entry(f, status, is_referenced=True)
+            file_entry = self.add_file_entry(f, status[0], status[1], is_referenced=True)
 
         # Add file entries in the entire SVN repository for files whose status isn't
         # normal. Do this even for files not referenced by this .blend file.
@@ -119,20 +123,26 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         
         prefs.force_good_active_index(bpy.context)
 
+    @staticmethod
+    def absolute_to_svn_path(absolute_path: Path) -> Path:
+        prefs = get_addon_prefs(bpy.context)
+        svn_dir = Path(prefs.svn_directory)
+        return absolute_path.relative_to(svn_dir)
+
+
     def add_file_entry(
-        self, path: Path, status: Tuple[str, int], is_referenced=False
+        self, path: Path, status: str, rev: int, is_referenced=False
     ) -> SVN_file:
-        # Add item.
         item = self.external_files.add()
 
         # Set collection property.
-        item['path_str'] = path.as_posix()
+        item['svn_path'] = str(self.absolute_to_svn_path(path))
         item['name'] = path.name
 
         if status:
-            item['status'] = status[0]
+            item['status'] = status
             if status[1]:
-                item['revision'] = status[1]
+                item['revision'] = rev
 
         # Prevent editing values in the UI.
         item['is_referenced'] = is_referenced

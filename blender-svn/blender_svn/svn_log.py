@@ -37,12 +37,12 @@ class SVN_file(bpy.types.PropertyGroup):
         get=make_getter_func("name", ""),
         set=make_setter_func_readonly("name"),
     )
-    path_str: StringProperty(
-        name="Absolute Path",
-        description="Absolute file path",
+    svn_path: StringProperty(
+        name = "SVN Path",
+        description="Filepath relative to the SVN root",
         subtype="FILE_PATH",
-        get=make_getter_func("path_str", ""),
-        set=make_setter_func_readonly("path_str"),
+        get=make_getter_func("svn_path", ""),
+        set=make_setter_func_readonly("svn_path"),
     )
     status: EnumProperty(
         name="Status",
@@ -63,11 +63,6 @@ class SVN_file(bpy.types.PropertyGroup):
         default=False,
     )
 
-    @property
-    def path(self) -> Optional[Path]:
-        if not self.path_str:
-            return None
-        return Path(self.path_str)
 
     @property
     def status_icon(self) -> str:
@@ -78,11 +73,6 @@ class SVN_file(bpy.types.PropertyGroup):
         if self.status == 'none':
             return 'Outdated'
         return self.status.title()
-
-    @property
-    def svn_relative_path(self) -> str:
-        prefs = get_addon_prefs(bpy.context)
-        return self.path_str.replace(prefs.svn_directory, "")[1:]
 
 
 class SVN_log(bpy.types.PropertyGroup):
