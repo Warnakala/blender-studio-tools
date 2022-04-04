@@ -192,7 +192,9 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
         svn = self.get_svn_data(context)
         prefs = get_addon_prefs(context)
         current_rev = prefs.revision_number
-        latest_log_rev = svn.log[-1].revision_number
+        latest_log_rev = 0
+        if len(svn.log) > 0:
+            latest_log_rev = svn.log[-1].revision_number
 
         if latest_log_rev >= current_rev:
             self.report({'INFO'}, "Log is already up to date, cancelling.")

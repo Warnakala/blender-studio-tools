@@ -106,34 +106,26 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         either directly or indirectly by this .blend file, as a flat list.
 
         This uses the Blender Asset Tracer, so we rely on that to catch everything;
-        Images, video files, mesh sequence caches, blender libraries, everything.
+        Images, video files, mesh sequence caches, blender libraries, etc.
 
-        Deleted files are not handled here; They are grabbed with PySVN instead, for the entire repository.
-        The returned list also does not include the currently opened .blend file itself.
+        Deleted files are not handled here; They are grabbed with PySVN instead, 
+        for the entire repository. The returned list also does not include the 
+        currently opened .blend file itself.
         """
+        if not bpy.data.filepath:
+            return set()
+
         bpath = Path(bpy.data.filepath)
+        assert bpath.is_file(), f"{bpy.data.filepath!r} is not a file"
 
         reported_assets: Set[Path] = set()
-        last_reported_bfile = None
-        shorten = functools.partial(cli.common.shorten, Path.cwd())
 
         for usage in trace.deps(bpath):
-            files = [f for f in usage.files()]
-
-            # Path of the blend file that references this BlockUsage.
-            blend_path = usage.block.bfile.filepath.absolute()
-            # if blend_path != last_reported_bfile:
-            # print(shorten(blend_path))
-
-            last_reported_bfile = blend_path
-
             for assetpath in usage.files():
-                # assetpath = bpathlib.make_absolute(assetpath)
                 if assetpath in reported_assets:
                     logger.debug("Already reported %s", assetpath)
                     continue
 
-                # print("   ", shorten(assetpath))
                 reported_assets.add(assetpath)
 
         return reported_assets
