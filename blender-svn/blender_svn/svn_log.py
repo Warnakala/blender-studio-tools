@@ -280,9 +280,9 @@ def read_svn_log_file(context, filepath: Path):
         log_entry['commit_message'] = "\n".join(chunk[-r_msg_length:])
 
 
-class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
-    bl_idname = "svn.update_log"
-    bl_label = "Update SVN Log"
+class SVN_fetch_log(SVN_Operator_Single_File, bpy.types.Operator):
+    bl_idname = "svn.fetch_log"
+    bl_label = "Fetch SVN Log"
     bl_description = "Update the SVN Log file with new log entries grabbed from the remote repository"
     bl_options = {'INTERNAL'}
 
@@ -310,7 +310,7 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
             return {'CANCELLED'}
 
         self.popen = None
-        self.report({'INFO'}, "Begin updating SVN log, this may take a while...")
+        self.report({'INFO'}, "Begin updating SVN log, this may take a while. Autosave is now disabled! Click the button again to cancel.")
         svn.log_update_in_progress = True
         svn.log_update_cancel_flag = False
         context.window_manager.modal_handler_add(self)
@@ -381,10 +381,10 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
-class SVN_update_log_cancel(bpy.types.Operator):
-    bl_idname = "svn.update_log_cancel"
-    bl_label = "Cancel Updating SVN Log"
-    bl_description = "Cancel the background process of updating the SVN log"
+class SVN_fetch_log_cancel(bpy.types.Operator):
+    bl_idname = "svn.fetch_log_cancel"
+    bl_label = "Cancel Fetching SVN Log"
+    bl_description = "Cancel the background process of fetching the SVN log"
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
@@ -403,4 +403,4 @@ class VIEW3D_PT_svn_log_files(bpy.types.Panel):
 
 
 
-registry = [SVN_file, SVN_log, VIEW3D_PT_svn_log, SVN_UL_log, SVN_update_log, SVN_update_log_cancel]
+registry = [SVN_file, SVN_log, VIEW3D_PT_svn_log, SVN_UL_log, SVN_fetch_log, SVN_fetch_log_cancel]
