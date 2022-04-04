@@ -23,10 +23,67 @@ from pathlib import Path
 from datetime import datetime
 
 import bpy
-from bpy.props import IntProperty, StringProperty
+from bpy.props import IntProperty, StringProperty, CollectionProperty, BoolProperty, EnumProperty
 from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly
+from . import svn_status
 
 from .ops import SVN_Operator_Single_File
+
+class SVN_file(bpy.types.PropertyGroup):
+    """Property Group that can represent a version of a File in an SVN repository."""
+
+    name: StringProperty(
+        name="File Name",
+        get=make_getter_func("name", ""),
+        set=make_setter_func_readonly("name"),
+    )
+    path_str: StringProperty(
+        name="Absolute Path",
+        description="Absolute file path",
+        subtype="FILE_PATH",
+        get=make_getter_func("path_str", ""),
+        set=make_setter_func_readonly("path_str"),
+    )
+    status: EnumProperty(
+        name="Status",
+        items=svn_status.ENUM_SVN_STATUS,
+        default="normal",
+        # get=make_getter_func("status", "normal"),
+        set=make_setter_func_readonly("status"),
+    )
+    revision: IntProperty(
+        name="Revision",
+        description="Revision number",
+        get=make_getter_func("revision", 0),
+        set=make_setter_func_readonly("revision"),
+    )
+    is_referenced: BoolProperty(
+        name="Is Referenced",
+        description="True when this file is referenced by this .blend file either directly or indirectly. Flag used for list filtering",
+        default=False,
+    )
+
+    @property
+    def path(self) -> Optional[Path]:
+        if not self.path_str:
+            return None
+        return Path(self.path_str)
+
+    @property
+    def status_icon(self) -> str:
+        return svn_status.SVN_STATUS_DATA[self.status][0]
+
+    @property
+    def status_name(self) -> str:
+        if self.status == 'none':
+            return 'Outdated'
+        return self.status.title()
+
+    @property
+    def svn_relative_path(self) -> str:
+        prefs = get_addon_prefs(bpy.context)
+        return self.path_str.replace(prefs.svn_directory, "")[1:]
+
 
 class SVN_log(bpy.types.PropertyGroup):
     """Property Group that can represent an SVN log entry."""
@@ -54,6 +111,12 @@ class SVN_log(bpy.types.PropertyGroup):
         description="Commit message written by the commit author to describe the changes in this revision",
         get = make_getter_func("commit_message", ""),
         set = make_setter_func_readonly("commit_message")
+    )
+
+    changed_files: CollectionProperty(
+        type = SVN_file,
+        name = "Changed Files",
+        description = "List of file paths relative to the SVN root that were affected by this revision"
     )
 
 
@@ -200,7 +263,13 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
             self.report({'INFO'}, "Log is already up to date, cancelling.")
             return {'CANCELLED'}
 
-        new_log = self.execute_svn_command(context, f"svn log -r {latest_log_rev+1}:{current_rev}")
+        num_logs_to_get = current_rev - latest_log_rev
+        if num_logs_to_get > 50:
+            # Do some clamping here while testing. TODO: remove later!
+            num_logs_to_get = 50
+
+        goal_rev = current_rev + num_logs_to_get
+        new_log = self.execute_svn_command(context, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")
 
         with open(filepath, 'a+') as f:
             if file_existed:
@@ -217,4 +286,4 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
 
         return {'FINISHED'}
 
-registry = [SVN_log, VIEW3D_PT_svn_log, SVN_UL_log, SVN_update_log]
+registry = [SVN_file, SVN_log, VIEW3D_PT_svn_log, SVN_UL_log, SVN_update_log]

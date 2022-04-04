@@ -24,77 +24,13 @@ from typing import Optional, Dict, Any, List, Tuple, Set
 from collections import OrderedDict
 from pathlib import Path
 
-import bpy, functools, logging
-from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty
+import bpy, logging
+from . import client, prefs
+from .svn_log import SVN_log, SVN_file
 
-from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly
-from . import client, prefs, svn_status
-from .svn_log import SVN_log
-
-from blender_asset_tracer import cli, trace
+from blender_asset_tracer import trace
 
 logger = logging.getLogger("SVN")
-
-
-class SVN_file(bpy.types.PropertyGroup):
-    """Property Group that can represent a version of a File in an SVN repository."""
-
-    lock: BoolProperty(
-        name="Lock Editing",
-        description="Flag used to keep the properties read-only without graying them out in the UI. Purely for aesthetic purpose",
-        default=False,
-    )
-    name: StringProperty(
-        name="File Name",
-        get=make_getter_func("name", ""),
-        set=make_setter_func_readonly("name"),
-    )
-    path_str: StringProperty(
-        name="Absolute Path",
-        description="Absolute file path",
-        subtype="FILE_PATH",
-        get=make_getter_func("path_str", ""),
-        set=make_setter_func_readonly("path_str"),
-    )
-    status: EnumProperty(
-        name="Status",
-        items=svn_status.ENUM_SVN_STATUS,
-        default="normal",
-        get=make_getter_func("status", 10),
-        set=make_setter_func_readonly("status"),
-    )
-    revision: IntProperty(
-        name="Revision",
-        description="Revision number",
-        get=make_getter_func("revision", 0),
-        set=make_setter_func_readonly("revision"),
-    )
-    is_referenced: BoolProperty(
-        name="Is Referenced",
-        description="True when this file is referenced by this .blend file either directly or indirectly. Flag used for list filtering",
-        default=False,
-    )
-
-    @property
-    def path(self) -> Optional[Path]:
-        if not self.path_str:
-            return None
-        return Path(self.path_str)
-
-    @property
-    def status_icon(self) -> str:
-        return svn_status.SVN_STATUS_DATA[self.status][0]
-
-    @property
-    def status_name(self) -> str:
-        if self.status == 'none':
-            return 'Outdated'
-        return self.status.title()
-
-    @property
-    def svn_relative_path(self) -> str:
-        prefs = get_addon_prefs(bpy.context)
-        return self.path_str.replace(prefs.svn_directory, "")[1:]
 
 
 class SVN_scene_properties(bpy.types.PropertyGroup):
@@ -190,17 +126,16 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         item = self.external_files.add()
 
         # Set collection property.
-        item.path_str = path.as_posix()
-        item.name = path.name
+        item['path_str'] = path.as_posix()
+        item['name'] = path.name
 
         if status:
-            item.status = status[0]
+            item['status'] = status[0]
             if status[1]:
-                item.revision = status[1]
+                item['revision'] = status[1]
 
         # Prevent editing values in the UI.
-        item.lock = True
-        item.is_referenced = is_referenced
+        item['is_referenced'] = is_referenced
         return item
 
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
@@ -220,7 +155,7 @@ def check_for_local_changes(scene):
 
 # ----------------REGISTER--------------.
 
-registry = [SVN_file, SVN_scene_properties]
+registry = [SVN_scene_properties]
 
 def register() -> None:
     # Scene Properties.
