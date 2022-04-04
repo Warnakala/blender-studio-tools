@@ -154,6 +154,11 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
     external_files_active_index: bpy.props.IntProperty()
 
+    def get_log_by_revision(self, revision: int) -> Tuple[int, SVN_log]:
+        for i, log in enumerate(self.log):
+            if log.revision_number == revision:
+                return i, log
+
     log: bpy.props.CollectionProperty(type=SVN_log)
     log_active_index: bpy.props.IntProperty()
 

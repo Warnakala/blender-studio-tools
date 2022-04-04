@@ -109,7 +109,7 @@ class SVN_log(bpy.types.PropertyGroup):
 
 
 def layout_log_split(layout):
-    main = layout.split(factor=0.2)
+    main = layout.split(factor=0.4)
     num_and_auth = main.row()
     date_and_msg = main.row()
     
@@ -117,7 +117,7 @@ def layout_log_split(layout):
     num = num_and_auth_split.row()
     auth = num_and_auth_split.row()
 
-    date_and_msg_split = date_and_msg.split(factor=0.2)
+    date_and_msg_split = date_and_msg.split(factor=0.3)
     date = date_and_msg_split.row()
     msg = date_and_msg_split.row()
 
@@ -138,8 +138,9 @@ class SVN_UL_log(bpy.types.UIList):
         date.label(text=log_entry.revision_date.split(" ")[0][5:])
 
         commit_msg = log_entry.commit_message
-        commit_msg = commit_msg[:60]+".." if len(commit_msg) > 62 else commit_msg
-        msg.label(text=commit_msg)
+        commit_msg = commit_msg.split("\n")[0] if "\n" in commit_msg else commit_msg
+        msg.alignment = 'LEFT'
+        msg.operator("svn.display_commit_message", text=commit_msg, emboss=False).log_rev=log_entry.revision_number
 
     def filter_items(self, context, data, propname):
         """Default filtering functionality:
@@ -402,5 +403,25 @@ class VIEW3D_PT_svn_log_files(bpy.types.Panel):
     bl_options = {'DEFAULT_CLOSED'}
 
 
+class SVN_show_commit_message(bpy.types.Operator):
+    bl_idname = "svn.display_commit_message"
+    bl_label = "" # Don't want the first line of the tooltip on mouse hover.
+    bl_description = "Show the currently active commit, using a dynamic tooltip"
+    bl_options = {'INTERNAL'}
 
-registry = [SVN_file, SVN_log, VIEW3D_PT_svn_log, SVN_UL_log, SVN_fetch_log, SVN_fetch_log_cancel]
+    popup_width = 600
+
+    log_rev: IntProperty(
+        description = "Revision number of the log entry to show in the tooltip"
+    )
+
+    @classmethod
+    def description(cls, context, properties):
+        log_entry = context.scene.svn.get_log_by_revision(properties.log_rev)[1]
+        return log_entry.commit_message
+
+    def execute(self, context):
+        context.scene.svn.log_active_index = context.scene.svn.get_log_by_revision(self.log_rev)[0]
+        return {'FINISHED'}
+
+registry = [SVN_file, SVN_log, VIEW3D_PT_svn_log, SVN_UL_log, SVN_fetch_log, SVN_fetch_log_cancel, SVN_show_commit_message]
