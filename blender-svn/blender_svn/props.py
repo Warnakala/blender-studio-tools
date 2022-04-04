@@ -139,10 +139,8 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         item['svn_path'] = str(self.absolute_to_svn_path(path))
         item['name'] = path.name
 
-        if status:
-            item['status'] = status
-            if status[1]:
-                item['revision'] = rev
+        item.status = status
+        item['revision'] = rev
 
         # Prevent editing values in the UI.
         item['is_referenced'] = is_referenced

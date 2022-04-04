@@ -48,8 +48,6 @@ class SVN_file(bpy.types.PropertyGroup):
         name="Status",
         items=svn_status.ENUM_SVN_STATUS,
         default="normal",
-        # get=make_getter_func("status", "normal"),
-        set=make_setter_func_readonly("status"),
     )
     revision: IntProperty(
         name="Revision",
