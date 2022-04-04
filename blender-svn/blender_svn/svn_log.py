@@ -242,11 +242,15 @@ def read_svn_log_file(context, filepath: Path):
                 continue
             chunk.append(line)
 
+    previous_rev_number = 0
     for chunk in chunks:
         # Read the first line of the svn log containing revision number, author,
         # date and commit message length.
         r_number, r_author, r_date, r_msg_length = chunk[0].split(" | ")
         r_number = int(r_number[1:])
+        assert r_number == previous_rev_number+1, f"Revision order seems wrong at r{r_number}"
+        previous_rev_number = r_number
+
         r_msg_length = int(r_msg_length.split(" ")[0])
         date, time, _timezone, _day, _n_day, _mo, _y = r_date.split(" ")
 
@@ -283,19 +287,18 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     missing_file_allowed = True
-    MAX_REVS_TO_DOWNLOAD = 100  # SVN log is so slow that I'd rather not wait for 1500 entry logs in one go right now while Blender UI is left frozen.
+    MAX_REVS_TO_DOWNLOAD = 10  # Number of revisions to download before writing to the file and the console. Bigger number means fewer "checkpoints" in case the process gets cancelled.
 
-    def execute(self, context):
-        # Create the log file if it doesn't already exist.
-        self.file_rel_path = ".svn/svn.log"
-        filepath = self.get_file_full_path(context)
-
-        file_existed = False
-        if filepath.exists():
-            file_existed = True
-            read_svn_log_file(context, filepath)
+    def invoke(self, context, _event):
+        """We want to use a modal operator to wait for the SVN process in the 
+        background to finish. And once it's finished, we want to move on to 
+        execute()."""
 
         svn = self.get_svn_data(context)
+        if svn.log_update_in_progress:
+            self.report({'ERROR'}, "An SVN Log process is already running!")
+            return {'CANCELLED'}
+
         prefs = get_addon_prefs(context)
         current_rev = prefs.revision_number
         latest_log_rev = 0
@@ -306,18 +309,65 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
             self.report({'INFO'}, "Log is already up to date, cancelling.")
             return {'CANCELLED'}
 
-        num_logs_to_get = current_rev - latest_log_rev
-        if num_logs_to_get > self.MAX_REVS_TO_DOWNLOAD:
-            # Do some clamping here while testing. TODO: remove later!
-            num_logs_to_get = self.MAX_REVS_TO_DOWNLOAD
+        self.popen = None
+        self.report({'INFO'}, "Begin updating SVN log, this may take a while...")
+        svn.log_update_in_progress = True
+        svn.log_update_cancel_flag = False
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
 
-        goal_rev = latest_log_rev + num_logs_to_get
-        goal_rev = current_rev + num_logs_to_get
-        new_log = self.execute_svn_command(context, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")
+    def modal(self, context, _event):
+        prefs = get_addon_prefs(context)
+        current_rev = prefs.revision_number
+        svn = self.get_svn_data(context)
 
+        if svn.log_update_cancel_flag:
+            self.report({'INFO'}, "Log update cancelled.")
+            svn.log_update_cancel_flag = False
+            svn.log_update_in_progress = False
+            return {'FINISHED'}
+
+        latest_log_rev = 0
+        if len(svn.log) > 0:
+            latest_log_rev = svn.log[-1].revision_number
+
+        if self.popen is None:
+            # Start a sub-process.
+            num_logs_to_get = current_rev - latest_log_rev
+            if num_logs_to_get > self.MAX_REVS_TO_DOWNLOAD:
+                # Do some clamping here while testing. TODO: remove once this successfully runs in the background!
+                num_logs_to_get = self.MAX_REVS_TO_DOWNLOAD
+
+            goal_rev = latest_log_rev + num_logs_to_get
+            self.popen = self.execute_svn_command_nofreeze(context, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")[0]
+
+        if self.popen.poll() is None:
+            # Sub-process is not finished yet, do nothing.
+            return {'PASS_THROUGH'}
+
+        # Sub-process has finished running, process it and start another.
+        stdout_data, _stderr_data = self.popen.communicate()
+        self.popen = None
+
+        # Create the log file if it doesn't already exist.
+        self.file_rel_path = ".svn/svn.log"
+        filepath = self.get_file_full_path(context)
+
+        file_existed = False
+        if filepath.exists():
+            file_existed = True
+            read_svn_log_file(context, filepath)
+
+        if latest_log_rev >= current_rev:
+            self.report({'INFO'}, "Finished updating the SVN log!")
+            svn.log_update_in_progress = False
+            return {'FINISHED'}
+
+        new_log = stdout_data.decode()
         with open(filepath, 'a+') as f:
+            # Append to the file, create it if necessary.
             if file_existed:
-                # We want to skip the first line of the svn log when continuing
+                # We want to skip the first line of the svn log when continuing,
                 # to avoid duplicate dashed lines, which would also mess up our
                 # parsing logic.
                 new_log = new_log[73:] # 72 dashes and a newline
@@ -326,8 +376,31 @@ class SVN_update_log(SVN_Operator_Single_File, bpy.types.Operator):
 
         read_svn_log_file(context, filepath)
 
-        self.report({'INFO'}, "Local copy of the SVN log updated.")
+        self.report({'INFO'}, f"SVN Log now at r{context.scene.svn.log[-1].revision_number}")
 
+        return {'RUNNING_MODAL'}
+
+
+class SVN_update_log_cancel(bpy.types.Operator):
+    bl_idname = "svn.update_log_cancel"
+    bl_label = "Cancel Updating SVN Log"
+    bl_description = "Cancel the background process of updating the SVN log"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        context.scene.svn.log_update_cancel_flag = True
         return {'FINISHED'}
 
-registry = [SVN_file, SVN_log, VIEW3D_PT_svn_log, SVN_UL_log, SVN_update_log]
+
+class VIEW3D_PT_svn_log_files(bpy.types.Panel):
+    """Display the files that were affected by the selected revision."""
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'SVN'
+    bl_label = 'Affected Files'
+    bl_parent_id = "VIEW3D_PT_svn_log"
+    bl_options = {'DEFAULT_CLOSED'}
+
+
+
+registry = [SVN_file, SVN_log, VIEW3D_PT_svn_log, SVN_UL_log, SVN_update_log, SVN_update_log_cancel]

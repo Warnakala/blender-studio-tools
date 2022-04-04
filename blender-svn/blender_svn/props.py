@@ -27,6 +27,8 @@ from pathlib import Path
 from blender_svn.util import get_addon_prefs
 
 import bpy, logging
+from bpy.props import BoolProperty
+
 from . import client, prefs
 from .svn_log import SVN_log, SVN_file
 
@@ -119,7 +121,8 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         # Add file entries in the entire SVN repository for files whose status isn't
         # normal. Do this even for files not referenced by this .blend file.
         for f in statuses.keys():
-            file_entry = self.add_file_entry(Path(f), statuses[f])
+            status = statuses[f]
+            file_entry = self.add_file_entry(Path(f), status[0], status[1])
         
         prefs.force_good_active_index(bpy.context)
 
@@ -128,7 +131,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         prefs = get_addon_prefs(bpy.context)
         svn_dir = Path(prefs.svn_directory)
         return absolute_path.relative_to(svn_dir)
-
 
     def add_file_entry(
         self, path: Path, status: str, rev: int, is_referenced=False
@@ -146,6 +148,9 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         item['is_referenced'] = is_referenced
         return item
 
+    log_update_in_progress: BoolProperty(default=False, description="This is set to True when an SVN log update process is running. Can be used for UI code checks and to avoid starting several SVN Log update process in parallel")
+    log_update_cancel_flag: BoolProperty(default=False, description="Set this to True to request cancellation of the SVN log update process")
+
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
     external_files_active_index: bpy.props.IntProperty()
 
@@ -158,6 +163,8 @@ def check_for_local_changes(scene):
     if not scene:
         # When called from save_post() handler, which apparently does not pass context
         scene = bpy.context.scene
+    scene.svn.log_update_in_progress = False
+    scene.svn.log_update_cancel_flag = False
     scene.svn.check_for_local_changes()
 
 

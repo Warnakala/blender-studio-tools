@@ -60,7 +60,7 @@ class SVN_Operator:
         Popen(), which avoids freezing the Blender UI.
         """
         return subprocess.Popen(
-            (command), shell=True, cwd=self.get_svn_root_path(context)+"/"
+            (command), shell=True, cwd=self.get_svn_root_path(context)+"/", stdout=subprocess.PIPE
         ),
 
 class SVN_Operator_Single_File(SVN_Operator):
