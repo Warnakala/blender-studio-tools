@@ -40,7 +40,6 @@ class SVN_file(bpy.types.PropertyGroup):
     svn_path: StringProperty(
         name = "SVN Path",
         description="Filepath relative to the SVN root",
-        subtype="FILE_PATH",
         get=make_getter_func("svn_path", ""),
         set=make_setter_func_readonly("svn_path"),
     )
@@ -139,6 +138,7 @@ class SVN_UL_log(bpy.types.UIList):
 
         commit_msg = log_entry.commit_message
         commit_msg = commit_msg.split("\n")[0] if "\n" in commit_msg else commit_msg
+        # commit_msg = commit_msg[:30]+"..." if len(commit_msg) > 32 else commit_msg
         msg.alignment = 'LEFT'
         msg.operator("svn.display_commit_message", text=commit_msg, emboss=False).log_rev=log_entry.revision_number
 

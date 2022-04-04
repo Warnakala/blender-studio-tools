@@ -22,6 +22,7 @@ import bpy
 from .util import get_addon_prefs
 from .prefs import get_visible_indicies
 
+from bpy.props import BoolProperty
 
 class VIEW3D_PT_svn(bpy.types.Panel):
     """SVN UI panel in the 3D View Sidebar."""
@@ -32,6 +33,7 @@ class VIEW3D_PT_svn(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
+        return False
         prefs = get_addon_prefs(context)
         return prefs.enable_ui and prefs.is_in_repo
 
@@ -53,6 +55,11 @@ class VIEW3D_PT_svn(bpy.types.Panel):
 
 class SVN_UL_file_list(bpy.types.UIList):
     UILST_FLT_ITEM = 1 << 30 # Value that indicates that this item has passed the filter process successfully. See rna_ui.c.
+
+    show_file_paths: BoolProperty(
+        name = "Show File Paths",
+        description = "Show file paths relative to the SVN root, instead of just the file name"
+    )
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         # As long as there are any items, always draw the filters.
@@ -78,7 +85,10 @@ class SVN_UL_file_list(bpy.types.UIList):
             icon = 'SPEAKER'
 
         split = row.split(factor=0.8)
-        split.prop(file_entry, 'name', text="", emboss=False, icon=icon)
+        if self.show_file_paths:
+            split.prop(file_entry, 'svn_path', text="", emboss=False, icon=icon)
+        else:
+            split.prop(file_entry, 'name', text="", emboss=False, icon=icon)
 
         row = split.row()
         split = row.split(factor=0.2)
@@ -164,6 +174,7 @@ class SVN_UL_file_list(bpy.types.UIList):
         row = main_row.row(align=True)
 
         prefs = get_addon_prefs(context)
+        row.prop(self, 'show_file_paths', text="", toggle=True, icon="FILE_FOLDER")
         row.prop(prefs, 'search_filter', text="")
 
         row = main_row.row(align=True)
@@ -237,9 +248,6 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         any_visible = get_visible_indicies(context)
         if not any_visible:
             return
-
-        layout.prop(active_file, 'svn_path')
-        layout.prop(active_file, 'revision')
 
 
 registry = [
