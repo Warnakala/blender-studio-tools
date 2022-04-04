@@ -328,13 +328,14 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         row = layout.row()
         row.label(text="Commit message:")
-        layout.prop(self, f'commit_message_0', text="")
-        for i in range(1, type(self).MAX_LINES):
-            if getattr(self, f'commit_message_{i-1}') != "" or \
-                getattr(self, f'commit_message_{i}') != "":
-                # If the previous or current line has any content, draw this input box.
-                layout.prop(self, f'commit_message_{i}', text="")
-                continue
+        self.last_idx = 0
+        for i in range(type(self).MAX_LINES):
+            if getattr(self, f'commit_message_{i}') != "":
+                self.last_idx = min(i+1, self.MAX_LINES)
+        for i in range(0, self.last_idx+1):
+            # Draw input boxes until the last one that has text, plus one.
+            layout.prop(self, f'commit_message_{i}', text="")
+            continue
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         committable_files = self.get_committable_files(context)
@@ -348,8 +349,8 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             self.report({'ERROR'}, "Please describe your changes in the commit message!")
             return {'CANCELLED'}
         
-        commit_message_lines = [getattr(self, f'commit_message_{i}') for i in range(type(self).MAX_LINES)]
-        commit_message = "\n".join([m for m in commit_message_lines if m])
+        commit_message_lines = [getattr(self, f'commit_message_{i}') for i in range(self.last_idx)]
+        commit_message = "\n".join(commit_message_lines)
 
         report = f"{(len(files_to_commit))} files."
         if len(files_to_commit) == 1:
