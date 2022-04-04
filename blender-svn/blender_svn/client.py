@@ -97,7 +97,7 @@ def init_local_client(context, dummy):
         prefs.reset()
 
     context.scene.svn.check_for_local_changes()
-    context.scene.svn.remove_outdated_file_entries()
+    context.scene.svn.update_outdated_file_entries()
     context.scene.svn.external_files_active_index = 0
     context.scene.svn.log_active_index = 0
     read_svn_log_file(context, Path(prefs.svn_directory+"/.svn/svn.log"))

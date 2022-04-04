@@ -20,7 +20,6 @@
 
 import bpy
 from .util import get_addon_prefs
-from .prefs import get_visible_indicies
 
 from bpy.props import BoolProperty
 
@@ -243,11 +242,9 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         col.separator()
         col.row().menu(menu='SVN_MT_context_menu', text="", icon='TRIA_DOWN')
 
-        active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
+        # active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
+        # layout.prop(active_file, "revision", emboss=False)
 
-        any_visible = get_visible_indicies(context)
-        if not any_visible:
-            return
 
 
 registry = [

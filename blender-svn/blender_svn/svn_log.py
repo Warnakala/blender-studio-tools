@@ -28,6 +28,7 @@ from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly
 from . import svn_status
 
 from .ops import SVN_Operator_Single_File
+from .prefs import get_visible_indicies
 
 class SVN_file(bpy.types.PropertyGroup):
     """Property Group that can represent a version of a File in an SVN repository."""
@@ -51,8 +52,6 @@ class SVN_file(bpy.types.PropertyGroup):
     revision: IntProperty(
         name="Revision",
         description="Revision number",
-        get=make_getter_func("revision", 0),
-        set=make_setter_func_readonly("revision"),
     )
     is_referenced: BoolProperty(
         name="Is Referenced",
@@ -132,7 +131,11 @@ class SVN_UL_log(bpy.types.UIList):
 
         num, auth, date, msg = layout_log_split(layout.row())
 
-        num.label(text=str(log_entry.revision_number))
+        active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
+        if item.revision_number == active_file.revision:
+            num.label(text=str(log_entry.revision_number), icon='LAYER_ACTIVE')
+        else:
+            num.label(text=str(log_entry.revision_number))
         auth.label(text=log_entry.revision_author)
         date.label(text=log_entry.revision_date.split(" ")[0][5:])
 
@@ -189,7 +192,8 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return len(context.scene.svn.log) > 0
+        return get_visible_indicies(context)
+            
 
     def draw(self, context):
         # TODO: SVN log only makes sense for files with certain statuses (eg., not "Unversioned")
@@ -401,6 +405,8 @@ class VIEW3D_PT_svn_log_files(bpy.types.Panel):
     bl_label = 'Affected Files'
     bl_parent_id = "VIEW3D_PT_svn_log"
     bl_options = {'DEFAULT_CLOSED'}
+
+    # TODO!
 
 
 class SVN_show_commit_message(bpy.types.Operator):

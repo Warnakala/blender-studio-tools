@@ -70,11 +70,15 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
         return reported_assets
 
-    def remove_outdated_file_entries(self):
-        """Remove all outdated files currently in the file list."""
+    def update_outdated_file_entries(self):
+        """Update all files with the 'none' status, which signified that a file 
+        had a newer version available on the remote repository.
+        Running this function means that this file's up-to-date-ness has been 
+        ensured, and this function is just to indicate this in the UI."""
         for i, file_entry in reversed(list(enumerate(self.external_files))):
             if file_entry.status == "none":
-                self.external_files.remove(i)
+                file_entry.status = 'normal'
+                file_entry.revision = self.get_latest_revision_of_file(file_entry.svn_path)
 
     def remove_by_svn_path(self, path_to_remove: str):
         """Remove a file entry from the file list, based on its filepath."""
@@ -87,6 +91,8 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     def check_for_local_changes(self) -> None:
         """Update the status of file entries by checking for changes in the
         local repository."""
+
+        context = bpy.context
 
         local_client = client.get_local_client()
         if not local_client:
@@ -116,15 +122,15 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             if str(f) in statuses:
                 status = statuses[str(f)]
                 del statuses[str(f)]
-            file_entry = self.add_file_entry(f, status[0], status[1], is_referenced=True)
+            file_entry = self.add_file_entry(self.absolute_to_svn_path(f), status[0], status[1], is_referenced=True)
 
         # Add file entries in the entire SVN repository for files whose status isn't
         # normal. Do this even for files not referenced by this .blend file.
         for f in statuses.keys():
             status = statuses[f]
-            file_entry = self.add_file_entry(Path(f), status[0], status[1])
+            file_entry = self.add_file_entry(self.absolute_to_svn_path(f), status[0], status[1])
         
-        prefs.force_good_active_index(bpy.context)
+        prefs.force_good_active_index(context)
 
     @staticmethod
     def absolute_to_svn_path(absolute_path: Path) -> Path:
@@ -133,23 +139,35 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         return absolute_path.relative_to(svn_dir)
 
     def add_file_entry(
-        self, path: Path, status: str, rev: int, is_referenced=False
+        self, svn_path: Path, status: str, rev=0, is_referenced=False
     ) -> SVN_file:
-        item = self.external_files.add()
+        item = self.get_file_by_svn_path(str(svn_path))
+        if not item:
+            item = self.external_files.add()
 
         # Set collection property.
-        item['svn_path'] = str(self.absolute_to_svn_path(path))
-        item['name'] = path.name
+        item['svn_path'] = str(svn_path)
+        item['name'] = svn_path.name
 
         item.status = status
-        item['revision'] = rev
+        if rev==0:
+            """SVN revisions start at 1, so 0 means it wasn't specified.
+            Let's assume that the svn status is accurate. This means that in the
+            case of a 'normal' status, we can just find the latest log that
+            affected this file and put that log's as the revision number.
+            """
+            item['revision'] = self.get_latest_revision_of_file(svn_path)
+        else:
+            item['revision'] = rev
 
         # Prevent editing values in the UI.
         item['is_referenced'] = is_referenced
         return item
 
-    log_update_in_progress: BoolProperty(default=False, description="This is set to True when an SVN log update process is running. Can be used for UI code checks and to avoid starting several SVN Log update process in parallel")
-    log_update_cancel_flag: BoolProperty(default=False, description="Set this to True to request cancellation of the SVN log update process")
+    def get_file_by_svn_path(self, svn_path: str) -> SVN_file:
+        for file in self.external_files:
+            if file.svn_path == svn_path:
+                return file
 
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
     external_files_active_index: bpy.props.IntProperty()
@@ -159,8 +177,21 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             if log.revision_number == revision:
                 return i, log
 
+    def get_latest_revision_of_file(self, svn_path: str) -> int:
+        ret = 0
+        for log in self.log:
+            for changed_file in log.changed_files:
+                if changed_file.svn_path == "/"+str(svn_path):
+                    ret = log.revision_number
+        return ret
+    
+
     log: bpy.props.CollectionProperty(type=SVN_log)
     log_active_index: bpy.props.IntProperty()
+
+    # Flags for the Fetch Log operator.
+    log_update_in_progress: BoolProperty(default=False, description="This is set to True when an SVN log update process is running. Can be used for UI code checks and to avoid starting several SVN Log update process in parallel")
+    log_update_cancel_flag: BoolProperty(default=False, description="Set this to True to request cancellation of the SVN log update process")
 
 
 @bpy.app.handlers.persistent

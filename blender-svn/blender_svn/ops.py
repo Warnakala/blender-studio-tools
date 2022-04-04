@@ -136,12 +136,17 @@ class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
                 rev_no = int(split[1])
             files.append((rev_no, split[-1]))
 
-        svn_props.remove_outdated_file_entries()
+        # Mark all previously outdated files as being up to date.
+        svn_props.update_outdated_file_entries()
 
-        prefs = get_addon_prefs(context)
+        # Mark the currently outdated files as being outdated.
         for file in files:
-            abspath = Path.joinpath(Path(prefs.svn_directory), Path(file[1]))
-            svn_props.add_file_entry(abspath, status=('none', file[0]))
+            existing_entry = svn_props.get_file_by_svn_path(file[1])
+            if existing_entry:
+                existing_entry.status = 'none'
+                existing_entry.revision = file[0]
+            else:
+                svn_props.add_file_entry(Path(file[1]), 'none', file[0])
 
         return {"FINISHED"}
 
@@ -154,7 +159,7 @@ class SVN_update_all(SVN_Operator, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, 'svn up')
-        context.scene.svn.remove_outdated_file_entries()
+        context.scene.svn.update_outdated_file_entries()
 
         return {"FINISHED"}
 
@@ -192,7 +197,7 @@ class SVN_update_single(SVN_Operator_Single_File, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn up "{self.file_rel_path}"')
         # Remove the file entry for this file
-        context.scene.svn.remove_by_rel_path(self.file_rel_path)
+        context.scene.svn.remove_by_svn_path(self.file_rel_path)
 
         return {"FINISHED"}
 
