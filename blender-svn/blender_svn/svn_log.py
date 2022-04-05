@@ -258,8 +258,6 @@ def read_svn_log_file(context, filepath: Path):
         chunk = []
         for line in f:
             line = line.replace("\n", "")
-            if len(line) == 0:
-                continue
             if line == "-" * 72:
                 # The previous log entry is over.
                 chunks.append(chunk)
@@ -291,7 +289,7 @@ def read_svn_log_file(context, filepath: Path):
         log_entry['revision_date'] = date_str + " " + time_str
 
         # File change set is on line 3 until the commit message begins...
-        file_change_lines = chunk[2:-r_msg_length]
+        file_change_lines = chunk[2:-(r_msg_length+1)]
         for line in file_change_lines:
             status_char = line[3]
             file_path = line[5:]

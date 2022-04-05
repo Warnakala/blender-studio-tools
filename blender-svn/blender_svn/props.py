@@ -134,6 +134,8 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
     @staticmethod
     def absolute_to_svn_path(absolute_path: Path) -> Path:
+        if type(absolute_path) == str:
+            absolute_path = Path(absolute_path)
         prefs = get_addon_prefs(bpy.context)
         svn_dir = Path(prefs.svn_directory)
         return absolute_path.relative_to(svn_dir)
@@ -141,9 +143,11 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     def add_file_entry(
         self, svn_path: Path, status: str, rev=0, is_referenced=False
     ) -> SVN_file:
-        _idx, item = self.get_file_by_svn_path(str(svn_path))
-        if not item:
+        tup = self.get_file_by_svn_path(str(svn_path))
+        if not tup:
             item = self.external_files.add()
+        else:
+            _idx, item = tup
 
         # Set collection property.
         item['svn_path'] = str(svn_path)
