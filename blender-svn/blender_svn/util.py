@@ -22,6 +22,7 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple, Generator, Callable
 
 import bpy
+from datetime import datetime
 
 
 def redraw_ui() -> None:
@@ -35,6 +36,7 @@ def redraw_ui() -> None:
 
 def get_addon_prefs(context: bpy.types.Context=None) -> bpy.types.AddonPreferences:
     return context.preferences.addons[__package__].preferences
+
 
 def make_setter_func_readonly(prop: str) -> Callable:
     """A setter function for read-only Python properties.
@@ -53,6 +55,7 @@ def make_setter_func_readonly(prop: str) -> Callable:
 
     return set_readonly
 
+
 def make_getter_func(prop: str, default: Any) -> Callable:
     """Does nothing special, but property definitions require a getter 
     if we want to give them a setter, so this has to exist as well."""
@@ -67,6 +70,22 @@ def make_getter_func(prop: str, default: Any) -> Callable:
 
 def is_file_saved() -> bool:
     return bool(bpy.data.filepath)
+
+
+def svn_date_to_datetime(datetime_str: str) -> datetime:
+    """Convert a string from SVN's datetime format to a datetime object."""
+    date, time, _timezone, _day, _n_day, _mo, _y = datetime_str.split(" ")
+    return datetime.strptime(f"{date} {time}", '%Y-%m-%d %H:%M:%S')
+
+
+def svn_date_simple(datetime_str: str) -> str:
+    """Convert a string form SVN's datetime format to a simpler format."""
+    dt = svn_date_to_datetime(datetime_str)
+    month_name = dt.strftime("%b")
+    date_str = f"{dt.year}-{month_name}-{dt.day}"
+    time_str = f"{str(dt.hour).zfill(2)}:{str(dt.minute).zfill(2)}"
+
+    return date_str + " " + time_str
 
 
 def traverse_collection_tree(

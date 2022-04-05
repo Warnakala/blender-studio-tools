@@ -20,13 +20,15 @@
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from collections import OrderedDict
+from pathlib import Path
 import xml.etree.ElementTree as ET
-from xml.dom import minidom
+from datetime import datetime
 
 import bpy
 from bpy.props import StringProperty
 
 from .ops import execute_svn_command
+from .util import get_addon_prefs, svn_date_simple
 
 
 SVN_STATUS_DATA = OrderedDict(
@@ -170,7 +172,6 @@ def get_file_statuses(svn_root_dir: str) -> Dict[str, Tuple[str, int]]:
     return file_statuses
 
 
-
 class SVN_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
     bl_label = "" # Don't want the first line of the tooltip on mouse hover.
@@ -203,5 +204,57 @@ class SVN_explain_status(bpy.types.Operator):
         i, _file = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
         context.scene.svn.external_files_active_index = i
         return {'FINISHED'}
+
+
+def set_svn_info(context) -> bool:
+    prefs = get_addon_prefs(context)
+    output = execute_svn_command(str(Path(bpy.data.filepath).parent), 'svn info')
+    lines = output.split("\n")
+    print(lines)
+    if len(lines) == 1:
+        prefs.is_in_repo = False
+        prefs.reset()
+        return False
+
+    # Populate the addon prefs with svn info.
+    prefs.is_in_repo = True
+    prefs['svn_directory'] = lines[1].split("Working Copy Root Path: ")[1]
+    prefs['svn_url'] = lines[2].split("URL: ")[1]
+    prefs['relative_filepath'] = lines[3].split("Relative URL: ^")[1]
+    prefs['revision_number'] = int(lines[6].split("Revision: ")[1])
+
+    datetime_str = lines[-3].split("Last Changed Date: ")[1]
+    prefs['revision_date'] = svn_date_simple(datetime_str)
+    prefs['revision_author'] = lines[-5].split("Last Changed Author: ")[1]
+    return prefs
+
+
+@bpy.app.handlers.persistent
+def init_svn(context, dummy):
+    """Initialize SVN info when opening a .blend file that is in a repo."""
+    if not bpy.data.filepath:
+        return
+    
+    if not context:
+        context = bpy.context
+
+    svn_info = set_svn_info(context)
+    if not svn_info:
+        context.scene.svn.external_files.clear()
+        context.scene.svn.log.clear()
+
+    context.scene.svn.check_for_local_changes()
+    context.scene.svn.update_outdated_file_entries()
+    context.scene.svn.external_files_active_index = 0
+    context.scene.svn.log_active_index = 0
+
+    prefs = get_addon_prefs(context)
+    context.scene.svn.update_log_from_file(Path(prefs.svn_directory+"/.svn/svn.log"))
+
+def register():
+    bpy.app.handlers.load_post.append(init_svn)
+
+def unregister():
+    bpy.app.handlers.load_post.remove(init_svn)
 
 registry = [SVN_explain_status]

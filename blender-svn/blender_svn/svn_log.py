@@ -24,11 +24,11 @@ from datetime import datetime
 
 import bpy
 from bpy.props import IntProperty, StringProperty, CollectionProperty, BoolProperty, EnumProperty
-from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly
-from . import svn_status
 
+from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly, svn_date_simple
 from .ops import SVN_Operator_Single_File
 from .prefs import get_visible_indicies
+from . import svn_status
 
 class SVN_file(bpy.types.PropertyGroup):
     """Property Group that can represent a version of a File in an SVN repository."""
@@ -133,6 +133,7 @@ class SVN_log(bpy.types.PropertyGroup):
         return False
 
 
+
 def layout_log_split(layout):
     main = layout.split(factor=0.4)
     num_and_auth = main.row()
@@ -148,6 +149,64 @@ def layout_log_split(layout):
 
     return num, auth, date, msg
 
+
+def update_log_from_file(self, filepath: Path):
+    """Read the svn.log file (written by this addon) into the log entry list."""
+
+    svn = self
+    svn.log.clear()
+
+    # Read file into lists of lines where each list is one log entry
+    chunks = []
+    if not filepath.exists():
+        # Nothing to read!
+        return
+    with open(filepath, 'r') as f:
+        next(f)
+        chunk = []
+        for line in f:
+            line = line.replace("\n", "")
+            if line == "-" * 72:
+                # The previous log entry is over.
+                chunks.append(chunk)
+                chunk = []
+                continue
+            chunk.append(line)
+
+    previous_rev_number = 0
+    for chunk in chunks:
+        # Read the first line of the svn log containing revision number, author,
+        # date and commit message length.
+        r_number, r_author, r_date, r_msg_length = chunk[0].split(" | ")
+        r_number = int(r_number[1:])
+        assert r_number == previous_rev_number+1, f"Revision order seems wrong at r{r_number}"
+        previous_rev_number = r_number
+
+        r_msg_length = int(r_msg_length.split(" ")[0])
+
+        log_entry = svn.log.add()
+        log_entry['revision_number'] = r_number
+        log_entry['revision_author'] = r_author
+
+        log_entry['revision_date'] = svn_date_simple(r_date)
+
+        # File change set is on line 3 until the commit message begins...
+        file_change_lines = chunk[2:-(r_msg_length+1)]
+        for line in file_change_lines:
+            status_char = line[3]
+            file_path = line[5:]
+            if ' (from ' in file_path:
+                # If the file was moved, let's just ignore that information for now.
+                # TODO: This can be improved later if neccessary.
+                file_path = file_path.split(" (from ")[0]
+
+            log_file_entry = log_entry.changed_files.add()
+            log_file_entry['svn_path'] = file_path
+            log_file_entry['revision'] = r_number
+            log_file_entry['name'] = Path(file_path).name
+            log_file_entry.status = svn_status.SVN_STATUS_CHAR[status_char]
+
+        log_entry['commit_message'] = "\n".join(chunk[-r_msg_length:])
 
 class SVN_UL_log(bpy.types.UIList):
     show_all_logs: BoolProperty(
@@ -282,71 +341,6 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
             row.prop(f, 'svn_path', emboss=False, text="", icon=f.file_icon)
 
 
-def read_svn_log_file(context, filepath: Path):
-    """Read the svn.log file (written by this addon) into the log entry list."""
-
-    svn = context.scene.svn
-    svn.log.clear()
-
-    # Read file into lists of lines where each list is one log entry
-    chunks = []
-    if not filepath.exists():
-        # Nothing to read!
-        return
-    with open(filepath, 'r') as f:
-        next(f)
-        chunk = []
-        for line in f:
-            line = line.replace("\n", "")
-            if line == "-" * 72:
-                # The previous log entry is over.
-                chunks.append(chunk)
-                chunk = []
-                continue
-            chunk.append(line)
-
-    previous_rev_number = 0
-    for chunk in chunks:
-        # Read the first line of the svn log containing revision number, author,
-        # date and commit message length.
-        r_number, r_author, r_date, r_msg_length = chunk[0].split(" | ")
-        r_number = int(r_number[1:])
-        assert r_number == previous_rev_number+1, f"Revision order seems wrong at r{r_number}"
-        previous_rev_number = r_number
-
-        r_msg_length = int(r_msg_length.split(" ")[0])
-        date, time, _timezone, _day, _n_day, _mo, _y = r_date.split(" ")
-
-        log_entry = svn.log.add()
-        log_entry['revision_number'] = r_number
-        log_entry['revision_author'] = r_author
-
-        rev_datetime = datetime.strptime(f"{date} {time}", '%Y-%m-%d %H:%M:%S')
-        month_name = rev_datetime.strftime("%b")
-        date_str = f"{rev_datetime.year}-{month_name}-{rev_datetime.day}"
-        time_str = f"{str(rev_datetime.hour).zfill(2)}:{str(rev_datetime.minute).zfill(2)}"
-
-        log_entry['revision_date'] = date_str + " " + time_str
-
-        # File change set is on line 3 until the commit message begins...
-        file_change_lines = chunk[2:-(r_msg_length+1)]
-        for line in file_change_lines:
-            status_char = line[3]
-            file_path = line[5:]
-            if ' (from ' in file_path:
-                # If the file was moved, let's just ignore that information for now.
-                # TODO: This can be improved later if neccessary.
-                file_path = file_path.split(" (from ")[0]
-
-            log_file_entry = log_entry.changed_files.add()
-            log_file_entry['svn_path'] = file_path
-            log_file_entry['revision'] = r_number
-            log_file_entry['name'] = Path(file_path).name
-            log_file_entry.status = svn_status.SVN_STATUS_CHAR[status_char]
-
-        log_entry['commit_message'] = "\n".join(chunk[-r_msg_length:])
-
-
 class SVN_fetch_log(SVN_Operator_Single_File, bpy.types.Operator):
     bl_idname = "svn.fetch_log"
     bl_label = "Fetch SVN Log"
@@ -423,7 +417,7 @@ class SVN_fetch_log(SVN_Operator_Single_File, bpy.types.Operator):
         file_existed = False
         if filepath.exists():
             file_existed = True
-            read_svn_log_file(context, filepath)
+            svn.update_log_from_file(filepath)
 
         if latest_log_rev >= current_rev:
             self.report({'INFO'}, "Finished updating the SVN log!")
@@ -441,7 +435,7 @@ class SVN_fetch_log(SVN_Operator_Single_File, bpy.types.Operator):
 
             f.write(new_log)
 
-        read_svn_log_file(context, filepath)
+        svn.update_log_from_file(filepath)
 
         self.report({'INFO'}, f"SVN Log now at r{context.scene.svn.log[-1].revision_number}")
 

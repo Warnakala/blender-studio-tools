@@ -29,8 +29,12 @@ from blender_svn.util import get_addon_prefs
 import bpy, logging
 from bpy.props import BoolProperty
 
-from . import client, prefs
-from .svn_log import SVN_log, SVN_file
+from . import wheels
+# This will load the dateutil and svn wheel file.
+wheels.preload_dependencies()
+
+from . import prefs
+from .svn_log import SVN_log, SVN_file, update_log_from_file
 from .svn_status import get_file_statuses
 
 from blender_asset_tracer import trace
@@ -96,10 +100,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         context = bpy.context
         addon_prefs = get_addon_prefs(context)
 
-        local_client = client.get_local_client()
-        if not local_client:
-            # TODO: Just use svn command line to find out whether we're in an SVN repository,
-            # and then remove the PySVN .whl file.
+        if not addon_prefs.is_in_repo:
             return
 
         # Remove unversioned files from the list. The ones that are still around
@@ -199,6 +200,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
                     ret = log.revision_number
         return ret
 
+    update_log_from_file = update_log_from_file
     log: bpy.props.CollectionProperty(type=SVN_log)
     log_active_index: bpy.props.IntProperty()
 
@@ -217,8 +219,10 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
 @bpy.app.handlers.persistent
 def check_for_local_changes(scene):
+    if not bpy.data.filepath:
+        return
     if not scene:
-        # When called from save_post() handler, which apparently does not pass context
+        # When called from save_post() handler, which apparently does not pass anything???
         scene = bpy.context.scene
     scene.svn.log_update_in_progress = False
     scene.svn.log_update_cancel_flag = False
