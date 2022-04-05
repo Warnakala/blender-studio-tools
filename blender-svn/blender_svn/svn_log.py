@@ -233,10 +233,15 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return get_visible_indicies(context)
+        any_visible = get_visible_indicies(context)
+        if not any_visible:
+            return False
+        active_file = context.scene.svn.active_file
+        if active_file.status in ['unversioned']:
+            return False
+        return True
 
     def draw(self, context):
-        # TODO: SVN log only makes sense for files with certain statuses (eg., not "Unversioned")
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
