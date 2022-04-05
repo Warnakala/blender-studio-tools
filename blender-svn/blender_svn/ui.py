@@ -70,24 +70,11 @@ class SVN_UL_file_list(bpy.types.UIList):
         file_entry = item
 
         row = layout.row()
-        extension = file_entry.name.split(".")[-1] if "." in file_entry.name else ""
-        icon = 'QUESTION'
-        if extension in ['abc']:
-            icon = 'FILE_CACHE'
-        elif extension in ['blend', 'blend1']:
-            icon = 'FILE_BLEND'
-        elif extension in ['tga', 'bmp', 'tif', 'tiff', 'tga', 'png', 'dds', 'jpg', 'exr', 'hdr']:
-            icon = 'TEXTURE'
-        elif extension in ['mp4', 'mov']:
-            icon = 'SEQUENCE'
-        elif extension in ['mp3', 'ogg', 'wav']:
-            icon = 'SPEAKER'
-
         split = row.split(factor=0.8)
         if self.show_file_paths:
-            split.prop(file_entry, 'svn_path', text="", emboss=False, icon=icon)
+            split.prop(file_entry, 'svn_path', text="", emboss=False, icon=file_entry.file_icon)
         else:
-            split.prop(file_entry, 'name', text="", emboss=False, icon=icon)
+            split.prop(file_entry, 'name', text="", emboss=False, icon=file_entry.file_icon)
 
         row = split.row()
         split = row.split(factor=0.2)

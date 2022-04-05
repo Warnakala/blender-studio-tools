@@ -69,6 +69,27 @@ class SVN_file(bpy.types.PropertyGroup):
         if self.status == 'none':
             return 'Outdated'
         return self.status.title()
+    
+    @property
+    def file_icon(self) -> str:
+        if '.' not in self.name:
+            return 'FILE_FOLDER'
+        extension = self.name.split(".")[-1] if "." in self.name else ""
+
+        if extension in ['abc']:
+            return 'FILE_CACHE'
+        elif extension in ['blend', 'blend1']:
+            return 'FILE_BLEND'
+        elif extension in ['tga', 'bmp', 'tif', 'tiff', 'tga', 'png', 'dds', 'jpg', 'exr', 'hdr']:
+            return 'TEXTURE'
+        elif extension in ['psd', 'kra']:
+            return 'IMAGE_DATA'
+        elif extension in ['mp4', 'mov']:
+            return 'SEQUENCE'
+        elif extension in ['mp3', 'ogg', 'wav']:
+            return 'SPEAKER'
+        
+        return 'QUESTION'
 
 
 class SVN_log(bpy.types.PropertyGroup):
@@ -213,7 +234,6 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return get_visible_indicies(context)
-            
 
     def draw(self, context):
         # TODO: SVN log only makes sense for files with certain statuses (eg., not "Unversioned")
@@ -236,10 +256,14 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         )
 
         active_log = context.scene.svn.active_log
+        layout.label(text=f"Files changed in revision `r{active_log.revision_number}`:")
         col = layout.column(align=True)
-        col.prop(active_log, 'revision_number', emboss=False)
-        col.prop(active_log, 'revision_date', emboss=False)
-        col.prop(active_log, 'revision_author', emboss=False)
+        col.alignment = 'RIGHT'
+        for f in active_log.changed_files:
+            row = col.row()
+            explainer = row.operator('svn.explain_status', text="", icon=f.status_icon, emboss=False)
+            explainer.status = f.status
+            row.prop(f, 'svn_path', emboss=False, text="", icon=f.file_icon)
 
 
 def read_svn_log_file(context, filepath: Path):
@@ -413,18 +437,6 @@ class SVN_fetch_log_cancel(bpy.types.Operator):
     def execute(self, context):
         context.scene.svn.log_update_cancel_flag = True
         return {'FINISHED'}
-
-
-class VIEW3D_PT_svn_log_files(bpy.types.Panel):
-    """Display the files that were affected by the selected revision."""
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = 'SVN'
-    bl_label = 'Affected Files'
-    bl_parent_id = "VIEW3D_PT_svn_log"
-    bl_options = {'DEFAULT_CLOSED'}
-
-    # TODO!
 
 
 class SVN_show_commit_message(bpy.types.Operator):

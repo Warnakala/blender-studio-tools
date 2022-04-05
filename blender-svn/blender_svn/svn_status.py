@@ -31,7 +31,7 @@ SVN_STATUS_DATA = OrderedDict(
             "added",
             (
                 "ADD",
-                "This file was added to the local repository, and will be added to the remote repository when committing",
+                "This file was added",
             ),
         ),
         (
@@ -45,7 +45,7 @@ SVN_STATUS_DATA = OrderedDict(
             "deleted",
             (
                 "TRASH",
-                "This file was deleted locally, but still exists on the remote repository",
+                "This file was deleted",
             ),
         ),
         (
@@ -81,7 +81,7 @@ SVN_STATUS_DATA = OrderedDict(
             "modified",
             (
                 "MODIFIER",
-                "This file was modified locally, and can be pushed to the remote repository without a conflict",
+                "This file was modified",
             ),
         ),
         (
@@ -157,6 +157,8 @@ class SVN_explain_status(bpy.types.Operator):
     def execute(self, context):
         """Set the index on click, to act as if this operator button was 
         click-through in the UIList."""
+        if not self.file_rel_path:
+            return {'FINISHED'}
         i, _file = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
         context.scene.svn.external_files_active_index = i
         return {'FINISHED'}
