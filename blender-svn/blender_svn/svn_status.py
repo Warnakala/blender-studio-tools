@@ -24,6 +24,8 @@ from collections import OrderedDict
 import bpy
 from bpy.props import StringProperty
 
+from .ops import execute_svn_command
+
 
 SVN_STATUS_DATA = OrderedDict(
     [
@@ -103,7 +105,7 @@ SVN_STATUS_DATA = OrderedDict(
             "replaced",
             (
                 "FILE_REFRESH",
-                "This file has been replaced in your local repository. This means the file was scheduled for deletion, and then a new file with the same name was scheduled for addition in its place",
+                "This file has been moved",
             ),
         ),
         (
@@ -125,16 +127,19 @@ ENUM_SVN_STATUS = [
 SVN_STATUS_CHAR = {
     'M' : 'modified',
     'D' : 'deleted',
-    'A' : 'added'
+    'A' : 'added',
+    'R' : 'replaced'
 }
+
+
+def get_verbose_status(svn_root_dir: str) -> Dict[str, int]:
+    output = execute_svn_command('svn status --verbose')
 
 class SVN_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
     bl_label = "" # Don't want the first line of the tooltip on mouse hover.
     bl_description = "Show an explanation of this status, using a dynamic tooltip"
     bl_options = {'INTERNAL'}
-
-    popup_width = 600
 
     status: StringProperty(
         description = "Identifier of the status to show an explanation for"

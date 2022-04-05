@@ -98,36 +98,37 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         if not local_client:
             return
 
-        # Remove all files from the list except the ones with the Outdated status.
+        # Remove unversioned files from the list. The ones that are still around
+        #  will be re-discovered below, through local_client.status().
         for i, file_entry in reversed(list(enumerate(self.external_files))):
-            if file_entry.status != "none":
+            if file_entry.status == "unversioned":
                 self.external_files.remove(i)
 
-        files: Set[Path] = self.get_referenced_filepaths()
-        files.add(Path(bpy.data.filepath))
+        referenced_files: Set[Path] = self.get_referenced_filepaths()
+        referenced_files.add(Path(bpy.data.filepath))
 
         # Calls `svn status` to get a list of files that have been added, modified, etc.
         # Match each file name with a tuple that is the modification type and revision number.
-        statuses = {
+        file_statuses = {
             s.name: (s.type_raw_name, s.revision) for s in local_client.status()
         }
 
         # Add file entries that are referenced by this .blend file,
         # even if the file's status is normal (un-modified)
-        for f in files:
+        for referenced_file in referenced_files:
             status = (
                 "normal",
                 0,
             )  # TODO: We currently don't show a revision number for Normal status files!
-            if str(f) in statuses:
-                status = statuses[str(f)]
-                del statuses[str(f)]
-            file_entry = self.add_file_entry(self.absolute_to_svn_path(f), status[0], status[1], is_referenced=True)
+            if str(referenced_file) in file_statuses:
+                status = file_statuses[str(referenced_file)]
+                del file_statuses[str(referenced_file)]
+            file_entry = self.add_file_entry(self.absolute_to_svn_path(referenced_file), status[0], status[1], is_referenced=True)
 
         # Add file entries in the entire SVN repository for files whose status isn't
         # normal. Do this even for files not referenced by this .blend file.
-        for f in statuses.keys():
-            status = statuses[f]
+        for f in file_statuses.keys():
+            status = file_statuses[f]
             file_entry = self.add_file_entry(self.absolute_to_svn_path(f), status[0], status[1])
         
         prefs.force_good_active_index(context)

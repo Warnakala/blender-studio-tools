@@ -126,6 +126,12 @@ class SVN_log(bpy.types.PropertyGroup):
         description = "List of file paths relative to the SVN root that were affected by this revision"
     )
 
+    def changed_file(self, svn_path: str) -> bool:
+        for f in self.changed_files:
+            if f.svn_path == "/"+svn_path:
+                return True
+        return False
+
 
 def layout_log_split(layout):
     main = layout.split(factor=0.4)
@@ -153,16 +159,20 @@ class SVN_UL_log(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if self.layout_type != 'DEFAULT':
             raise NotImplemented
-        
+
+        svn = data
         log_entry = item
 
         num, auth, date, msg = layout_log_split(layout.row())
 
-        active_file = context.scene.svn.active_file
+        active_file = svn.active_file
+        num.label(text=str(log_entry.revision_number))
         if item.revision_number == active_file.revision:
-            num.label(text=str(log_entry.revision_number), icon='LAYER_ACTIVE')
-        else:
-            num.label(text=str(log_entry.revision_number))
+            num.operator('svn.tooltip_log', text="", icon='LAYER_ACTIVE', emboss=False).log_rev=log_entry.revision_number
+        elif log_entry.changed_file(active_file.svn_path):
+            get_older = num.operator('svn.download_file_revision', text="", icon='IMPORT', emboss=False)
+            get_older.revision = log_entry.revision_number
+            get_older.file_rel_path = active_file.svn_path
         auth.label(text=log_entry.revision_author)
         date.label(text=log_entry.revision_date.split(" ")[0][5:])
 
@@ -221,6 +231,7 @@ class SVN_UL_log(bpy.types.UIList):
         main_row = layout.row()
         main_row.prop(self, 'filter_name', text="")
         main_row.prop(self, 'show_all_logs', text="", toggle=True, icon='ALIGN_JUSTIFY')
+
 
 class VIEW3D_PT_svn_log(bpy.types.Panel):
     """Display the revision history of the selected file."""
@@ -322,6 +333,10 @@ def read_svn_log_file(context, filepath: Path):
         for line in file_change_lines:
             status_char = line[3]
             file_path = line[5:]
+            if ' (from ' in file_path:
+                # If the file was moved, let's just ignore that information for now.
+                # TODO: This can be improved later if neccessary.
+                file_path = file_path.split(" (from ")[0]
 
             log_file_entry = log_entry.changed_files.add()
             log_file_entry['svn_path'] = file_path
@@ -346,7 +361,7 @@ class SVN_fetch_log(SVN_Operator_Single_File, bpy.types.Operator):
         background to finish. And once it's finished, we want to move on to 
         execute()."""
 
-        svn = self.get_svn_data(context)
+        svn = context.scene.svn
         if svn.log_update_in_progress:
             self.report({'ERROR'}, "An SVN Log process is already running!")
             return {'CANCELLED'}
@@ -371,7 +386,7 @@ class SVN_fetch_log(SVN_Operator_Single_File, bpy.types.Operator):
     def modal(self, context, _event):
         prefs = get_addon_prefs(context)
         current_rev = prefs.revision_number
-        svn = self.get_svn_data(context)
+        svn = context.scene.svn
 
         if svn.log_update_cancel_flag:
             self.report({'INFO'}, "Log update cancelled.")
@@ -444,13 +459,37 @@ class SVN_fetch_log_cancel(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def execute_tooltip_log(self, context):
+    """Set the index on click, to act as if this operator button was 
+    click-through in the UIList."""
+    tup = context.scene.svn.get_log_by_revision(self.log_rev)
+    if tup:
+        context.scene.svn.log_active_index = tup[0]
+    return {'FINISHED'}
+
+
+class SVN_tooltip_log(bpy.types.Operator):
+    bl_idname = "svn.tooltip_log"
+    bl_label = "" # Don't want the first line of the tooltip on mouse hover.
+    # bl_description = "An operator to be drawn in the log list, that can display a dynamic tooltip"
+    bl_options = {'INTERNAL'}
+
+    log_rev: IntProperty(
+        description = "Revision number of the log entry to show in the tooltip"
+    )
+
+    @classmethod
+    def description(cls, context, properties):
+        return "This is the currently checked out version of the file"
+
+    execute = execute_tooltip_log
+
+
 class SVN_show_commit_message(bpy.types.Operator):
     bl_idname = "svn.display_commit_message"
     bl_label = "" # Don't want the first line of the tooltip on mouse hover.
-    bl_description = "Show the currently active commit, using a dynamic tooltip"
+    # bl_description = "Show the currently active commit, using a dynamic tooltip"
     bl_options = {'INTERNAL'}
-
-    popup_width = 600
 
     log_rev: IntProperty(
         description = "Revision number of the log entry to show in the tooltip"
@@ -461,10 +500,16 @@ class SVN_show_commit_message(bpy.types.Operator):
         log_entry = context.scene.svn.get_log_by_revision(properties.log_rev)[1]
         return log_entry.commit_message
 
-    def execute(self, context):
-        """Set the index on click, to act as if this operator button was 
-        click-through in the UIList."""
-        context.scene.svn.log_active_index = context.scene.svn.get_log_by_revision(self.log_rev)[0]
-        return {'FINISHED'}
+    execute = execute_tooltip_log
 
-registry = [SVN_file, SVN_log, VIEW3D_PT_svn_log, SVN_UL_log, SVN_fetch_log, SVN_fetch_log_cancel, SVN_show_commit_message]
+
+registry = [
+    SVN_file, 
+    SVN_log, 
+    VIEW3D_PT_svn_log, 
+    SVN_UL_log, 
+    SVN_fetch_log, 
+    SVN_fetch_log_cancel, 
+    SVN_tooltip_log, 
+    SVN_show_commit_message
+]
