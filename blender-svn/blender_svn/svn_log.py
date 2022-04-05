@@ -137,7 +137,7 @@ class SVN_UL_log(bpy.types.UIList):
 
         num, auth, date, msg = layout_log_split(layout.row())
 
-        active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
+        active_file = context.scene.svn.active_file
         if item.revision_number == active_file.revision:
             num.label(text=str(log_entry.revision_number), icon='LAYER_ACTIVE')
         else:
@@ -156,21 +156,20 @@ class SVN_UL_log(bpy.types.UIList):
         - Always sort by descending revision number
         - Allow searching for various criteria
         """
-        helper_funcs = bpy.types.UI_UL_list
-        list_items = getattr(data, propname)
+        svn = data
+        log_entries = getattr(data, propname)
 
         # Start off with all entries flagged as visible.
-        flt_flags = [self.bitflag_filter_item] * len(list_items)
+        flt_flags = [self.bitflag_filter_item] * len(log_entries)
         # Always sort by descending revision number
-        flt_neworder = sorted(range(len(list_items)), key=lambda i: list_items[i].revision_number)
+        flt_neworder = sorted(range(len(log_entries)), key=lambda i: log_entries[i].revision_number)
         flt_neworder.reverse()
 
-        svn = context.scene.svn
-        active_file = svn.external_files[svn.external_files_active_index]
+        active_file = svn.active_file
 
         if not self.show_all_logs:
             # Filter out log entries that did not affect the selected file.
-            for idx, log_entry in enumerate(svn.log):
+            for idx, log_entry in enumerate(log_entries):
                 for affected_file in log_entry.changed_files:
                     if affected_file.svn_path == "/"+active_file.svn_path:
                         # If the active file is one of the files affected by this log
@@ -182,7 +181,7 @@ class SVN_UL_log(bpy.types.UIList):
         if self.filter_name:
             # Simple search:
             # Filter out log entries that don't match anything in the string search.
-            for idx, log_entry in enumerate(svn.log):
+            for idx, log_entry in enumerate(log_entries):
                 if self.filter_name not in " ".join(
                     [
                         "r"+str(log_entry.revision_number),
@@ -236,7 +235,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
             "log_active_index",
         )
 
-        active_log = context.scene.svn.log[context.scene.svn.log_active_index]
+        active_log = context.scene.svn.active_log
         col = layout.column(align=True)
         col.prop(active_log, 'revision_number', emboss=False)
         col.prop(active_log, 'revision_date', emboss=False)
@@ -448,6 +447,8 @@ class SVN_show_commit_message(bpy.types.Operator):
         return log_entry.commit_message
 
     def execute(self, context):
+        """Set the index on click, to act as if this operator button was 
+        click-through in the UIList."""
         context.scene.svn.log_active_index = context.scene.svn.get_log_by_revision(self.log_rev)[0]
         return {'FINISHED'}
 

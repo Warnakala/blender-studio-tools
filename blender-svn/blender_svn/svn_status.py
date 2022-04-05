@@ -155,9 +155,10 @@ class SVN_explain_status(bpy.types.Operator):
         self.layout.label(text=self.get_explanation(self.status))
 
     def execute(self, context):
-        for i, f in enumerate(context.scene.svn.external_files):
-            if f.svn_path == self.file_rel_path:
-                context.scene.svn.external_files_active_index = i
+        """Set the index on click, to act as if this operator button was 
+        click-through in the UIList."""
+        i, _file = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
+        context.scene.svn.external_files_active_index = i
         return {'FINISHED'}
 
 registry = [SVN_explain_status]

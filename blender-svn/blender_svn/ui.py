@@ -241,9 +241,8 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         col.separator()
         col.row().menu(menu='SVN_MT_context_menu', text="", icon='TRIA_DOWN')
 
-        # active_file = context.scene.svn.external_files[context.scene.svn.external_files_active_index]
+        # active_file = context.scene.svn.active_file
         # layout.prop(active_file, "revision", emboss=False)
-
 
 
 registry = [

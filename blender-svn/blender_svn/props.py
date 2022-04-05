@@ -141,7 +141,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     def add_file_entry(
         self, svn_path: Path, status: str, rev=0, is_referenced=False
     ) -> SVN_file:
-        item = self.get_file_by_svn_path(str(svn_path))
+        _idx, item = self.get_file_by_svn_path(str(svn_path))
         if not item:
             item = self.external_files.add()
 
@@ -164,10 +164,10 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         item['is_referenced'] = is_referenced
         return item
 
-    def get_file_by_svn_path(self, svn_path: str) -> SVN_file:
-        for file in self.external_files:
+    def get_file_by_svn_path(self, svn_path: str) -> Tuple[int, SVN_file]:
+        for i, file in enumerate(self.external_files):
             if file.svn_path == svn_path:
-                return file
+                return i, file
 
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
     external_files_active_index: bpy.props.IntProperty()
@@ -184,7 +184,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
                 if changed_file.svn_path == "/"+str(svn_path):
                     ret = log.revision_number
         return ret
-    
 
     log: bpy.props.CollectionProperty(type=SVN_log)
     log_active_index: bpy.props.IntProperty()
@@ -192,6 +191,14 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     # Flags for the Fetch Log operator.
     log_update_in_progress: BoolProperty(default=False, description="This is set to True when an SVN log update process is running. Can be used for UI code checks and to avoid starting several SVN Log update process in parallel")
     log_update_cancel_flag: BoolProperty(default=False, description="Set this to True to request cancellation of the SVN log update process")
+
+    @property
+    def active_file(self):
+        return self.external_files[self.external_files_active_index]
+
+    @property
+    def active_log(self):
+        return self.log[self.log_active_index]
 
 
 @bpy.app.handlers.persistent

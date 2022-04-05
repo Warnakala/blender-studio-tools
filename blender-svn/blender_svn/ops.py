@@ -141,7 +141,7 @@ class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
 
         # Mark the currently outdated files as being outdated.
         for file in files:
-            existing_entry = svn_props.get_file_by_svn_path(file[1])
+            _idx, existing_entry = svn_props.get_file_by_svn_path(file[1])
             if existing_entry:
                 existing_entry.status = 'none'
                 existing_entry.revision = file[0]
