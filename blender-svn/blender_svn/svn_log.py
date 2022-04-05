@@ -123,6 +123,12 @@ def layout_log_split(layout):
 
 
 class SVN_UL_log(bpy.types.UIList):
+    show_all_logs: BoolProperty(
+        name = 'Show All Logs',
+        description = 'Show the complete SVN Log, instead of only entries that affected the currently selected file',
+        default = False
+    )
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if self.layout_type != 'DEFAULT':
             raise NotImplemented
@@ -141,45 +147,60 @@ class SVN_UL_log(bpy.types.UIList):
 
         commit_msg = log_entry.commit_message
         commit_msg = commit_msg.split("\n")[0] if "\n" in commit_msg else commit_msg
-        # commit_msg = commit_msg[:30]+"..." if len(commit_msg) > 32 else commit_msg
+        commit_msg = commit_msg[:50]+"..." if len(commit_msg) > 52 else commit_msg
         msg.alignment = 'LEFT'
         msg.operator("svn.display_commit_message", text=commit_msg, emboss=False).log_rev=log_entry.revision_number
 
     def filter_items(self, context, data, propname):
-        """Default filtering functionality:
-            - Filter by name
-            - Invert filter
-            - Sort alphabetical by name
+        """Custom filtering functionality:
+        - Always sort by descending revision number
+        - Allow searching for various criteria
         """
-        flt_flags = []
-        flt_neworder = []
+        helper_funcs = bpy.types.UI_UL_list
         list_items = getattr(data, propname)
 
-        helper_funcs = bpy.types.UI_UL_list
-
-        # if self.use_filter_sort_alpha:
-        #     flt_neworder = helper_funcs.sort_items_by_name(list_items, "name")
-
-        # if self.filter_name:
-        #     flt_flags = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, list_items, "name",
-        #                                                     reverse=self.use_filter_sort_reverse)
-
-        if not flt_flags:
-            # Start off with all entries being filtered out.
-            flt_flags = [0] * len(list_items)
+        # Start off with all entries flagged as visible.
+        flt_flags = [self.bitflag_filter_item] * len(list_items)
+        # Always sort by descending revision number
+        flt_neworder = sorted(range(len(list_items)), key=lambda i: list_items[i].revision_number)
+        flt_neworder.reverse()
 
         svn = context.scene.svn
         active_file = svn.external_files[svn.external_files_active_index]
-        for idx, log_entry in enumerate(svn.log):
-            for affected_file in log_entry.changed_files:
-                if affected_file.svn_path == "/"+active_file.svn_path:
-                    # If the active file is one of the files affected by this log
-                    # entry, show it in the list.
-                    flt_flags[idx] = self.bitflag_filter_item
-                    break
-    
+
+        if not self.show_all_logs:
+            # Filter out log entries that did not affect the selected file.
+            for idx, log_entry in enumerate(svn.log):
+                for affected_file in log_entry.changed_files:
+                    if affected_file.svn_path == "/"+active_file.svn_path:
+                        # If the active file is one of the files affected by this log
+                        # entry, break the for loop and skip the else block.
+                        break
+                else:
+                    flt_flags[idx] = 0
+
+        if self.filter_name:
+            # Simple search:
+            # Filter out log entries that don't match anything in the string search.
+            for idx, log_entry in enumerate(svn.log):
+                if self.filter_name not in " ".join(
+                    [
+                        "r"+str(log_entry.revision_number),
+                        log_entry.revision_author,
+                        " ".join([f.svn_path for f in log_entry.changed_files]),
+                        log_entry.commit_message,
+                    ]
+                ):
+                    flt_flags[idx] = 0
+
         return flt_flags, flt_neworder
 
+    def draw_filter(self, context, layout):
+        """Custom filtering UI.
+        """
+        main_row = layout.row()
+        main_row.prop(self, 'filter_name', text="")
+        main_row.prop(self, 'show_all_logs', text="", toggle=True, icon='ALIGN_JUSTIFY')
 
 class VIEW3D_PT_svn_log(bpy.types.Panel):
     """Display the revision history of the selected file."""

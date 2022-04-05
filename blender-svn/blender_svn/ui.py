@@ -165,9 +165,8 @@ class SVN_UL_file_list(bpy.types.UIList):
         return type(self).cls_filter_items(context, data, propname)
 
     def draw_filter(self, context, layout):
-        """Default filtering UI:
-        - String input for name filtering
-        - Toggles for invert, sort alphabetical, reverse sort
+        """Custom filtering UI.
+        Toggles are stored in addon preferences, see cls_filter_items().
         """
         main_row = layout.row()
         row = main_row.row(align=True)
