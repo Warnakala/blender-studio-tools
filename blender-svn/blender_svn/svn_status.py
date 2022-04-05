@@ -20,6 +20,8 @@
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from collections import OrderedDict
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
 
 import bpy
 from bpy.props import StringProperty
@@ -125,15 +127,49 @@ ENUM_SVN_STATUS = [
 ]
 
 SVN_STATUS_CHAR = {
-    'M' : 'modified',
-    'D' : 'deleted',
+    '' : 'normal',
     'A' : 'added',
-    'R' : 'replaced'
+    'D' : 'deleted',
+    'M' : 'modified',
+    'R' : 'replaced',
+    'C' : 'conflicted',
+    'X' : 'external',
+    'I' : 'ignored',
+    '?' : 'unversioned',
+    '!' : 'missing',
+    '~' : 'replaced'
 }
 
 
-def get_verbose_status(svn_root_dir: str) -> Dict[str, int]:
-    output = execute_svn_command('svn status --verbose')
+def get_file_statuses(svn_root_dir: str) -> Dict[str, Tuple[str, int]]:
+    output = execute_svn_command(svn_root_dir, 'svn status --verbose --xml')
+    root = ET.fromstring(output)[0]
+
+    # md = minidom.parseString(ET.tostring(root))
+    # print(md.toprettyxml())
+
+    file_statuses = {}
+    for xml_entry in root:
+        filepath = xml_entry.attrib['path']
+        if filepath == ".":
+            continue
+        wc_status = xml_entry[0]
+        status = wc_status.attrib['item']
+        file_rev_number = -1
+        if len(wc_status) > 0:
+            _repo_rev = wc_status.attrib['revision']
+            _prop_status = wc_status.attrib['props']
+            commit = wc_status[0]
+            file_rev_number = int(commit.attrib['revision'])
+            _rev_author = commit[0].text
+            _rev_date_str = commit[1].text
+
+        file_statuses[filepath] = (status, file_rev_number)
+
+
+    return file_statuses
+
+
 
 class SVN_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"

@@ -31,6 +31,7 @@ from bpy.props import BoolProperty
 
 from . import client, prefs
 from .svn_log import SVN_log, SVN_file
+from .svn_status import get_file_statuses
 
 from blender_asset_tracer import trace
 
@@ -93,43 +94,44 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         local repository."""
 
         context = bpy.context
+        addon_prefs = get_addon_prefs(context)
 
         local_client = client.get_local_client()
         if not local_client:
+            # TODO: Just use svn command line to find out whether we're in an SVN repository,
+            # and then remove the PySVN .whl file.
             return
 
         # Remove unversioned files from the list. The ones that are still around
-        #  will be re-discovered below, through local_client.status().
+        #  will be re-discovered below, through get_file_statuses.
         for i, file_entry in reversed(list(enumerate(self.external_files))):
             if file_entry.status == "unversioned":
                 self.external_files.remove(i)
 
         referenced_files: Set[Path] = self.get_referenced_filepaths()
-        referenced_files.add(Path(bpy.data.filepath))
+        referenced_files.add(bpy.data.filepath)
 
-        # Calls `svn status` to get a list of files that have been added, modified, etc.
-        # Match each file name with a tuple that is the modification type and revision number.
-        file_statuses = {
-            s.name: (s.type_raw_name, s.revision) for s in local_client.status()
-        }
+        # Match each file name with a (statis. revision) tuple.
+        file_statuses = get_file_statuses(addon_prefs.svn_directory)
 
         # Add file entries that are referenced by this .blend file,
         # even if the file's status is normal (un-modified)
         for referenced_file in referenced_files:
+            svn_path = self.absolute_to_svn_path(referenced_file)
             status = (
                 "normal",
                 0,
             )  # TODO: We currently don't show a revision number for Normal status files!
-            if str(referenced_file) in file_statuses:
-                status = file_statuses[str(referenced_file)]
-                del file_statuses[str(referenced_file)]
-            file_entry = self.add_file_entry(self.absolute_to_svn_path(referenced_file), status[0], status[1], is_referenced=True)
+            if str(svn_path) in file_statuses:
+                status = file_statuses[str(svn_path)]
+                del file_statuses[str(svn_path)]
+            file_entry = self.add_file_entry(Path(svn_path), status[0], status[1], is_referenced=True)
 
         # Add file entries in the entire SVN repository for files whose status isn't
         # normal. Do this even for files not referenced by this .blend file.
-        for f in file_statuses.keys():
-            status = file_statuses[f]
-            file_entry = self.add_file_entry(self.absolute_to_svn_path(f), status[0], status[1])
+        for svn_path in file_statuses.keys():
+            status = file_statuses[svn_path]
+            file_entry = self.add_file_entry(Path(svn_path), status[0], status[1])
         
         prefs.force_good_active_index(context)
 
@@ -142,28 +144,35 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         return absolute_path.relative_to(svn_dir)
 
     def add_file_entry(
-        self, svn_path: Path, status: str, rev=0, is_referenced=False
+        self, svn_path: Path, status: str, rev: int, is_referenced=False
     ) -> SVN_file:
         tup = self.get_file_by_svn_path(str(svn_path))
+        existed = False
         if not tup:
             item = self.external_files.add()
         else:
+            existed = True
             _idx, item = tup
 
         # Set collection property.
         item['svn_path'] = str(svn_path)
         item['name'] = svn_path.name
 
+        assert rev > 0 or status in ['unversioned', 'added'], "Revision number of a versioned file must be greater than 0."
+        item['revision'] = rev
+        if rev < self.get_latest_revision_of_file(svn_path) and status == 'normal':
+            # SVN gives us a 'normal' status when we checkout an older version of a file.
+            # This doesn't really make sense from user POV.
+            # Use 'Outdated' status instead.
+            status = 'none'
+
+        if not svn_path.is_file() and item.status == 'none' and status == 'normal':
+            # Super annoying case: A previous `svn status --verbose --show-updates`
+            # marked a folder as being outdated, but a subsequent `svn status --verbose`
+            # reports the status of this folder as normal. In this case, it feels more
+            # accurate to keep the folder on outdated.
+            status = 'none'
         item.status = status
-        if rev==0:
-            """SVN revisions start at 1, so 0 means it wasn't specified.
-            Let's assume that the svn status is accurate. This means that in the
-            case of a 'normal' status, we can just find the latest log that
-            affected this file and put that log's as the revision number.
-            """
-            item['revision'] = self.get_latest_revision_of_file(svn_path)
-        else:
-            item['revision'] = rev
 
         # Prevent editing values in the UI.
         item['is_referenced'] = is_referenced

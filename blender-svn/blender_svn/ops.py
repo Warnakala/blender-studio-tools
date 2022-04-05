@@ -33,13 +33,11 @@ from .util import get_addon_prefs
 
 logger = logging.getLogger("SVN")
 
-def execute_svn_command(context, command: str) -> str:
+def execute_svn_command(svn_root_path: str, command: str) -> str:
     """Execute an svn command in the root of the current svn repository.
     So any file paths that are part of the commend should be relative to the
     SVN root.
     """
-    prefs = get_addon_prefs(context)
-    svn_root_path = prefs.svn_directory
     return str(
         subprocess.check_output(
             (command), shell=True, cwd=svn_root_path+"/"
@@ -47,18 +45,28 @@ def execute_svn_command(context, command: str) -> str:
         'utf-8'
     )
 
-def execute_svn_command_nofreeze(self, context, command: str) -> subprocess.Popen:
+def execute_svn_command_nofreeze(svn_root_path: str, command: str) -> subprocess.Popen:
     """Execute an svn command in the root of the current svn repository using
     Popen(), which avoids freezing the Blender UI.
     """
-    prefs = get_addon_prefs(context)
-    svn_root_path = prefs.svn_directory
     return subprocess.Popen(
         (command), shell=True, cwd=svn_root_path+"/", stdout=subprocess.PIPE
     )
 
 
-class SVN_Operator_Single_File:
+class SVN_Operator:
+    def execute_svn_command_nofreeze(self, context, command: str) -> subprocess.Popen:
+        prefs = get_addon_prefs(context)
+        svn_root_path = prefs.svn_directory
+        return execute_svn_command_nofreeze(svn_root_path, command)
+    
+    def execute_svn_command(self, context, command: str) -> subprocess.Popen:
+        prefs = get_addon_prefs(context)
+        svn_root_path = prefs.svn_directory
+        return execute_svn_command(svn_root_path, command)
+
+
+class SVN_Operator_Single_File(SVN_Operator):
     """Base class for SVN operators operating on a single file."""
     file_rel_path: StringProperty()
 
@@ -87,8 +95,6 @@ class SVN_Operator_Single_File:
 
 
 class SVN_check_for_local_changes(bpy.types.Operator):
-    # TODO: Maybe this operator doesn't need to be in the UI, since it runs on file save anyways, and
-    # having two different types of refresh buttons may be confusing.
     bl_idname = "svn.check_for_local_changes"
     bl_label = "Check For Local Changes"
     bl_description = "Refresh the file list based only on local file changes"
@@ -100,7 +106,7 @@ class SVN_check_for_local_changes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SVN_check_for_updates(bpy.types.Operator):
+class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.check_for_updates"
     bl_label = "Check For All Changes"
     bl_description = "Refresh the file list completely, including asking the remote repository for available updates. This may take a few seconds"
@@ -110,7 +116,9 @@ class SVN_check_for_updates(bpy.types.Operator):
         svn_props = context.scene.svn
         svn_props.check_for_local_changes()
 
-        outp = execute_svn_command(context, 'svn status --show-updates')
+        # TODO: This might be safer to do with --xml arg, but even that is a giant mess, so whatever.
+        outp = self.execute_svn_command(context, 'svn status --show-updates')
+
         # Discard the last 2 lines that just shows current revision number.
         lines = outp.split("\n")[:-2]
         # Only keep files with no status indicator ("none" status).
@@ -337,7 +345,7 @@ commit_message = StringProperty(
     options={'SKIP_SAVE'}
 )
 
-class SVN_commit(Popup_Operator, bpy.types.Operator):
+class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     bl_idname = "svn.commit"
     bl_label = "SVN Commit"
     bl_description = "Commit a selection of files to the remote repository"
@@ -403,7 +411,7 @@ class SVN_commit(Popup_Operator, bpy.types.Operator):
 
         filepaths = " ".join([f'"{f.svn_path}"' for f in files_to_commit])
 
-        execute_svn_command(context, f'svn commit -m "{commit_message}" {filepaths}')
+        self.execute_svn_command(context, f'svn commit -m "{commit_message}" {filepaths}')
 
         # Update the file list.
         # The freshly committed files should now have the 'normal' status.
@@ -414,14 +422,14 @@ class SVN_commit(Popup_Operator, bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SVN_cleanup(bpy.types.Operator):
+class SVN_cleanup(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.cleanup"
     bl_label = "SVN Cleanup"
     bl_description = "Resolve issues that can arise from previous SVN processes having been interrupted"
     bl_options = {'INTERNAL'}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        execute_svn_command(context, 'svn cleanup')
+        self.execute_svn_command(context, 'svn cleanup')
         self.report({'INFO'}, "SVN Cleanup complete.")
 
         return {"FINISHED"}

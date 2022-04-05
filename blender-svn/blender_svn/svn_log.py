@@ -248,7 +248,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         if not any_visible:
             return False
         active_file = context.scene.svn.active_file
-        if active_file.status in ['unversioned']:
+        if active_file.status in ['unversioned', 'added']:
             return False
         return True
 
@@ -406,7 +406,7 @@ class SVN_fetch_log(SVN_Operator_Single_File, bpy.types.Operator):
                 num_logs_to_get = self.MAX_REVS_TO_DOWNLOAD
 
             goal_rev = latest_log_rev + num_logs_to_get
-            self.popen = self.execute_svn_command_nofreeze(context, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")[0]
+            self.popen = self.execute_svn_command_nofreeze(context, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")#[0]
 
         if self.popen.poll() is None:
             # Sub-process is not finished yet, do nothing.
