@@ -25,7 +25,7 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
 import bpy, subprocess
-from bpy.props import StringProperty, BoolVectorProperty, IntProperty
+from bpy.props import StringProperty, BoolVectorProperty, IntProperty, EnumProperty
 
 from send2trash import send2trash   # NOTE: For some reason, when there's any error in this file, this line seems to take the blame for it?
 
@@ -156,14 +156,14 @@ class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SVN_update_all(bpy.types.Operator):
+class SVN_update_all(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.update_all"
     bl_label = "SVN Update All"
     bl_description = "Download all the latest updates from the remote repository"
     bl_options = {'INTERNAL'}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        execute_svn_command(context, 'svn up')
+        self.execute_svn_command(context, 'svn up --accept "postpone"')
         context.scene.svn.update_outdated_file_entries()
 
         return {"FINISHED"}
@@ -200,7 +200,7 @@ class SVN_update_single(SVN_Operator_Single_File, bpy.types.Operator):
     missing_file_allowed = True
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        self.execute_svn_command(context, f'svn up "{self.file_rel_path}"')
+        self.execute_svn_command(context, f'svn up "{self.file_rel_path}" --accept "postpone"')
         # Remove the file entry for this file
         context.scene.svn.remove_by_svn_path(self.file_rel_path)
 
@@ -220,7 +220,14 @@ class SVN_download_file_revision(SVN_Operator_Single_File, bpy.types.Operator):
     revision: IntProperty()
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        self.execute_svn_command(context, f'svn up -r{self.revision} "{self.file_rel_path}"')
+        _idx, file = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
+        if file.status == 'modified':
+            # If file has local modifications, let's avoid a conflict by cancelling
+            # and telling the user to resolve it in advance.
+            self.report({'ERROR'}, "Cancelled: You have local modifications to this file. You must revert or commit it first!")
+            return {'CANCELLED'}
+
+        self.execute_svn_command(context, f'svn up -r{self.revision} "{self.file_rel_path}" --accept "postpone"')
 
         return {"FINISHED"}
     
@@ -236,17 +243,10 @@ class SVN_download_file_revision(SVN_Operator_Single_File, bpy.types.Operator):
         latest_rev = svn.get_latest_revision_of_file(self.file_rel_path)
         file_entry.status = 'normal' if latest_rev == self.revision else 'none'
 
-        # TODO: If file was already modified when this operator was called, this 
-        # operator will create a conflict.
-
-        # Either because an old file was modified and the new one is failing to overwrite it, 
-        # or because we have uncommitted changes that we are trying to overwrite.
-
-        # should throw a pop-up, prompting to first revert the file, before checking out the older version.
-
         self.report({'INFO'}, f"Checked out revision {self.revision} of {self.file_rel_path}")
 
         return ret
+
 
 class SVN_restore_file(SVN_Operator_Single_File, bpy.types.Operator):
     bl_idname = "svn.restore_file"
@@ -328,13 +328,47 @@ class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Oper
 
     missing_file_allowed = True
 
-    file_rel_path: StringProperty()
-
     def get_warning_text(self, context):
         return "This file will be deleted for everyone:\n    " + self.file_rel_path + "\nAre you sure?"
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn remove "{self.file_rel_path}"')
+
+        return {"FINISHED"}
+
+
+class SVN_resolve_conflict(SVN_Operator_Single_File, bpy.types.Operator):
+    bl_idname = "svn.resolve_conflict"
+    bl_label = "Resolve Conflict"
+    bl_description = "Resolve a conflict, by discarding either local or remote changes"
+    bl_options = {'INTERNAL'}
+
+    resolve_method: EnumProperty(
+        name = "Resolve Method",
+        description = "Method to use to resolve the conflict",
+        items = [
+            ('mine-full', 'Keep Mine', 'Overwrite the new changes downloaded from the remote, and keep the local changes instead'),
+            ('theirs-full', 'Keep Theirs', 'Overwrite the local changes with those downloaded from the remote'),
+        ]
+    )
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=500)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.alert=True
+        layout.label(text="Choose which version to keep. The other will be discarded!")
+        layout.prop(self, 'resolve_method', expand=True)
+        if self.resolve_method == 'mine-full':
+            layout.label(text="Your changes will be kept, but they were made on top of an outdated file.")
+            layout.label(text="When you commit your changes, the changes someone else made will be lost.")
+        else:
+            layout.label(text="Your changes will be PERMANENTLY DELETED!")
+
+    def _execute(self, context: bpy.types.Context) -> Set[str]:
+        self.execute_svn_command(context, f'svn resolve "{self.file_rel_path}" --accept "{self.resolve_method}"')
 
         return {"FINISHED"}
 
@@ -450,4 +484,5 @@ registry = [
     SVN_remove_file,
     SVN_commit,
     SVN_cleanup,
+    SVN_resolve_conflict,
 ]

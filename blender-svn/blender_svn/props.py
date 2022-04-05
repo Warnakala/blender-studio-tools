@@ -200,6 +200,15 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
                     ret = log.revision_number
         return ret
 
+    def is_file_outdated(self, file: SVN_file) -> bool:
+        """A file may have the 'modified' state while also being outdated.
+        In this case SVN is of no use, we need to detect and handle this case
+        by ourselves.
+        """
+        latest = self.get_latest_revision_of_file(file.svn_path)
+        current = file.revision
+        return latest > current
+
     update_log_from_file = update_log_from_file
     log: bpy.props.CollectionProperty(type=SVN_log)
     log_active_index: bpy.props.IntProperty()

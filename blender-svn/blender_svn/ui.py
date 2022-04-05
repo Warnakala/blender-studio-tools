@@ -67,20 +67,26 @@ class SVN_UL_file_list(bpy.types.UIList):
         if self.layout_type != 'DEFAULT':
             raise NotImplemented
 
+        svn = data
         file_entry = item
 
         row = layout.row()
-        split = row.split(factor=0.8)
+        split = row.split(factor=0.7)
         if self.show_file_paths:
             split.prop(file_entry, 'svn_path', text="", emboss=False, icon=file_entry.file_icon)
         else:
             split.prop(file_entry, 'name', text="", emboss=False, icon=file_entry.file_icon)
 
         row = split.row()
-        split = row.split(factor=0.2)
-        explainer = split.operator('svn.explain_status', text="", icon=file_entry.status_icon)
+        split = row.split(factor=0.4)
+        row = split.row(align=True)
+        explainer = row.operator('svn.explain_status', text="", icon=file_entry.status_icon)
         explainer.status = file_entry.status
         explainer.file_rel_path = file_entry.svn_path
+        if svn.is_file_outdated(file_entry) and file_entry.status=='modified':
+            explainer = row.operator('svn.explain_status', text="", icon='ERROR')
+            explainer.status = 'conflicted'
+            explainer.file_rel_path = file_entry.svn_path
 
         row = split.row(align=True)
         row.alignment = 'RIGHT'
@@ -91,6 +97,8 @@ class SVN_UL_file_list(bpy.types.UIList):
             ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
         if file_entry.status == 'modified':
             ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
+            if svn.is_file_outdated(file_entry):
+                row.operator('svn.update_single', text="", icon='IMPORT')
         if file_entry.status in ['missing', 'deleted']:
             ops.append(row.operator('svn.restore_file', text="", icon='LOOP_BACK'))
             if file_entry.status == 'missing':
@@ -100,6 +108,8 @@ class SVN_UL_file_list(bpy.types.UIList):
         if file_entry.status == 'unversioned':
             ops.append(row.operator('svn.add_file', text="", icon='ADD'))
             ops.append(row.operator('svn.trash_file', text="", icon='TRASH'))
+        if file_entry.status == 'conflicted':
+            ops.append(row.operator('svn.resolve_conflict', text="", icon='TRACKING_CLEAR_FORWARDS'))
 
         if ops:
             for op in ops:

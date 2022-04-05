@@ -133,7 +133,6 @@ class SVN_log(bpy.types.PropertyGroup):
         return False
 
 
-
 def layout_log_split(layout):
     main = layout.split(factor=0.4)
     num_and_auth = main.row()
