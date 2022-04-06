@@ -30,6 +30,7 @@ from bpy.props import StringProperty, BoolVectorProperty, IntProperty, EnumPrope
 from send2trash import send2trash   # NOTE: For some reason, when there's any error in this file, this line seems to take the blame for it?
 
 from .util import get_addon_prefs
+from . import svn_status
 
 logger = logging.getLogger("SVN")
 
@@ -116,13 +117,11 @@ class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
         svn_props = context.scene.svn
         svn_props.check_for_local_changes()
 
-        # TODO: This might be safer to do with --xml arg, but even that is a giant mess, so whatever.
+        # TODO: This needs to be re-written to use --xml.
         outp = self.execute_svn_command(context, 'svn status --show-updates')
 
         # Discard the last 2 lines that just shows current revision number.
         lines = outp.split("\n")[:-2]
-        # Only keep files with no status indicator ("none" status).
-        lines = [l for l in lines if l.startswith(" ")]
 
         # Remove empty lines.
         while True:
@@ -140,6 +139,11 @@ class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
                 # Set the revision number to 0, and the status to 'added'.
                 rev_no = 0
                 status = 'added'
+            elif len(split)==4:
+                # A file with a new version on the remote also has a non-normal status.
+                # This will probably be a conflict.
+                status = svn_status.SVN_STATUS_CHAR[split[0]]
+                rev_no = int(split[2])
             else:
                 rev_no = int(split[1])
             files.append((split[-1], status, rev_no))
@@ -149,13 +153,19 @@ class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
 
         # Mark the currently outdated files as being outdated.
         for file in files:
-            tup = svn_props.get_file_by_svn_path(file[1])
+            tup = svn_props.get_file_by_svn_path(file[2])
             if tup:
-                _idx, existing_entry = tup
-                existing_entry.status = 'none'
-                existing_entry.revision = file[0]
+                _idx, file_entry = tup
+                file_entry.status = 'none'
+                file_entry.revision = file[0]
             else:
-                svn_props.add_file_entry(Path(file[0]), file[1], file[2])
+                file_entry = svn_props.add_file_entry(Path(file[0]), file[1], file[2])
+            file_entry.newer_on_remote = True
+            if file_entry.status == 'modified':
+                # Strange case 3: A file with an already known new version available 
+                # on the remote was modified locally. SVN will give this the 'modified'
+                # status, but we want it to say 'conflicted', with options to revert or update.
+                file_entry.status = 'conflicted'
 
         return {"FINISHED"}
 

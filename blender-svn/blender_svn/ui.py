@@ -113,7 +113,13 @@ class SVN_UL_file_list(bpy.types.UIList):
             ops.append(row.operator('svn.add_file', text="", icon='ADD'))
             ops.append(row.operator('svn.trash_file', text="", icon='TRASH'))
         if file_entry.status == 'conflicted':
-            ops.append(row.operator('svn.resolve_conflict', text="", icon='TRACKING_CLEAR_FORWARDS'))
+            if file_entry.newer_on_remote:
+                # This happens when we make changes to a file then check for updates on the remote, and find one.
+                # See Strange case 3 in SVN_check_for_updates.
+                ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
+                ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
+            else:
+                ops.append(row.operator('svn.resolve_conflict', text="", icon='TRACKING_CLEAR_FORWARDS'))
 
         if ops:
             for op in ops:

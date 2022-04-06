@@ -84,6 +84,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             if file_entry.status == "none":
                 file_entry.status = 'normal'
                 file_entry.revision = self.get_latest_revision_of_file(file_entry.svn_path)
+            file_entry.newer_on_remote = False
 
     def remove_by_svn_path(self, path_to_remove: str):
         """Remove a file entry from the file list, based on its filepath."""
@@ -112,7 +113,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         referenced_files: Set[Path] = self.get_referenced_filepaths()
         referenced_files.add(bpy.data.filepath)
 
-        # Match each file name with a (statis. revision) tuple.
+        # {filepath : (status. revision)}, via `svn status --verbose --xml`
         file_statuses = get_file_statuses(addon_prefs.svn_directory)
 
         # Add file entries that are referenced by this .blend file,
@@ -147,6 +148,9 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     def add_file_entry(
         self, svn_path: Path, status: str, rev: int, is_referenced=False
     ) -> SVN_file:
+        if svn_path.suffix.startswith(".r") and svn_path.suffix[2:].isdecimal():
+            # Do not add .r### files to the file list, ever.
+            return
         tup = self.get_file_by_svn_path(str(svn_path))
         existed = False
         if not tup:
@@ -175,6 +179,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             # accurate to keep the folder on outdated.
             # TODO: Updating an outdated folder doesn't mark the outdated files as no longer being outdated. Maybe folders shouldn't even be displayed in the UIList, I don't even really get why svn marks the folder path as modified.
             status = 'none'
+
         item.status = status
 
         # Prevent editing values in the UI.

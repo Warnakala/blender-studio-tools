@@ -49,6 +49,11 @@ class SVN_file(bpy.types.PropertyGroup):
         items=svn_status.ENUM_SVN_STATUS,
         default="normal",
     )
+    newer_on_remote: BoolProperty(
+        name="Outdated",
+        description="True when a new version is available on the remote. This must be separate from the `status` enum to keep track of the full picture",
+        default=False,
+    )
     revision: IntProperty(
         name="Revision",
         description="Revision number",
