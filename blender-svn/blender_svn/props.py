@@ -161,17 +161,19 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
         assert rev > 0 or status in ['unversioned', 'added'], "Revision number of a versioned file must be greater than 0."
         item['revision'] = rev
+
         if rev < self.get_latest_revision_of_file(svn_path) and status == 'normal':
-            # SVN gives us a 'normal' status when we checkout an older version of a file.
-            # This doesn't really make sense from user POV.
-            # Use 'Outdated' status instead.
+            # Strange case 1: We checked out an older version of a file.
+            # SVN assigns this the 'normal' status instead of 'none'(Outdated)
+            # which makes more sense from user POV.
             status = 'none'
 
         if not svn_path.is_file() and item.status == 'none' and status == 'normal':
-            # Super annoying case: A previous `svn status --verbose --show-updates`
+            # Strange case 2: A previous `svn status --verbose --show-updates`
             # marked a folder as being outdated, but a subsequent `svn status --verbose`
             # reports the status of this folder as normal. In this case, it feels more
             # accurate to keep the folder on outdated.
+            # TODO: Updating an outdated folder doesn't mark the outdated files as no longer being outdated. Maybe folders shouldn't even be displayed in the UIList, I don't even really get why svn marks the folder path as modified.
             status = 'none'
         item.status = status
 
@@ -208,6 +210,13 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         latest = self.get_latest_revision_of_file(file.svn_path)
         current = file.revision
         return latest > current
+
+    def file_exists(self, file: SVN_file) -> bool:
+        context = bpy.context
+        prefs = get_addon_prefs(context)
+        svn_directory = Path(prefs.svn_directory)
+        full_path = svn_directory.joinpath(Path(file.svn_path))
+        return full_path.exists()
 
     update_log_from_file = update_log_from_file
     log: bpy.props.CollectionProperty(type=SVN_log)

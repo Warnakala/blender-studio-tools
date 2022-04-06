@@ -23,6 +23,8 @@ from .util import get_addon_prefs
 
 from bpy.props import BoolProperty
 
+from . import svn_status
+
 class VIEW3D_PT_svn(bpy.types.Panel):
     """SVN UI panel in the 3D View Sidebar."""
     bl_space_type = 'VIEW_3D'
@@ -79,14 +81,8 @@ class SVN_UL_file_list(bpy.types.UIList):
 
         row = split.row()
         split = row.split(factor=0.4)
-        row = split.row(align=True)
-        explainer = row.operator('svn.explain_status', text="", icon=file_entry.status_icon)
-        explainer.status = file_entry.status
-        explainer.file_rel_path = file_entry.svn_path
-        if svn.is_file_outdated(file_entry) and file_entry.status=='modified':
-            explainer = row.operator('svn.explain_status', text="", icon='ERROR')
-            explainer.status = 'conflicted'
-            explainer.file_rel_path = file_entry.svn_path
+        status_row = split.row(align=True)
+        statuses = [file_entry.status]
 
         row = split.row(align=True)
         row.alignment = 'RIGHT'
@@ -98,13 +94,21 @@ class SVN_UL_file_list(bpy.types.UIList):
         if file_entry.status == 'modified':
             ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
             if svn.is_file_outdated(file_entry):
-                row.operator('svn.update_single', text="", icon='IMPORT')
+                # This happens when we checkout an older version of the file and modify it,
+                # So we can immediately know that the file will be in conflict.
+                statuses.append('conflicted')
+                ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
         if file_entry.status in ['missing', 'deleted']:
             ops.append(row.operator('svn.restore_file', text="", icon='LOOP_BACK'))
             if file_entry.status == 'missing':
                 ops.append(row.operator('svn.remove_file', text="", icon='TRASH'))
         if file_entry.status == 'added':
-            ops.append(row.operator('svn.unadd_file', text="", icon='REMOVE'))
+            if file_entry.revision == 0:
+                # This means the file only exists on the remote.
+                statuses.append('none')
+                ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
+            else:
+                ops.append(row.operator('svn.unadd_file', text="", icon='REMOVE'))
         if file_entry.status == 'unversioned':
             ops.append(row.operator('svn.add_file', text="", icon='ADD'))
             ops.append(row.operator('svn.trash_file', text="", icon='TRASH'))
@@ -114,6 +118,14 @@ class SVN_UL_file_list(bpy.types.UIList):
         if ops:
             for op in ops:
                 op.file_rel_path = file_entry.svn_path
+
+        # Populate the status icons.
+        for status in statuses:
+            icon = svn_status.SVN_STATUS_DATA[status][0]
+            explainer = status_row.operator('svn.explain_status', text="", icon=icon)
+            explainer.status = status
+            explainer.file_rel_path = file_entry.svn_path
+
 
     @classmethod
     def cls_filter_items(cls, context, data, propname):

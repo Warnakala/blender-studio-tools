@@ -131,14 +131,18 @@ class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
             except ValueError:
                 break
 
-        files: List[Tuple[int, str]] = [] # Revision number, filepath
+        files: List[Tuple[str, str, int]] = [] # filepath, status, revision number
         for line in lines:
+            status = 'none'
             split = [s for s in line.split(" ") if s]
             if len(split)==2:
-                rev_no = 0 # If the file is not currently on the local repository, set the revision number is 0. TODO: A revision number of 0 should show some explanation in the interface.
+                # The file is not currently on the local repository.
+                # Set the revision number to 0, and the status to 'added'.
+                rev_no = 0
+                status = 'added'
             else:
                 rev_no = int(split[1])
-            files.append((rev_no, split[-1]))
+            files.append((split[-1], status, rev_no))
 
         # Mark all previously outdated files as being up to date.
         svn_props.update_outdated_file_entries()
@@ -151,7 +155,7 @@ class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
                 existing_entry.status = 'none'
                 existing_entry.revision = file[0]
             else:
-                svn_props.add_file_entry(Path(file[1]), 'none', file[0])
+                svn_props.add_file_entry(Path(file[0]), file[1], file[2])
 
         return {"FINISHED"}
 
