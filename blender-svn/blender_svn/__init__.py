@@ -25,7 +25,7 @@ import bpy
 
 import importlib
 
-from . import prefs, props, ops, ui, svn_log, svn_status
+from . import prefs, props, ops, ui, svn_log, svn_status, timers
 
 bl_info = {
     "name": "Blender SVN",
@@ -49,6 +49,7 @@ modules = [
     svn_log,
     svn_status,
     props,
+    timers
 ]
 
 def reload() -> None:

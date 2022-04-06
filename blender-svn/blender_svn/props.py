@@ -242,7 +242,8 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
 @bpy.app.handlers.persistent
 def check_for_local_changes(scene):
-    if not bpy.data.filepath:
+    if bpy.data.filepath == "":
+        get_addon_prefs(bpy.context).reset()
         return
     if not scene:
         # When called from save_post() handler, which apparently does not pass anything???
