@@ -148,6 +148,8 @@ def preload_dependencies() -> None:
     _log.debug("Loaded wheel: %s", module.__name__)
     module = load_wheel_global("send2trash", "Send2Trash")
     _log.debug("Loaded wheel: %s", module.__name__)
+    module = load_wheel_global("xmltodict", "xmltodict")
+    _log.debug("Loaded wheel: %s", module.__name__)
 
 
 if __name__ == "__main__":
