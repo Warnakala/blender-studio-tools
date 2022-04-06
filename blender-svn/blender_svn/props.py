@@ -227,10 +227,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     log: bpy.props.CollectionProperty(type=SVN_log)
     log_active_index: bpy.props.IntProperty()
 
-    # Flags for the Fetch Log operator.
-    log_update_in_progress: BoolProperty(default=False, description="This is set to True when an SVN log update process is running. Can be used for UI code checks and to avoid starting several SVN Log update process in parallel")
-    log_update_cancel_flag: BoolProperty(default=False, description="Set this to True to request cancellation of the SVN log update process")
-
     @property
     def active_file(self):
         return self.external_files[self.external_files_active_index]
@@ -248,8 +244,6 @@ def check_for_local_changes(scene):
     if not scene:
         # When called from save_post() handler, which apparently does not pass anything???
         scene = bpy.context.scene
-    scene.svn.log_update_in_progress = False
-    scene.svn.log_update_cancel_flag = False
     scene.svn.check_for_local_changes()
 
 

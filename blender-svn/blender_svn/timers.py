@@ -61,6 +61,13 @@ def timer_update_svn_log():
     svn = context.scene.svn
     prefs = get_addon_prefs(context)
 
+    if not prefs.is_in_repo:
+        return
+
+    if not prefs.log_update_in_background:
+        svn_log_background_fetch_stop()
+        return
+
     if is_log_up_to_date(context):
         print("SVN Log is up to date with current revision.")
         svn_log_background_fetch_stop()
@@ -93,7 +100,8 @@ def svn_log_background_fetch_start(_dummy1, _dummy2):
     bpy.app.timers.register(timer_update_svn_log, persistent=True)
 
 def svn_log_background_fetch_stop():
-    bpy.app.timers.unregister(timer_update_svn_log)
+    if bpy.app.timers.is_registered(timer_update_svn_log):
+        bpy.app.timers.unregister(timer_update_svn_log)
     global SVN_LOG_POPEN
     SVN_LOG_POPEN = None
 

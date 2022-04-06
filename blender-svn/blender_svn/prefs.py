@@ -57,11 +57,19 @@ def force_good_active_index(context) -> bool:
 class SVN_addon_preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
+    log_update_in_background: BoolProperty(
+        name="Auto-Update SVN Log",
+        default=True, 
+        description="Allow keeping the SVN log up to date automatically. Disable if it causes problems"
+    )
+
     enable_ui: BoolProperty(
         name="Enable UI",
         default=True,
         description="Enable UI in sidebar for debugging/testing",
     )
+
+    # TODO: Everything below this should be moved to SVN_scene_properties...
     is_in_repo: BoolProperty(
         name="is_in_repo",
         default=False,
@@ -163,6 +171,7 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         # Production Config Dir.
         row = layout.row(align=True)
         row.prop(self, "enable_ui")
+        row.prop(self, "log_update_in_background")
 
 
 # ----------------REGISTER--------------.

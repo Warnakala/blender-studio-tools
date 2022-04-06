@@ -207,11 +207,6 @@ class SVN_MT_context_menu(bpy.types.Menu):
 
         layout.operator("svn.check_for_local_changes", icon='FILE_REFRESH')
         layout.operator("svn.cleanup", icon='BRUSH_DATA')
-        svn = context.scene.svn
-        if svn.log_update_in_progress:
-            layout.operator("svn.fetch_log_cancel", icon="TEXT")
-        else:
-            layout.operator("svn.fetch_log", icon="TEXT")
 
 
 class VIEW3D_PT_svn_files(bpy.types.Panel):

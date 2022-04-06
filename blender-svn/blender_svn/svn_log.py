@@ -345,118 +345,6 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
             row.prop(f, 'svn_path', emboss=False, text="", icon=f.file_icon)
 
 
-class SVN_fetch_log(SVN_Operator_Single_File, bpy.types.Operator):
-    bl_idname = "svn.fetch_log"
-    bl_label = "Fetch SVN Log"
-    bl_description = "Update the SVN Log file with new log entries grabbed from the remote repository"
-    bl_options = {'INTERNAL'}
-
-    missing_file_allowed = True
-    MAX_REVS_TO_DOWNLOAD = 10  # Number of revisions to download before writing to the file and the console. Bigger number means fewer "checkpoints" in case the process gets cancelled.
-
-    def invoke(self, context, _event):
-        """We want to use a modal operator to wait for the SVN process in the 
-        background to finish. And once it's finished, we want to move on to 
-        execute()."""
-
-        svn = context.scene.svn
-        if svn.log_update_in_progress:
-            self.report({'ERROR'}, "An SVN Log process is already running!")
-            return {'CANCELLED'}
-
-        prefs = get_addon_prefs(context)
-        current_rev = prefs.revision_number
-        latest_log_rev = 0
-        if len(svn.log) > 0:
-            latest_log_rev = svn.log[-1].revision_number
-
-        if latest_log_rev >= current_rev:
-            self.report({'INFO'}, "Log is already up to date, cancelling.")
-            return {'CANCELLED'}
-
-        self.popen = None
-        self.report({'INFO'}, "Begin updating SVN log, this may take a while. Autosave is now disabled! Click the button again to cancel.")
-        svn.log_update_in_progress = True
-        svn.log_update_cancel_flag = False
-        context.window_manager.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, _event):
-        prefs = get_addon_prefs(context)
-        current_rev = prefs.revision_number
-        svn = context.scene.svn
-
-        if svn.log_update_cancel_flag:
-            self.report({'INFO'}, "Log update cancelled.")
-            svn.log_update_cancel_flag = False
-            svn.log_update_in_progress = False
-            return {'FINISHED'}
-
-        latest_log_rev = 0
-        if len(svn.log) > 0:
-            latest_log_rev = svn.log[-1].revision_number
-
-        if self.popen is None:
-            # Start a sub-process.
-            num_logs_to_get = current_rev - latest_log_rev
-            if num_logs_to_get > self.MAX_REVS_TO_DOWNLOAD:
-                # Do some clamping here while testing. TODO: remove once this successfully runs in the background!
-                num_logs_to_get = self.MAX_REVS_TO_DOWNLOAD
-
-            goal_rev = latest_log_rev + num_logs_to_get
-            self.popen = self.execute_svn_command_nofreeze(context, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")#[0]
-
-        if self.popen.poll() is None:
-            # Sub-process is not finished yet, do nothing.
-            return {'PASS_THROUGH'}
-
-        # Sub-process has finished running, process it and start another.
-        stdout_data, _stderr_data = self.popen.communicate()
-        self.popen = None
-
-        # Create the log file if it doesn't already exist.
-        self.file_rel_path = ".svn/svn.log"
-        filepath = self.get_file_full_path(context)
-
-        file_existed = False
-        if filepath.exists():
-            file_existed = True
-            svn.update_log_from_file(filepath)
-
-        if latest_log_rev >= current_rev:
-            self.report({'INFO'}, "Finished updating the SVN log!")
-            svn.log_update_in_progress = False
-            return {'FINISHED'}
-
-        new_log = stdout_data.decode()
-        with open(filepath, 'a+') as f:
-            # Append to the file, create it if necessary.
-            if file_existed:
-                # We want to skip the first line of the svn log when continuing,
-                # to avoid duplicate dashed lines, which would also mess up our
-                # parsing logic.
-                new_log = new_log[73:] # 72 dashes and a newline
-
-            f.write(new_log)
-
-        svn.update_log_from_file(filepath)
-
-        self.report({'INFO'}, f"SVN Log now at r{context.scene.svn.log[-1].revision_number}")
-
-        return {'RUNNING_MODAL'}
-
-
-class SVN_fetch_log_cancel(bpy.types.Operator):
-    bl_idname = "svn.fetch_log_cancel"
-    bl_label = "Cancel Fetching SVN Log"
-    bl_description = "Cancel the background process of fetching the SVN log"
-    bl_options = {'INTERNAL'}
-
-    def execute(self, context):
-        context.scene.svn.log_update_cancel_flag = True
-        return {'FINISHED'}
-
-
 def execute_tooltip_log(self, context):
     """Set the index on click, to act as if this operator button was 
     click-through in the UIList."""
@@ -506,8 +394,6 @@ registry = [
     SVN_log, 
     VIEW3D_PT_svn_log, 
     SVN_UL_log, 
-    SVN_fetch_log, 
-    SVN_fetch_log_cancel, 
     SVN_tooltip_log, 
     SVN_show_commit_message
 ]
