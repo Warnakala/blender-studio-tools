@@ -22,12 +22,11 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from collections import OrderedDict
 from pathlib import Path
 import xml.etree.ElementTree as ET
-from datetime import datetime
 
 import bpy
 from bpy.props import StringProperty
 
-from .ops import execute_svn_command
+from .execute_subprocess import execute_svn_command
 from .util import get_addon_prefs, svn_date_simple
 
 
@@ -210,7 +209,6 @@ def set_svn_info(context) -> bool:
     prefs = get_addon_prefs(context)
     output = execute_svn_command(str(Path(bpy.data.filepath).parent), 'svn info')
     lines = output.split("\n")
-    print(lines)
     if len(lines) == 1:
         prefs.is_in_repo = False
         prefs.reset()

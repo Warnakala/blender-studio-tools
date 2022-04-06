@@ -166,12 +166,12 @@ def update_log_from_file(self, filepath: Path):
         # Nothing to read!
         return
     with open(filepath, 'r') as f:
-        next(f)
+        next(f) # Skip the first line of dashes.
         chunk = []
         for line in f:
             line = line.replace("\n", "")
             if line == "-" * 72:
-                # The previous log entry is over.
+                # Line of dashes indicates the log entry is over.
                 chunks.append(chunk)
                 chunk = []
                 continue
