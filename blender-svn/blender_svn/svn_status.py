@@ -247,7 +247,7 @@ def init_svn(context, dummy):
     context.scene.svn.log_active_index = 0
 
     prefs = get_addon_prefs(context)
-    context.scene.svn.update_log_from_file(Path(prefs.svn_directory+"/.svn/svn.log"))
+    context.scene.svn.reload_svn_log(Path(prefs.svn_directory+"/.svn/svn.log"))
 
 def register():
     bpy.app.handlers.load_post.append(init_svn)

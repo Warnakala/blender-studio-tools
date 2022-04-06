@@ -34,7 +34,7 @@ from . import wheels
 wheels.preload_dependencies()
 
 from . import prefs
-from .svn_log import SVN_log, SVN_file, update_log_from_file
+from .svn_log import SVN_log, SVN_file, reload_svn_log
 from .svn_status import get_file_statuses
 
 from blender_asset_tracer import trace
@@ -223,7 +223,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         full_path = svn_directory.joinpath(Path(file.svn_path))
         return full_path.exists()
 
-    update_log_from_file = update_log_from_file
+    reload_svn_log = reload_svn_log
     log: bpy.props.CollectionProperty(type=SVN_log)
     log_active_index: bpy.props.IntProperty()
 

@@ -20,15 +20,20 @@
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
-from datetime import datetime
+import subprocess
 
 import bpy
 from bpy.props import IntProperty, StringProperty, CollectionProperty, BoolProperty, EnumProperty
 
 from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly, svn_date_simple
-from .ops import SVN_Operator_Single_File
 from .prefs import get_visible_indicies
 from . import svn_status
+from .execute_subprocess import execute_svn_command_nofreeze
+
+
+################################################################################
+############################# DATA TYPES #######################################
+################################################################################
 
 class SVN_file(bpy.types.PropertyGroup):
     """Property Group that can represent a version of a File in an SVN repository."""
@@ -138,6 +143,11 @@ class SVN_log(bpy.types.PropertyGroup):
         return False
 
 
+
+################################################################################
+################################ UI / UX #######################################
+################################################################################
+
 def layout_log_split(layout):
     main = layout.split(factor=0.4)
     num_and_auth = main.row()
@@ -153,64 +163,6 @@ def layout_log_split(layout):
 
     return num, auth, date, msg
 
-
-def update_log_from_file(self, filepath: Path):
-    """Read the svn.log file (written by this addon) into the log entry list."""
-
-    svn = self
-    svn.log.clear()
-
-    # Read file into lists of lines where each list is one log entry
-    chunks = []
-    if not filepath.exists():
-        # Nothing to read!
-        return
-    with open(filepath, 'r') as f:
-        next(f) # Skip the first line of dashes.
-        chunk = []
-        for line in f:
-            line = line.replace("\n", "")
-            if line == "-" * 72:
-                # Line of dashes indicates the log entry is over.
-                chunks.append(chunk)
-                chunk = []
-                continue
-            chunk.append(line)
-
-    previous_rev_number = 0
-    for chunk in chunks:
-        # Read the first line of the svn log containing revision number, author,
-        # date and commit message length.
-        r_number, r_author, r_date, r_msg_length = chunk[0].split(" | ")
-        r_number = int(r_number[1:])
-        assert r_number == previous_rev_number+1, f"Revision order seems wrong at r{r_number}"
-        previous_rev_number = r_number
-
-        r_msg_length = int(r_msg_length.split(" ")[0])
-
-        log_entry = svn.log.add()
-        log_entry['revision_number'] = r_number
-        log_entry['revision_author'] = r_author
-
-        log_entry['revision_date'] = svn_date_simple(r_date)
-
-        # File change set is on line 3 until the commit message begins...
-        file_change_lines = chunk[2:-(r_msg_length+1)]
-        for line in file_change_lines:
-            status_char = line[3]
-            file_path = line[5:]
-            if ' (from ' in file_path:
-                # If the file was moved, let's just ignore that information for now.
-                # TODO: This can be improved later if neccessary.
-                file_path = file_path.split(" (from ")[0]
-
-            log_file_entry = log_entry.changed_files.add()
-            log_file_entry['svn_path'] = file_path
-            log_file_entry['revision'] = r_number
-            log_file_entry['name'] = Path(file_path).name
-            log_file_entry.status = svn_status.SVN_STATUS_CHAR[status_char]
-
-        log_entry['commit_message'] = "\n".join(chunk[-r_msg_length:])
 
 class SVN_UL_log(bpy.types.UIList):
     show_all_logs: BoolProperty(
@@ -389,6 +341,182 @@ class SVN_show_commit_message(bpy.types.Operator):
     execute = execute_tooltip_log
 
 
+
+################################################################################
+########################### LOG MANAGEMENT #####################################
+################################################################################
+
+def reload_svn_log(self, filepath: Path):
+    """Read the svn.log file (written by this addon) into the log entry list."""
+
+    svn = self
+    svn.log.clear()
+
+    # Read file into lists of lines where each list is one log entry
+    chunks = []
+    if not filepath.exists():
+        # Nothing to read!
+        return
+    with open(filepath, 'r') as f:
+        next(f) # Skip the first line of dashes.
+        chunk = []
+        for line in f:
+            line = line.replace("\n", "")
+            if line == "-" * 72:
+                # Line of dashes indicates the log entry is over.
+                chunks.append(chunk)
+                chunk = []
+                continue
+            chunk.append(line)
+
+    previous_rev_number = 0
+    for chunk in chunks:
+        # Read the first line of the svn log containing revision number, author,
+        # date and commit message length.
+        r_number, r_author, r_date, r_msg_length = chunk[0].split(" | ")
+        r_number = int(r_number[1:])
+        assert r_number == previous_rev_number+1, f"Revision order seems wrong at r{r_number}"
+        previous_rev_number = r_number
+
+        r_msg_length = int(r_msg_length.split(" ")[0])
+
+        log_entry = svn.log.add()
+        log_entry['revision_number'] = r_number
+        log_entry['revision_author'] = r_author
+
+        log_entry['revision_date'] = svn_date_simple(r_date)
+
+        # File change set is on line 3 until the commit message begins...
+        file_change_lines = chunk[2:-(r_msg_length+1)]
+        for line in file_change_lines:
+            status_char = line[3]
+            file_path = line[5:]
+            if ' (from ' in file_path:
+                # If the file was moved, let's just ignore that information for now.
+                # TODO: This can be improved later if neccessary.
+                file_path = file_path.split(" (from ")[0]
+
+            log_file_entry = log_entry.changed_files.add()
+            log_file_entry['svn_path'] = file_path
+            log_file_entry['revision'] = r_number
+            log_file_entry['name'] = Path(file_path).name
+            log_file_entry.status = svn_status.SVN_STATUS_CHAR[status_char]
+
+        log_entry['commit_message'] = "\n".join(chunk[-r_msg_length:])
+
+
+def is_log_up_to_date(context) -> bool:
+    """Return whether the latest SVN Log entry loaded in storage is at least
+    as recent as the latest commit in the working copy."""
+    svn = context.scene.svn
+    prefs = get_addon_prefs(context)
+    current_rev = prefs.revision_number
+    latest_log_rev = 0
+    if len(svn.log) > 0:
+        latest_log_rev = svn.log[-1].revision_number
+
+    return latest_log_rev >= current_rev
+
+
+def subprocess_request_output(popen: subprocess.Popen) -> str:
+    """Return the output of a subprocess if it's finished."""
+    if popen.poll() is not None:
+        stdout_data, _stderr_data = popen.communicate()
+        return stdout_data.decode()
+
+
+def write_to_svn_log_file_and_storage(context, data_str: str):
+    prefs = get_addon_prefs(context)
+    svn = context.scene.svn
+    log_file_path = Path(prefs.svn_directory+"/.svn/svn.log")
+
+    file_existed = False
+    if log_file_path.exists():
+        file_existed = True
+        svn.reload_svn_log(log_file_path)
+
+    with open(log_file_path, 'a+') as f:
+        # Append to the file, create it if necessary.
+        if file_existed:
+            # We want to skip the first line of the svn log when continuing,
+            # to avoid duplicate dashed lines, which would also mess up our
+            # parsing logic.
+            data_str = data_str[73:] # 72 dashes and a newline
+
+        f.write(data_str)
+
+    svn.reload_svn_log(log_file_path)
+
+    print(f"SVN Log now at r{context.scene.svn.log[-1].revision_number}")
+
+
+SVN_LOG_POPEN = None
+@bpy.app.handlers.persistent
+def timer_update_svn_log():
+    """Get all SVN Log entries from the remote repo in the background,
+    without freezing up the UI, by calling this function every 3 seconds.
+    These are then stored in a file, so each log entry only needs to be fetched
+    once per computer that runs the addon.
+    """
+    REVISIONS_PER_SUBPROCESS = 10
+    global SVN_LOG_POPEN
+    context = bpy.context
+    svn = context.scene.svn
+    prefs = get_addon_prefs(context)
+
+    if not prefs.is_in_repo:
+        return
+
+    if not prefs.log_update_in_background:
+        svn_log_background_fetch_stop()
+        return
+
+    if is_log_up_to_date(context):
+        print("SVN Log is up to date with current revision.")
+        svn_log_background_fetch_stop()
+        return
+
+    if SVN_LOG_POPEN:
+        output = subprocess_request_output(SVN_LOG_POPEN)
+        if not output:
+            # Process is still running, so we just gotta wait. Let's try again in 3 seconds.
+            return 3.0
+        write_to_svn_log_file_and_storage(context, output)
+
+    latest_log_rev = 0
+    if len(svn.log) > 0:
+        latest_log_rev = svn.log[-1].revision_number
+
+    current_rev = prefs.revision_number
+    num_logs_to_get = current_rev - latest_log_rev
+    if num_logs_to_get > REVISIONS_PER_SUBPROCESS:
+        num_logs_to_get = REVISIONS_PER_SUBPROCESS
+
+    goal_rev = latest_log_rev + num_logs_to_get
+
+    # Start the sub-process.
+    SVN_LOG_POPEN = execute_svn_command_nofreeze(prefs.svn_directory, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")
+
+    return 3.0
+
+
+@bpy.app.handlers.persistent
+def svn_log_background_fetch_start(_dummy1, _dummy2):
+    bpy.app.timers.register(timer_update_svn_log, persistent=True)
+
+
+def svn_log_background_fetch_stop():
+    if bpy.app.timers.is_registered(timer_update_svn_log):
+        bpy.app.timers.unregister(timer_update_svn_log)
+    global SVN_LOG_POPEN
+    SVN_LOG_POPEN = None
+
+
+
+################################################################################
+############################### REGISTER #######################################
+################################################################################
+
 registry = [
     SVN_file, 
     SVN_log, 
@@ -397,3 +525,10 @@ registry = [
     SVN_tooltip_log, 
     SVN_show_commit_message
 ]
+
+def register():
+    bpy.app.handlers.load_post.append(svn_log_background_fetch_start)
+
+def unregister():
+    bpy.app.handlers.load_post.remove(svn_log_background_fetch_start)
+    svn_log_background_fetch_stop()
