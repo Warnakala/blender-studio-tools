@@ -352,17 +352,23 @@ class SVN_show_commit_message(bpy.types.Operator):
 ################# AUTOMATICALLY KEEPING SVN LOG UP TO DATE #####################
 ################################################################################
 
-def reload_svn_log(self, filepath: Path):
+def get_log_file_path(context) -> Path:
+    prefs = get_addon_prefs(context)
+    return Path(prefs.svn_directory+"/.svn/svn.log")
+
+def reload_svn_log(self, context):
     """Read the svn.log file (written by this addon) into the log entry list."""
 
     svn = self
     svn.log.clear()
 
     # Read file into lists of lines where each list is one log entry
-    chunks = []
+    filepath = get_log_file_path(context)
     if not filepath.exists():
         # Nothing to read!
         return
+
+    chunks = []
     with open(filepath, 'r') as f:
         next(f) # Skip the first line of dashes.
         chunk = []
@@ -427,12 +433,12 @@ def is_log_up_to_date(context) -> bool:
 def write_to_svn_log_file_and_storage(context, data_str: str):
     prefs = get_addon_prefs(context)
     svn = context.scene.svn
-    log_file_path = Path(prefs.svn_directory+"/.svn/svn.log")
+    log_file_path = get_log_file_path(context)
 
     file_existed = False
     if log_file_path.exists():
         file_existed = True
-        svn.reload_svn_log(log_file_path)
+        svn.reload_svn_log(context)
 
     with open(log_file_path, 'a+') as f:
         # Append to the file, create it if necessary.
@@ -444,7 +450,7 @@ def write_to_svn_log_file_and_storage(context, data_str: str):
 
         f.write(data_str)
 
-    svn.reload_svn_log(log_file_path)
+    svn.reload_svn_log(context)
 
     print(f"SVN Log now at r{context.scene.svn.log[-1].revision_number}")
 
@@ -499,10 +505,14 @@ def timer_update_svn_log():
     return 3.0
 
 
-@bpy.app.handlers.persistent
-def svn_log_background_fetch_start(_dummy1, _dummy2):
+def svn_log_background_fetch_start():
+    reload_svn_log(bpy.context)
     bpy.app.timers.register(timer_update_svn_log, persistent=True)
 
+@bpy.app.handlers.persistent
+def svn_log_handler(_dummy1, _dummy2):
+    # This damn thing needs 2 positional arguments even though neither of them get anything!
+    svn_log_background_fetch_start()
 
 def svn_log_background_fetch_stop():
     if bpy.app.timers.is_registered(timer_update_svn_log):
@@ -526,8 +536,8 @@ registry = [
 ]
 
 def register():
-    bpy.app.handlers.load_post.append(svn_log_background_fetch_start)
+    bpy.app.handlers.load_post.append(svn_log_handler)
 
 def unregister():
-    bpy.app.handlers.load_post.remove(svn_log_background_fetch_start)
+    bpy.app.handlers.load_post.remove(svn_log_handler)
     svn_log_background_fetch_stop()

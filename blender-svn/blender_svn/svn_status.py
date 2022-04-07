@@ -216,7 +216,6 @@ def init_svn(context, dummy):
         context.scene.svn.external_files.clear()
         context.scene.svn.log.clear()
 
-    context.scene.svn.remove_unversioned_files()
     context.scene.svn.external_files_active_index = 0
     context.scene.svn.log_active_index = 0
 

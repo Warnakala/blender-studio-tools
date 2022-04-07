@@ -30,7 +30,7 @@ from bpy.props import StringProperty, BoolVectorProperty, IntProperty, EnumPrope
 from send2trash import send2trash   # NOTE: For some reason, when there's any error in this file, this line seems to take the blame for it?
 
 from .util import get_addon_prefs
-from . import svn_status
+from .svn_log import svn_log_background_fetch_start
 from .execute_subprocess import execute_svn_command, execute_svn_command_nofreeze
 
 logger = logging.getLogger("SVN")
@@ -59,7 +59,6 @@ class SVN_Operator_Single_File(SVN_Operator):
         if not self.file_exists(context) and not type(self).missing_file_allowed:
             return {'CANCELLED'}
         ret = self._execute(context)
-        context.scene.svn.remove_unversioned_files()
         return ret
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
@@ -76,18 +75,6 @@ class SVN_Operator_Single_File(SVN_Operator):
         return exists
 
 
-class SVN_remove_unversioned_files(bpy.types.Operator):
-    bl_idname = "svn.remove_unversioned_files"
-    bl_label = "Check For Local Changes"
-    bl_description = "Refresh the file list based only on local file changes"
-    bl_options = {'INTERNAL'}
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        context.scene.svn.remove_unversioned_files()
-
-        return {"FINISHED"}
-
-
 class SVN_update_all(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.update_all"
     bl_label = "SVN Update All"
@@ -96,6 +83,7 @@ class SVN_update_all(SVN_Operator, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, 'svn up --accept "postpone"')
+        svn_log_background_fetch_start()
 
         return {"FINISHED"}
 
@@ -326,7 +314,12 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         default = [True]*32
     )
 
-    def get_committable_files(self, context) -> List[str]:
+    @classmethod
+    def poll(cls, context):
+        return cls.get_committable_files(context)
+
+    @staticmethod
+    def get_committable_files(context) -> List[str]:
         """Return the list of file entries whose status allows committing"""
         svn_file_list = context.scene.svn.external_files
         committable_statuses = ['modified', 'added', 'deleted']
@@ -365,7 +358,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         if len(self.commit_message_0) < 2:
             self.report({'ERROR'}, "Please describe your changes in the commit message!")
             return {'CANCELLED'}
-        
+
         commit_message_lines = [getattr(self, f'commit_message_{i}') for i in range(self.last_idx)]
         commit_message = "\n".join(commit_message_lines)
 
@@ -377,10 +370,6 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         filepaths = " ".join([f'"{f.svn_path}"' for f in files_to_commit])
 
         self.execute_svn_command(context, f'svn commit -m "{commit_message}" {filepaths}')
-
-        # Update the file list.
-        # The freshly committed files should now have the 'normal' status.
-        context.scene.svn.remove_unversioned_files()
 
         self.report({'INFO'}, f"Committed {report}")
 
@@ -402,7 +391,6 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
 
 
 registry = [
-    SVN_remove_unversioned_files,
     SVN_update_all,
     SVN_update_single,
     SVN_download_file_revision,

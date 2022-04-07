@@ -223,7 +223,6 @@ class SVN_MT_context_menu(bpy.types.Menu):
     def draw(self, context):
         layout = self.layout
 
-        layout.operator("svn.remove_unversioned_files", icon='FILE_REFRESH')
         layout.operator("svn.cleanup", icon='BRUSH_DATA')
 
 
@@ -245,7 +244,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_decorate = False
 
         if len(context.scene.svn.external_files) == 0:
-            layout.operator("svn.remove_unversioned_files", icon='FILE_REFRESH')
+            layout.label(text="No files detected in the repository")
             return
 
         row = layout.row()
@@ -262,8 +261,8 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         col = row.column()
 
         col.separator()
+        col.operator("svn.commit", icon='EXPORT', text="")
         col.operator("svn.update_all", icon='IMPORT', text="")
-        col.operator("svn.commit", icon='CHECKMARK', text="")
 
         col.separator()
         col.row().menu(menu='SVN_MT_context_menu', text="", icon='TRIA_DOWN')
