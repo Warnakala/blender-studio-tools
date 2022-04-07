@@ -21,21 +21,17 @@
 
 from typing import Optional, Dict, Any, List, Tuple, Set
 
-from collections import OrderedDict
 from pathlib import Path
 
 from blender_svn.util import get_addon_prefs
 
 import bpy, logging
-from bpy.props import BoolProperty
 
 from . import wheels
 # This will load the dateutil and svn wheel file.
 wheels.preload_dependencies()
 
-from . import prefs
 from .svn_log import SVN_log, SVN_file, reload_svn_log
-from .svn_status import get_file_statuses
 
 from blender_asset_tracer import trace
 
@@ -146,6 +142,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         return item
 
     def get_file_by_svn_path(self, svn_path: str) -> Tuple[int, SVN_file]:
+        svn_path = str(svn_path)
         for i, file in enumerate(self.external_files):
             if file.svn_path == svn_path:
                 return i, file
@@ -180,6 +177,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
                 return i, log
 
     def get_latest_revision_of_file(self, svn_path: str) -> int:
+        svn_path = str(svn_path)
         ret = 0
         for log in self.log:
             for changed_file in log.changed_files:
@@ -215,6 +213,11 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     def active_log(self):
         return self.log[self.log_active_index]
 
+    @property
+    def current_blend_file(self):
+        tup = self.get_file_by_svn_path(self.absolute_to_svn_path(Path(bpy.data.filepath)))
+        if tup:
+            return tup[1]
 
 
 # ----------------REGISTER--------------.

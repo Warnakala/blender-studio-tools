@@ -506,7 +506,7 @@ def timer_update_svn_log():
 
 
 def svn_log_background_fetch_start():
-    reload_svn_log(bpy.context)
+    bpy.context.scene.svn.reload_svn_log(bpy.context)
     bpy.app.timers.register(timer_update_svn_log, persistent=True)
 
 @bpy.app.handlers.persistent
