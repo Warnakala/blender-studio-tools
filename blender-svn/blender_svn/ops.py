@@ -59,7 +59,7 @@ class SVN_Operator_Single_File(SVN_Operator):
         if not self.file_exists(context) and not type(self).missing_file_allowed:
             return {'CANCELLED'}
         ret = self._execute(context)
-        context.scene.svn.check_for_local_changes()
+        context.scene.svn.remove_unversioned_files()
         return ret
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
@@ -76,77 +76,14 @@ class SVN_Operator_Single_File(SVN_Operator):
         return exists
 
 
-class SVN_check_for_local_changes(bpy.types.Operator):
-    bl_idname = "svn.check_for_local_changes"
+class SVN_remove_unversioned_files(bpy.types.Operator):
+    bl_idname = "svn.remove_unversioned_files"
     bl_label = "Check For Local Changes"
     bl_description = "Refresh the file list based only on local file changes"
     bl_options = {'INTERNAL'}
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        context.scene.svn.check_for_local_changes()
-
-        return {"FINISHED"}
-
-
-class SVN_check_for_updates(SVN_Operator, bpy.types.Operator):
-    bl_idname = "svn.check_for_updates"
-    bl_label = "Check For All Changes"
-    bl_description = "Refresh the file list completely, including asking the remote repository for available updates. This may take a few seconds"
-    bl_options = {'INTERNAL'}
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        svn_props = context.scene.svn
-        svn_props.check_for_local_changes()
-
-        # TODO: This needs to be re-written to use --xml.
-        outp = self.execute_svn_command(context, 'svn status --show-updates')
-
-        # Discard the last 2 lines that just shows current revision number.
-        lines = outp.split("\n")[:-2]
-
-        # Remove empty lines.
-        while True:
-            try:
-                lines.remove("")
-            except ValueError:
-                break
-
-        files: List[Tuple[str, str, int]] = [] # filepath, status, revision number
-        for line in lines:
-            status = 'none'
-            split = [s for s in line.split(" ") if s]
-            if len(split)==2:
-                # The file is not currently on the local repository.
-                # Set the revision number to 0, and the status to 'added'.
-                rev_no = 0
-                status = 'added'
-            elif len(split)==4:
-                # A file with a new version on the remote also has a non-normal status.
-                # This will probably be a conflict.
-                status = svn_status.SVN_STATUS_CHAR[split[0]]
-                rev_no = int(split[2])
-            else:
-                rev_no = int(split[1])
-            files.append((split[-1], status, rev_no))
-
-        # Mark all previously outdated files as being up to date.
-        svn_props.update_outdated_file_entries()
-
-        # Mark the currently outdated files as being outdated.
-        for file in files:
-            tup = svn_props.get_file_by_svn_path(file[2])
-            if tup:
-                _idx, file_entry = tup
-                file_entry.status = 'none'
-                file_entry.revision = file[0]
-            else:
-                file_entry = svn_props.add_file_entry(Path(file[0]), file[1], file[2])
-            file_entry.newer_on_remote = True
-            if file_entry.status == 'modified':
-                # Strange case 3: A file with an already known new version available 
-                # on the remote was modified locally. SVN will give this the 'modified'
-                # status, but we want it to say 'conflicted', with options to revert or update.
-                file_entry.status = 'conflicted'
+        context.scene.svn.remove_unversioned_files()
 
         return {"FINISHED"}
 
@@ -159,7 +96,6 @@ class SVN_update_all(SVN_Operator, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, 'svn up --accept "postpone"')
-        context.scene.svn.update_outdated_file_entries()
 
         return {"FINISHED"}
 
@@ -444,7 +380,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         # Update the file list.
         # The freshly committed files should now have the 'normal' status.
-        context.scene.svn.check_for_local_changes()
+        context.scene.svn.remove_unversioned_files()
 
         self.report({'INFO'}, f"Committed {report}")
 
@@ -466,8 +402,7 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
 
 
 registry = [
-    SVN_check_for_local_changes,
-    SVN_check_for_updates,
+    SVN_remove_unversioned_files,
     SVN_update_all,
     SVN_update_single,
     SVN_download_file_revision,

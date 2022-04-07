@@ -31,36 +31,18 @@ from .util import make_getter_func, make_setter_func_readonly
 logger = logging.getLogger(name="SVN")
 
 
-def get_visible_indicies(context) -> List[int]:
-    svn_prop = context.scene.svn
-    flt_flags, _flt_neworder = bpy.types.SVN_UL_file_list.cls_filter_items(context, svn_prop, 'external_files')
-
-    visible_indicies = [i for i, flag in enumerate(flt_flags) if flag != 0]
-    return visible_indicies
-
-
-def force_good_active_index(context) -> bool:
-    """If the active element is being filtered out, set the active element to 
-    something that is visible.
-    Return False if no elements are visible.
-    """
-    svn_prop = context.scene.svn
-    visible_indicies = get_visible_indicies(context)
-    if len(visible_indicies) == 0:
-        svn_prop.external_files_active_index = 0
-        return False
-    if svn_prop.external_files_active_index not in visible_indicies:
-        svn_prop.external_files_active_index = visible_indicies[0]
-
-    return True
-
 class SVN_addon_preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     log_update_in_background: BoolProperty(
         name="Auto-Update SVN Log",
         default=True, 
-        description="Allow keeping the SVN log up to date automatically. Disable if it causes problems"
+        description="Allow keeping the SVN log up to date automatically. Disable if suspected of causing problems"
+    )
+    status_update_in_background: BoolProperty(
+        name="Auto-Update File Status",
+        default=True,
+        description="Allow keeping file statuses up to date automatically. Disable if suspected of causing problems"
     )
 
     enable_ui: BoolProperty(
@@ -78,7 +60,7 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 
     def update_filters(dummy, context):
         """Should run when any of the SVN file list search filters are changed."""
-        force_good_active_index(context)
+        context.scene.svn.force_good_active_index(context)
 
     ### SVN Search filter properties.
     # These are normally stored on the UIList, but then they cannot be accessed
@@ -169,9 +151,9 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         layout: bpy.types.UILayout = self.layout
 
         # Production Config Dir.
-        row = layout.row(align=True)
-        row.prop(self, "enable_ui")
-        row.prop(self, "log_update_in_background")
+        layout.prop(self, 'enable_ui')
+        layout.prop(self, 'log_update_in_background')
+        layout.prop(self, 'status_update_in_background')
 
 
 # ----------------REGISTER--------------.

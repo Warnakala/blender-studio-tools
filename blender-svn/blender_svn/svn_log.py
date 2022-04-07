@@ -26,9 +26,8 @@ import bpy
 from bpy.props import IntProperty, StringProperty, CollectionProperty, BoolProperty, EnumProperty
 
 from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly, svn_date_simple
-from .prefs import get_visible_indicies
 from . import svn_status
-from .execute_subprocess import execute_svn_command_nofreeze
+from .execute_subprocess import execute_svn_command_nofreeze, subprocess_request_output
 
 
 ################################################################################
@@ -51,14 +50,20 @@ class SVN_file(bpy.types.PropertyGroup):
     )
     status: EnumProperty(
         name="Status",
+        description = "SVN Status of the file in the local repository (aka working copy)",
         items=svn_status.ENUM_SVN_STATUS,
         default="normal",
     )
-    newer_on_remote: BoolProperty(
-        name="Outdated",
-        description="True when a new version is available on the remote. This must be separate from the `status` enum to keep track of the full picture",
-        default=False,
+    repos_status: EnumProperty(
+        name="Remote's Status",
+        description = "SVN Status of the file in the remote repository (periodically updated)",
+        items=svn_status.ENUM_SVN_STATUS,
+        default="none",
     )
+    @property
+    def is_outdated(self):
+        return self.repos_status == 'modified' and self.status == 'normal'
+
     revision: IntProperty(
         name="Revision",
         description="Revision number",
@@ -259,7 +264,8 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        any_visible = get_visible_indicies(context)
+        svn = context.scene.svn
+        any_visible = svn.get_visible_indicies(context)
         if not any_visible:
             return False
         active_file = context.scene.svn.active_file
@@ -343,7 +349,7 @@ class SVN_show_commit_message(bpy.types.Operator):
 
 
 ################################################################################
-########################### LOG MANAGEMENT #####################################
+################# AUTOMATICALLY KEEPING SVN LOG UP TO DATE #####################
 ################################################################################
 
 def reload_svn_log(self, filepath: Path):
@@ -416,13 +422,6 @@ def is_log_up_to_date(context) -> bool:
         latest_log_rev = svn.log[-1].revision_number
 
     return latest_log_rev >= current_rev
-
-
-def subprocess_request_output(popen: subprocess.Popen) -> str:
-    """Return the output of a subprocess if it's finished."""
-    if popen.poll() is not None:
-        stdout_data, _stderr_data = popen.communicate()
-        return stdout_data.decode()
 
 
 def write_to_svn_log_file_and_storage(context, data_str: str):

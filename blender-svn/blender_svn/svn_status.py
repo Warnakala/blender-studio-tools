@@ -21,12 +21,12 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from collections import OrderedDict
 from pathlib import Path
-import xml.etree.ElementTree as ET
+import xmltodict
 
 import bpy
 from bpy.props import StringProperty
 
-from .execute_subprocess import execute_svn_command
+from .execute_subprocess import execute_svn_command, execute_svn_command_nofreeze, subprocess_request_output
 from .util import get_addon_prefs, svn_date_simple
 
 
@@ -121,11 +121,13 @@ SVN_STATUS_DATA = OrderedDict(
     ]
 )
 
+
 # Based on PySVN/svn/constants.py/STATUS_TYPE_LOOKUP.
 ENUM_SVN_STATUS = [
     (status, status.title(), SVN_STATUS_DATA[status][1], SVN_STATUS_DATA[status][0], i)
     for i, status in enumerate(SVN_STATUS_DATA.keys())
 ]
+
 
 SVN_STATUS_CHAR = {
     '' : 'normal',
@@ -140,35 +142,6 @@ SVN_STATUS_CHAR = {
     '!' : 'missing',
     '~' : 'replaced'
 }
-
-
-def get_file_statuses(svn_root_dir: str) -> Dict[str, Tuple[str, int]]:
-    output = execute_svn_command(svn_root_dir, 'svn status --verbose --xml')
-    root = ET.fromstring(output)[0]
-
-    # md = minidom.parseString(ET.tostring(root))
-    # print(md.toprettyxml())
-
-    file_statuses = {}
-    for xml_entry in root:
-        filepath = xml_entry.attrib['path']
-        if filepath == ".":
-            continue
-        wc_status = xml_entry[0]
-        status = wc_status.attrib['item']
-        file_rev_number = -1
-        if len(wc_status) > 0:
-            _repo_rev = wc_status.attrib['revision']
-            _prop_status = wc_status.attrib['props']
-            commit = wc_status[0]
-            file_rev_number = int(commit.attrib['revision'])
-            _rev_author = commit[0].text
-            _rev_date_str = commit[1].text
-
-        file_statuses[filepath] = (status, file_rev_number)
-
-
-    return file_statuses
 
 
 class SVN_explain_status(bpy.types.Operator):
@@ -230,29 +203,147 @@ def set_svn_info(context) -> bool:
 @bpy.app.handlers.persistent
 def init_svn(context, dummy):
     """Initialize SVN info when opening a .blend file that is in a repo."""
-    if not bpy.data.filepath:
-        return
-    
+
     if not context:
         context = bpy.context
+
+    if not bpy.data.filepath:
+        get_addon_prefs(context).reset()
+        return
 
     svn_info = set_svn_info(context)
     if not svn_info:
         context.scene.svn.external_files.clear()
         context.scene.svn.log.clear()
 
-    context.scene.svn.check_for_local_changes()
-    context.scene.svn.update_outdated_file_entries()
+    context.scene.svn.remove_unversioned_files()
     context.scene.svn.external_files_active_index = 0
     context.scene.svn.log_active_index = 0
 
     prefs = get_addon_prefs(context)
     context.scene.svn.reload_svn_log(Path(prefs.svn_directory+"/.svn/svn.log"))
 
+
+
+################################################################################
+############## AUTOMATICALLY KEEPING FILE STATUSES UP TO DATE ##################
+################################################################################
+
+SVN_STATUS_POPEN = None
+@bpy.app.handlers.persistent
+def timer_update_svn_status():
+    global SVN_STATUS_POPEN
+    context = bpy.context
+    svn = context.scene.svn
+    prefs = get_addon_prefs(context)
+
+    if not prefs.is_in_repo:
+        return
+
+    if not prefs.status_update_in_background:
+        svn_status_background_fetch_stop()
+        return
+
+    if SVN_STATUS_POPEN:
+        svn_output = subprocess_request_output(SVN_STATUS_POPEN)
+        if not svn_output:
+            # Process is still running, so we just gotta wait. Let's try again in 3 seconds.
+            return 3.0
+        svn_status_xml = xmltodict.parse(svn_output)
+        update_file_list(context, svn_status_xml)
+
+    SVN_STATUS_POPEN = execute_svn_command_nofreeze(prefs.svn_directory, 'svn status --show-updates --verbose --xml')
+    return 3.0
+
+
+def update_file_list(context, svn_status_xml: Dict):
+    """Update the file list based on data from an svn command's output.
+    (See timer_update_svn_status)"""
+    svn = context.scene.svn
+
+    svn.remove_unversioned_files()
+
+    referenced_files: Set[Path] = svn.get_referenced_filepaths()
+    referenced_files.add(Path(bpy.data.filepath))
+    referenced_files = [str(svn.absolute_to_svn_path(f)) for f in referenced_files]
+
+    file_statuses = get_file_statuses(svn_status_xml)
+    for filepath, status_info in file_statuses.items():
+        wc_status, repos_status, revision = status_info
+
+        tup_existing_file = svn.get_file_by_svn_path(filepath)
+        if tup_existing_file:
+            file_entry = tup_existing_file[1]
+        else:
+            file_entry = svn.external_files.add()
+            file_entry['svn_path'] = filepath
+            file_entry['name'] = Path(filepath).name
+
+        file_entry['revision'] = revision
+        file_entry.status = wc_status
+        file_entry.repos_status = repos_status
+
+        file_entry.is_referenced = str(filepath) in referenced_files
+
+    svn.force_good_active_index(context)
+    # print("SVN: File statuses updated.")
+
+
+def get_file_statuses(svn_status_xml: Dict) -> Dict[str, Tuple[str, str, int]]:
+
+    file_infos = svn_status_xml['status']['target']['entry']
+    # print(json.dumps(file_infos, indent=4))
+
+    file_statuses = {}
+    for file_info in file_infos:
+        filepath = file_info['@path']
+
+        repos_status = "none"
+        if 'repos-status' in file_info:
+            repos_status_block = file_info['repos-status']
+            repos_status = repos_status_block['@item']
+            _repo_props = repos_status_block['@props']
+
+        wc_status_block = file_info.get('wc-status')
+        wc_status = wc_status_block['@item']
+        _revision = int(wc_status_block.get('@revision', 0))
+        _props = wc_status_block['@props']
+
+        if 'commit' in wc_status_block:
+            commit_block = wc_status_block['commit']
+            commit_revision = int(commit_block['@revision'])
+            _commit_author = commit_block['author']
+            _commit_date = commit_block['date']
+        else:
+            commit_revision = 0
+
+        file_statuses[filepath] = (wc_status, repos_status, commit_revision)
+
+    return file_statuses
+
+
+@bpy.app.handlers.persistent
+def svn_status_background_fetch_start(_dummy1, _dummy2):
+    bpy.app.timers.register(timer_update_svn_status, persistent=True)
+
+
+def svn_status_background_fetch_stop():
+    if bpy.app.timers.is_registered(timer_update_svn_status):
+        bpy.app.timers.unregister(timer_update_svn_status)
+    global SVN_STATUS_POPEN
+    SVN_STATUS_POPEN = None
+
+
+################################################################################
+############################# REGISTER #########################################
+################################################################################
+
 def register():
     bpy.app.handlers.load_post.append(init_svn)
+    bpy.app.handlers.load_post.append(svn_status_background_fetch_start)
 
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
+    bpy.app.handlers.load_post.remove(svn_status_background_fetch_start)
 
 registry = [SVN_explain_status]

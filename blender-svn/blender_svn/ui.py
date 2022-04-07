@@ -89,37 +89,44 @@ class SVN_UL_file_list(bpy.types.UIList):
 
         # SVN operations
         ops = []
-        if file_entry.status == 'none':
-            ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
-        if file_entry.status == 'modified':
-            ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
-            if svn.is_file_outdated(file_entry):
-                # This happens when we checkout an older version of the file and modify it,
-                # So we can immediately know that the file will be in conflict.
-                statuses.append('conflicted')
-                ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
         if file_entry.status in ['missing', 'deleted']:
             ops.append(row.operator('svn.restore_file', text="", icon='LOOP_BACK'))
             if file_entry.status == 'missing':
                 ops.append(row.operator('svn.remove_file', text="", icon='TRASH'))
-        if file_entry.status == 'added':
-            if file_entry.revision == 0:
-                # This means the file only exists on the remote.
-                statuses.append('none')
-                ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
-            else:
-                ops.append(row.operator('svn.unadd_file', text="", icon='REMOVE'))
-        if file_entry.status == 'unversioned':
+        elif file_entry.status == 'added':
+            ops.append(row.operator('svn.unadd_file', text="", icon='REMOVE'))
+        elif file_entry.status == 'unversioned':
             ops.append(row.operator('svn.add_file', text="", icon='ADD'))
             ops.append(row.operator('svn.trash_file', text="", icon='TRASH'))
-        if file_entry.status == 'conflicted':
-            if file_entry.newer_on_remote:
-                # This happens when we make changes to a file then check for updates on the remote, and find one.
-                # See Strange case 3 in SVN_check_for_updates.
-                ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
+
+        elif file_entry.status == 'modified':
+            ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
+            if file_entry.repos_status == 'modified':
+                # The file isn't actually `conflicted` yet, by SVN's definition, 
+                # but it will be as soon as we try to commit or update.
+                # I think it's better to let the user know in advance.
+                statuses.append('conflicted')
+                # Updating the file will create an actual conflict.
                 ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
-            else:
-                ops.append(row.operator('svn.resolve_conflict', text="", icon='TRACKING_CLEAR_FORWARDS'))
+
+        elif file_entry.status == 'conflicted':
+            ops.append(row.operator('svn.resolve_conflict', text="", icon='TRACKING_CLEAR_FORWARDS'))
+        elif file_entry.status in ['incomplete', 'obstructed']:
+            ops.append(row.operator('svn.cleanup', text="", icon='BRUSH_DATA'))
+        elif file_entry.status == 'none':
+            if file_entry.repos_status == 'added':
+                # From user POV it makes a bit more sense to call a file that doesn't
+                # exist yet "added" instead of "outdated".
+                statuses.append('added')
+            ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
+        elif file_entry.status == 'normal' and file_entry.repos_status == 'modified':
+            # From user POV, this file is outdated, not 'normal'.
+            statuses = ['none']
+            ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
+        elif file_entry.status in ['normal', 'external', 'ignored']:
+            pass
+        else:
+            print("Unknown file status: ", file_entry.svn_path, file_entry.status, file_entry.repos_status)
 
         if ops:
             for op in ops:
@@ -153,16 +160,27 @@ class SVN_UL_file_list(bpy.types.UIList):
             flt_flags = helper_funcs.filter_items_by_name(prefs.search_filter, cls.UILST_FLT_ITEM, list_items, "name",
                                                             reverse=False)
 
+        has_default_status = lambda f: f.status == 'normal' and f.repos_status == 'none'
+
         if not flt_flags:
+            # Start with all files visible.
             flt_flags = [cls.UILST_FLT_ITEM] * len(list_items)
 
-        if prefs.only_referenced_files:
-            for i, item in enumerate(list_items):
-                flt_flags[i] *= int(item.is_referenced)
+        for i, item in enumerate(list_items):
+            if has_default_status(item) and not item.is_referenced:
+                # ALWAYS filter out files that have default statuses and aren't referenced.
+                flt_flags[i] = 0
 
-        if not prefs.only_referenced_files or not prefs.include_normal:
-            for i, item in enumerate(list_items):
-                flt_flags[i] *= int(item.status != "normal")
+            if prefs.only_referenced_files:
+                # Filter out files that are not being referenced, regardless of status.
+                flt_flags[i] *= int(item.is_referenced)
+                if has_default_status(item) and not prefs.include_normal:
+                    # Filter out files that are being referenced but have default status.
+                    flt_flags[i] = 0
+            else:
+                # Filter out files that have default status.
+                if has_default_status(item):
+                    flt_flags[i] = 0
 
         return flt_flags, flt_neworder
 
@@ -176,7 +194,7 @@ class SVN_UL_file_list(bpy.types.UIList):
             helper_funcs = bpy.types.UI_UL_list
             flt_neworder = helper_funcs.sort_items_by_name(list_items, "name")
             flt_flags = [type(self).UILST_FLT_ITEM] * len(list_items)
-            return flt_flags, flt_neworder
+            # return flt_flags, flt_neworder
         return type(self).cls_filter_items(context, data, propname)
 
     def draw_filter(self, context, layout):
@@ -205,7 +223,7 @@ class SVN_MT_context_menu(bpy.types.Menu):
     def draw(self, context):
         layout = self.layout
 
-        layout.operator("svn.check_for_local_changes", icon='FILE_REFRESH')
+        layout.operator("svn.remove_unversioned_files", icon='FILE_REFRESH')
         layout.operator("svn.cleanup", icon='BRUSH_DATA')
 
 
@@ -227,7 +245,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_decorate = False
 
         if len(context.scene.svn.external_files) == 0:
-            layout.operator("svn.check_for_local_changes", icon='FILE_REFRESH')
+            layout.operator("svn.remove_unversioned_files", icon='FILE_REFRESH')
             return
 
         row = layout.row()
@@ -242,7 +260,6 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         )
 
         col = row.column()
-        col.operator("svn.check_for_updates", icon='URL', text="")
 
         col.separator()
         col.operator("svn.update_all", icon='IMPORT', text="")

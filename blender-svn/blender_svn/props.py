@@ -75,17 +75,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
         return reported_assets
 
-    def update_outdated_file_entries(self):
-        """Update all files with the 'none' status, which signified that a file 
-        had a newer version available on the remote repository.
-        Running this function means that this file's up-to-date-ness has been 
-        ensured, and this function is just to indicate this in the UI."""
-        for i, file_entry in reversed(list(enumerate(self.external_files))):
-            if file_entry.status == "none":
-                file_entry.status = 'normal'
-                file_entry.revision = self.get_latest_revision_of_file(file_entry.svn_path)
-            file_entry.newer_on_remote = False
-
     def remove_by_svn_path(self, path_to_remove: str):
         """Remove a file entry from the file list, based on its filepath."""
         for i, file_entry in enumerate(self.external_files):
@@ -94,9 +83,8 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
                 self.external_files.remove(i)
                 return
 
-    def check_for_local_changes(self) -> None:
-        """Update the status of file entries by checking for changes in the
-        local repository."""
+    def remove_unversioned_files(self) -> None:
+        """Update the status of unversioned files in the local repository."""
 
         context = bpy.context
         addon_prefs = get_addon_prefs(context)
@@ -109,33 +97,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         for i, file_entry in reversed(list(enumerate(self.external_files))):
             if file_entry.status == "unversioned":
                 self.external_files.remove(i)
-
-        referenced_files: Set[Path] = self.get_referenced_filepaths()
-        referenced_files.add(bpy.data.filepath)
-
-        # {filepath : (status. revision)}, via `svn status --verbose --xml`
-        file_statuses = get_file_statuses(addon_prefs.svn_directory)
-
-        # Add file entries that are referenced by this .blend file,
-        # even if the file's status is normal (un-modified)
-        for referenced_file in referenced_files:
-            svn_path = self.absolute_to_svn_path(referenced_file)
-            status = (
-                "normal",
-                0,
-            )  # TODO: We currently don't show a revision number for Normal status files!
-            if str(svn_path) in file_statuses:
-                status = file_statuses[str(svn_path)]
-                del file_statuses[str(svn_path)]
-            file_entry = self.add_file_entry(Path(svn_path), status[0], status[1], is_referenced=True)
-
-        # Add file entries in the entire SVN repository for files whose status isn't
-        # normal. Do this even for files not referenced by this .blend file.
-        for svn_path in file_statuses.keys():
-            status = file_statuses[svn_path]
-            file_entry = self.add_file_entry(Path(svn_path), status[0], status[1])
-        
-        prefs.force_good_active_index(context)
 
     @staticmethod
     def absolute_to_svn_path(absolute_path: Path) -> Path:
@@ -181,15 +142,34 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             status = 'none'
 
         item.status = status
-
-        # Prevent editing values in the UI.
-        item['is_referenced'] = is_referenced
+        item.is_referenced = is_referenced
         return item
 
     def get_file_by_svn_path(self, svn_path: str) -> Tuple[int, SVN_file]:
         for i, file in enumerate(self.external_files):
             if file.svn_path == svn_path:
                 return i, file
+
+
+    def get_visible_indicies(self, context) -> List[int]:
+        flt_flags, _flt_neworder = bpy.types.SVN_UL_file_list.cls_filter_items(context, self, 'external_files')
+
+        visible_indicies = [i for i, flag in enumerate(flt_flags) if flag != 0]
+        return visible_indicies
+
+    def force_good_active_index(self, context) -> bool:
+        """If the active element is being filtered out, set the active element to 
+        something that is visible.
+        Return False if no elements are visible.
+        """
+        visible_indicies = self.get_visible_indicies(context)
+        if len(visible_indicies) == 0:
+            self.external_files_active_index = 0
+            return False
+        if self.external_files_active_index not in visible_indicies:
+            self.external_files_active_index = visible_indicies[0]
+
+        return True
 
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
     external_files_active_index: bpy.props.IntProperty()
@@ -236,16 +216,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         return self.log[self.log_active_index]
 
 
-@bpy.app.handlers.persistent
-def check_for_local_changes(scene):
-    if bpy.data.filepath == "":
-        get_addon_prefs(bpy.context).reset()
-        return
-    if not scene:
-        # When called from save_post() handler, which apparently does not pass anything???
-        scene = bpy.context.scene
-    scene.svn.check_for_local_changes()
-
 
 # ----------------REGISTER--------------.
 
@@ -254,11 +224,7 @@ registry = [SVN_scene_properties]
 def register() -> None:
     # Scene Properties.
     bpy.types.Scene.svn = bpy.props.PointerProperty(type=SVN_scene_properties)
-    bpy.app.handlers.load_post.append(check_for_local_changes)
-    bpy.app.handlers.save_post.append(check_for_local_changes)
 
 
 def unregister() -> None:
     del bpy.types.Scene.svn
-    bpy.app.handlers.load_post.remove(check_for_local_changes)
-    bpy.app.handlers.save_post.remove(check_for_local_changes)
