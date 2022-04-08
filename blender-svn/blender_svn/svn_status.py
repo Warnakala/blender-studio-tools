@@ -90,7 +90,7 @@ SVN_STATUS_DATA = OrderedDict(
         (
             "modified",
             (
-                "MODIFIER",
+                "GREASEPENCIL",
                 "This file was modified",
             ),
         ),
@@ -214,8 +214,10 @@ def init_svn(context, dummy):
     # in another repository, when doing File->Open from one to the other.
     global SVN_STATUS_OUTPUT
     global SVN_STATUS_THREAD
+    global SVN_STATUS_NEWFILE
     SVN_STATUS_OUTPUT = {}
     SVN_STATUS_THREAD = None
+    SVN_STATUS_NEWFILE = True
 
     if not context:
         context = bpy.context
@@ -242,6 +244,10 @@ def init_svn(context, dummy):
 import threading
 SVN_STATUS_OUTPUT = {}
 SVN_STATUS_THREAD = None
+# Flag to let is_referenced flags be set only once on file open.
+# We need the flag because this needs to happen not immediately on file open,
+# but after the first `svn status` call has finished in the background.
+SVN_STATUS_NEWFILE = True
 
 def async_get_verbose_svn_status():
     """The communicate() call blocks execution until the SVN command completes,
@@ -260,6 +266,7 @@ def async_get_verbose_svn_status():
 def timer_update_svn_status():
     global SVN_STATUS_OUTPUT
     global SVN_STATUS_THREAD
+    global SVN_STATUS_NEWFILE
     context = bpy.context
     prefs = get_addon_prefs(context)
 
@@ -276,6 +283,9 @@ def timer_update_svn_status():
     else:
         # print("Update file list...")
         update_file_list(context, SVN_STATUS_OUTPUT)
+        if SVN_STATUS_NEWFILE:
+            update_file_is_referenced_flags(None, None)
+            SVN_STATUS_NEWFILE = False
 
     # print("Starting thread...")
     SVN_STATUS_THREAD = threading.Thread(target=async_get_verbose_svn_status, args=())
@@ -291,16 +301,21 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
 
     svn.remove_unversioned_files()
 
-    for filepath, status_info in file_statuses.items():
+    for filepath_str, status_info in file_statuses.items():
+        svn_path = Path(filepath_str)
+        if svn_path.suffix.startswith(".r") and svn_path.suffix[2:].isdecimal():
+            # Do not add .r### files to the file list, ever.
+            continue
+
         wc_status, repos_status, revision = status_info
 
-        tup_existing_file = svn.get_file_by_svn_path(filepath)
+        tup_existing_file = svn.get_file_by_svn_path(svn_path)
         if tup_existing_file:
             file_entry = tup_existing_file[1]
         else:
             file_entry = svn.external_files.add()
-            file_entry['svn_path'] = filepath
-            file_entry['name'] = Path(filepath).name
+            file_entry['svn_path'] = str(svn_path)
+            file_entry['name'] = svn_path.name
 
         file_entry['revision'] = revision
         file_entry.status = wc_status
@@ -321,12 +336,23 @@ def update_file_is_referenced_flags(_dummy1, _dummy2):
     so calling it any more frequently would be pointless."""
     context = bpy.context
     svn = context.scene.svn
-    referenced_files: Set[Path] = set()#svn.get_referenced_filepaths()
+    referenced_files: Set[Path] = svn.get_referenced_filepaths()
     referenced_files.add(Path(bpy.data.filepath))
-    referenced_files = [str(svn.absolute_to_svn_path(f)) for f in referenced_files]
+
+    referenced_svn_files = []
+    for f in referenced_files:
+        try:
+            svn_path = str(svn.absolute_to_svn_path(f))
+            referenced_svn_files.append(svn_path)
+        except ValueError:
+            # This happens when a file is referened that is not on the SVN.
+            # Let's not display such files in the SVN file window,
+            # Listing a complete list of dependencies is not the goal of this addon.
+            # referenced_files.remove(f)
+            pass
 
     for file_entry in svn.external_files:
-        file_entry.is_referenced = file_entry.svn_path in referenced_files
+        file_entry.is_referenced = file_entry.svn_path in referenced_svn_files
 
 
 def get_repo_file_statuses(svn_status_str: str) -> Dict[str, Tuple[str, str, int]]:

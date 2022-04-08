@@ -262,13 +262,10 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         col.separator()
         col.operator("svn.cleanup", icon='BRUSH_DATA', text="")
 
-        active_file = context.scene.svn.active_file
-        layout.prop(active_file, "revision", emboss=False)
-
 class SVN_file_outdated_warning(bpy.types.Operator):
     bl_idname = "svn.file_outdated_warning"
     bl_label = "" # Don't want the first line of the tooltip on mouse hover.
-    bl_description = "The currently opened .blend file has a newer version available on the remote repository. This means any changes in this file will result in a conflict, and potential loss of data! See the SVN panel for info"
+    bl_description = "The currently opened .blend file has a newer version available on the remote repository. This means any changes in this file will result in a conflict, and potential loss of data. See the SVN panel for info"
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
@@ -289,9 +286,9 @@ def draw_outdated_file_warning(self, context):
     row.alert = True
 
     if current_file.status == 'conflicted':
-        row.operator('svn.resolve_conflict', text="SVN: This .blend file is conflicted!", icon='ERROR')
+        row.operator('svn.resolve_conflict', text="SVN: This .blend file is conflicted.", icon='ERROR')
     elif current_file.repos_status != 'none':
-        row.operator('svn.file_outdated_warning', text="SVN: This .blend file is outdated!", icon='ERROR')
+        row.operator('svn.file_outdated_warning', text="SVN: This .blend file is outdated.", icon='ERROR')
 
 
 registry = [

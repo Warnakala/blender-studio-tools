@@ -19,8 +19,6 @@
 # (c) 2021, Blender Foundation - Paul Golter
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
-import logging
-
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
@@ -30,10 +28,8 @@ from bpy.props import StringProperty, BoolVectorProperty, IntProperty, EnumPrope
 from send2trash import send2trash
 
 from .util import get_addon_prefs
-from .svn_log import svn_log_background_fetch_start
+from .svn_log import SVN_file, svn_log_background_fetch_start
 from .execute_subprocess import execute_svn_command, execute_svn_command_nofreeze
-
-logger = logging.getLogger("SVN")
 
 
 class SVN_Operator:
@@ -69,6 +65,11 @@ class SVN_Operator_Single_File(SVN_Operator):
         prefs = get_addon_prefs(context)
         return Path.joinpath(Path(prefs.svn_directory), Path(self.file_rel_path))
 
+    def get_file(self, context) -> SVN_file:
+        tup = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
+        if tup:
+            return tup[1]
+
     def file_exists(self, context) -> bool:
         exists = self.get_file_full_path(context).exists()
         if not exists and not type(self).missing_file_allowed:
@@ -84,6 +85,8 @@ class SVN_update_all(SVN_Operator, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, 'svn up --accept "postpone"')
+        # TODO: This currently freezes the UI, which might be for the best tbh.
+        # If we keep that, we should also do a file status update before unfreezing.
         svn_log_background_fetch_start()
 
         return {"FINISHED"}
@@ -118,7 +121,7 @@ class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
 
     reload_file: BoolProperty(
         name = "Reload File",
-        description = "Reload the file after the operation is completed",
+        description = "Reload the file after the operation is completed. The UI layout will be preserved",
         default = False,
     )
 
@@ -131,7 +134,7 @@ class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
 
     def get_warning_text(self, context):
         if self.file_is_current_blend(context):
-            return "This will modify the currently opened .blend file!"
+            return "This will modify the currently opened .blend file."
         return ""
 
     def draw(self, context):
@@ -142,7 +145,7 @@ class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
     def execute(self, context):
         super().execute(context)
         if self.reload_file:
-            bpy.ops.wm.revert_mainfile()
+            bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
         return {'FINISHED'}
 
 
@@ -231,7 +234,8 @@ class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn revert "{self.file_rel_path}"')
 
-        
+        f = self.get_file(context)
+        f.status = 'normal'
         return {"FINISHED"}
 
 
@@ -261,6 +265,8 @@ class SVN_add_file(SVN_Operator_Single_File, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn add "{self.file_rel_path}"')
 
+        f = self.get_file(context)
+        f.status = 'added'
         return {"FINISHED"}
 
 
@@ -273,6 +279,8 @@ class SVN_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn rm --keep-local "{self.file_rel_path}"')
 
+        f = self.get_file(context)
+        f.status = 'unversioned'
         return {"FINISHED"}
 
 
@@ -290,6 +298,8 @@ class SVN_trash_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Opera
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         send2trash([self.get_file_full_path(context)])
 
+        f = self.get_file(context)
+        context.scene.svn.remove_by_svn_path(f.svn_path)
         return {"FINISHED"}
 
 
@@ -307,6 +317,8 @@ class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Oper
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn remove "{self.file_rel_path}"')
 
+        f = self.get_file(context)
+        f.status = 'deleted'
         return {"FINISHED"}
 
 
@@ -333,18 +345,23 @@ class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
         layout = self.layout
         col = layout.column(align=True)
         col.alert=True
-        col.label(text="Choose which version to keep. The other will be discarded!")
+        col.label(text="Choose which version of the file to keep.")
         col.row().prop(self, 'resolve_method', expand=True)
         if self.resolve_method == 'mine-full':
-            col.label(text="Your changes will be kept, but they were made on top of an outdated file.")
-            col.label(text="When you commit your changes, the changes someone else made will be lost.")
+            col.label(text="Local changes will be kept.")
+            col.label(text="When committing, the changes someone else made will be overwritten.")
         else:
-            col.label(text="Your changes will be PERMANENTLY LOST!")
+            col.label(text="Local changes will be permanently lost.")
             super().draw(context)
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn resolve "{self.file_rel_path}" --accept "{self.resolve_method}"')
 
+        f = self.get_file(context)
+        if self.resolve_method == 'mine-full':
+            f.status = 'modified'
+        else:
+            f.status = 'normal'
         return {"FINISHED"}
 
 
@@ -375,7 +392,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         return cls.get_committable_files(context)
 
     @staticmethod
-    def get_committable_files(context) -> List[str]:
+    def get_committable_files(context) -> List[SVN_file]:
         """Return the list of file entries whose status allows committing"""
         svn_file_list = context.scene.svn.external_files
         committable_statuses = ['modified', 'added', 'deleted']
@@ -412,7 +429,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             return {'CANCELLED'}
 
         if len(self.commit_message_0) < 2:
-            self.report({'ERROR'}, "Please describe your changes in the commit message!")
+            self.report({'ERROR'}, "Please describe your changes in the commit message.")
             return {'CANCELLED'}
 
         commit_message_lines = [getattr(self, f'commit_message_{i}') for i in range(self.last_idx)]
@@ -426,6 +443,12 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         filepaths = " ".join([f'"{f.svn_path}"' for f in files_to_commit])
 
         self.execute_svn_command(context, f'svn commit -m "{commit_message}" {filepaths}')
+
+        for f in files_to_commit:
+            if f.repos_status == 'none':
+                f.status = 'normal'
+            else:
+                f.status = 'conflicted'
 
         self.report({'INFO'}, f"Committed {report}")
 
