@@ -306,6 +306,10 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
         file_entry.status = wc_status
         file_entry.repos_status = repos_status
 
+    current_blend = svn.current_blend_file
+    if current_blend:
+        current_blend.is_referenced = True
+
     svn.force_good_active_index(context)
     # print("SVN: File statuses updated.")
 
@@ -382,11 +386,15 @@ def svn_status_background_fetch_stop():
 def register():
     bpy.app.handlers.load_post.append(init_svn)
     bpy.app.handlers.load_post.append(svn_status_background_fetch_start)
+
+    bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
     bpy.app.handlers.save_post.append(update_file_is_referenced_flags)
 
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
     bpy.app.handlers.load_post.remove(svn_status_background_fetch_start)
+
+    bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)
     bpy.app.handlers.save_post.remove(update_file_is_referenced_flags)
 
 registry = [SVN_explain_status]
