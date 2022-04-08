@@ -21,6 +21,11 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from collections import OrderedDict
 from pathlib import Path
+
+from . import wheels
+# This will load the dateutil and svn wheel file.
+wheels.preload_dependencies()
+
 import xmltodict
 
 import bpy
@@ -204,6 +209,14 @@ def set_svn_info(context) -> bool:
 def init_svn(context, dummy):
     """Initialize SVN info when opening a .blend file that is in a repo."""
 
+    # We need to reset our global vars, otherwise with unlucky timing,
+    # we can end up writing file entries of one repository to the .blend file
+    # in another repository, when doing File->Open from one to the other.
+    global SVN_STATUS_OUTPUT
+    global SVN_STATUS_THREAD
+    SVN_STATUS_OUTPUT = {}
+    SVN_STATUS_THREAD = None
+
     if not context:
         context = bpy.context
 
@@ -226,12 +239,28 @@ def init_svn(context, dummy):
 ############## AUTOMATICALLY KEEPING FILE STATUSES UP TO DATE ##################
 ################################################################################
 
-SVN_STATUS_POPEN = None
+import threading
+SVN_STATUS_OUTPUT = {}
+SVN_STATUS_THREAD = None
+
+def async_get_verbose_svn_status():
+    """The communicate() call blocks execution until the SVN command completes,
+    so this function should be executed from a separate thread.
+    """
+    global SVN_STATUS_OUTPUT
+    SVN_STATUS_OUTPUT = ""
+
+    context = bpy.context
+    prefs = get_addon_prefs(context)
+    popen = execute_svn_command_nofreeze(prefs.svn_directory, 'svn status --show-updates --verbose --xml')
+    svn_status_str = popen.communicate()[0].decode()
+    SVN_STATUS_OUTPUT = get_repo_file_statuses(svn_status_str)
+
 @bpy.app.handlers.persistent
 def timer_update_svn_status():
-    global SVN_STATUS_POPEN
+    global SVN_STATUS_OUTPUT
+    global SVN_STATUS_THREAD
     context = bpy.context
-    svn = context.scene.svn
     prefs = get_addon_prefs(context)
 
     if not prefs.is_in_repo:
@@ -241,30 +270,27 @@ def timer_update_svn_status():
         svn_status_background_fetch_stop()
         return
 
-    if SVN_STATUS_POPEN:
-        svn_output = subprocess_request_output(SVN_STATUS_POPEN)
-        if not svn_output:
-            # Process is still running, so we just gotta wait. Let's try again in 3 seconds.
-            return 3.0
-        svn_status_xml = xmltodict.parse(svn_output)
-        update_file_list(context, svn_status_xml)
+    if SVN_STATUS_THREAD and SVN_STATUS_THREAD.is_alive():
+        # Process is still running, so we just gotta wait. Let's try again in 1s.
+        return 1.0
+    else:
+        # print("Update file list...")
+        update_file_list(context, SVN_STATUS_OUTPUT)
 
-    SVN_STATUS_POPEN = execute_svn_command_nofreeze(prefs.svn_directory, 'svn status --show-updates --verbose --xml')
-    return 3.0
+    # print("Starting thread...")
+    SVN_STATUS_THREAD = threading.Thread(target=async_get_verbose_svn_status, args=())
+    SVN_STATUS_THREAD.start()
+
+    return 1.0
 
 
-def update_file_list(context, svn_status_xml: Dict):
+def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     """Update the file list based on data from an svn command's output.
     (See timer_update_svn_status)"""
     svn = context.scene.svn
 
     svn.remove_unversioned_files()
 
-    referenced_files: Set[Path] = svn.get_referenced_filepaths()
-    referenced_files.add(Path(bpy.data.filepath))
-    referenced_files = [str(svn.absolute_to_svn_path(f)) for f in referenced_files]
-
-    file_statuses = get_file_statuses(svn_status_xml)
     for filepath, status_info in file_statuses.items():
         wc_status, repos_status, revision = status_info
 
@@ -280,14 +306,27 @@ def update_file_list(context, svn_status_xml: Dict):
         file_entry.status = wc_status
         file_entry.repos_status = repos_status
 
-        file_entry.is_referenced = str(filepath) in referenced_files
-
     svn.force_good_active_index(context)
     # print("SVN: File statuses updated.")
 
 
-def get_file_statuses(svn_status_xml: Dict) -> Dict[str, Tuple[str, str, int]]:
+@bpy.app.handlers.persistent
+def update_file_is_referenced_flags(_dummy1, _dummy2):
+    """Update the file list's is_referenced flags. This should only be called on
+    file save, because it relies on BAT, which relies on reading a file from disk,
+    so calling it any more frequently would be pointless."""
+    context = bpy.context
+    svn = context.scene.svn
+    referenced_files: Set[Path] = set()#svn.get_referenced_filepaths()
+    referenced_files.add(Path(bpy.data.filepath))
+    referenced_files = [str(svn.absolute_to_svn_path(f)) for f in referenced_files]
 
+    for file_entry in svn.external_files:
+        file_entry.is_referenced = file_entry.svn_path in referenced_files
+
+
+def get_repo_file_statuses(svn_status_str: str) -> Dict[str, Tuple[str, str, int]]:
+    svn_status_xml = xmltodict.parse(svn_status_str)
     file_infos = svn_status_xml['status']['target']['entry']
     # print(json.dumps(file_infos, indent=4))
 
@@ -300,6 +339,10 @@ def get_file_statuses(svn_status_xml: Dict) -> Dict[str, Tuple[str, str, int]]:
             repos_status_block = file_info['repos-status']
             repos_status = repos_status_block['@item']
             _repo_props = repos_status_block['@props']
+        # else:
+                # TODO: I commented this out for now, but it may be a necessary optimization
+                # if Blender starts stuttering due to the SVN status updates.
+            # continue
 
         wc_status_block = file_info.get('wc-status')
         wc_status = wc_status_block['@item']
@@ -321,7 +364,8 @@ def get_file_statuses(svn_status_xml: Dict) -> Dict[str, Tuple[str, str, int]]:
 
 @bpy.app.handlers.persistent
 def svn_status_background_fetch_start(_dummy1, _dummy2):
-    bpy.app.timers.register(timer_update_svn_status, persistent=True)
+    if not bpy.app.timers.is_registered(timer_update_svn_status):
+        bpy.app.timers.register(timer_update_svn_status, persistent=True)
 
 
 def svn_status_background_fetch_stop():
@@ -338,9 +382,11 @@ def svn_status_background_fetch_stop():
 def register():
     bpy.app.handlers.load_post.append(init_svn)
     bpy.app.handlers.load_post.append(svn_status_background_fetch_start)
+    bpy.app.handlers.save_post.append(update_file_is_referenced_flags)
 
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
     bpy.app.handlers.load_post.remove(svn_status_background_fetch_start)
+    bpy.app.handlers.save_post.remove(update_file_is_referenced_flags)
 
 registry = [SVN_explain_status]

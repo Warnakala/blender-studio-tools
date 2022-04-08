@@ -57,9 +57,14 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             return set()
 
         bpath = Path(bpy.data.filepath)
-        assert bpath.is_file(), f"{bpy.data.filepath!r} is not a file"
 
         reported_assets: Set[Path] = set()
+        if not bpath.exists():
+            # Rare case: File was deleted from file system, but is still open.
+            return reported_assets
+
+        assert bpath.is_file(), f"{bpy.data.filepath!r} is not a file"
+
 
         for usage in trace.deps(bpath):
             for assetpath in usage.files():
@@ -89,7 +94,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             return
 
         # Remove unversioned files from the list. The ones that are still around
-        #  will be re-discovered below, through get_file_statuses.
+        # will be re-discovered below, through get_repo_file_statuses.
         for i, file_entry in reversed(list(enumerate(self.external_files))):
             if file_entry.status == "unversioned":
                 self.external_files.remove(i)

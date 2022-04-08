@@ -27,6 +27,7 @@ import bpy
 from bpy.props import StringProperty, IntProperty, BoolProperty
 
 from .util import make_getter_func, make_setter_func_readonly
+from . import svn_status
 
 logger = logging.getLogger(name="SVN")
 
@@ -39,10 +40,18 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         default=True, 
         description="Allow keeping the SVN log up to date automatically. Disable if suspected of causing problems"
     )
+
+    def update_status_update_in_background(self, context):
+        if self.status_update_in_background:
+            svn_status.svn_status_background_fetch_start(None, None)
+        else:
+            svn_status.svn_status_background_fetch_stop()
+        
     status_update_in_background: BoolProperty(
         name="Auto-Update File Status",
         default=True,
-        description="Allow keeping file statuses up to date automatically. Disable if suspected of causing problems"
+        description="Allow keeping file statuses up to date automatically. Disable if suspected of causing problems",
+        update=update_status_update_in_background
     )
 
     enable_ui: BoolProperty(
