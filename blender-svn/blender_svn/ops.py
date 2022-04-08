@@ -25,9 +25,9 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
 import bpy, subprocess
-from bpy.props import StringProperty, BoolVectorProperty, IntProperty, EnumProperty
+from bpy.props import StringProperty, BoolVectorProperty, IntProperty, EnumProperty, BoolProperty
 
-from send2trash import send2trash   # NOTE: For some reason, when there's any error in this file, this line seems to take the blame for it?
+from send2trash import send2trash
 
 from .util import get_addon_prefs
 from .svn_log import svn_log_background_fetch_start
@@ -57,6 +57,7 @@ class SVN_Operator_Single_File(SVN_Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         """Most operators want to make sure that the file exists pre-execute."""
         if not self.file_exists(context) and not type(self).missing_file_allowed:
+            self.report({'ERROR'}, "File is no longer on the file system.")
             return {'CANCELLED'}
         ret = self._execute(context)
         return ret
@@ -110,7 +111,42 @@ class Warning_Operator(Popup_Operator):
         raise NotImplemented
 
 
-class SVN_update_single(SVN_Operator_Single_File, bpy.types.Operator):
+class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
+
+    def file_is_current_blend(self, context) -> bool:
+        return context.scene.svn.current_blend_file.svn_path == self.file_rel_path
+
+    reload_file: BoolProperty(
+        name = "Reload File",
+        description = "Reload the file after the operation is completed",
+        default = False,
+    )
+
+    def invoke(self, context, event):
+        self.reload_file = False
+        if self.file_is_current_blend(context) or self.get_warning_text(context):
+            return context.window_manager.invoke_props_dialog(self, width=500)
+
+        return self.execute(context)
+
+    def get_warning_text(self, context):
+        if self.file_is_current_blend(context):
+            return "This will modify the currently opened .blend file!"
+        return ""
+
+    def draw(self, context):
+        super().draw(context)
+        if self.file_is_current_blend(context):
+            self.layout.prop(self, 'reload_file')
+    
+    def execute(self, context):
+        super().execute(context)
+        if self.reload_file:
+            bpy.ops.wm.revert_mainfile()
+        return {'FINISHED'}
+
+
+class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.update_single"
     bl_label = "Update File"
     bl_description = "Download the latest available version of this file from the remote repository"
@@ -119,16 +155,24 @@ class SVN_update_single(SVN_Operator_Single_File, bpy.types.Operator):
     missing_file_allowed = True
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
+        will_conflict = False
+        _idx, file_entry = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
+        if file_entry.status != 'normal':
+            will_conflict = True
+
         self.execute_svn_command(context, f'svn up "{self.file_rel_path}" --accept "postpone"')
-        # Remove the file entry for this file
-        context.scene.svn.remove_by_svn_path(self.file_rel_path)
+
+        if will_conflict: 
+            file_entry.status = 'conflicted'
+        else:
+            file_entry.status = 'normal'
 
         self.report({'INFO'}, f"Updated {self.file_rel_path} to the latest version.")
 
         return {"FINISHED"}
 
 
-class SVN_download_file_revision(SVN_Operator_Single_File, bpy.types.Operator):
+class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.download_file_revision"
     bl_label = "Download Revision"
     bl_description = "Download this revision of this file"
@@ -137,6 +181,13 @@ class SVN_download_file_revision(SVN_Operator_Single_File, bpy.types.Operator):
     missing_file_allowed = True
 
     revision: IntProperty()
+
+    def invoke(self, context, event):
+        _idx, file = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
+        if self.file_is_current_blend(context) and file.status != 'normal':
+            self.report({'ERROR'}, 'You must first revert or commit the changes to this file.')
+            return {'CANCELLED'}
+        return super().invoke(context, event)
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         _idx, file = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
@@ -156,18 +207,20 @@ class SVN_download_file_revision(SVN_Operator_Single_File, bpy.types.Operator):
             return ret
         
         svn = context.scene.svn
-        _i, file_entry = svn.get_file_by_svn_path(self.file_rel_path)
-        file_entry['revision'] = self.revision
-        
-        latest_rev = svn.get_latest_revision_of_file(self.file_rel_path)
-        file_entry.status = 'normal' if latest_rev == self.revision else 'none'
+        tup = svn.get_file_by_svn_path(self.file_rel_path)
+        if tup:
+            _i, file_entry = tup
+            file_entry['revision'] = self.revision
+
+            latest_rev = svn.get_latest_revision_of_file(self.file_rel_path)
+            file_entry.status = 'normal' if latest_rev == self.revision else 'none'
 
         self.report({'INFO'}, f"Checked out revision {self.revision} of {self.file_rel_path}")
 
         return ret
 
 
-class SVN_restore_file(SVN_Operator_Single_File, bpy.types.Operator):
+class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.restore_file"
     bl_label = "Restore File"
     bl_description = "Restore this deleted file to its previous revision"
@@ -178,13 +231,14 @@ class SVN_restore_file(SVN_Operator_Single_File, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn revert "{self.file_rel_path}"')
 
+        
         return {"FINISHED"}
 
 
-class SVN_revert_file(SVN_restore_file, Warning_Operator):
+class SVN_revert_file(SVN_restore_file):
     bl_idname = "svn.revert_file"
     bl_label = "Revert File"
-    bl_description = "PREMANENTLY DISCARD local changes to this file and return it to the state of the last revision. Cannot be undone"
+    bl_description = "PREMANENTLY DISCARD local changes to this file and return it to the state of the last local revision. Cannot be undone"
     bl_options = {'INTERNAL'}
 
     missing_file_allowed = False
@@ -256,7 +310,7 @@ class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Oper
         return {"FINISHED"}
 
 
-class SVN_resolve_conflict(SVN_Operator_Single_File, bpy.types.Operator):
+class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.resolve_conflict"
     bl_label = "Resolve Conflict"
     bl_description = "Resolve a conflict, by discarding either local or remote changes"
@@ -277,14 +331,16 @@ class SVN_resolve_conflict(SVN_Operator_Single_File, bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.alert=True
-        layout.label(text="Choose which version to keep. The other will be discarded!")
-        layout.prop(self, 'resolve_method', expand=True)
+        col = layout.column(align=True)
+        col.alert=True
+        col.label(text="Choose which version to keep. The other will be discarded!")
+        col.row().prop(self, 'resolve_method', expand=True)
         if self.resolve_method == 'mine-full':
-            layout.label(text="Your changes will be kept, but they were made on top of an outdated file.")
-            layout.label(text="When you commit your changes, the changes someone else made will be lost.")
+            col.label(text="Your changes will be kept, but they were made on top of an outdated file.")
+            col.label(text="When you commit your changes, the changes someone else made will be lost.")
         else:
-            layout.label(text="Your changes will be PERMANENTLY DELETED!")
+            col.label(text="Your changes will be PERMANENTLY LOST!")
+            super().draw(context)
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn resolve "{self.file_rel_path}" --accept "{self.resolve_method}"')

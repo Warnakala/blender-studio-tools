@@ -235,6 +235,10 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_decorate = False
 
         if len(context.scene.svn.external_files) == 0:
+            # TODO: For some reason this draw doesn't seem to happen again, 
+            # even when mouse-overing the label... So user ends up having to
+            # close and re-open the panel for the file list to show up for the 
+            # first time. That's not good!
             layout.label(text="No files detected in the repository")
             return
 
