@@ -20,7 +20,6 @@
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
-import subprocess
 
 import bpy
 from bpy.props import IntProperty, StringProperty, CollectionProperty, BoolProperty, EnumProperty

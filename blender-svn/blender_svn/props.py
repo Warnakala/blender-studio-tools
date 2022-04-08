@@ -107,45 +107,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         svn_dir = Path(prefs.svn_directory)
         return absolute_path.relative_to(svn_dir)
 
-    def add_file_entry(
-        self, svn_path: Path, status: str, rev: int, is_referenced=False
-    ) -> SVN_file:
-        if svn_path.suffix.startswith(".r") and svn_path.suffix[2:].isdecimal():
-            # Do not add .r### files to the file list, ever.
-            return
-        tup = self.get_file_by_svn_path(str(svn_path))
-        existed = False
-        if not tup:
-            item = self.external_files.add()
-        else:
-            existed = True
-            _idx, item = tup
-
-        # Set collection property.
-        item['svn_path'] = str(svn_path)
-        item['name'] = svn_path.name
-
-        assert rev > 0 or status in ['unversioned', 'added'], "Revision number of a versioned file must be greater than 0."
-        item['revision'] = rev
-
-        if rev < self.get_latest_revision_of_file(svn_path) and status == 'normal':
-            # Strange case 1: We checked out an older version of a file.
-            # SVN assigns this the 'normal' status instead of 'none'(Outdated)
-            # which makes more sense from user POV.
-            status = 'none'
-
-        if not svn_path.is_file() and item.status == 'none' and status == 'normal':
-            # Strange case 2: A previous `svn status --verbose --show-updates`
-            # marked a folder as being outdated, but a subsequent `svn status --verbose`
-            # reports the status of this folder as normal. In this case, it feels more
-            # accurate to keep the folder on outdated.
-            # TODO: Updating an outdated folder doesn't mark the outdated files as no longer being outdated. Maybe folders shouldn't even be displayed in the UIList, I don't even really get why svn marks the folder path as modified.
-            status = 'none'
-
-        item.status = status
-        item.is_referenced = is_referenced
-        return item
-
     def get_file_by_svn_path(self, svn_path: str) -> Tuple[int, SVN_file]:
         svn_path = str(svn_path)
         for i, file in enumerate(self.external_files):
