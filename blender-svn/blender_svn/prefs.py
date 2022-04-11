@@ -52,10 +52,9 @@ class SVN_credential(bpy.types.PropertyGroup):
             self.authenticated = True
             self.auth_failed = False
 
-            # If user has auto-save preferences enabled, well, apparently 
-            # it doesn't work for addons, or at least
-            # not for CollectionProperties stored in addon preferences...
-            # Manually saving user prefs works though, so... we get it done.
+            # For some ungodly reason, ONLY with this addon, 
+            # CollectionProperties stored in the AddonPrefs do not get
+            # auto-saved, only manually saved! So... we get it done.
             if context.preferences.use_preferences_save:
                 bpy.ops.wm.save_userpref()
 
@@ -99,10 +98,22 @@ class SVN_credential(bpy.types.PropertyGroup):
     )
 
 
+class UL_SVN_credentials(bpy.types.UIList):
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        thing = item
+        row = layout.row()
+        row.prop(thing, 'name', text="", icon='FILE_TEXT')
+        row.prop(thing, 'url', text="", icon='URL')
+        row.prop(thing, 'username', text="", icon='USER')
+        row.prop(thing, 'password', text="", icon='LOCKED')
+
+
 class SVN_addon_preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     svn_credentials: CollectionProperty(type=SVN_credential)
+    svn_cred_active_idx: IntProperty()
 
     def get_credentials(self, get_entry=False) -> Optional[Tuple[str, str]]:
         svn_url = self.svn_url
@@ -241,14 +252,28 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         layout: bpy.types.UILayout = self.layout
 
         # Production Config Dir.
-        layout.prop(self, 'enable_ui')
+        # layout.prop(self, 'enable_ui')
+        layout.label(text="Debug stuff:")
         layout.prop(self, 'log_update_in_background')
         layout.prop(self, 'status_update_in_background')
+
+        layout.label(text="Saved credentials:")
+        col = layout.column()
+        col.enabled=False
+        col.template_list(
+            "UL_SVN_credentials",
+            "svn_cred_list",
+            self,
+            "svn_credentials",
+            self,
+            "svn_cred_active_idx",
+        )
 
 
 # ----------------REGISTER--------------.
 
 registry = [
+    UL_SVN_credentials,
     SVN_credential,
     SVN_addon_preferences
 ]

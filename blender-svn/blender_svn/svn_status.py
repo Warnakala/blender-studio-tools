@@ -140,8 +140,8 @@ def init_svn(context, dummy):
         f.is_referenced = True
 
     svn_url = prefs.svn_url
-    username, password = prefs.get_credentials()
-    if not (username and password):
+    cred = prefs.get_credentials(get_entry=True)
+    if not cred:
         cred = prefs.svn_credentials.add()
         cred.url = svn_url
         cred.name = Path(prefs.svn_directory).name
