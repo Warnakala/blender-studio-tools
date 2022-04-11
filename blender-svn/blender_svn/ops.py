@@ -29,19 +29,13 @@ from send2trash import send2trash
 
 from .util import get_addon_prefs
 from .svn_log import SVN_file, svn_log_background_fetch_start
-from .execute_subprocess import execute_svn_command, execute_svn_command_nofreeze
+from .execute_subprocess import execute_svn_command
 
 
 class SVN_Operator:
-    def execute_svn_command_nofreeze(self, context, command: str) -> subprocess.Popen:
+    def execute_svn_command(self, context, command: str) -> str:
         prefs = get_addon_prefs(context)
-        svn_root_path = prefs.svn_directory
-        return execute_svn_command_nofreeze(svn_root_path, command)
-    
-    def execute_svn_command(self, context, command: str) -> subprocess.Popen:
-        prefs = get_addon_prefs(context)
-        svn_root_path = prefs.svn_directory
-        return execute_svn_command(svn_root_path, command)
+        return execute_svn_command(prefs, command)
 
 
 class SVN_Operator_Single_File(SVN_Operator):

@@ -21,7 +21,7 @@
 import bpy
 from .util import get_addon_prefs
 
-from bpy.props import BoolProperty
+from bpy.props import BoolProperty, StringProperty
 
 from . import svn_status
 
@@ -217,6 +217,51 @@ class SVN_UL_file_list(bpy.types.UIList):
         col.prop(prefs, 'include_normal', toggle=True, text="", icon="CHECKMARK")
 
 
+class VIEW3D_PT_svn_credentials(bpy.types.Panel):
+    """Prompt the user to enter their username and password for the remote repository of the current .blend file."""
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'SVN'
+    bl_label = 'SVN Credentials'
+
+    @classmethod
+    def poll(cls, context):
+        prefs = get_addon_prefs(context)
+        cred = prefs.get_credentials(get_entry=True)
+        if not (prefs.enable_ui and prefs.is_in_repo):
+            return False
+        if not cred:
+            # The credential entry should've been created at load_post() by set_svn_info()
+            return False
+        return not cred.authenticated or cred.svn_error
+
+    def draw(self, context):
+        prefs = get_addon_prefs(context)
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        col = layout.column(align=True)
+        cred = prefs.get_credentials(get_entry=True)
+        row = col.row()
+        row.prop(cred, 'name', text="Repo Name", icon='FILE_TEXT')
+        url = row.operator('svn.custom_tooltip', text="", icon='URL')
+        url.tooltip = cred.url
+        url.copy_on_click = True
+        col.prop(cred, 'username', icon='USER')
+        col.prop(cred, 'password', icon='UNLOCKED')
+        if cred.auth_failed:
+            row = layout.row()
+            row.alert = True
+            row.label(text="Authentication failed.")
+        if cred.svn_error:
+            row = layout.row()
+            row.alert = True
+            warning = row.operator('svn.custom_tooltip', text="SVN Error", icon='ERROR')
+            warning.tooltip = cred.svn_error
+            warning.copy_on_click = True
+
+
 class VIEW3D_PT_svn_files(bpy.types.Panel):
     """Display a list of files in the SVN repository of the current .blend file."""
     bl_space_type = 'VIEW_3D'
@@ -227,20 +272,21 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         prefs = get_addon_prefs(context)
-        return prefs.enable_ui and prefs.is_in_repo
+        cred = prefs.get_credentials(get_entry=True)
+        return prefs.enable_ui and prefs.is_in_repo and cred and cred.authenticated and not cred.svn_error
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        if len(context.scene.svn.external_files) == 0:
-            # TODO: For some reason this draw doesn't seem to happen again, 
-            # even when mouse-overing the label... So user ends up having to
-            # close and re-open the panel for the file list to show up for the 
-            # first time. That's not good!
-            layout.label(text="No files detected in the repository")
-            return
+        # if len(context.scene.svn.external_files) == 0:
+        #     # TODO: For some reason this draw doesn't seem to happen again, 
+        #     # even when mouse-overing the label... So user ends up having to
+        #     # close and re-open the panel for the file list to show up for the 
+        #     # first time. That's not good!
+        #     layout.label(text="No files detected in the repository")
+        #     return
 
         row = layout.row()
 
@@ -262,14 +308,32 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         col.separator()
         col.operator("svn.cleanup", icon='BRUSH_DATA', text="")
 
-class SVN_file_outdated_warning(bpy.types.Operator):
-    bl_idname = "svn.file_outdated_warning"
+
+class SVN_custom_tooltip(bpy.types.Operator):
+    bl_idname = "svn.custom_tooltip"
     bl_label = "" # Don't want the first line of the tooltip on mouse hover.
-    bl_description = "The currently opened .blend file has a newer version available on the remote repository. This means any changes in this file will result in a conflict, and potential loss of data. See the SVN panel for info"
+    bl_description = ""
     bl_options = {'INTERNAL'}
 
+    tooltip: StringProperty(
+        name = "Tooltip",
+        description = "Tooltip that is displayed when mouse hovering this operator"
+    )
+    copy_on_click: BoolProperty(
+        name = "Copy on Click",
+        description = "If True, the tooltip will be copied to the clipboard when the operator is clicked",
+        default = False
+    )
+
+    @classmethod
+    def description(cls, context, properties):
+        return properties.tooltip
+
     def execute(self, context):
+        if self.copy_on_click:
+            context.window_manager.clipboard = self.tooltip
         return {'FINISHED'}
+
 
 def draw_outdated_file_warning(self, context):
     svn = context.scene.svn
@@ -288,14 +352,15 @@ def draw_outdated_file_warning(self, context):
     if current_file.status == 'conflicted':
         row.operator('svn.resolve_conflict', text="SVN: This .blend file is conflicted.", icon='ERROR')
     elif current_file.repos_status != 'none':
-        row.operator('svn.file_outdated_warning', text="SVN: This .blend file is outdated.", icon='ERROR')
-
+        warning = row.operator('svn.custom_tooltip', text="SVN: This .blend file is outdated.", icon='ERROR')
+        warning.tooltip = "The currently opened .blend file has a newer version available on the remote repository. This means any changes in this file will result in a conflict, and potential loss of data. See the SVN panel for info"
 
 registry = [
     SVN_UL_file_list,
     VIEW3D_PT_svn,
+    VIEW3D_PT_svn_credentials,
     VIEW3D_PT_svn_files,
-    SVN_file_outdated_warning
+    SVN_custom_tooltip
 ]
 
 def register():

@@ -31,7 +31,7 @@ import xmltodict
 import bpy
 from bpy.props import StringProperty
 
-from .execute_subprocess import execute_svn_command, execute_svn_command_nofreeze, subprocess_request_output
+from .execute_subprocess import execute_command, execute_svn_command
 from .util import get_addon_prefs, svn_date_simple
 
 
@@ -183,9 +183,9 @@ class SVN_explain_status(bpy.types.Operator):
         return {'FINISHED'}
 
 
-def set_svn_info(context) -> bool:
+def set_svn_info(context) -> "SVN_addon_preferences":
     prefs = get_addon_prefs(context)
-    output = execute_svn_command(str(Path(bpy.data.filepath).parent), 'svn info')
+    output = execute_command(str(Path(bpy.data.filepath).parent), 'svn info')
     lines = output.split("\n")
     if len(lines) == 1:
         prefs.is_in_repo = False
@@ -194,8 +194,12 @@ def set_svn_info(context) -> bool:
 
     # Populate the addon prefs with svn info.
     prefs.is_in_repo = True
-    prefs['svn_directory'] = lines[1].split("Working Copy Root Path: ")[1]
-    prefs['svn_url'] = lines[2].split("URL: ")[1]
+    dir_path_str = lines[1].split("Working Copy Root Path: ")[1]
+    prefs['svn_directory'] = dir_path_str
+    full_url = lines[2].split("URL: ")[1]
+    relative_url = lines[3].split("Relative URL: ")[1][1:]
+    base_url = full_url.replace(relative_url, "")
+    prefs['svn_url'] = base_url
     prefs['relative_filepath'] = lines[3].split("Relative URL: ^")[1]
     prefs['revision_number'] = int(lines[6].split("Revision: ")[1])
 
@@ -226,15 +230,36 @@ def init_svn(context, dummy):
         get_addon_prefs(context).reset()
         return
 
-    svn_info = set_svn_info(context)
-    if not svn_info:
-        context.scene.svn.external_files.clear()
-        context.scene.svn.log.clear()
+    prefs = set_svn_info(context)
 
-    context.scene.svn.external_files_active_index = 0
-    context.scene.svn.log_active_index = 0
-    context.scene.svn.reload_svn_log(context)
+    svn = context.scene.svn
+    svn.external_files_active_index = 0
+    svn.log_active_index = 0
+    if not prefs:
+        svn.external_files.clear()
+        svn.log.clear()
+        return
 
+    svn.reload_svn_log(context)
+
+    current_blend_file = svn.current_blend_file
+    if not current_blend_file:
+        f = svn.external_files.add()
+        svn_path = svn.absolute_to_svn_path(bpy.data.filepath)
+        f['svn_path'] = str(svn_path)
+        f['name'] = svn_path.name
+        f.status = 'unversioned'
+        f.is_referenced = True
+
+    svn_url = prefs.svn_url
+    username, password = prefs.get_credentials()
+    if not (username and password):
+        cred = prefs.svn_credentials.add()
+        cred.url = svn_url
+        cred.name = Path(prefs.svn_directory).name
+        return
+
+    svn_status_background_fetch_start(None, None)
 
 
 ################################################################################
@@ -258,8 +283,7 @@ def async_get_verbose_svn_status():
 
     context = bpy.context
     prefs = get_addon_prefs(context)
-    popen = execute_svn_command_nofreeze(prefs.svn_directory, 'svn status --show-updates --verbose --xml')
-    svn_status_str = popen.communicate()[0].decode()
+    svn_status_str = execute_svn_command(prefs, 'svn status --show-updates --verbose --xml')
     SVN_STATUS_OUTPUT = get_repo_file_statuses(svn_status_str)
 
 @bpy.app.handlers.persistent
@@ -270,10 +294,9 @@ def timer_update_svn_status():
     context = bpy.context
     prefs = get_addon_prefs(context)
 
-    if not prefs.is_in_repo:
-        return
+    username, password = prefs.get_credentials()
 
-    if not prefs.status_update_in_background:
+    if not prefs.is_in_repo or not prefs.status_update_in_background or not (username and password):
         svn_status_background_fetch_stop()
         return
 
@@ -411,6 +434,7 @@ def svn_status_background_fetch_stop():
 
 def register():
     bpy.app.handlers.load_post.append(init_svn)
+    bpy.app.handlers.save_post.append(init_svn)
     bpy.app.handlers.load_post.append(svn_status_background_fetch_start)
 
     bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
@@ -418,6 +442,7 @@ def register():
 
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
+    bpy.app.handlers.save_post.remove(init_svn)
     bpy.app.handlers.load_post.remove(svn_status_background_fetch_start)
 
     bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)

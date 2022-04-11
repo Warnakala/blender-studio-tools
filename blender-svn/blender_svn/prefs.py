@@ -24,16 +24,86 @@ from typing import Optional, Any, Set, Tuple, List
 from pathlib import Path
 
 import bpy
-from bpy.props import StringProperty, IntProperty, BoolProperty
+from bpy.props import StringProperty, IntProperty, BoolProperty, CollectionProperty
 
-from .util import make_getter_func, make_setter_func_readonly
+from .util import make_getter_func, make_setter_func_readonly, get_addon_prefs
 from . import svn_status
+from .execute_subprocess import execute_command
 
 logger = logging.getLogger(name="SVN")
 
 
+class SVN_credential(bpy.types.PropertyGroup):
+    """Authentication information of a single SVN repository."""
+    url: StringProperty(
+        name = "SVN URL",
+        description = "URL of the remote repository"
+    )
+
+    def update_cred(self, context):
+        if not (self.username and self.password):
+            # Only try to authenticate if BOTH username AND pw are entered.
+            return
+        self.svn_error = ""
+        prefs = get_addon_prefs(context)
+        output = execute_command(prefs.svn_directory, f'svn status --show-updates --username "{self.username}" --password "{self.password}"')
+        if "Authentication failed" in output:
+            self.authenticated = False
+            self.auth_failed = True
+        elif 'Status against revision' in output:
+            self.authenticated = True
+            self.auth_failed = False
+        else:
+            self.authenticated = False
+            self.auth_failed = False
+            self.svn_error = output
+
+    username: StringProperty(
+        name = "SVN Username",
+        description = "User name used for authentication with this SVN repository",
+        update = update_cred
+    )
+    password: StringProperty(
+        name = "SVN Password",
+        description = "Password used for authentication with this SVN repository. This password is stored in your Blender user preferences as plain text. Somebody with access to your user preferences will be able to read your password",
+        subtype='PASSWORD',
+        update = update_cred
+    )
+
+    authenticated: BoolProperty(
+        name = "Authenticated",
+        description = "Internal flag to mark whether the last entered credentials were confirmed by the repo as correct credentials",
+        default = False
+    )
+    auth_failed: BoolProperty(
+        name = "Authentication Failed",
+        description = "Internal flag to mark whether the last entered credentials were denied by the repo",
+        default = False
+    )
+    svn_error: StringProperty(
+        name = "SVN Error",
+        description = "If SVN throws an error other than authentication error, store it here.",
+        default = ""
+    )
+
+
 class SVN_addon_preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
+
+    svn_credentials: CollectionProperty(type=SVN_credential)
+    svn_credentials_active_index: IntProperty()
+
+    def get_credentials(self, get_entry=False) -> Optional[Tuple[str, str]]:
+        svn_url = self.svn_url
+        for cred in self.svn_credentials:
+            if cred.url == svn_url:
+                if get_entry:
+                    return cred
+                return cred.username, cred.password
+
+        if get_entry:
+            return None
+        return None, None
 
     log_update_in_background: BoolProperty(
         name="Auto-Update SVN Log",
@@ -168,5 +238,6 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 # ----------------REGISTER--------------.
 
 registry = [
+    SVN_credential,
     SVN_addon_preferences
 ]
