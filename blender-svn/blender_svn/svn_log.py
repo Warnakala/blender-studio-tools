@@ -22,130 +22,11 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
 import bpy
-from bpy.props import IntProperty, StringProperty, CollectionProperty, BoolProperty, EnumProperty
+from bpy.props import IntProperty, BoolProperty
 
-from .util import get_addon_prefs, make_getter_func, make_setter_func_readonly, svn_date_simple
-from . import svn_status
+from .util import get_addon_prefs, svn_date_simple
+from . import constants
 from .execute_subprocess import execute_svn_command_nofreeze, subprocess_request_output
-
-
-################################################################################
-############################# DATA TYPES #######################################
-################################################################################
-
-class SVN_file(bpy.types.PropertyGroup):
-    """Property Group that can represent a version of a File in an SVN repository."""
-
-    name: StringProperty(
-        name="File Name",
-        get=make_getter_func("name", ""),
-        set=make_setter_func_readonly("name"),
-    )
-    svn_path: StringProperty(
-        name = "SVN Path",
-        description="Filepath relative to the SVN root",
-        get=make_getter_func("svn_path", ""),
-        set=make_setter_func_readonly("svn_path"),
-    )
-    status: EnumProperty(
-        name="Status",
-        description = "SVN Status of the file in the local repository (aka working copy)",
-        items=svn_status.ENUM_SVN_STATUS,
-        default="normal",
-    )
-    repos_status: EnumProperty(
-        name="Remote's Status",
-        description = "SVN Status of the file in the remote repository (periodically updated)",
-        items=svn_status.ENUM_SVN_STATUS,
-        default="none",
-    )
-    @property
-    def is_outdated(self):
-        return self.repos_status == 'modified' and self.status == 'normal'
-
-    revision: IntProperty(
-        name="Revision",
-        description="Revision number",
-    )
-    is_referenced: BoolProperty(
-        name="Is Referenced",
-        description="True when this file is referenced by this .blend file either directly or indirectly. Flag used for list filtering",
-        default=False,
-    )
-
-
-    @property
-    def status_icon(self) -> str:
-        return svn_status.SVN_STATUS_DATA[self.status][0]
-
-    @property
-    def status_name(self) -> str:
-        if self.status == 'none':
-            return 'Outdated'
-        return self.status.title()
-    
-    @property
-    def file_icon(self) -> str:
-        if '.' not in self.name:
-            return 'FILE_FOLDER'
-        extension = self.name.split(".")[-1] if "." in self.name else ""
-
-        if extension in ['abc']:
-            return 'FILE_CACHE'
-        elif extension in ['blend', 'blend1']:
-            return 'FILE_BLEND'
-        elif extension in ['tga', 'bmp', 'tif', 'tiff', 'tga', 'png', 'dds', 'jpg', 'exr', 'hdr']:
-            return 'TEXTURE'
-        elif extension in ['psd', 'kra']:
-            return 'IMAGE_DATA'
-        elif extension in ['mp4', 'mov']:
-            return 'SEQUENCE'
-        elif extension in ['mp3', 'ogg', 'wav']:
-            return 'SPEAKER'
-        
-        return 'QUESTION'
-
-
-class SVN_log(bpy.types.PropertyGroup):
-    """Property Group that can represent an SVN log entry."""
-
-    revision_number: IntProperty(
-        name="Revision Number",
-        description="Revision number of the current .blend file",
-        get = make_getter_func("revision_number", 0),
-        set = make_setter_func_readonly("revision_number")
-    )
-    revision_date: StringProperty(
-        name="Revision Date",
-        description="Date when the current revision was committed",
-        get = make_getter_func("revision_date", ""),
-        set = make_setter_func_readonly("revision_date")
-    )
-    revision_author: StringProperty(
-        name="Revision Author",
-        description="SVN username of the revision author",
-        get = make_getter_func("revision_author", ""),
-        set = make_setter_func_readonly("revision_author")
-    )
-    commit_message: StringProperty(
-        name = "Commit Message",
-        description="Commit message written by the commit author to describe the changes in this revision",
-        get = make_getter_func("commit_message", ""),
-        set = make_setter_func_readonly("commit_message")
-    )
-
-    changed_files: CollectionProperty(
-        type = SVN_file,
-        name = "Changed Files",
-        description = "List of file paths relative to the SVN root that were affected by this revision"
-    )
-
-    def changed_file(self, svn_path: str) -> bool:
-        for f in self.changed_files:
-            if f.svn_path == "/"+svn_path:
-                return True
-        return False
-
 
 
 ################################################################################
@@ -411,7 +292,7 @@ def reload_svn_log(self, context):
             log_file_entry['svn_path'] = file_path
             log_file_entry['revision'] = r_number
             log_file_entry['name'] = Path(file_path).name
-            log_file_entry.status = svn_status.SVN_STATUS_CHAR[status_char]
+            log_file_entry.status = constants.SVN_STATUS_CHAR[status_char]
 
         log_entry['commit_message'] = "\n".join(chunk[-r_msg_length:])
 
@@ -506,7 +387,8 @@ def timer_update_svn_log():
 
 def svn_log_background_fetch_start():
     bpy.context.scene.svn.reload_svn_log(bpy.context)
-    bpy.app.timers.register(timer_update_svn_log, persistent=True)
+    if not bpy.app.timers.is_registered(timer_update_svn_log):
+        bpy.app.timers.register(timer_update_svn_log, persistent=True)
 
 @bpy.app.handlers.persistent
 def svn_log_handler(_dummy1, _dummy2):
@@ -526,8 +408,6 @@ def svn_log_background_fetch_stop():
 ################################################################################
 
 registry = [
-    SVN_file, 
-    SVN_log, 
     VIEW3D_PT_svn_log, 
     SVN_UL_log, 
     SVN_tooltip_log, 

@@ -47,12 +47,16 @@ class SVN_credential(bpy.types.PropertyGroup):
         self.svn_error = ""
         prefs = get_addon_prefs(context)
         output = execute_command(prefs.svn_directory, f'svn status --show-updates --username "{self.username}" --password "{self.password}"')
-        if "Authentication failed" in output:
-            self.authenticated = False
-            self.auth_failed = True
-        elif 'Status against revision' in output:
+        if type(output) == str:
+            svn_status.init_svn(context, None)
             self.authenticated = True
             self.auth_failed = False
+            return
+
+        error = output.stderr.decode()
+        if "Authentication failed" in error:
+            self.authenticated = False
+            self.auth_failed = True
         else:
             self.authenticated = False
             self.auth_failed = False

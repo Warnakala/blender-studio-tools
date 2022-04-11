@@ -23,7 +23,7 @@ from .util import get_addon_prefs
 
 from bpy.props import BoolProperty, StringProperty
 
-from . import svn_status
+from . import constants
 
 class VIEW3D_PT_svn(bpy.types.Panel):
     """SVN UI panel in the 3D View Sidebar."""
@@ -134,7 +134,7 @@ class SVN_UL_file_list(bpy.types.UIList):
 
         # Populate the status icons.
         for status in statuses:
-            icon = svn_status.SVN_STATUS_DATA[status][0]
+            icon = constants.SVN_STATUS_DATA[status][0]
             explainer = status_row.operator('svn.explain_status', text="", icon=icon)
             explainer.status = status
             explainer.file_rel_path = file_entry.svn_path
