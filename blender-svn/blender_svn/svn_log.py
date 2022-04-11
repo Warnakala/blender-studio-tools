@@ -236,6 +236,7 @@ def get_log_file_path(context) -> Path:
     prefs = get_addon_prefs(context)
     return Path(prefs.svn_directory+"/.svn/svn.log")
 
+
 def reload_svn_log(self, context):
     """Read the svn.log file (written by this addon) into the log entry list."""
 
@@ -348,8 +349,9 @@ def timer_update_svn_log():
     context = bpy.context
     svn = context.scene.svn
     prefs = get_addon_prefs(context)
+    cred = prefs.get_credentials(get_entry=True)
 
-    if not prefs.is_in_repo:
+    if not prefs.is_in_repo or not cred.authenticated:
         return
 
     if not prefs.log_update_in_background:
@@ -357,7 +359,7 @@ def timer_update_svn_log():
         return
 
     if is_log_up_to_date(context):
-        print("SVN Log is up to date with current revision.")
+        print("SVN: Log is up to date with current revision.")
         svn_log_background_fetch_stop()
         return
 
@@ -380,7 +382,7 @@ def timer_update_svn_log():
     goal_rev = latest_log_rev + num_logs_to_get
 
     # Start the sub-process.
-    SVN_LOG_POPEN = execute_svn_command_nofreeze(prefs.svn_directory, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")
+    SVN_LOG_POPEN = execute_svn_command_nofreeze(prefs, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")
 
     return 3.0
 
@@ -390,17 +392,18 @@ def svn_log_background_fetch_start():
     if not bpy.app.timers.is_registered(timer_update_svn_log):
         bpy.app.timers.register(timer_update_svn_log, persistent=True)
 
+
 @bpy.app.handlers.persistent
 def svn_log_handler(_dummy1, _dummy2):
     # This damn thing needs 2 positional arguments even though neither of them get anything!
     svn_log_background_fetch_start()
+
 
 def svn_log_background_fetch_stop():
     if bpy.app.timers.is_registered(timer_update_svn_log):
         bpy.app.timers.unregister(timer_update_svn_log)
     global SVN_LOG_POPEN
     SVN_LOG_POPEN = None
-
 
 
 ################################################################################

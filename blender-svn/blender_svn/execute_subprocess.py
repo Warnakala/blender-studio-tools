@@ -1,7 +1,7 @@
 import subprocess
 
 
-def command_with_credential(command, prefs) -> str:
+def command_with_credential(prefs, command) -> str:
     username, password = prefs.get_credentials()
     assert (username and password), "No username and password entered for this repository. The UI shouldn't have allowed you to get into a state where you can press an SVN operation button without having your credentials entered, so this is a bug!"
     return command + f' --username "{username}" --password "{password}"'
@@ -25,9 +25,8 @@ def execute_svn_command(prefs, command: str) -> str:
     So any file paths that are part of the commend should be relative to the
     SVN root.
     """
-    command = command_with_credential(command, prefs)
-    svn_root_path = prefs.svn_directory
-    output = execute_command(svn_root_path, command)
+    command = command_with_credential(prefs, command)
+    output = execute_command(prefs.svn_directory, command)
     if type(output) == subprocess.CalledProcessError:
         cred = prefs.get_credential(get_entry=True)
         cred.svn_error = output
@@ -38,7 +37,7 @@ def execute_svn_command_nofreeze(prefs, command: str) -> subprocess.Popen:
     """Execute an svn command in the root of the current svn repository using
     Popen(), which avoids freezing the Blender UI.
     """
-    command = command_with_credential(command, prefs)
+    command = command_with_credential(prefs, command)
     svn_root_path = prefs.svn_directory
     return subprocess.Popen(
         (command), shell=True, cwd=svn_root_path+"/", stdout=subprocess.PIPE

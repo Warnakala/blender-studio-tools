@@ -336,6 +336,9 @@ class SVN_custom_tooltip(bpy.types.Operator):
 
 
 def draw_outdated_file_warning(self, context):
+    prefs = get_addon_prefs(context)
+    if not prefs.is_in_repo:
+        return
     svn = context.scene.svn
     current_file = svn.current_blend_file
     if not current_file:

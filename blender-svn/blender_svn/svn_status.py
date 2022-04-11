@@ -73,12 +73,12 @@ class SVN_explain_status(bpy.types.Operator):
 def set_svn_info(context) -> "SVN_addon_preferences":
     prefs = get_addon_prefs(context)
     output = execute_command(str(Path(bpy.data.filepath).parent), 'svn info')
-    lines = output.split("\n")
-    if len(lines) == 1:
+    if type(output) != str:
         prefs.is_in_repo = False
         prefs.reset()
         return False
 
+    lines = output.split("\n")
     # Populate the addon prefs with svn info.
     prefs.is_in_repo = True
     dir_path_str = lines[1].split("Working Copy Root Path: ")[1]
@@ -125,6 +125,7 @@ def init_svn(context, dummy):
     if not prefs:
         svn.external_files.clear()
         svn.log.clear()
+        print("SVN: Initialization cancelled: This .blend is not in an SVN repository.")
         return
 
     svn.reload_svn_log(context)
@@ -144,10 +145,12 @@ def init_svn(context, dummy):
         cred = prefs.svn_credentials.add()
         cred.url = svn_url
         cred.name = Path(prefs.svn_directory).name
+        print("SVN: Initialization failed. Try entering credentials.")
         return
 
     svn_status_background_fetch_start(None, None)
     svn_log_background_fetch_start()
+    print("SVN: Initialization successful.")
 
 
 ################################################################################
