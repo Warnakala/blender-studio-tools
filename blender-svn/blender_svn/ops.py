@@ -22,13 +22,14 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
-import bpy, subprocess
+import bpy
 from bpy.props import StringProperty, BoolVectorProperty, IntProperty, EnumProperty, BoolProperty
 
 from send2trash import send2trash
 
 from .util import get_addon_prefs
-from .svn_log import SVN_file, svn_log_background_fetch_start
+from .svn_log import svn_log_background_fetch_start
+from .props import SVN_file
 from .execute_subprocess import execute_svn_command
 
 
@@ -148,7 +149,14 @@ class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
         super().execute(context)
         if self.reload_file:
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
+        svn = context.scene.svn
+        file = self.get_file(context)
+        if file:
+            self.set_predicted_file_status(svn, file)
         return {'FINISHED'}
+
+    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+        return
 
 
 class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
@@ -160,19 +168,20 @@ class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
     missing_file_allowed = True
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        will_conflict = False
+        self.will_conflict = False
         _idx, file_entry = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
         if file_entry.status != 'normal':
-            will_conflict = True
+            self.will_conflict = True
 
         self.execute_svn_command(context, f'svn up "{self.file_rel_path}" --accept "postpone"')
 
-        if will_conflict: 
+        self.report({'INFO'}, f"Updated {self.file_rel_path} to the latest version.")
+
+    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+        if self.will_conflict: 
             file_entry.status = 'conflicted'
         else:
             file_entry.status = 'normal'
-
-        self.report({'INFO'}, f"Updated {self.file_rel_path} to the latest version.")
 
         return {"FINISHED"}
 
@@ -204,25 +213,14 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
 
         self.execute_svn_command(context, f'svn up -r{self.revision} "{self.file_rel_path}" --accept "postpone"')
 
-        return {"FINISHED"}
-    
-    def execute(self, context):
-        ret = super().execute(context)
-        if ret != {'FINISHED'}:
-            return ret
-        
-        svn = context.scene.svn
-        tup = svn.get_file_by_svn_path(self.file_rel_path)
-        if tup:
-            _i, file_entry = tup
-            file_entry['revision'] = self.revision
-
-            latest_rev = svn.get_latest_revision_of_file(self.file_rel_path)
-            file_entry.status = 'normal' if latest_rev == self.revision else 'none'
-
         self.report({'INFO'}, f"Checked out revision {self.revision} of {self.file_rel_path}")
 
-        return ret
+        return {"FINISHED"}
+
+    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+        file_entry['revision'] = self.revision
+        latest_rev = svn.get_latest_revision_of_file(self.file_rel_path)
+        file_entry.status = 'normal' if latest_rev == self.revision else 'none'
 
 
 class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
@@ -237,8 +235,10 @@ class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
         self.execute_svn_command(context, f'svn revert "{self.file_rel_path}"')
 
         f = self.get_file(context)
-        f.status = 'normal'
         return {"FINISHED"}
+
+    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+        file_entry.status = 'normal'
 
 
 class SVN_revert_file(SVN_restore_file):
@@ -269,8 +269,10 @@ class SVN_add_file(SVN_Operator_Single_File, bpy.types.Operator):
 
         if result:
             f = self.get_file(context)
-            f.status = 'added'
         return {"FINISHED"}
+
+    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+            file_entry.status = 'added'
 
 
 class SVN_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
@@ -282,9 +284,10 @@ class SVN_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn rm --keep-local "{self.file_rel_path}"')
 
-        f = self.get_file(context)
-        f.status = 'unversioned'
         return {"FINISHED"}
+
+    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+            file_entry.status = 'unversioned'
 
 
 class SVN_trash_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Operator):
@@ -320,9 +323,10 @@ class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Oper
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn remove "{self.file_rel_path}"')
 
-        f = self.get_file(context)
-        f.status = 'deleted'
         return {"FINISHED"}
+
+    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+        file_entry.status = 'deleted'
 
 
 class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
@@ -360,12 +364,13 @@ class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, f'svn resolve "{self.file_rel_path}" --accept "{self.resolve_method}"')
 
-        f = self.get_file(context)
-        if self.resolve_method == 'mine-full':
-            f.status = 'modified'
-        else:
-            f.status = 'normal'
         return {"FINISHED"}
+
+    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+        if self.resolve_method == 'mine-full':
+            file_entry.status = 'modified'
+        else:
+            file_entry.status = 'normal'
 
 
 commit_message = StringProperty(
@@ -373,6 +378,7 @@ commit_message = StringProperty(
     description = "Describe the changes being committed",
     options={'SKIP_SAVE'}
 )
+
 
 class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     bl_idname = "svn.commit"
@@ -447,16 +453,19 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         self.execute_svn_command(context, f'svn commit -m "{commit_message}" {filepaths}')
 
-        for f in files_to_commit:
-            if f.repos_status == 'none':
-                f.status = 'normal'
-            else:
-                f.status = 'conflicted'
+        self.set_predicted_file_statuses(files_to_commit)
 
         svn_log_background_fetch_start()
         self.report({'INFO'}, f"Committed {report}")
 
         return {"FINISHED"}
+
+    def set_predicted_file_statuses(self, files_to_commit: List[SVN_file]):
+        for f in files_to_commit:
+            if f.repos_status == 'none':
+                f.status = 'normal'
+            else:
+                f.status = 'conflicted'
 
 
 class SVN_cleanup(SVN_Operator, bpy.types.Operator):
