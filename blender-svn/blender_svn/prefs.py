@@ -51,6 +51,14 @@ class SVN_credential(bpy.types.PropertyGroup):
             svn_status.init_svn(context, None)
             self.authenticated = True
             self.auth_failed = False
+
+            # If user has auto-save preferences enabled, well, apparently 
+            # it doesn't work for addons, or at least
+            # not for CollectionProperties stored in addon preferences...
+            # Manually saving user prefs works though, so... we get it done.
+            if context.preferences.use_preferences_save:
+                bpy.ops.wm.save_userpref()
+
             return
 
         error = output.stderr.decode()
@@ -95,7 +103,6 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     svn_credentials: CollectionProperty(type=SVN_credential)
-    svn_credentials_active_index: IntProperty()
 
     def get_credentials(self, get_entry=False) -> Optional[Tuple[str, str]]:
         svn_url = self.svn_url
