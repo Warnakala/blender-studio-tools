@@ -79,8 +79,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     def remove_by_svn_path(self, path_to_remove: str):
         """Remove a file entry from the file list, based on its filepath."""
         for i, file_entry in enumerate(self.external_files):
-            filepath = file_entry.svn_path
-            if filepath == path_to_remove:
+            if file_entry.svn_path == path_to_remove:
                 self.external_files.remove(i)
                 return
 

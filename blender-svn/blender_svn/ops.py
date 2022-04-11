@@ -89,6 +89,14 @@ class SVN_update_all(SVN_Operator, bpy.types.Operator):
         # If we keep that, we should also do a file status update before unfreezing.
         svn_log_background_fetch_start()
 
+        for f in context.scene.svn.external_files:
+            if f.repos_status == 'modified':
+                if f.status == 'normal':
+                    f.status = 'normal'
+                    f.repos_status = 'none'
+                else:
+                    f.status = 'conflicted'
+
         return {"FINISHED"}
 
 
@@ -263,10 +271,11 @@ class SVN_add_file(SVN_Operator_Single_File, bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        self.execute_svn_command(context, f'svn add "{self.file_rel_path}"')
+        result = self.execute_svn_command(context, f'svn add "{self.file_rel_path}"')
 
-        f = self.get_file(context)
-        f.status = 'added'
+        if result:
+            f = self.get_file(context)
+            f.status = 'added'
         return {"FINISHED"}
 
 
@@ -450,6 +459,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             else:
                 f.status = 'conflicted'
 
+        svn_log_background_fetch_start()
         self.report({'INFO'}, f"Committed {report}")
 
         return {"FINISHED"}
