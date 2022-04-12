@@ -430,8 +430,11 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         for i in range(type(self).MAX_LINES):
             if getattr(self, f'commit_message_{i}') != "":
                 self.last_idx = min(i+1, self.MAX_LINES)
-        for i in range(0, self.last_idx+1):
-            # Draw input boxes until the last one that has text, plus one.
+        for i in range(0, max(3, self.last_idx+2)):
+            # Draw input boxes until the last one that has text, plus two, minimum three.
+            # Why two after the last line? Because then you can use Tab to go to the next line.
+            # Why at least 3 lines? Because then you can write a one-liner without
+            # the OK button jumping away.
             layout.prop(self, f'commit_message_{i}', text="")
             continue
 
