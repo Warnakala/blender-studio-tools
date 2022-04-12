@@ -329,7 +329,7 @@ def register():
     bpy.app.handlers.load_post.append(svn_status_background_fetch_start)
 
     bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
-    bpy.app.handlers.save_post.append(update_file_is_referenced_flags)
+    # bpy.app.handlers.save_post.append(update_file_is_referenced_flags)
 
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
@@ -337,6 +337,6 @@ def unregister():
     bpy.app.handlers.load_post.remove(svn_status_background_fetch_start)
 
     bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)
-    bpy.app.handlers.save_post.remove(update_file_is_referenced_flags)
+    # bpy.app.handlers.save_post.remove(update_file_is_referenced_flags)
 
 registry = [SVN_explain_status]
