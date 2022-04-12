@@ -51,6 +51,12 @@ class SVN_Operator_Single_File(SVN_Operator):
             self.report({'ERROR'}, "File is no longer on the file system.")
             return {'CANCELLED'}
         ret = self._execute(context)
+
+        svn = context.scene.svn
+        file = self.get_file(context)
+        if file:
+            self.set_predicted_file_status(svn, file)
+
         return ret
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
@@ -244,7 +250,7 @@ class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
 class SVN_revert_file(SVN_restore_file):
     bl_idname = "svn.revert_file"
     bl_label = "Revert File"
-    bl_description = "PREMANENTLY DISCARD local changes to this file and return it to the state of the last local revision. Cannot be undone"
+    bl_description = "PERMANENTLY DISCARD local changes to this file and return it to the state of the last local revision. Cannot be undone"
     bl_options = {'INTERNAL'}
 
     missing_file_allowed = False
@@ -272,7 +278,7 @@ class SVN_add_file(SVN_Operator_Single_File, bpy.types.Operator):
         return {"FINISHED"}
 
     def set_predicted_file_status(self, svn, file_entry: SVN_file):
-            file_entry.status = 'added'
+        file_entry.status = 'added'
 
 
 class SVN_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
