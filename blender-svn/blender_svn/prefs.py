@@ -98,7 +98,7 @@ class SVN_credential(bpy.types.PropertyGroup):
     )
 
 
-class UL_SVN_credentials(bpy.types.UIList):
+class SVN_UL_credentials(bpy.types.UIList):
     
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         thing = item
@@ -261,7 +261,7 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         col = layout.column()
         col.enabled=False
         col.template_list(
-            "UL_SVN_credentials",
+            "SVN_UL_credentials",
             "svn_cred_list",
             self,
             "svn_credentials",
@@ -273,7 +273,7 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 # ----------------REGISTER--------------.
 
 registry = [
-    UL_SVN_credentials,
+    SVN_UL_credentials,
     SVN_credential,
     SVN_addon_preferences
 ]

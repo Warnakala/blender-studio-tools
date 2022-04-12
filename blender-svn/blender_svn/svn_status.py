@@ -160,9 +160,11 @@ def init_svn(context, dummy):
 import threading
 SVN_STATUS_OUTPUT = {}
 SVN_STATUS_THREAD = None
-# Flag to let is_referenced flags be set only once on file open.
+# Flag to let is_referenced flags be set only once on file open and file save.
 # We need the flag because this needs to happen not immediately on file open,
 # but after the first `svn status` call has finished in the background.
+# Also we want it to run in the background even on file save, otherwise the UI
+# lock-up from the file saving process is noticably longer.
 SVN_STATUS_NEWFILE = True
 
 def async_get_verbose_svn_status():
@@ -194,8 +196,7 @@ def timer_update_svn_status():
     if SVN_STATUS_THREAD and SVN_STATUS_THREAD.is_alive():
         # Process is still running, so we just gotta wait. Let's try again in 1s.
         return 1.0
-    else:
-        # print("Update file list...")
+    elif SVN_STATUS_OUTPUT:
         update_file_list(context, SVN_STATUS_OUTPUT)
         if SVN_STATUS_NEWFILE:
             update_file_is_referenced_flags(None, None)
@@ -327,6 +328,7 @@ def register():
     bpy.app.handlers.load_post.append(init_svn)
     bpy.app.handlers.save_post.append(init_svn)
     bpy.app.handlers.load_post.append(svn_status_background_fetch_start)
+    svn_status_background_fetch_start(None, None)
 
     bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
     # bpy.app.handlers.save_post.append(update_file_is_referenced_flags)
@@ -335,6 +337,7 @@ def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
     bpy.app.handlers.save_post.remove(init_svn)
     bpy.app.handlers.load_post.remove(svn_status_background_fetch_start)
+    svn_status_background_fetch_stop()
 
     bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)
     # bpy.app.handlers.save_post.remove(update_file_is_referenced_flags)
