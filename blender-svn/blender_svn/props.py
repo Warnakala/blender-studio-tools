@@ -253,7 +253,15 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         return True
 
     external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
-    external_files_active_index: bpy.props.IntProperty()
+
+    def update_active_file(self, context):
+        latest_idx = self.get_latest_revision_of_file(self.active_file.svn_path)
+        # SVN Revisions are not 0-indexed, so we need to subtract 1.
+        self.log_active_index = latest_idx-1
+
+    external_files_active_index: bpy.props.IntProperty(
+        update = update_active_file
+    )
 
     def get_log_by_revision(self, revision: int) -> Tuple[int, SVN_log]:
         for i, log in enumerate(self.log):
@@ -262,12 +270,11 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
     def get_latest_revision_of_file(self, svn_path: str) -> int:
         svn_path = str(svn_path)
-        ret = 0
-        for log in self.log:
+        for log in reversed(self.log):
             for changed_file in log.changed_files:
                 if changed_file.svn_path == "/"+str(svn_path):
-                    ret = log.revision_number
-        return ret
+                    return log.revision_number
+        return 0
 
     def is_file_outdated(self, file: SVN_file) -> bool:
         """A file may have the 'modified' state while also being outdated.

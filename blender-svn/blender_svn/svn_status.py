@@ -120,8 +120,9 @@ def init_svn(context, dummy):
     prefs = set_svn_info(context)
 
     svn = context.scene.svn
-    svn.external_files_active_index = 0
-    svn.log_active_index = 0
+    if svn.external_files_active_index > len(svn.external_files):
+        svn.external_files_active_index = 0
+    svn.log_active_index = len(svn.log)-1
     if not prefs:
         svn.external_files.clear()
         svn.log.clear()
