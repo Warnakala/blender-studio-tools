@@ -188,6 +188,7 @@ class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
             file_entry.status = 'conflicted'
         else:
             file_entry.status = 'normal'
+            file_entry.repos_status = 'none'
 
         return {"FINISHED"}
 
@@ -419,10 +420,20 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         layout = self.layout
         files = self.get_committable_files(context)
         layout.label(text="These files will be pushed to the remote repository:")
+        svn = context.scene.svn
+        row = layout.row()
+        row.label(text="Filename")
+        row.label(text="Status")
         for idx, file in enumerate(files):
             row = layout.row()
             row.prop(self, "selection", index=idx, text=file.name)
-            row.label(text=file.status_name, icon=file.status_icon)
+            text = file.status_name
+            icon = file.status_icon
+            if file == svn.current_blend_file and bpy.data.is_dirty:
+                text += " but not saved!"
+                icon = 'ERROR'
+                row.alert = True
+            row.label(text=text, icon=icon)
 
         row = layout.row()
         row.label(text="Commit message:")
