@@ -72,57 +72,58 @@ class SVN_UL_file_list(bpy.types.UIList):
         svn = data
         file_entry = item
 
-        row = layout.row()
-        split = row.split(factor=0.7)
+        main_row = layout.row()
+        split = main_row.split(factor=0.6)
+        filepath_ui = split.row()
+        split = split.split(factor=0.4)
+        status_ui = split.row(align=True)
+
+        ops_ui = split.row(align=True)
+        ops_ui.alignment = 'RIGHT'
+
         if self.show_file_paths:
-            split.prop(file_entry, 'svn_path', text="", emboss=False, icon=file_entry.file_icon)
+            filepath_ui.prop(file_entry, 'svn_path', text="", emboss=False, icon=file_entry.file_icon)
         else:
-            split.prop(file_entry, 'name', text="", emboss=False, icon=file_entry.file_icon)
+            filepath_ui.prop(file_entry, 'name', text="", emboss=False, icon=file_entry.file_icon)
 
-        row = split.row()
-        split = row.split(factor=0.4)
-        status_row = split.row(align=True)
+
         statuses = [file_entry.status]
-
-        row = split.row(align=True)
-        row.alignment = 'RIGHT'
-
         # SVN operations
         ops = []
         if file_entry.status in ['missing', 'deleted']:
-            ops.append(row.operator('svn.restore_file', text="", icon='LOOP_BACK'))
+            ops.append(ops_ui.operator('svn.restore_file', text="", icon='LOOP_BACK'))
             if file_entry.status == 'missing':
-                ops.append(row.operator('svn.remove_file', text="", icon='TRASH'))
+                ops.append(ops_ui.operator('svn.remove_file', text="", icon='TRASH'))
         elif file_entry.status == 'added':
-            ops.append(row.operator('svn.unadd_file', text="", icon='REMOVE'))
+            ops.append(ops_ui.operator('svn.unadd_file', text="", icon='REMOVE'))
         elif file_entry.status == 'unversioned':
-            ops.append(row.operator('svn.add_file', text="", icon='ADD'))
-            ops.append(row.operator('svn.trash_file', text="", icon='TRASH'))
+            ops.append(ops_ui.operator('svn.add_file', text="", icon='ADD'))
+            ops.append(ops_ui.operator('svn.trash_file', text="", icon='TRASH'))
 
         elif file_entry.status == 'modified':
-            ops.append(row.operator('svn.revert_file', text="", icon='LOOP_BACK'))
+            ops.append(ops_ui.operator('svn.revert_file', text="", icon='LOOP_BACK'))
             if file_entry.repos_status == 'modified':
                 # The file isn't actually `conflicted` yet, by SVN's definition, 
                 # but it will be as soon as we try to commit or update.
                 # I think it's better to let the user know in advance.
                 statuses.append('conflicted')
                 # Updating the file will create an actual conflict.
-                ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
+                ops.append(ops_ui.operator('svn.update_single', text="", icon='IMPORT'))
 
         elif file_entry.status == 'conflicted':
-            ops.append(row.operator('svn.resolve_conflict', text="", icon='TRACKING_CLEAR_FORWARDS'))
+            ops.append(ops_ui.operator('svn.resolve_conflict', text="", icon='TRACKING_CLEAR_FORWARDS'))
         elif file_entry.status in ['incomplete', 'obstructed']:
-            ops.append(row.operator('svn.cleanup', text="", icon='BRUSH_DATA'))
+            ops.append(ops_ui.operator('svn.cleanup', text="", icon='BRUSH_DATA'))
         elif file_entry.status == 'none':
             if file_entry.repos_status == 'added':
                 # From user POV it makes a bit more sense to call a file that doesn't
                 # exist yet "added" instead of "outdated".
                 statuses.append('added')
-            ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
+            ops.append(ops_ui.operator('svn.update_single', text="", icon='IMPORT'))
         elif file_entry.status == 'normal' and file_entry.repos_status == 'modified':
             # From user POV, this file is outdated, not 'normal'.
             statuses = ['none']
-            ops.append(row.operator('svn.update_single', text="", icon='IMPORT'))
+            ops.append(ops_ui.operator('svn.update_single', text="", icon='IMPORT'))
         elif file_entry.status in ['normal', 'external', 'ignored']:
             pass
         else:
@@ -135,7 +136,7 @@ class SVN_UL_file_list(bpy.types.UIList):
         # Populate the status icons.
         for status in statuses:
             icon = constants.SVN_STATUS_DATA[status][0]
-            explainer = status_row.operator('svn.explain_status', text="", icon=icon)
+            explainer = status_ui.operator('svn.explain_status', text="", icon=icon, emboss=False)
             explainer.status = status
             explainer.file_rel_path = file_entry.svn_path
 
@@ -280,16 +281,22 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        # if len(context.scene.svn.external_files) == 0:
-        #     # TODO: For some reason this draw doesn't seem to happen again, 
-        #     # even when mouse-overing the label... So user ends up having to
-        #     # close and re-open the panel for the file list to show up for the 
-        #     # first time. That's not good!
-        #     layout.label(text="No files detected in the repository")
-        #     return
+        main_row = layout.row()
+        split = main_row.split(factor=0.6)
+        filepath_row = split.row()
+        filepath_row.label(text="          Filepath")
+
+        status_row = split.row()
+        status_row.label(text="             Status")
+        
+        ops_row = main_row.row()
+        ops_row.alignment = 'RIGHT'
+        ops_row.label(text="Operations")
+
+        empty_space = main_row.row()
+        empty_space.operator("svn.commit", icon='BLANK1', text="", emboss=False)
 
         row = layout.row()
-
         row.template_list(
             "SVN_UL_file_list",
             "svn_file_list",
@@ -358,6 +365,7 @@ def draw_outdated_file_warning(self, context):
         warning = row.operator('svn.custom_tooltip', text="SVN: This .blend file is outdated.", icon='ERROR')
         warning.tooltip = "The currently opened .blend file has a newer version available on the remote repository. This means any changes in this file will result in a conflict, and potential loss of data. See the SVN panel for info"
 
+
 registry = [
     SVN_UL_file_list,
     VIEW3D_PT_svn,
@@ -366,8 +374,10 @@ registry = [
     SVN_custom_tooltip
 ]
 
+
 def register():
     bpy.types.VIEW3D_HT_header.prepend(draw_outdated_file_warning)
+
 
 def unregister():
     bpy.types.VIEW3D_HT_header.remove(draw_outdated_file_warning)
