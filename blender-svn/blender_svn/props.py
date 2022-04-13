@@ -172,6 +172,10 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         for the entire repository. The returned list also does not include the 
         currently opened .blend file itself.
         """
+
+        l = logging.getLogger('blender_asset_tracer.trace.result')
+        l.setLevel(50)
+
         if not bpy.data.filepath:
             return set()
 
@@ -184,7 +188,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
         assert bpath.is_file(), f"{bpy.data.filepath!r} is not a file"
 
-
         for usage in trace.deps(bpath):
             for assetpath in usage.files():
                 if assetpath in reported_assets:
@@ -193,6 +196,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
                 reported_assets.add(assetpath)
 
+        l.setLevel(0)
         return reported_assets
 
     def remove_by_svn_path(self, path_to_remove: str):
