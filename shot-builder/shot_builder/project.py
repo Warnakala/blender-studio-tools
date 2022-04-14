@@ -18,8 +18,6 @@
 
 # <pep8 compliant>
 
-import pathlib
-import logging
 import importlib
 from collections import defaultdict
 
@@ -41,7 +39,7 @@ import types
 logger = logging.getLogger(__name__)
 
 
-class Production():
+class Production:
     """
     Class containing data and methods for a production.
 
@@ -138,7 +136,7 @@ class Production():
                 if shot.name == shot_ref.name:
                     logger.debug(f"Shot definition found for {shot_ref.name}")
                     shot_ref.sync_data(shot)
-                    break;
+                    break
             else:
                 logger.info(f"No shot definition found for {shot_ref.name}")
                 if generic_shot_class:

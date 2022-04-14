@@ -17,7 +17,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class ShotBuilder():
+class ShotBuilder:
     def __init__(self, context: bpy.types.Context, production: Production, task_type: TaskType, shot_name: str):
         self._steps: typing.List[BuildStep] = []
 
