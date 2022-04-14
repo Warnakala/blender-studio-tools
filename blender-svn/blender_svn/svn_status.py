@@ -153,8 +153,7 @@ def init_svn(context, dummy):
         print("SVN: Initialization failed. Try entering credentials.")
         return
 
-    # svn_status_background_fetch_start()
-    # svn_log_background_fetch_start()
+    svn_status_background_fetch_start()
     print("SVN: Initialization successful.")
 
 
@@ -257,6 +256,12 @@ def update_file_is_referenced_flags(_dummy1=None, _dummy2=None):
     """Update the file list's is_referenced flags. This should only be called on
     file save, because it relies on BAT, which relies on reading a file from disk,
     so calling it any more frequently would be pointless."""
+    import sys
+    if sys.platform == 'win32':
+        # TODO: Apparently, calling BAT's trace.deps() on Windows on the
+        # current .blend file makes us unable to save the file from that point on...
+        return
+    
     context = bpy.context
     svn = context.scene.svn
     referenced_files: Set[Path] = svn.get_referenced_filepaths()
@@ -317,9 +322,6 @@ def get_repo_file_statuses(svn_status_str: str) -> Dict[str, Tuple[str, str, int
 
 @bpy.app.handlers.persistent
 def svn_status_background_fetch_start(_dummy1=None, _dummy2=None):
-    prefs = get_addon_prefs(bpy.context)
-    if not prefs.status_update_in_background:
-        return
     if not bpy.app.timers.is_registered(timer_update_svn_status):
         bpy.app.timers.register(timer_update_svn_status, persistent=True)
 
@@ -338,12 +340,14 @@ def svn_status_background_fetch_stop(_dummy1=None, _dummy2=None):
 def register():
     bpy.app.handlers.load_post.append(init_svn)
     bpy.app.handlers.save_post.append(init_svn)
+    svn_status_background_fetch_start()
 
     bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
 
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
     bpy.app.handlers.save_post.remove(init_svn)
+    svn_status_background_fetch_stop()
 
     bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)
 

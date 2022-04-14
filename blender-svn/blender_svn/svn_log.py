@@ -392,10 +392,6 @@ def timer_update_svn_log():
 
 
 def svn_log_background_fetch_start(_dummy1=None, _dummy2=None):
-    bpy.context.scene.svn.reload_svn_log(bpy.context)
-    prefs = get_addon_prefs(bpy.context)
-    if not prefs.log_update_in_background:
-        return
     if not bpy.app.timers.is_registered(timer_update_svn_log):
         bpy.app.timers.register(timer_update_svn_log, persistent=True)
 
@@ -426,13 +422,8 @@ registry = [
 
 def register():
     bpy.app.handlers.load_post.append(svn_log_handler)
+    svn_log_background_fetch_start()
     
-    bpy.app.handlers.save_pre.append(svn_log_background_fetch_stop)
-    bpy.app.handlers.save_post.append(svn_log_background_fetch_start)
-
 def unregister():
     bpy.app.handlers.load_post.remove(svn_log_handler)
     svn_log_background_fetch_stop()
-
-    bpy.app.handlers.save_pre.remove(svn_log_background_fetch_stop)
-    bpy.app.handlers.save_post.remove(svn_log_background_fetch_start)
