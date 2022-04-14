@@ -260,6 +260,9 @@ def reload_svn_log(self, context):
                 chunks.append(chunk)
                 chunk = []
                 continue
+            if not line:
+                # Ignore empty lines.
+                continue
             chunk.append(line)
 
     previous_rev_number = 0
@@ -280,10 +283,13 @@ def reload_svn_log(self, context):
         log_entry['revision_date'] = svn_date_simple(r_date)
 
         # File change set is on line 3 until the commit message begins...
-        file_change_lines = chunk[2:-(r_msg_length+1)]
+        file_change_lines = chunk[2:-(r_msg_length)]
         for line in file_change_lines:
-            status_char = line[3]
-            file_path = line[5:]
+            if not line:
+                print(chunk)
+            line = line.strip()
+            status_char = line[0]
+            file_path = line[2:]
             if ' (from ' in file_path:
                 # If the file was moved, let's just ignore that information for now.
                 # TODO: This can be improved later if neccessary.
@@ -327,6 +333,7 @@ def write_to_svn_log_file_and_storage(context, data_str: str):
             # to avoid duplicate dashed lines, which would also mess up our
             # parsing logic.
             data_str = data_str[73:] # 72 dashes and a newline
+            data_str = "\n" + data_str # TODO: This is untested on windows.
 
         # On Windows, the `svn log` command outputs lines with all sorts of \r and \n shennanigans.
         # TODO: For this reason, this should be implemented with the --xml arg.
