@@ -121,7 +121,9 @@ class MESH_PT_pose_keys(Panel):
 			row.operator('object.posekey_jump_to_storage', text="", icon='RESTRICT_SELECT_OFF')
 		else:
 			layout.operator('object.posekey_set_pose', text="Set Pose", icon="ARMATURE_DATA")
-			layout.operator('object.posekey_save', text="Store Evaluated Mesh", icon="FILE_TICK")
+			row = layout.row()
+			row.operator('object.posekey_save', text="Store Evaluated Mesh", icon="FILE_TICK")
+			row.prop(active_posekey, 'storage_object', text="")
 			return
 
 		layout.separator()
