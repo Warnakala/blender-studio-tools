@@ -85,7 +85,7 @@ class ShotBuilder():
         window_manager = build_context.context.window_manager
         window_manager.progress_begin(min=0, max=num_steps)
         for step in self._steps:
-            logger.info(f"Building step: {step} [{step_number}/{num_steps}]")
+            logger.info(f"Building step [{step_number}/{num_steps}]: {step} ")
             step.execute(build_context=build_context)
             window_manager.progress_update(value=step_number)
             step_number += 1
