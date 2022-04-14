@@ -336,6 +336,14 @@ def svn_status_background_fetch_stop(_dummy1=None, _dummy2=None):
     SVN_STATUS_POPEN = None
 
 
+def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
+    context = bpy.context
+    svn = context.scene.svn
+    current_blend = svn.current_blend_file
+    if current_blend:
+        current_blend.status = 'modified'
+        svn.ignore_next_status_update = True
+
 ################################################################################
 ############################# REGISTER #########################################
 ################################################################################
@@ -343,6 +351,7 @@ def svn_status_background_fetch_stop(_dummy1=None, _dummy2=None):
 def register():
     bpy.app.handlers.load_post.append(init_svn)
     bpy.app.handlers.save_post.append(init_svn)
+    bpy.app.handlers.save_post.append(mark_current_file_as_modified)
     svn_status_background_fetch_start()
 
     bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
@@ -350,6 +359,7 @@ def register():
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
     bpy.app.handlers.save_post.remove(init_svn)
+    bpy.app.handlers.save_post.remove(mark_current_file_as_modified)
     svn_status_background_fetch_stop()
 
     bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)
