@@ -21,6 +21,7 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from collections import OrderedDict
 from pathlib import Path
+from datetime import datetime
 
 from . import wheels
 # This will load the dateutil and svn wheel file.
@@ -200,12 +201,14 @@ def timer_update_svn_status():
     if SVN_STATUS_THREAD and SVN_STATUS_THREAD.is_alive():
         # Process is still running, so we just gotta wait. Let's try again in 1s.
         return 1.0
-    elif SVN_STATUS_OUTPUT:
+    elif SVN_STATUS_OUTPUT and not context.scene.svn.ignore_next_status_update:
         update_file_list(context, SVN_STATUS_OUTPUT)
         if SVN_STATUS_NEWFILE:
             update_file_is_referenced_flags()
             SVN_STATUS_NEWFILE = False
+        context.scene.svn.timestamp_last_status_update = datetime.strftime(datetime.now(), "%Y/%m/%d %H:%M:%S")
 
+    context.scene.svn.ignore_next_status_update = False
     # print("Starting thread...")
     SVN_STATUS_THREAD = threading.Thread(target=async_get_verbose_svn_status, args=())
     SVN_STATUS_THREAD.start()

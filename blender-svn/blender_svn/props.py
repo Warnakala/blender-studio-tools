@@ -318,6 +318,15 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         if tup:
             return tup[1]
 
+    ignore_next_status_update: BoolProperty(
+        name="Ignore Next Status Update",
+        description="Internal flag that should be set to True by operators that set file statuses to a predicted state. This prevents them from being re-set by an ongoing svn status call that would be outdated after the operator has run",
+        default=False
+    )
+    timestamp_last_status_update: StringProperty(
+        name="Last Status Update",
+        description="Timestamp of when the last successful file status update was completed"
+    )
 
 # ----------------REGISTER--------------.
 

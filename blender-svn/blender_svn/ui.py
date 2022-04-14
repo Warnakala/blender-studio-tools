@@ -19,10 +19,10 @@
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
 import bpy
-from .util import get_addon_prefs
-
+from datetime import datetime
 from bpy.props import BoolProperty, StringProperty
 
+from .util import get_addon_prefs
 from . import constants
 
 class VIEW3D_PT_svn(bpy.types.Panel):
@@ -293,8 +293,18 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         ops_row.alignment = 'RIGHT'
         ops_row.label(text="Operations")
 
-        empty_space = main_row.row()
-        empty_space.operator("svn.commit", icon='BLANK1', text="", emboss=False)
+        timer_row = main_row.row()
+        timer_row.alignment='RIGHT'
+        # Calculate time since last status update
+        if context.scene.svn.timestamp_last_status_update:
+            last_update_time = datetime.strptime(context.scene.svn.timestamp_last_status_update, "%Y/%m/%d %H:%M:%S")
+            current_time = datetime.now()
+            delta = current_time - last_update_time
+            if delta.seconds < 60:
+                text = str(delta.seconds) + 's'
+            else:
+                text = ">1m"
+            timer_row.operator("svn.custom_tooltip", icon='FILE_REFRESH', text="", emboss=False).tooltip="Time since last file status update: " + text
 
         row = layout.row()
         row.template_list(

@@ -36,6 +36,13 @@ from .execute_subprocess import execute_svn_command
 class SVN_Operator:
     def execute_svn_command(self, context, command: str) -> str:
         prefs = get_addon_prefs(context)
+
+        # Since a status update might already be being requested when an SVN operator is run,
+        # we want to ignore the first update after any SVN operator.
+        # Otherwise it can result in a predicted state being overwritten by an outdated state.
+        # For example, the Commit operator sets a file to "Normal" state, then the old svn status
+        # arrives and sets it back to "Modified" state, which it isn't anymore.
+        context.scene.svn.ignore_next_status_update = True
         return execute_svn_command(prefs, command)
 
 
@@ -83,6 +90,13 @@ class SVN_update_all(SVN_Operator, bpy.types.Operator):
     bl_label = "SVN Update All"
     bl_description = "Download all the latest updates from the remote repository"
     bl_options = {'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        for f in context.scene.svn.external_files:
+            if f.repos_status != 'none':
+                return True
+        return False
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(context, 'svn up --accept "postpone"')
