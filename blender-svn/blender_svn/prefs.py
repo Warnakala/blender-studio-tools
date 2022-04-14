@@ -27,7 +27,7 @@ import bpy
 from bpy.props import StringProperty, IntProperty, BoolProperty, CollectionProperty
 
 from .util import make_getter_func, make_setter_func_readonly, get_addon_prefs
-from . import svn_status
+from . import svn_status, svn_log
 from .execute_subprocess import execute_command
 
 logger = logging.getLogger(name="SVN")
@@ -127,6 +127,12 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
             return None
         return None, None
 
+    def update_log_update_in_background(self, context):
+        if self.log_update_in_background:
+            svn_log.svn_log_background_fetch_start()
+        else:
+            svn_log.svn_log_background_fetch_stop()
+
     log_update_in_background: BoolProperty(
         name="Auto-Update SVN Log",
         default=True, 
@@ -135,7 +141,7 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 
     def update_status_update_in_background(self, context):
         if self.status_update_in_background:
-            svn_status.svn_status_background_fetch_start(None, None)
+            svn_status.svn_status_background_fetch_start()
         else:
             svn_status.svn_status_background_fetch_stop()
         
@@ -196,51 +202,39 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         default="",
         subtype="DIR_PATH",
         description="Absolute directory path of the SVN repository's root in the file system",
-        get = make_getter_func("svn_directory", ""),
-        set = make_setter_func_readonly("svn_directory")
     )
     svn_url: StringProperty(
         name="Remote URL",
         default="",
         description="URL of the remote SVN repository",
-        get = make_getter_func("svn_url", ""),
-        set = make_setter_func_readonly("svn_url")
     )
     relative_filepath: StringProperty(
         name="Relative Filepath",
         default="",
         description="Path of the currently open .blend file, relative to the SVN root directory",
-        get = make_getter_func("relative_filepath", ""),
-        set = make_setter_func_readonly("relative_filepath")
     )
     revision_number: IntProperty(
         name="Revision Number",
         description="Revision number of the current .blend file",
-        get = make_getter_func("revision_number", 0),
-        set = make_setter_func_readonly("revision_number")
     )
     revision_date: StringProperty(
         name="Revision Date",
         description="Date when the current revision was committed",
-        get = make_getter_func("revision_date", ""),
-        set = make_setter_func_readonly("revision_date")
     )
     revision_author: StringProperty(
         name="Revision Author",
         description="SVN username of the revision author",
-        get = make_getter_func("revision_author", ""),
-        set = make_setter_func_readonly("revision_author")
     )
 
     def reset(self):
         """We must use dictionary syntax to avoid the setter callback."""
-        self['svn_directory'] = ""
-        self['svn_url'] = ""
-        self['relative_filepath'] = ""
-        self['revision_number'] = -1
-        self['revision_date'] = ""
-        self['revision_author'] = ""
-        self['is_in_repo'] = False
+        self.svn_directory = ""
+        self.svn_url = ""
+        self.relative_filepath = ""
+        self.revision_number = -1
+        self.revision_date = ""
+        self.revision_author = ""
+        self.is_in_repo = False
 
     @property
     def svn_directory_path(self) -> Optional[Path]:

@@ -290,7 +290,7 @@ def reload_svn_log(self, context):
                 file_path = file_path.split(" (from ")[0]
 
             log_file_entry = log_entry.changed_files.add()
-            log_file_entry['svn_path'] = file_path
+            log_file_entry['svn_path'] = Path(file_path).as_posix()
             log_file_entry['revision'] = r_number
             log_file_entry['name'] = Path(file_path).name
             log_file_entry.status = constants.SVN_STATUS_CHAR[status_char]
@@ -312,7 +312,6 @@ def is_log_up_to_date(context) -> bool:
 
 
 def write_to_svn_log_file_and_storage(context, data_str: str):
-    prefs = get_addon_prefs(context)
     svn = context.scene.svn
     log_file_path = get_log_file_path(context)
 
@@ -329,6 +328,11 @@ def write_to_svn_log_file_and_storage(context, data_str: str):
             # parsing logic.
             data_str = data_str[73:] # 72 dashes and a newline
 
+        # On Windows, the `svn log` command outputs lines with all sorts of \r and \n shennanigans.
+        # TODO: For this reason, this should be implemented with the --xml arg.
+        data_str = data_str.replace("\r", "")
+        if data_str.endswith("\n"):
+            data_str = data_str[:-1]
         f.write(data_str)
 
     svn.reload_svn_log(context)
@@ -387,8 +391,11 @@ def timer_update_svn_log():
     return 3.0
 
 
-def svn_log_background_fetch_start():
+def svn_log_background_fetch_start(_dummy1=None, _dummy2=None):
     bpy.context.scene.svn.reload_svn_log(bpy.context)
+    prefs = get_addon_prefs(bpy.context)
+    if not prefs.log_update_in_background:
+        return
     if not bpy.app.timers.is_registered(timer_update_svn_log):
         bpy.app.timers.register(timer_update_svn_log, persistent=True)
 
@@ -399,7 +406,7 @@ def svn_log_handler(_dummy1, _dummy2):
     svn_log_background_fetch_start()
 
 
-def svn_log_background_fetch_stop():
+def svn_log_background_fetch_stop(_dummy1=None, _dummy2=None):
     if bpy.app.timers.is_registered(timer_update_svn_log):
         bpy.app.timers.unregister(timer_update_svn_log)
     global SVN_LOG_POPEN
@@ -419,7 +426,13 @@ registry = [
 
 def register():
     bpy.app.handlers.load_post.append(svn_log_handler)
+    
+    bpy.app.handlers.save_pre.append(svn_log_background_fetch_stop)
+    bpy.app.handlers.save_post.append(svn_log_background_fetch_start)
 
 def unregister():
     bpy.app.handlers.load_post.remove(svn_log_handler)
     svn_log_background_fetch_stop()
+
+    bpy.app.handlers.save_pre.remove(svn_log_background_fetch_stop)
+    bpy.app.handlers.save_post.remove(svn_log_background_fetch_start)

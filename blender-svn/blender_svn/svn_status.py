@@ -81,8 +81,12 @@ def set_svn_info(context) -> "SVN_addon_preferences":
     lines = output.split("\n")
     # Populate the addon prefs with svn info.
     prefs.is_in_repo = True
-    dir_path_str = lines[1].split("Working Copy Root Path: ")[1]
-    prefs['svn_directory'] = dir_path_str
+    dir_path = lines[1].split("Working Copy Root Path: ")[1]
+    # On Windows, for some reason the path has a \r character at the end, 
+    # which breaks absolutely everything.
+    dir_path = dir_path.replace("\r", "")
+    prefs.svn_directory = dir_path
+
     full_url = lines[2].split("URL: ")[1]
     relative_url = lines[3].split("Relative URL: ")[1][1:]
     base_url = full_url.replace(relative_url, "")
@@ -149,8 +153,8 @@ def init_svn(context, dummy):
         print("SVN: Initialization failed. Try entering credentials.")
         return
 
-    svn_status_background_fetch_start(None, None)
-    svn_log_background_fetch_start()
+    # svn_status_background_fetch_start()
+    # svn_log_background_fetch_start()
     print("SVN: Initialization successful.")
 
 
@@ -200,7 +204,7 @@ def timer_update_svn_status():
     elif SVN_STATUS_OUTPUT:
         update_file_list(context, SVN_STATUS_OUTPUT)
         if SVN_STATUS_NEWFILE:
-            update_file_is_referenced_flags(None, None)
+            update_file_is_referenced_flags()
             SVN_STATUS_NEWFILE = False
 
     # print("Starting thread...")
@@ -222,6 +226,9 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
         if svn_path.suffix.startswith(".r") and svn_path.suffix[2:].isdecimal():
             # Do not add .r### files to the file list, ever.
             continue
+        if svn_path.suffix.startswith(".blend") and (svn_path.suffix[6:].isdecimal() or svn_path.suffix.endswith("@")):
+            # Do not add .blend@ or .blend### to the file list, ever.
+            continue
 
         wc_status, repos_status, revision = status_info
 
@@ -230,7 +237,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             file_entry = tup_existing_file[1]
         else:
             file_entry = svn.external_files.add()
-            file_entry['svn_path'] = str(svn_path)
+            file_entry['svn_path'] = svn_path.as_posix()
             file_entry['name'] = svn_path.name
 
         file_entry['revision'] = revision
@@ -246,7 +253,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
 
 
 @bpy.app.handlers.persistent
-def update_file_is_referenced_flags(_dummy1, _dummy2):
+def update_file_is_referenced_flags(_dummy1=None, _dummy2=None):
     """Update the file list's is_referenced flags. This should only be called on
     file save, because it relies on BAT, which relies on reading a file from disk,
     so calling it any more frequently would be pointless."""
@@ -309,12 +316,15 @@ def get_repo_file_statuses(svn_status_str: str) -> Dict[str, Tuple[str, str, int
 
 
 @bpy.app.handlers.persistent
-def svn_status_background_fetch_start(_dummy1, _dummy2):
+def svn_status_background_fetch_start(_dummy1=None, _dummy2=None):
+    prefs = get_addon_prefs(bpy.context)
+    if not prefs.status_update_in_background:
+        return
     if not bpy.app.timers.is_registered(timer_update_svn_status):
         bpy.app.timers.register(timer_update_svn_status, persistent=True)
 
 
-def svn_status_background_fetch_stop():
+def svn_status_background_fetch_stop(_dummy1=None, _dummy2=None):
     if bpy.app.timers.is_registered(timer_update_svn_status):
         bpy.app.timers.unregister(timer_update_svn_status)
     global SVN_STATUS_POPEN
@@ -328,19 +338,13 @@ def svn_status_background_fetch_stop():
 def register():
     bpy.app.handlers.load_post.append(init_svn)
     bpy.app.handlers.save_post.append(init_svn)
-    bpy.app.handlers.load_post.append(svn_status_background_fetch_start)
-    svn_status_background_fetch_start(None, None)
 
     bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
-    # bpy.app.handlers.save_post.append(update_file_is_referenced_flags)
 
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
     bpy.app.handlers.save_post.remove(init_svn)
-    bpy.app.handlers.load_post.remove(svn_status_background_fetch_start)
-    svn_status_background_fetch_stop()
 
     bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)
-    # bpy.app.handlers.save_post.remove(update_file_is_referenced_flags)
 
 registry = [SVN_explain_status]

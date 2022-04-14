@@ -229,8 +229,12 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         svn_dir = Path(prefs.svn_directory)
         return absolute_path.relative_to(svn_dir)
 
-    def get_file_by_svn_path(self, svn_path: str) -> Tuple[int, SVN_file]:
-        svn_path = str(svn_path)
+    def get_file_by_svn_path(self, svn_path: str or Path) -> Optional[Tuple[int, SVN_file]]:
+        if isinstance(svn_path, Path):
+            # We must use isinstance() instead of type() because apparently the Path() constructor
+            # returns a WindowsPath object on Windows.
+            svn_path = svn_path.as_posix()
+
         for i, file in enumerate(self.external_files):
             if file.svn_path == svn_path:
                 return i, file
