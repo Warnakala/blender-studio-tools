@@ -92,7 +92,9 @@ By default the next order will be used:
 * Shot hooks
 * Task type hooks
 
-A hook with a single ‘match’ rule will be run in the corresponding phase. A hook with multiple ‘match’ rules will be run in the last matching phase. For example, a hook with ‘asset’ and ‘task type’ match rules will be run in the ‘task type’ phase.
+A hook with a single ‘match’ rule will be run in the corresponding phase. A hook with
+multiple ‘match’ rules will be run in the last matching phase. For example, a hook with
+‘asset’ and ‘task type’ match rules will be run in the ‘task type’ phase.
 
 #### Events
 
@@ -191,7 +193,11 @@ propose several solutions to fix it.
 
 ## Setting up the tool
 
-The artist/TD can configure their current local project directory in the add-on preferences. This can then be used for new blend files. The project associated with an opened (so existing) blend file can be found automatically by iterating over parent directories until a Shot Builder configuration file is found. Project-specific settings are not configured/stored in the add-on, but in this configuration file.
+The artist/TD can configure their current local project directory in the add-on preferences. 
+This can then be used for new blend files. The project associated with an opened (so existing)
+blend file can be found automatically by iterating over parent directories until a Shot Builder
+configuration file is found. Project-specific settings are not configured/stored in the add-on,
+but in this configuration file.
 
 The add-on will look in the root of the production repository to locate the
 main configuration file `shot-builder/config.py`. This file contains general
