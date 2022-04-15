@@ -20,13 +20,14 @@
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
+import threading, subprocess
 
 import bpy
 from bpy.props import IntProperty, BoolProperty
 
 from .util import get_addon_prefs, svn_date_simple
 from . import constants
-from .execute_subprocess import execute_svn_command_nofreeze, subprocess_request_output
+from .execute_subprocess import execute_command
 
 
 ################################################################################
@@ -160,6 +161,10 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
+
+        global SVN_LOG_THREAD
+        if SVN_LOG_THREAD:
+            layout.label(text="Recent log entries may be missing, updating in progress...", icon='ERROR')
 
         num, auth, date, msg = layout_log_split(layout.row())
         num.label(text="r#")
@@ -307,20 +312,8 @@ def reload_svn_log(self, context):
         log_entry['commit_message'] = "\n".join(chunk[-r_msg_length:])
 
 
-def is_log_up_to_date(context) -> bool:
-    """Return whether the latest SVN Log entry loaded in storage is at least
-    as recent as the latest commit in the working copy."""
-    svn = context.scene.svn
-    prefs = get_addon_prefs(context)
-    current_rev = prefs.revision_number
-    latest_log_rev = 0
-    if len(svn.log) > 0:
-        latest_log_rev = svn.log[-1].revision_number
-
-    return latest_log_rev >= current_rev
-
-
-def write_to_svn_log_file_and_storage(context, data_str: str):
+def write_to_svn_log_file_and_storage(context, data_str: str) -> int:
+    """Return how many SVN log entries were contained in data_str."""
     svn = context.scene.svn
     log_file_path = get_log_file_path(context)
 
@@ -328,6 +321,7 @@ def write_to_svn_log_file_and_storage(context, data_str: str):
     if log_file_path.exists():
         file_existed = True
         svn.reload_svn_log(context)
+    num_entries = len(svn.log)
 
     with open(log_file_path, 'a+') as f:
         # Append to the file, create it if necessary.
@@ -348,9 +342,39 @@ def write_to_svn_log_file_and_storage(context, data_str: str):
     svn.reload_svn_log(context)
 
     print(f"SVN Log now at r{context.scene.svn.log[-1].revision_number}")
+    return len(svn.log) - num_entries
+
+SVN_LOG_THREAD = None
+SVN_LOG_OUTPUT = ""
+def async_get_svn_log():
+    """This function should be executed from a separate thread to avoid freezing 
+    Blender's UI during execute_svn_command().
+    """
+    global SVN_LOG_OUTPUT
+    SVN_LOG_OUTPUT = ""
+
+    context = bpy.context
+    svn = context.scene.svn
+    prefs = get_addon_prefs(context)
+
+    latest_log_rev = 0
+    if len(svn.log) > 0:
+        latest_log_rev = svn.log[-1].revision_number
+
+    try:
+        # We have no way to know if latest_log_rev+1 will exist or not, but we 
+        # must check, and there is no safe way to check it, so we let's just 
+        # catch and handle the potential error.
+        SVN_LOG_OUTPUT = execute_command(prefs.svn_directory, f"svn log {prefs.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10")
+    except subprocess.CalledProcessError as error:
+        err_msg = error.stderr.decode()
+        if 'No such revision' in err_msg:
+            print("SVN Log is now fully up to date.")
+            svn_log_background_fetch_stop()
+        else:
+            raise error
 
 
-SVN_LOG_POPEN = None
 @bpy.app.handlers.persistent
 def timer_update_svn_log():
     """Get all SVN Log entries from the remote repo in the background,
@@ -358,58 +382,41 @@ def timer_update_svn_log():
     These are then stored in a file, so each log entry only needs to be fetched
     once per computer that runs the addon.
     """
-    REVISIONS_PER_SUBPROCESS = 10
-    global SVN_LOG_POPEN
+    global SVN_LOG_THREAD
+    global SVN_LOG_OUTPUT
     context = bpy.context
-    svn = context.scene.svn
     prefs = get_addon_prefs(context)
     cred = prefs.get_credentials(get_entry=True)
 
     if not prefs.is_in_repo or not cred.authenticated:
         return
 
-    if not prefs.log_update_in_background:
-        svn_log_background_fetch_stop()
-        return
+    if SVN_LOG_THREAD and SVN_LOG_THREAD.is_alive():
+        # Process is still running, so we just gotta wait. Let's try again in 3 seconds.
+        return 3.0
+    elif SVN_LOG_OUTPUT:
+        num_logs = write_to_svn_log_file_and_storage(context, SVN_LOG_OUTPUT)
+        SVN_LOG_OUTPUT = ""
+        SVN_LOG_THREAD = None
+        if num_logs < 10:
+            svn_log_background_fetch_stop()
+            return
 
-    if is_log_up_to_date(context):
-        print("SVN: Log is up to date with current revision.")
-        svn_log_background_fetch_stop()
-        return
-
-    if SVN_LOG_POPEN:
-        output = subprocess_request_output(SVN_LOG_POPEN)
-        if not output:
-            # Process is still running, so we just gotta wait. Let's try again in 3 seconds.
-            return 3.0
-        write_to_svn_log_file_and_storage(context, output)
-
-    latest_log_rev = 0
-    if len(svn.log) > 0:
-        latest_log_rev = svn.log[-1].revision_number
-
-    current_rev = prefs.revision_number
-    num_logs_to_get = current_rev - latest_log_rev
-    if num_logs_to_get > REVISIONS_PER_SUBPROCESS:
-        num_logs_to_get = REVISIONS_PER_SUBPROCESS
-
-    goal_rev = latest_log_rev + num_logs_to_get
-
-    # Start the sub-process.
-    SVN_LOG_POPEN = execute_svn_command_nofreeze(prefs, f"svn log --verbose -r {latest_log_rev+1}:{goal_rev}")
-
+    SVN_LOG_THREAD = threading.Thread(target=async_get_svn_log, args=())
+    SVN_LOG_THREAD.start()
     return 3.0
-
-
-def svn_log_background_fetch_start(_dummy1=None, _dummy2=None):
-    if not bpy.app.timers.is_registered(timer_update_svn_log):
-        bpy.app.timers.register(timer_update_svn_log, persistent=True)
 
 
 @bpy.app.handlers.persistent
 def svn_log_handler(_dummy1, _dummy2):
     # This damn thing needs 2 positional arguments even though neither of them get anything!
     svn_log_background_fetch_start()
+
+
+def svn_log_background_fetch_start(_dummy1=None, _dummy2=None):
+    if not bpy.app.timers.is_registered(timer_update_svn_log):
+        print("Updating SVN Log...")
+        bpy.app.timers.register(timer_update_svn_log, persistent=True)
 
 
 def svn_log_background_fetch_stop(_dummy1=None, _dummy2=None):

@@ -67,7 +67,7 @@ class SVN_credential(bpy.types.PropertyGroup):
         else:
             self.authenticated = False
             self.auth_failed = False
-            self.svn_error = output
+            self.svn_error = output.stderr.decode()
 
     username: StringProperty(
         name = "SVN Username",
@@ -126,18 +126,6 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         if get_entry:
             return None
         return None, None
-
-    def update_log_update_in_background(self, context):
-        if self.log_update_in_background:
-            svn_log.svn_log_background_fetch_start()
-        else:
-            svn_log.svn_log_background_fetch_stop()
-
-    log_update_in_background: BoolProperty(
-        name="Auto-Update SVN Log",
-        default=True, 
-        description="Allow keeping the SVN log up to date automatically. Disable if suspected of causing problems"
-    )
 
     def update_status_update_in_background(self, context):
         if self.status_update_in_background:
@@ -248,7 +236,6 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         # Production Config Dir.
         # layout.prop(self, 'enable_ui')
         layout.label(text="Debug stuff:")
-        layout.prop(self, 'log_update_in_background')
         layout.prop(self, 'status_update_in_background')
 
         layout.label(text="Saved credentials:")
