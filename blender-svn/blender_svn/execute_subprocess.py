@@ -2,9 +2,9 @@ import subprocess
 
 
 def command_with_credential(prefs, command) -> str:
-    username, password = prefs.get_credentials()
-    assert (username and password), "No username and password entered for this repository. The UI shouldn't have allowed you to get into a state where you can press an SVN operation button without having your credentials entered, so this is a bug!"
-    return command + f' --username "{username}" --password "{password}"'
+    cred = prefs.get_credentials()
+    assert (cred.username and cred.password), "No username and password entered for this repository. The UI shouldn't have allowed you to get into a state where you can press an SVN operation button without having your credentials entered, so this is a bug!"
+    return command + f' --username "{cred.username}" --password "{cred.password}"'
 
 def execute_command(path: str, command: str) -> str:
     return str(
@@ -31,7 +31,7 @@ def execute_svn_command(prefs, command: str) -> str:
     command = command_with_credential(prefs, command)
     output = execute_command_safe(prefs.svn_directory, command)
     if type(output) == subprocess.CalledProcessError:
-        cred = prefs.get_credentials(get_entry=True)
+        cred = prefs.get_credentials()
         cred.svn_error = output.stderr.decode()
         return ""
     return output

@@ -228,7 +228,7 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         prefs = get_addon_prefs(context)
-        cred = prefs.get_credentials(get_entry=True)
+        cred = prefs.get_credentials()
         if not (prefs.enable_ui and prefs.is_in_repo):
             return False
         if not cred:
@@ -243,7 +243,7 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
         layout.use_property_decorate = False
 
         col = layout.column(align=True)
-        cred = prefs.get_credentials(get_entry=True)
+        cred = prefs.get_credentials()
         row = col.row()
         row.prop(cred, 'name', text="Repo Name", icon='FILE_TEXT')
         url = row.operator('svn.custom_tooltip', text="", icon='URL')
@@ -273,7 +273,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         prefs = get_addon_prefs(context)
-        cred = prefs.get_credentials(get_entry=True)
+        cred = prefs.get_credentials()
         return prefs.enable_ui and prefs.is_in_repo and cred and cred.authenticated and not cred.svn_error
 
     def draw(self, context):

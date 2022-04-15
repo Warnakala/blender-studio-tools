@@ -146,7 +146,7 @@ def init_svn(context, dummy):
         f.is_referenced = True
 
     svn_url = prefs.svn_url
-    cred = prefs.get_credentials(get_entry=True)
+    cred = prefs.get_credentials()
     if not cred:
         cred = prefs.svn_credentials.add()
         cred.url = svn_url
@@ -192,9 +192,9 @@ def timer_update_svn_status():
     context = bpy.context
     prefs = get_addon_prefs(context)
 
-    username, password = prefs.get_credentials()
+    cred = prefs.get_credentials()
 
-    if not prefs.is_in_repo or not prefs.status_update_in_background or not (username and password):
+    if not prefs.is_in_repo or not (cred.username and cred.password):
         svn_status_background_fetch_stop()
         return
 

@@ -386,7 +386,7 @@ def timer_update_svn_log():
     global SVN_LOG_OUTPUT
     context = bpy.context
     prefs = get_addon_prefs(context)
-    cred = prefs.get_credentials(get_entry=True)
+    cred = prefs.get_credentials()
 
     if not prefs.is_in_repo or not cred.authenticated:
         return

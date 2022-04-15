@@ -115,30 +115,13 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
     svn_credentials: CollectionProperty(type=SVN_credential)
     svn_cred_active_idx: IntProperty()
 
-    def get_credentials(self, get_entry=False) -> Optional[Tuple[str, str]]:
+    def get_credentials(self) -> Optional[SVN_credential]:
         svn_url = self.svn_url
         for cred in self.svn_credentials:
             if cred.url == svn_url:
-                if get_entry:
-                    return cred
-                return cred.username, cred.password
+                return cred
 
-        if get_entry:
-            return None
-        return None, None
-
-    def update_status_update_in_background(self, context):
-        if self.status_update_in_background:
-            svn_status.svn_status_background_fetch_start()
-        else:
-            svn_status.svn_status_background_fetch_stop()
-        
-    status_update_in_background: BoolProperty(
-        name="Auto-Update File Status",
-        default=True,
-        description="Allow keeping file statuses up to date automatically. Disable if suspected of causing problems",
-        update=update_status_update_in_background
-    )
+        return None
 
     enable_ui: BoolProperty(
         name="Enable UI",
@@ -236,7 +219,6 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         # Production Config Dir.
         # layout.prop(self, 'enable_ui')
         layout.label(text="Debug stuff:")
-        layout.prop(self, 'status_update_in_background')
 
         layout.label(text="Saved credentials:")
         col = layout.column()
