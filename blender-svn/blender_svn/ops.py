@@ -364,114 +364,6 @@ class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
             file_entry.status = 'normal'
 
 
-commit_message = StringProperty(
-    name = "Commit Message",
-    description = "Describe the changes being committed",
-    options={'SKIP_SAVE'}
-)
-
-
-class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
-    bl_idname = "svn.commit"
-    bl_label = "SVN Commit"
-    bl_description = "Commit a selection of files to the remote repository"
-    bl_options = {'INTERNAL'}
-    bl_property = "commit_message_0"  # Focus the text input box
-
-    MAX_LINES = 32
-    __annotations__ = {f'commit_message_{i}' : commit_message for i in range(MAX_LINES)}
-
-    selection: BoolVectorProperty(
-        size=32,
-        options={'SKIP_SAVE'},
-        default = [True]*32
-    )
-
-    @classmethod
-    def poll(cls, context):
-        return cls.get_committable_files(context)
-
-    @staticmethod
-    def get_committable_files(context) -> List[SVN_file]:
-        """Return the list of file entries whose status allows committing"""
-        svn_file_list = context.scene.svn.external_files
-        committable_statuses = ['modified', 'added', 'deleted']
-        files_to_commit = [f for f in svn_file_list if f.status in committable_statuses]
-        return files_to_commit
-
-    def draw(self, context):
-        """Draws the boolean toggle list with a list of strings for the button texts."""
-        layout = self.layout
-        files = self.get_committable_files(context)
-        layout.label(text="These files will be pushed to the remote repository:")
-        svn = context.scene.svn
-        row = layout.row()
-        row.label(text="Filename")
-        row.label(text="Status")
-        for idx, file in enumerate(files):
-            row = layout.row()
-            row.prop(self, "selection", index=idx, text=file.name)
-            text = file.status_name
-            icon = file.status_icon
-            if file == svn.current_blend_file and bpy.data.is_dirty:
-                text += " but not saved!"
-                icon = 'ERROR'
-                row.alert = True
-            row.label(text=text, icon=icon)
-
-        row = layout.row()
-        row.label(text="Commit message:")
-        self.last_idx = 0
-        for i in range(type(self).MAX_LINES):
-            if getattr(self, f'commit_message_{i}') != "":
-                self.last_idx = min(i+1, self.MAX_LINES)
-        for i in range(0, max(3, self.last_idx+2)):
-            # Draw input boxes until the last one that has text, plus two, minimum three.
-            # Why two after the last line? Because then you can use Tab to go to the next line.
-            # Why at least 3 lines? Because then you can write a one-liner without
-            # the OK button jumping away.
-            layout.prop(self, f'commit_message_{i}', text="")
-            continue
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        committable_files = self.get_committable_files(context)
-        files_to_commit = [f for i, f in enumerate(committable_files) if self.selection[i]]
-
-        if not files_to_commit:
-            self.report({'ERROR'}, "No files were selected, nothing to commit.")
-            return {'CANCELLED'}
-
-        if len(self.commit_message_0) < 2:
-            self.report({'ERROR'}, "Please describe your changes in the commit message.")
-            return {'CANCELLED'}
-
-        commit_message_lines = [getattr(self, f'commit_message_{i}') for i in range(self.last_idx)]
-        commit_message = "\n".join(commit_message_lines)
-
-        report = f"{(len(files_to_commit))} files."
-        if len(files_to_commit) == 1:
-            report = files_to_commit[0].svn_path
-        print(f"Committing {report}")
-
-        filepaths = " ".join([f'"{f.svn_path}"' for f in files_to_commit])
-
-        self.execute_svn_command(context, f'svn commit -m "{commit_message}" {filepaths}')
-
-        self.set_predicted_file_statuses(files_to_commit)
-
-        svn_log_background_fetch_start()
-        self.report({'INFO'}, f"Committed {report}")
-
-        return {"FINISHED"}
-
-    def set_predicted_file_statuses(self, files_to_commit: List[SVN_file]):
-        for f in files_to_commit:
-            if f.repos_status == 'none':
-                f.status = 'normal'
-            else:
-                f.status = 'conflicted'
-
-
 class SVN_cleanup(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.cleanup"
     bl_label = "SVN Cleanup"
@@ -495,7 +387,6 @@ registry = [
     SVN_add_file,
     SVN_trash_file,
     SVN_remove_file,
-    SVN_commit,
     SVN_cleanup,
     SVN_resolve_conflict,
 ]
