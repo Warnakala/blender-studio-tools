@@ -19,10 +19,7 @@
 # (c) 2021, Blender Foundation - Paul Golter
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
-import logging
-
 import bpy
-
 import importlib
 
 from . import prefs, props, ops, ui, svn_log, svn_status, svn_update, svn_commit
@@ -39,8 +36,6 @@ bl_info = {
     "tracker_url": "",
     "category": "Generic",
 }
-
-logger = logging.getLogger("SVN")
 
 modules = [
     prefs,

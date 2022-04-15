@@ -19,38 +19,10 @@
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
 import bpy
-from datetime import datetime
 from bpy.props import BoolProperty, StringProperty
 
 from .util import get_addon_prefs
 from . import constants
-
-class VIEW3D_PT_svn(bpy.types.Panel):
-    """SVN UI panel in the 3D View Sidebar."""
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = 'SVN'
-    bl_label = 'SVN Repository'
-
-    @classmethod
-    def poll(cls, context):
-        return False
-
-    def draw(self, context):
-        prefs = get_addon_prefs(context)
-        layout = self.layout
-        layout.use_property_split = True
-        layout.use_property_decorate = False
-
-        col = layout.column(align=True)
-
-        col.prop(prefs, 'svn_url', emboss=False)
-        col.prop(prefs, 'svn_directory', emboss=False)
-        col.prop(prefs, 'relative_filepath', emboss=False)
-        col.prop(prefs, 'revision_number', emboss=False)
-        col.prop(prefs, 'revision_date', emboss=False)
-        col.prop(prefs, 'revision_author', emboss=False)
-
 
 class SVN_UL_file_list(bpy.types.UIList):
     UILST_FLT_ITEM = 1 << 30 # Value that indicates that this item has passed the filter process successfully. See rna_ui.c.
@@ -154,9 +126,9 @@ class SVN_UL_file_list(bpy.types.UIList):
         # This list should ALWAYS be sorted alphabetically.
         flt_neworder = helper_funcs.sort_items_by_name(list_items, "name")
 
-        prefs = get_addon_prefs(context)
-        if prefs.search_filter:
-            flt_flags = helper_funcs.filter_items_by_name(prefs.search_filter, cls.UILST_FLT_ITEM, list_items, "name",
+        svn = context.scene.svn
+        if svn.search_filter:
+            flt_flags = helper_funcs.filter_items_by_name(svn.search_filter, cls.UILST_FLT_ITEM, list_items, "name",
                                                             reverse=False)
 
         has_default_status = lambda f: f.status == 'normal' and f.repos_status == 'none'
@@ -170,10 +142,10 @@ class SVN_UL_file_list(bpy.types.UIList):
                 # ALWAYS filter out files that have default statuses and aren't referenced.
                 flt_flags[i] = 0
 
-            if prefs.only_referenced_files:
+            if svn.only_referenced_files:
                 # Filter out files that are not being referenced, regardless of status.
                 flt_flags[i] *= int(item.is_referenced)
-                if has_default_status(item) and not prefs.include_normal:
+                if has_default_status(item) and not svn.include_normal:
                     # Filter out files that are being referenced but have default status.
                     flt_flags[i] = 0
             else:
@@ -203,17 +175,17 @@ class SVN_UL_file_list(bpy.types.UIList):
         main_row = layout.row()
         row = main_row.row(align=True)
 
-        prefs = get_addon_prefs(context)
+        svn = context.scene.svn
         row.prop(self, 'show_file_paths', text="", toggle=True, icon="FILE_FOLDER")
-        row.prop(prefs, 'search_filter', text="")
+        row.prop(svn, 'search_filter', text="")
 
         row = main_row.row(align=True)
         row.use_property_split=True
         row.use_property_decorate=False
-        row.prop(prefs, 'only_referenced_files', toggle=True, text="", icon='APPEND_BLEND')
+        row.prop(svn, 'only_referenced_files', toggle=True, text="", icon='APPEND_BLEND')
         col = row.column(align=True)
-        col.enabled = prefs.only_referenced_files
-        col.prop(prefs, 'include_normal', toggle=True, text="", icon="CHECKMARK")
+        col.enabled = svn.only_referenced_files
+        col.prop(svn, 'include_normal', toggle=True, text="", icon="CHECKMARK")
 
 
 class VIEW3D_PT_svn_credentials(bpy.types.Panel):
@@ -225,10 +197,10 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
+        if not context.scene.svn.is_in_repo:
+            return False
         prefs = get_addon_prefs(context)
         cred = prefs.get_credentials()
-        if not prefs.is_in_repo:
-            return False
         if not cred:
             # The credential entry should've been created at load_post() by set_svn_info()
             return False
@@ -272,7 +244,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
     def poll(cls, context):
         prefs = get_addon_prefs(context)
         cred = prefs.get_credentials()
-        return prefs.is_in_repo and cred and cred.authenticated and not cred.svn_error
+        return context.scene.svn.is_in_repo and cred and cred.authenticated and not cred.svn_error
 
     def draw(self, context):
         layout = self.layout
@@ -348,10 +320,9 @@ class SVN_custom_tooltip(bpy.types.Operator):
 
 
 def draw_outdated_file_warning(self, context):
-    prefs = get_addon_prefs(context)
-    if not prefs.is_in_repo:
-        return
     svn = context.scene.svn
+    if not svn.is_in_repo:
+        return
     current_file = svn.current_blend_file
     if not current_file:
         # If the current file is not in an SVN repository.
@@ -373,7 +344,6 @@ def draw_outdated_file_warning(self, context):
 
 registry = [
     SVN_UL_file_list,
-    VIEW3D_PT_svn,
     VIEW3D_PT_svn_credentials,
     VIEW3D_PT_svn_files,
     SVN_custom_tooltip

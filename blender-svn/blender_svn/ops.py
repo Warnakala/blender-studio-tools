@@ -23,27 +23,23 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 
 import bpy
-from bpy.props import StringProperty, BoolVectorProperty, IntProperty, EnumProperty, BoolProperty
+from bpy.props import StringProperty, IntProperty, EnumProperty, BoolProperty
 
 from send2trash import send2trash
 
-from .util import get_addon_prefs
-from .svn_log import svn_log_background_fetch_start
 from .props import SVN_file
 from .execute_subprocess import execute_svn_command
 
 
 class SVN_Operator:
     def execute_svn_command(self, context, command: str) -> str:
-        prefs = get_addon_prefs(context)
-
         # Since a status update might already be being requested when an SVN operator is run,
         # we want to ignore the first update after any SVN operator.
         # Otherwise it can result in a predicted state being overwritten by an outdated state.
         # For example, the Commit operator sets a file to "Normal" state, then the old svn status
         # arrives and sets it back to "Modified" state, which it isn't anymore.
         context.scene.svn.ignore_next_status_update = True
-        return execute_svn_command(prefs, command)
+        return execute_svn_command(context, command)
 
 
 class SVN_Operator_Single_File(SVN_Operator):
@@ -70,13 +66,11 @@ class SVN_Operator_Single_File(SVN_Operator):
         raise NotImplementedError
 
     def get_file_full_path(self, context) -> Path:
-        prefs = get_addon_prefs(context)
-        return Path.joinpath(Path(prefs.svn_directory), Path(self.file_rel_path))
+        svn = context.scene.svn
+        return Path.joinpath(Path(svn.svn_directory), Path(self.file_rel_path))
 
     def get_file(self, context) -> SVN_file:
-        tup = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
-        if tup:
-            return tup[1]
+        return context.scene.svn.get_file_by_svn_path(self.file_rel_path)
 
     def file_exists(self, context) -> bool:
         exists = self.get_file_full_path(context).exists()
@@ -159,7 +153,7 @@ class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.will_conflict = False
-        _idx, file_entry = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
+        file_entry = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
         if file_entry.status != 'normal':
             self.will_conflict = True
 
@@ -188,15 +182,15 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
     revision: IntProperty()
 
     def invoke(self, context, event):
-        _idx, file = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
-        if self.file_is_current_blend(context) and file.status != 'normal':
+        file_entry = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
+        if self.file_is_current_blend(context) and file_entry.status != 'normal':
             self.report({'ERROR'}, 'You must first revert or commit the changes to this file.')
             return {'CANCELLED'}
         return super().invoke(context, event)
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        _idx, file = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
-        if file.status == 'modified':
+        file_entry = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
+        if file_entry.status == 'modified':
             # If file has local modifications, let's avoid a conflict by cancelling
             # and telling the user to resolve it in advance.
             self.report({'ERROR'}, "Cancelled: You have local modifications to this file. You must revert or commit it first!")

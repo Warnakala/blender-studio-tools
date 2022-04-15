@@ -8,7 +8,6 @@ from bpy.props import StringProperty, BoolVectorProperty
 from .svn_log import svn_log_background_fetch_start
 from .props import SVN_file
 from .ops import SVN_Operator, Popup_Operator
-from .util import get_addon_prefs
 from .execute_subprocess import execute_svn_command
 
 SVN_COMMIT_THREAD = None
@@ -20,11 +19,11 @@ SVN_COMMIT_FILELIST: List[str] = []
 def predict_file_statuses(context):
     global SVN_COMMIT_FILELIST
     for filepath in SVN_COMMIT_FILELIST:
-        f = context.scene.svn.get_file_by_svn_path(filepath)
-        if f.repos_status == 'none':
-            f.status = 'normal'
+        file_entry = context.scene.svn.get_file_by_svn_path(filepath)
+        if file_entry.repos_status == 'none':
+            file_entry.status = 'normal'
         else:
-            f.status = 'conflicted'
+            file_entry.status = 'conflicted'
 
 
 commit_message = StringProperty(
@@ -150,8 +149,7 @@ def async_svn_commit():
     filepaths = " ".join(SVN_COMMIT_FILELIST)
 
     context = bpy.context
-    prefs = get_addon_prefs(context)
-    SVN_COMMIT_OUTPUT = execute_svn_command(prefs, f'svn commit -m "{SVN_COMMIT_MSG}" {filepaths}')
+    SVN_COMMIT_OUTPUT = execute_svn_command(context, f'svn commit -m "{SVN_COMMIT_MSG}" {filepaths}')
     SVN_COMMIT_MSG = ""
     SVN_COMMIT_FILELIST = []
 

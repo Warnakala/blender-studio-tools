@@ -241,8 +241,7 @@ class SVN_show_commit_message(bpy.types.Operator):
 ################################################################################
 
 def get_log_file_path(context) -> Path:
-    prefs = get_addon_prefs(context)
-    return Path(prefs.svn_directory+"/.svn/svn.log")
+    return Path(context.scene.svn.svn_directory+"/.svn/svn.log")
 
 
 def reload_svn_log(self, context):
@@ -285,10 +284,10 @@ def reload_svn_log(self, context):
         r_msg_length = int(r_msg_length.split(" ")[0])
 
         log_entry = svn.log.add()
-        log_entry['revision_number'] = r_number
-        log_entry['revision_author'] = r_author
+        log_entry.revision_number = r_number
+        log_entry.revision_author = r_author
 
-        log_entry['revision_date'] = svn_date_simple(r_date)
+        log_entry.revision_date = svn_date_simple(r_date)
 
         # File change set is on line 3 until the commit message begins...
         file_change_lines = chunk[2:-(r_msg_length)]
@@ -304,9 +303,9 @@ def reload_svn_log(self, context):
                 file_path = file_path.split(" (from ")[0]
 
             log_file_entry = log_entry.changed_files.add()
-            log_file_entry['svn_path'] = Path(file_path).as_posix()
-            log_file_entry['revision'] = r_number
             log_file_entry['name'] = Path(file_path).name
+            log_file_entry['svn_path'] = Path(file_path).as_posix()
+            log_file_entry.revision = r_number
             log_file_entry.status = constants.SVN_STATUS_CHAR[status_char]
 
         log_entry['commit_message'] = "\n".join(chunk[-r_msg_length:])
@@ -351,11 +350,11 @@ def async_get_svn_log():
     Blender's UI during execute_svn_command().
     """
     global SVN_LOG_OUTPUT
+    global SVN_LOG_THREAD
     SVN_LOG_OUTPUT = ""
 
     context = bpy.context
     svn = context.scene.svn
-    prefs = get_addon_prefs(context)
 
     latest_log_rev = 0
     if len(svn.log) > 0:
@@ -365,11 +364,12 @@ def async_get_svn_log():
         # We have no way to know if latest_log_rev+1 will exist or not, but we 
         # must check, and there is no safe way to check it, so we let's just 
         # catch and handle the potential error.
-        SVN_LOG_OUTPUT = execute_command(prefs.svn_directory, f"svn log {prefs.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10")
+        SVN_LOG_OUTPUT = execute_command(svn.svn_directory, f"svn log {svn.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10")
     except subprocess.CalledProcessError as error:
         err_msg = error.stderr.decode()
         if 'No such revision' in err_msg:
-            print("SVN Log is now fully up to date.")
+            SVN_LOG_THREAD = None
+            print("SVN: Log is now fully up to date.")
             svn_log_background_fetch_stop()
         else:
             raise error
@@ -385,10 +385,11 @@ def timer_update_svn_log():
     global SVN_LOG_THREAD
     global SVN_LOG_OUTPUT
     context = bpy.context
+    svn = context.scene.svn
     prefs = get_addon_prefs(context)
     cred = prefs.get_credentials()
 
-    if not prefs.is_in_repo or not cred.authenticated:
+    if not svn.is_in_repo or not cred.authenticated:
         return
 
     if SVN_LOG_THREAD and SVN_LOG_THREAD.is_alive():

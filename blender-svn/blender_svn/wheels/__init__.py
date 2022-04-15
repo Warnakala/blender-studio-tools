@@ -26,7 +26,7 @@ from pathlib import Path
 import sys
 import logging
 from types import ModuleType
-from typing import Iterator, Optional
+from typing import Iterator
 
 _my_dir = Path(__file__).parent
 _log = logging.getLogger(__name__)

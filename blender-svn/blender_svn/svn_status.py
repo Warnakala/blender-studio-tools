@@ -19,7 +19,6 @@
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
-from collections import OrderedDict
 from pathlib import Path
 from datetime import datetime
 
@@ -32,10 +31,9 @@ import xmltodict
 import bpy
 from bpy.props import StringProperty
 
-from .execute_subprocess import execute_command, execute_svn_command
+from .execute_subprocess import execute_command_safe, execute_svn_command
 from .util import get_addon_prefs, svn_date_simple
 from . import constants
-from .svn_log import svn_log_background_fetch_start
 
 class SVN_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
@@ -66,39 +64,38 @@ class SVN_explain_status(bpy.types.Operator):
         click-through in the UIList."""
         if not self.file_rel_path:
             return {'FINISHED'}
-        i, _file = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
-        context.scene.svn.external_files_active_index = i
+        file_entry_idx = context.scene.svn.get_file_by_svn_path(self.file_rel_path, get_index=True)
+        context.scene.svn.external_files_active_index = file_entry_idx
         return {'FINISHED'}
 
 
-def set_svn_info(context) -> "SVN_addon_preferences":
-    prefs = get_addon_prefs(context)
-    output = execute_command(str(Path(bpy.data.filepath).parent), 'svn info')
+def set_svn_info(context) -> bool:
+    svn = context.scene.svn
+    output = execute_command_safe(str(Path(bpy.data.filepath).parent), 'svn info')
     if type(output) != str:
-        prefs.is_in_repo = False
-        prefs.reset()
+        svn.is_in_repo = False
         return False
 
     lines = output.split("\n")
     # Populate the addon prefs with svn info.
-    prefs.is_in_repo = True
+    svn.is_in_repo = True
     dir_path = lines[1].split("Working Copy Root Path: ")[1]
     # On Windows, for some reason the path has a \r character at the end, 
     # which breaks absolutely everything.
     dir_path = dir_path.replace("\r", "")
-    prefs.svn_directory = dir_path
+    svn.svn_directory = dir_path
 
     full_url = lines[2].split("URL: ")[1]
     relative_url = lines[3].split("Relative URL: ")[1][1:]
     base_url = full_url.replace(relative_url, "")
-    prefs['svn_url'] = base_url
-    prefs['relative_filepath'] = lines[3].split("Relative URL: ^")[1]
-    prefs['revision_number'] = int(lines[6].split("Revision: ")[1])
+    svn.svn_url = base_url
+    _relative_filepath = lines[3].split("Relative URL: ^")[1]
+    _revision_number = int(lines[6].split("Revision: ")[1])
 
     datetime_str = lines[-3].split("Last Changed Date: ")[1]
-    prefs['revision_date'] = svn_date_simple(datetime_str)
-    prefs['revision_author'] = lines[-5].split("Last Changed Author: ")[1]
-    return prefs
+    _revision_date = svn_date_simple(datetime_str)
+    _revision_author = lines[-5].split("Last Changed Author: ")[1]
+    return True
 
 
 @bpy.app.handlers.persistent
@@ -118,17 +115,17 @@ def init_svn(context, dummy):
     if not context:
         context = bpy.context
 
+    svn = context.scene.svn
     if not bpy.data.filepath:
-        get_addon_prefs(context).reset()
+        svn.reset_info()
         return
 
-    prefs = set_svn_info(context)
+    in_repo = set_svn_info(context)
 
-    svn = context.scene.svn
     if svn.external_files_active_index > len(svn.external_files):
         svn.external_files_active_index = 0
     svn.log_active_index = len(svn.log)-1
-    if not prefs:
+    if not in_repo:
         svn.external_files.clear()
         svn.log.clear()
         print("SVN: Initialization cancelled: This .blend is not in an SVN repository.")
@@ -145,7 +142,8 @@ def init_svn(context, dummy):
         f.status = 'unversioned'
         f.is_referenced = True
 
-    svn_url = prefs.svn_url
+    prefs = get_addon_prefs(context)
+    svn_url = svn.svn_url
     cred = prefs.get_credentials()
     if not cred:
         cred = prefs.svn_credentials.add()
@@ -180,8 +178,7 @@ def async_get_verbose_svn_status():
     SVN_STATUS_OUTPUT = ""
 
     context = bpy.context
-    prefs = get_addon_prefs(context)
-    svn_status_str = execute_svn_command(prefs, 'svn status --show-updates --verbose --xml')
+    svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml')
     SVN_STATUS_OUTPUT = get_repo_file_statuses(svn_status_str)
 
 @bpy.app.handlers.persistent
@@ -190,11 +187,12 @@ def timer_update_svn_status():
     global SVN_STATUS_THREAD
     global SVN_STATUS_NEWFILE
     context = bpy.context
+    svn = context.scene.svn
     prefs = get_addon_prefs(context)
 
     cred = prefs.get_credentials()
 
-    if not prefs.is_in_repo or not (cred.username and cred.password):
+    if not svn.is_in_repo or not (cred.username and cred.password):
         svn_status_background_fetch_stop()
         return
 
@@ -234,10 +232,8 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
 
         wc_status, repos_status, revision = status_info
 
-        tup_existing_file = svn.get_file_by_svn_path(svn_path)
-        if tup_existing_file:
-            file_entry = tup_existing_file[1]
-        else:
+        file_entry = svn.get_file_by_svn_path(svn_path)
+        if not file_entry:
             file_entry = svn.external_files.add()
             file_entry['svn_path'] = svn_path.as_posix()
             file_entry['name'] = svn_path.name
@@ -336,6 +332,7 @@ def svn_status_background_fetch_stop(_dummy1=None, _dummy2=None):
     SVN_STATUS_POPEN = None
 
 
+@bpy.app.handlers.persistent
 def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
     context = bpy.context
     svn = context.scene.svn

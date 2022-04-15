@@ -6,7 +6,6 @@ import bpy
 
 from .svn_log import svn_log_background_fetch_start
 from .ops import May_Modifiy_Current_Blend
-from .util import get_addon_prefs
 from .execute_subprocess import execute_svn_command
 
 SVN_UPDATE_THREAD = None
@@ -66,9 +65,8 @@ def async_svn_update():
     SVN_UPDATE_OUTPUT = ""
 
     context = bpy.context
-    prefs = get_addon_prefs(context)
     print("Updating SVN files in background...")
-    SVN_UPDATE_OUTPUT = execute_svn_command(prefs, 'svn up --accept "postpone"')
+    SVN_UPDATE_OUTPUT = execute_svn_command(context, 'svn up --accept "postpone"')
 
 
 def timer_svn_update():
