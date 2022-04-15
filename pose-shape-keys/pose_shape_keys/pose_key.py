@@ -1,6 +1,6 @@
 import bpy
 from typing import List
-from bpy.types import PropertyGroup, Object, Operator, Action, ShapeKey
+from bpy.types import PropertyGroup, Object, Operator, Action, ShapeKey, VertexGroup, MeshVertex
 from bpy.props import (
 	PointerProperty, IntProperty, CollectionProperty, StringProperty, 
 	BoolProperty
@@ -573,11 +573,11 @@ class OBJECT_OT_PoseKey_Push_All(Operator, OperatorWithWarning, SaveAndRestoreSt
 
 		return {'FINISHED'}
 
-class OBJECT_OT_PoseKey_Normalize(Operator, OperatorWithWarning):
-	"""Normalize the mask vertex groups of the shape keys"""
+class OBJECT_OT_PoseKey_Clamp_Influence(Operator):
+	"""Clamp the influence of this pose key's shape keys to 1.0 for each vertex, by normalizing the vertex weight mask values of vertices where the total influence is greater than 1"""
 
-	bl_idname = "object.posekey_normalize"
-	bl_label = "Normalize Vertex Group Masks"
+	bl_idname = "object.posekey_clamp_influence"
+	bl_label = "Clamp Vertex Influences"
 	bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
 
 	@staticmethod
@@ -597,12 +597,7 @@ class OBJECT_OT_PoseKey_Normalize(Operator, OperatorWithWarning):
 	def poll(cls, context):
 		return cls.get_affected_vertex_group_names(context.object)
 
-	def get_warning_text(self, context):
-		vg_names = self.get_affected_vertex_group_names(context.object)
-		return "The weights of these vertex groups will add up to 1.0 for each vertex:\n    " + "\n    ".join(vg_names) +"\n Are you sure?"
-
-	@staticmethod
-	def normalize_vgroups(o, vgroups):
+	def normalize_vgroups(self, o, vgroups):
 		""" Normalize a set of vertex groups in isolation """
 		""" Used for creating mask vertex groups for splitting shape keys """
 		for v in o.data.vertices:
@@ -616,10 +611,11 @@ class OBJECT_OT_PoseKey_Normalize(Operator, OperatorWithWarning):
 				except:
 					pass
 			for vg in vgroups:
-				try:
-					vg.add([v.index], vg.weight(v.index)/sum_weights, 'REPLACE')
-				except:
-					pass
+				if sum_weights > 1.0:
+					try:
+						vg.add([v.index], vg.weight(v.index)/sum_weights, 'REPLACE')
+					except:
+						pass
 
 	def execute(self, context):
 		ob = context.object
@@ -715,7 +711,7 @@ registry = [
 	,OBJECT_OT_PoseKey_Push
 	,OBJECT_OT_PoseKey_Push_All
 	,OBJECT_OT_Create_ShapeKey_For_Pose
-	,OBJECT_OT_PoseKey_Normalize
+	,OBJECT_OT_PoseKey_Clamp_Influence
 	,OBJECT_OT_PoseKey_Place_Objects_In_Grid
 	,OBJECT_OT_PoseKey_Jump_To_Shape
 ]
