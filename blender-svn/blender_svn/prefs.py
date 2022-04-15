@@ -123,17 +123,11 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 
         return None
 
-    enable_ui: BoolProperty(
-        name="Enable UI",
-        default=True,
-        description="Enable UI in sidebar for debugging/testing",
-    )
-
     # TODO: Everything below this should be moved to SVN_scene_properties...
     is_in_repo: BoolProperty(
         name="is_in_repo",
         default=False,
-        description="To store whether the current file was deemed to be in an SVN repository on file save/load. For internal use only"
+        description="Internal flag marking whether the current file was deemed to be in an SVN repository on file save/load"
     )
 
     def update_filters(dummy, context):
@@ -213,12 +207,8 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
             return None
         return Path(self.svn_directory)
 
-    def draw(self, context: bpy.types.Context) -> None:
-        layout: bpy.types.UILayout = self.layout
-
-        # Production Config Dir.
-        # layout.prop(self, 'enable_ui')
-        layout.label(text="Debug stuff:")
+    def draw(self, context) -> None:
+        layout = self.layout
 
         layout.label(text="Saved credentials:")
         col = layout.column()

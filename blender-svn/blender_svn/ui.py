@@ -35,8 +35,6 @@ class VIEW3D_PT_svn(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return False
-        prefs = get_addon_prefs(context)
-        return prefs.enable_ui and prefs.is_in_repo
 
     def draw(self, context):
         prefs = get_addon_prefs(context)
@@ -229,7 +227,7 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
     def poll(cls, context):
         prefs = get_addon_prefs(context)
         cred = prefs.get_credentials()
-        if not (prefs.enable_ui and prefs.is_in_repo):
+        if not prefs.is_in_repo:
             return False
         if not cred:
             # The credential entry should've been created at load_post() by set_svn_info()
@@ -274,7 +272,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
     def poll(cls, context):
         prefs = get_addon_prefs(context)
         cred = prefs.get_credentials()
-        return prefs.enable_ui and prefs.is_in_repo and cred and cred.authenticated and not cred.svn_error
+        return prefs.is_in_repo and cred and cred.authenticated and not cred.svn_error
 
     def draw(self, context):
         layout = self.layout
