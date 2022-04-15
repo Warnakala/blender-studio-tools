@@ -22,8 +22,7 @@
 from typing import Optional, Dict, Any, List, Tuple, Set
 
 from pathlib import Path
-
-from blender_svn.util import get_addon_prefs
+from datetime import datetime
 
 import bpy, logging
 from bpy.props import IntProperty, StringProperty, CollectionProperty, BoolProperty, EnumProperty
@@ -327,6 +326,17 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         name="Last Status Update",
         description="Timestamp of when the last successful file status update was completed"
     )
+
+    @property
+    def time_since_last_update(self) -> int:
+        """Returns seconds passed since timestamp_last_status_update."""
+        if not self.timestamp_last_status_update:
+            return 1000
+        last_update_time = datetime.strptime(self.timestamp_last_status_update, "%Y/%m/%d %H:%M:%S")
+        current_time = datetime.now()
+        delta = current_time - last_update_time
+        return delta.seconds
+
 
 # ----------------REGISTER--------------.
 

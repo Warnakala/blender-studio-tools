@@ -281,6 +281,12 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
+        # Calculate time since last status update
+        seconds_since_last_update = context.scene.svn.time_since_last_update
+        if seconds_since_last_update > 30:
+            layout.operator("svn.custom_tooltip", icon='FILE_REFRESH', text="Updating SVN file statuses").tooltip="This shouldn't take longer than 10s"
+            return
+
         main_row = layout.row()
         split = main_row.split(factor=0.6)
         filepath_row = split.row()
@@ -295,16 +301,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
 
         timer_row = main_row.row()
         timer_row.alignment='RIGHT'
-        # Calculate time since last status update
-        if context.scene.svn.timestamp_last_status_update:
-            last_update_time = datetime.strptime(context.scene.svn.timestamp_last_status_update, "%Y/%m/%d %H:%M:%S")
-            current_time = datetime.now()
-            delta = current_time - last_update_time
-            if delta.seconds < 60:
-                text = str(delta.seconds) + 's'
-            else:
-                text = ">1m"
-            timer_row.operator("svn.custom_tooltip", icon='FILE_REFRESH', text="", emboss=False).tooltip="Time since last file status update: " + text
+        timer_row.operator("svn.custom_tooltip", icon='FILE_REFRESH', text="", emboss=False).tooltip="Time since last file status update: " + str(seconds_since_last_update) + 's'
 
         row = layout.row()
         row.template_list(
