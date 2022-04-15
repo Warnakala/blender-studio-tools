@@ -28,7 +28,7 @@ def execute_svn_command(prefs, command: str) -> str:
     command = command_with_credential(prefs, command)
     output = execute_command(prefs.svn_directory, command)
     if type(output) == subprocess.CalledProcessError:
-        cred = prefs.get_credential(get_entry=True)
+        cred = prefs.get_credentials(get_entry=True)
         cred.svn_error = output
         return ""
     return output
