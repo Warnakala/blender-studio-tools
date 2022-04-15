@@ -85,36 +85,6 @@ class SVN_Operator_Single_File(SVN_Operator):
         return exists
 
 
-class SVN_update_all(SVN_Operator, bpy.types.Operator):
-    bl_idname = "svn.update_all"
-    bl_label = "SVN Update All"
-    bl_description = "Download all the latest updates from the remote repository"
-    bl_options = {'INTERNAL'}
-
-    @classmethod
-    def poll(cls, context):
-        for f in context.scene.svn.external_files:
-            if f.repos_status != 'none':
-                return True
-        return False
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        self.execute_svn_command(context, 'svn up --accept "postpone"')
-        # TODO: This currently freezes the UI, which might be for the best tbh.
-        # If we keep that, we should also do a file status update before unfreezing.
-        svn_log_background_fetch_start()
-
-        for f in context.scene.svn.external_files:
-            if f.repos_status == 'modified':
-                if f.status == 'normal':
-                    f.status = 'normal'
-                    f.repos_status = 'none'
-                else:
-                    f.status = 'conflicted'
-
-        return {"FINISHED"}
-
-
 class Popup_Operator:
     popup_width = 400
 
@@ -517,7 +487,6 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
 
 
 registry = [
-    SVN_update_all,
     SVN_update_single,
     SVN_download_file_revision,
     SVN_revert_file,

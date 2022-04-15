@@ -173,8 +173,8 @@ SVN_STATUS_THREAD = None
 SVN_STATUS_NEWFILE = True
 
 def async_get_verbose_svn_status():
-    """The communicate() call blocks execution until the SVN command completes,
-    so this function should be executed from a separate thread.
+    """This function should be executed from a separate thread to avoid freezing 
+    Blender's UI during execute_svn_command().
     """
     global SVN_STATUS_OUTPUT
     SVN_STATUS_OUTPUT = ""

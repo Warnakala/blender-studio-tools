@@ -284,7 +284,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         # Calculate time since last status update
         seconds_since_last_update = context.scene.svn.time_since_last_update
         if seconds_since_last_update > 30:
-            layout.operator("svn.custom_tooltip", icon='FILE_REFRESH', text="Updating SVN file statuses").tooltip="This shouldn't take longer than 10s"
+            layout.operator("svn.custom_tooltip", icon='FILE_REFRESH', text="Update SVN file statuses").tooltip="This shouldn't take longer than 10s"
             return
 
         main_row = layout.row()
