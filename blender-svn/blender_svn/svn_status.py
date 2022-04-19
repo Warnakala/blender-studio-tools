@@ -148,7 +148,7 @@ def init_svn(context, dummy):
     if not cred:
         cred = prefs.svn_credentials.add()
         cred.url = svn_url
-        cred.name = Path(prefs.svn_directory).name
+        cred.name = Path(svn.svn_directory).name
         print("SVN: Initialization failed. Try entering credentials.")
         return
 
@@ -178,6 +178,10 @@ def async_get_verbose_svn_status():
     SVN_STATUS_OUTPUT = ""
 
     context = bpy.context
+    prefs = get_addon_prefs(context)
+    cred = prefs.get_credentials()
+    if not cred.authenticated:
+        return
     svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml')
     SVN_STATUS_OUTPUT = get_repo_file_statuses(svn_status_str)
 
@@ -341,12 +345,20 @@ def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
         current_blend.status = 'modified'
         svn.ignore_next_status_update = True
 
+@bpy.app.handlers.persistent
+def ignore_next_svn_status_update(_dummy1=None, _dummy2=None):
+    context = bpy.context
+    svn = context.scene.svn
+    svn.ignore_next_status_update = True
+
 ################################################################################
 ############################# REGISTER #########################################
 ################################################################################
 
 def register():
     bpy.app.handlers.load_post.append(init_svn)
+    bpy.app.handlers.load_post.append(ignore_next_svn_status_update)
+
     bpy.app.handlers.save_post.append(init_svn)
     bpy.app.handlers.save_post.append(mark_current_file_as_modified)
     svn_status_background_fetch_start()
@@ -355,6 +367,8 @@ def register():
 
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
+    bpy.app.handlers.load_post.remove(ignore_next_svn_status_update)
+
     bpy.app.handlers.save_post.remove(init_svn)
     bpy.app.handlers.save_post.remove(mark_current_file_as_modified)
     svn_status_background_fetch_stop()

@@ -176,6 +176,11 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         default="",
         description="URL of the remote SVN repository",
     )
+    svn_error: StringProperty(
+        name="Error Message",
+        default="",
+        description="If SVN throws an error other than authentication error, store it here",
+    )
 
     def reset_info(self):
         """Reset SVN repository information."""

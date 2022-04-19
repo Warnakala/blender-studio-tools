@@ -21,11 +21,12 @@
 
 from typing import Optional, Any, Set, Tuple, List
 
+import subprocess
 import bpy
 from bpy.props import StringProperty, IntProperty, BoolProperty, CollectionProperty
 
 from . import svn_status
-from .execute_subprocess import execute_command
+from .execute_subprocess import execute_command_safe
 
 
 class SVN_credential(bpy.types.PropertyGroup):
@@ -39,30 +40,28 @@ class SVN_credential(bpy.types.PropertyGroup):
         if not (self.username and self.password):
             # Only try to authenticate if BOTH username AND pw are entered.
             return
-        self.svn_error = ""
         svn = context.scene.svn
-        output = execute_command(svn.svn_directory, f'svn status --show-updates --username "{self.username}" --password "{self.password}"')
-        if type(output) == str:
-            svn_status.init_svn(context, None)
-            self.authenticated = True
-            self.auth_failed = False
-
-            # For some ungodly reason, ONLY with this addon, 
-            # CollectionProperties stored in the AddonPrefs do not get
-            # auto-saved, only manually saved! So... we get it done.
-            if context.preferences.use_preferences_save:
-                bpy.ops.wm.save_userpref()
-
+        output = execute_command_safe(svn.svn_directory, f'svn status --show-updates --username "{self.username}" --password "{self.password}"')
+        if type(output) == subprocess.CalledProcessError:
+            error = output.stderr.decode()
+            if "Authentication failed" in error:
+                self.authenticated = False
+                self.auth_failed = True
+            else:
+                self.authenticated = False
+                self.auth_failed = False
             return
 
-        error = output.stderr.decode()
-        if "Authentication failed" in error:
-            self.authenticated = False
-            self.auth_failed = True
-        else:
-            self.authenticated = False
-            self.auth_failed = False
-            self.svn_error = error
+        svn_status.init_svn(context, None)
+        self.authenticated = True
+        self.auth_failed = False
+
+        # For some ungodly reason, ONLY with this addon, 
+        # CollectionProperties stored in the AddonPrefs do not get
+        # auto-saved, only manually saved! So... we get it done.
+        if context.preferences.use_preferences_save:
+            bpy.ops.wm.save_userpref()
+
 
     username: StringProperty(
         name = "SVN Username",
@@ -85,11 +84,6 @@ class SVN_credential(bpy.types.PropertyGroup):
         name = "Authentication Failed",
         description = "Internal flag to mark whether the last entered credentials were denied by the repo",
         default = False
-    )
-    svn_error: StringProperty(
-        name = "SVN Error",
-        description = "If SVN throws an error other than authentication error, store it here.",
-        default = ""
     )
 
 

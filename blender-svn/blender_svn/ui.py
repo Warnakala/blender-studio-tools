@@ -204,7 +204,7 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
         if not cred:
             # The credential entry should've been created at load_post() by set_svn_info()
             return False
-        return not cred.authenticated or cred.svn_error
+        return not cred.authenticated
 
     def draw(self, context):
         prefs = get_addon_prefs(context)
@@ -224,13 +224,7 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
         if cred.auth_failed:
             row = layout.row()
             row.alert = True
-            row.label(text="Authentication failed.")
-        if cred.svn_error:
-            row = layout.row()
-            row.alert = True
-            warning = row.operator('svn.custom_tooltip', text="SVN Error", icon='ERROR')
-            warning.tooltip = cred.svn_error
-            warning.copy_on_click = True
+            row.label(text="Authentication failed. Double-check your details.")
 
 
 class VIEW3D_PT_svn_files(bpy.types.Panel):
@@ -244,12 +238,20 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
     def poll(cls, context):
         prefs = get_addon_prefs(context)
         cred = prefs.get_credentials()
-        return context.scene.svn.is_in_repo and cred and cred.authenticated and not cred.svn_error
+        return context.scene.svn.is_in_repo and cred and cred.authenticated
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
+
+        svn = context.scene.svn
+        if svn.svn_error:
+            row = layout.row()
+            row.alert = True
+            warning = row.operator('svn.custom_tooltip', text="SVN: Error Occurred", icon='ERROR')
+            warning.tooltip = svn.svn_error
+            warning.copy_on_click = True
 
         # Calculate time since last status update
         seconds_since_last_update = context.scene.svn.time_since_last_update

@@ -30,11 +30,10 @@ def execute_svn_command(context, command: str) -> str:
     SVN root.
     """
     svn = context.scene.svn
-    prefs = get_addon_prefs(context)
+    svn.svn_error = ""
     command = command_with_credential(context, command)
     output = execute_command_safe(svn.svn_directory, command)
     if type(output) == subprocess.CalledProcessError:
-        cred = prefs.get_credentials()
-        cred.svn_error = output.stderr.decode()
+        svn.svn_error = output.stderr.decode()
         return ""
     return output
