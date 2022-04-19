@@ -122,7 +122,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         SVN_COMMIT_FILELIST = filepaths
         svn_commit_background_start()
 
-        report = f"{(len(files_to_commit))} files."
+        report = f"{(len(files_to_commit))} files"
         if len(files_to_commit) == 1:
             report = files_to_commit[0].svn_path
         self.report({'INFO'}, f"Started committing {report}. See console for when it's finished.")

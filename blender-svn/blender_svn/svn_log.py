@@ -182,13 +182,21 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
 
         active_log = context.scene.svn.active_log
         layout.label(text=f"Files changed in revision `r{active_log.revision_number}`:")
+
         col = layout.column(align=True)
-        col.alignment = 'RIGHT'
+        row = col.row()
+        split = row.split(factor=0.80)
+        split.label(text="          Filepath")
+        row = split.row()
+        row.alignment='RIGHT'
+        row.label(text="Action")
         for f in active_log.changed_files:
             row = col.row()
-            explainer = row.operator('svn.explain_status', text="", icon=f.status_icon, emboss=False)
-            explainer.status = f.status
-            row.prop(f, 'svn_path', emboss=False, text="", icon=f.file_icon)
+            split = row.split(factor=0.90)
+            split.prop(f, 'svn_path', emboss=False, text="", icon=f.file_icon)
+            row = split.row()
+            row.alignment='RIGHT'
+            row.operator('svn.explain_status', text="", icon=f.status_icon, emboss=False).status = f.status
 
 
 def execute_tooltip_log(self, context):
