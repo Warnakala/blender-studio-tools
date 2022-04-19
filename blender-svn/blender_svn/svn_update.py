@@ -84,6 +84,8 @@ def timer_svn_update():
         predict_file_statuses(context)
         context.scene.svn.ignore_next_update = True
         svn_log_background_fetch_start()
+        SVN_UPDATE_OUTPUT = ""
+        SVN_UPDATE_THREAD = None
         return
 
     SVN_UPDATE_THREAD = threading.Thread(target=async_svn_update, args=())
