@@ -41,7 +41,7 @@ class SVN_credential(bpy.types.PropertyGroup):
             return
         self.svn_error = ""
         svn = context.scene.svn
-        output = execute_command(svn, f'svn status --show-updates --username "{self.username}" --password "{self.password}"')
+        output = execute_command(svn.svn_directory, f'svn status --show-updates --username "{self.username}" --password "{self.password}"')
         if type(output) == str:
             svn_status.init_svn(context, None)
             self.authenticated = True
@@ -62,7 +62,7 @@ class SVN_credential(bpy.types.PropertyGroup):
         else:
             self.authenticated = False
             self.auth_failed = False
-            self.svn_error = output.stderr.decode()
+            self.svn_error = error
 
     username: StringProperty(
         name = "SVN Username",
