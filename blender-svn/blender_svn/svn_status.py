@@ -176,6 +176,7 @@ def async_get_verbose_svn_status():
     """
     global SVN_STATUS_OUTPUT
     SVN_STATUS_OUTPUT = ""
+    global SVN_STATUS_NEWFILE
 
     context = bpy.context
     prefs = get_addon_prefs(context)
@@ -185,11 +186,14 @@ def async_get_verbose_svn_status():
     svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml')
     SVN_STATUS_OUTPUT = get_repo_file_statuses(svn_status_str)
 
+    if SVN_STATUS_NEWFILE:
+        update_file_is_referenced_flags()
+        SVN_STATUS_NEWFILE = False
+
 @bpy.app.handlers.persistent
 def timer_update_svn_status():
     global SVN_STATUS_OUTPUT
     global SVN_STATUS_THREAD
-    global SVN_STATUS_NEWFILE
     context = bpy.context
     svn = context.scene.svn
     prefs = get_addon_prefs(context)
@@ -205,9 +209,6 @@ def timer_update_svn_status():
         return 1.0
     elif SVN_STATUS_OUTPUT and not context.scene.svn.ignore_next_status_update:
         update_file_list(context, SVN_STATUS_OUTPUT)
-        if SVN_STATUS_NEWFILE:
-            update_file_is_referenced_flags()
-            SVN_STATUS_NEWFILE = False
         context.scene.svn.timestamp_last_status_update = datetime.strftime(datetime.now(), "%Y/%m/%d %H:%M:%S")
 
     context.scene.svn.ignore_next_status_update = False
@@ -363,7 +364,7 @@ def register():
     bpy.app.handlers.save_post.append(mark_current_file_as_modified)
     svn_status_background_fetch_start()
 
-    bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
+    # bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
 
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
@@ -373,6 +374,6 @@ def unregister():
     bpy.app.handlers.save_post.remove(mark_current_file_as_modified)
     svn_status_background_fetch_stop()
 
-    bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)
+    # bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)
 
 registry = [SVN_explain_status]
