@@ -286,7 +286,11 @@ def reload_svn_log(self, context):
         # date and commit message length.
         r_number, r_author, r_date, r_msg_length = chunk[0].split(" | ")
         r_number = int(r_number[1:])
-        assert r_number == previous_rev_number+1, f"Revision order seems wrong at r{r_number}"
+        if r_number != previous_rev_number+1:
+            # print(f"SVN: Warning: Revision order seems wrong at r{r_number}")
+            # TODO: Currently this can happen when multiple Blender instances are running and end up writing the same log entry to the .log file multiple times.
+            # This is not very ideal!
+            continue
         previous_rev_number = r_number
 
         r_msg_length = int(r_msg_length.split(" ")[0])
