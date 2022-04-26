@@ -230,13 +230,9 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         # Find / get latest task
         task = Task.by_name(shot, task_type)
         if not task:
-            # turns out a entitiy on server can have 0 tasks even tough task types exist
-            # you have to create a task first before being able to upload a thumbnail
-            tasks = shot.get_all_tasks()  # list of tasks
-            if not tasks:
-                task = Task.new_task(shot, task_type, task_status=task_status)
-            else:
-                task = tasks[-1]
+            # An Entity on the server can have 0 tasks even tough task types exist.
+            # We have to create a task first before being able to upload a thumbnail.
+            task = Task.new_task(shot, task_type, task_status=task_status)
 
         # Create a comment
         comment_text = self._gen_comment_text(context, shot)
