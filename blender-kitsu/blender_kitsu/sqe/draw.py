@@ -18,90 +18,42 @@
 
 # <pep8 compliant>.
 
-# This file is copied from the blender-cloud-addon https://developer.blender.org/diffusion/BCA/
-# Author of this file is: Sybren A. Stuevel
-# Modified by: Paul Golter
+# Copyright: Blender Foundation
 
 import typing
 
 import bpy
 import bgl
 import gpu
+from gpu_extras.batch import batch_for_shader
 
-strip_status_colour = {
-    None: (0.7, 0.7, 0.7),
-    "approved": (0.6392156862745098, 0.8784313725490196, 0.30196078431372547),
-    "final": (0.9058823529411765, 0.9607843137254902, 0.8274509803921568),
-    "in_progress": (1.0, 0.7450980392156863, 0.0),
-    "on_hold": (0.796078431372549, 0.6196078431372549, 0.08235294117647059),
-    "review": (0.8941176470588236, 0.9607843137254902, 0.9764705882352941),
-    "todo": (1.0, 0.5019607843137255, 0.5019607843137255),
-    "linked": (0.247, 0.992, 0.474),
-    "media_outdated": (1, 0.05, 0.145),
-}
 
-CONFLICT_COLOUR = (0.576, 0.118, 0.035, 1.0)  # RGBA tuple
+# Shaders and batches
 
-# Glsl.
-gpu_vertex_shader = """
-uniform mat4 ModelViewProjectionMatrix;
+rect_coords = ((0, 0), (1, 0), (1, 1), (0, 1))
 
-layout (location = 0) in vec2 pos;
-layout (location = 1) in vec4 color;
+ucolor_2d_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+ucolor_2d_rect_batch = batch_for_shader(ucolor_2d_shader, 'TRI_FAN', {"pos": rect_coords})
 
-out vec4 lineColor; // output to the fragment shader
-
-void main()
-{
-    gl_Position = ModelViewProjectionMatrix * vec4(pos.x, pos.y, 0.0, 1.0);
-    lineColor = color;
-}
-"""
-
-gpu_fragment_shader = """
-out vec4 fragColor;
-in vec4 lineColor;
-
-void main()
-{
-    fragColor = lineColor;
-}
-"""
 
 Float2 = typing.Tuple[float, float]
 Float3 = typing.Tuple[float, float, float]
 Float4 = typing.Tuple[float, float, float, float]
-LINE_WIDTH = 6
 
 
-class LineDrawer:
-    def __init__(self):
-        self._format = gpu.types.GPUVertFormat()
-        self._pos_id = self._format.attr_add(
-            id="pos", comp_type="F32", len=2, fetch_mode="FLOAT"
-        )
-        self._color_id = self._format.attr_add(
-            id="color", comp_type="F32", len=4, fetch_mode="FLOAT"
-        )
-
-        self.shader = gpu.types.GPUShader(gpu_vertex_shader, gpu_fragment_shader)
-
-    def draw(self, coords: typing.List[Float2], colors: typing.List[Float4]):
-        global LINE_WIDTH
-
-        if not coords:
-            return
-
+def draw_line(position: Float2, size: Float2, color: Float4):
+    with gpu.matrix.push_pop():
         bgl.glEnable(bgl.GL_BLEND)
-        bgl.glLineWidth(LINE_WIDTH)
 
-        vbo = gpu.types.GPUVertBuf(len=len(coords), format=self._format)
-        vbo.attr_fill(id=self._pos_id, data=coords)
-        vbo.attr_fill(id=self._color_id, data=colors)
+        gpu.matrix.translate(position)
+        gpu.matrix.scale(size)
 
-        batch = gpu.types.GPUBatch(type="LINES", buf=vbo)
-        batch.program_set(self.shader)
-        batch.draw()
+        # Render a colored rectangle
+        ucolor_2d_shader.bind()
+        ucolor_2d_shader.uniform_float("color", color)
+        ucolor_2d_rect_batch.draw(ucolor_2d_shader)
+
+        bgl.glDisable(bgl.GL_BLEND)
 
 
 def get_strip_rectf(strip) -> Float4:
@@ -115,190 +67,57 @@ def get_strip_rectf(strip) -> Float4:
     return x1, y1, x2, y2
 
 
-def line_in_strip(
-    strip_coords: Float4,
-    pixel_size_x: float,
-    color: Float4,
-    line_height_factor: float,
-    out_coords: typing.List[Float2],
-    out_colors: typing.List[Float4],
-):
-    # Strip coords.
-    s_x1, s_y1, s_x2, s_y2 = strip_coords
+def draw_line_in_strip(strip_coords: Float4, height_factor: float, color: Float4):
+    # Unpack strip coordinates.
+    s_x1, channel, s_x2, _ = strip_coords
 
-    # Calculate line height with factor.
-    line_y = (1 - line_height_factor) * s_y1 + line_height_factor * s_y2
+    # Get the line's measures, as a percentage of channel height.
+    # Note that the strip's height is 10% smaller than the channel (centered 5% top and bottom).
+    # Note 2: offset the height slightly (0.005) to make room for the selection outline (channel coords).
+    line_height_in_channel = (0.9 - 0.005 * 2) * height_factor + 0.005
+    line_thickness = 0.04
 
-    # if strip is shorter than line_width use stips s_x2
-    # line_x2 = s_x1 + line_width if (s_x2 - s_x1 > line_width) else s_x2
-    line_x2 = s_x2
+    # Offset the width slightly to make room for the selection outline (virtual grid horizontal coords).
+    width_offset = 0.2
+    width = (s_x2 - s_x1) - width_offset * 2
 
-    # Be careful not to draw over the current frame line.
-    cf_x = bpy.context.scene.frame_current_final
-
-    # TODO(Sybren): figure out how to pass one colour per line,
-    # instead of one colour per vertex.
-    out_coords.append((s_x1, line_y))
-    out_colors.append(color)
-
-    if s_x1 < cf_x < line_x2:
-        # Bad luck, the line passes our strip, so draw two lines.
-        out_coords.append((cf_x - pixel_size_x, line_y))
-        out_colors.append(color)
-
-        out_coords.append((cf_x + pixel_size_x, line_y))
-        out_colors.append(color)
-
-    out_coords.append((line_x2, line_y))
-    out_colors.append(color)
+    pos = (s_x1 + width_offset, channel + line_height_in_channel)
+    scale = (width, line_thickness)
+    draw_line(pos, scale, color)
 
 
-def strip_conflict(
-    strip_coords: Float4,
-    out_coords: typing.List[Float2],
-    out_colors: typing.List[Float4],
-):
-    """Draws conflicting states between strips."""
-
-    s_x1, s_y1, s_x2, s_y2 = strip_coords
-
-    # TODO(Sybren): draw a rectangle instead of a line.
-    out_coords.append((s_x1, s_y2))
-    out_colors.append(CONFLICT_COLOUR)
-
-    out_coords.append((s_x2, s_y1))
-    out_colors.append(CONFLICT_COLOUR)
-
-    out_coords.append((s_x2, s_y2))
-    out_colors.append(CONFLICT_COLOUR)
-
-    out_coords.append((s_x1, s_y1))
-    out_colors.append(CONFLICT_COLOUR)
-
-
-def draw_callback_px(line_drawer: LineDrawer):
-    global LINE_WIDTH
+def draw_callback_px():
 
     context = bpy.context
-
-    if not context.scene.sequence_editor:
-        return
-
-    # From . import shown_strips.
-
-    region = context.region
-    xwin1, ywin1 = region.view2d.region_to_view(0, 0)
-    xwin2, ywin2 = region.view2d.region_to_view(region.width, region.height)
-    one_pixel_further_x, one_pixel_further_y = region.view2d.region_to_view(1, 1)
-    pixel_size_x = one_pixel_further_x - xwin1
-
-    # Strips = shown_strips(context).
     strips = context.scene.sequence_editor.sequences_all
 
-    coords = []  # type: typing.List[Float2]
-    colors = []  # type: typing.List[Float4]
-
-    # Collect all the lines (vertex coords + vertex colours) to draw.
     for strip in strips:
-
-        # Get corners (x1, y1), (x2, y2) of the strip rectangle in px region coords.
+        # Get corners of the strip rectangle in terms of the grid's frames and channels (virtual, not px).
         strip_coords = get_strip_rectf(strip)
-
-        # Check if any of the coordinates are out of bounds.
-        if (
-            strip_coords[0] > xwin2
-            or strip_coords[2] < xwin1
-            or strip_coords[1] > ywin2
-            or strip_coords[3] < ywin1
-        ):
-            continue
 
         if strip.kitsu.initialized or strip.kitsu.linked:
             try:
-                color = tuple(
-                    context.scene.kitsu.sequence_colors[strip.kitsu.sequence_id].color
-                )
+                color = tuple(context.scene.kitsu.sequence_colors[strip.kitsu.sequence_id].color)
             except KeyError:
                 color = (1, 1, 1)
 
             alpha = 0.75 if strip.kitsu.linked else 0.25
 
-            line_in_strip(
-                strip_coords, pixel_size_x, color + (alpha,), 0.05, coords, colors
-            )
+            line_color = color + (alpha,)
+            draw_line_in_strip(strip_coords, 0.0, line_color)
 
         if strip.kitsu.media_outdated:
-            line_in_strip(
-                strip_coords,
-                pixel_size_x,
-                strip_status_colour["media_outdated"] + (0.75,),
-                0.95,
-                coords,
-                colors,
-            )
-
-    line_drawer.draw(coords, colors)
+            line_color = (1.0, 0.05, 0.145, 0.75)
+            draw_line_in_strip(strip_coords, 0.9, line_color)
 
 
-def tag_redraw_all_sequencer_editors():
-    context = bpy.context
-
-    # Py cant access notifiers.
-    for window in context.window_manager.windows:
-        for area in window.screen.areas:
-            if area.type == "SEQUENCE_EDITOR":
-                for region in area.regions:
-                    if region.type == "WINDOW":
-                        region.tag_redraw()
-
-
-# This is a list so it can be changed instead of set
-# if it is only changed, it does not have to be declared as a global everywhere
-cb_handle = []
-
-
-def callback_enable():
-    global cb_handle
-
-    if cb_handle:
-        return
-
-    # Doing GPU stuff in the background crashes Blender, so let's not.
-    if bpy.app.background:
-        return
-
-    line_drawer = LineDrawer()
-    cb_handle[:] = (
-        bpy.types.SpaceSequenceEditor.draw_handler_add(
-            draw_callback_px, (line_drawer,), "WINDOW", "POST_VIEW"
-        ),
-    )
-
-    tag_redraw_all_sequencer_editors()
-
-
-def callback_disable():
-    global cb_handle
-
-    if not cb_handle:
-        return
-
-    try:
-        bpy.types.SpaceSequenceEditor.draw_handler_remove(cb_handle[0], "WINDOW")
-    except ValueError:
-        # Thrown when already removed.
-        pass
-    cb_handle.clear()
-
-    tag_redraw_all_sequencer_editors()
-
-
-# ---------REGISTER ----------.
+draw_handles = []
 
 
 def register():
-    callback_enable()
+    draw_handles.append(bpy.types.SpaceSequenceEditor.draw_handler_add(draw_callback_px, (), "WINDOW", "POST_VIEW"))
 
 
 def unregister():
-    callback_disable()
+    for handle in reversed(draw_handles):
+        bpy.types.SpaceSequenceEditor.draw_handler_remove(handle, 'WINDOW')
