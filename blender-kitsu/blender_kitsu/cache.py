@@ -43,7 +43,7 @@ from blender_kitsu.gazu.exception import RouteNotFoundException
 logger = LoggerFactory.getLogger()
 
 # CACHE VARIABLES
-# used to cache active entitys to prevent a new api request when read only
+# used to cache active entities to prevent a new api request when read only
 _project_active: Project = Project()
 _sequence_active: Sequence = Sequence()
 _shot_active: Shot = Shot()

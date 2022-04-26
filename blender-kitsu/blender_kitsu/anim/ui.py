@@ -91,7 +91,7 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         box = layout.box()
         box.label(text="Playblast")
 
-        # Playlast version op.
+        # Playblast version op.
         row = box.row(align=True)
         row.operator(
             KITSU_OT_anim_set_playblast_version.bl_idname,
