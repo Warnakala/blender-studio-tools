@@ -91,7 +91,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         context.window_manager.progress_begin(0, 2)
         context.window_manager.progress_update(0)
 
-        # ----RENDER AND SAVE PLAYBLAST ------.
+        # Render and save playblast
         with self.override_render_settings(context):
 
             # Get output path.
@@ -105,22 +105,21 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
 
         context.window_manager.progress_update(1)
 
-        # ----ULPOAD PLAYBLAST ------.
+        # Upload playblast
         self._upload_playblast(context, output_path)
 
         context.window_manager.progress_update(2)
         context.window_manager.progress_end()
 
-        # Log.
         self.report({"INFO"}, f"Created and uploaded playblast for {shot_active.name}")
         logger.info("-END- Creating Playblast")
 
-        # Redraw ui.
+        # Redraw UI
         util.ui_redraw()
 
-        # ---- POST PLAYBLAST -----.
+        # Post playblast
 
-        # Open webbrowser.
+        # Open web browser
         if addon_prefs.pb_open_webbrowser:
             self._open_webbrowser()
 
@@ -228,7 +227,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
                 "Failed to upload playblast. Task type: 'Animation' is missing"
             )
 
-        # Find / get latest task.
+        # Find / get latest task
         task = Task.by_name(shot, task_type)
         if not task:
             # turns out a entitiy on server can have 0 tasks even tough task types exist
@@ -239,17 +238,17 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
             else:
                 task = tasks[-1]
 
-        # Create a comment.
+        # Create a comment
         comment_text = self._gen_comment_text(context, shot)
         comment = task.add_comment(
             task_status,
             comment=comment_text,
         )
 
-        # Add_preview_to_comment.
-        preview = task.add_preview_to_comment(comment, filepath.as_posix())
+        # Add_preview_to_comment
+        task.add_preview_to_comment(comment, filepath.as_posix())
 
-        # Preview.set_main_preview().
+        # Preview.set_main_preview()
         logger.info(f"Uploaded playblast for shot: {shot.name} under: {task_type.name}")
 
     def _gen_comment_text(self, context: bpy.types.Context, shot: Shot) -> str:
