@@ -23,6 +23,8 @@ from bpy.props import BoolProperty, StringProperty
 
 from .util import get_addon_prefs
 from . import constants
+from .svn_update import SVN_UPDATE_THREAD
+from .svn_commit import SVN_COMMIT_THREAD
 
 class SVN_UL_file_list(bpy.types.UIList):
     UILST_FLT_ITEM = 1 << 30 # Value that indicates that this item has passed the filter process successfully. See rna_ui.c.
@@ -244,6 +246,14 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
+
+        global SVN_UPDATE_THREAD
+        if SVN_UPDATE_THREAD:
+            layout.label(text="SVN Update in progress...")
+        
+        global SVN_COMMIT_THREAD
+        if SVN_COMMIT_THREAD:
+            layout.label(text="SVN Commit in progress...")
 
         svn = context.scene.svn
         if svn.svn_error:
