@@ -24,7 +24,7 @@ def execute_command_safe(path: str, command: str) -> str or subprocess.CalledPro
         print(err_msg)
         return error
 
-def execute_svn_command(context, command: str) -> str:
+def execute_svn_command(context, command: str) -> str or subprocess.CalledProcessError:
     """Execute an svn command in the root of the current svn repository.
     So any file paths that are part of the command should be relative to the
     SVN root.
@@ -35,5 +35,5 @@ def execute_svn_command(context, command: str) -> str:
     output = execute_command_safe(svn.svn_directory, command)
     if type(output) == subprocess.CalledProcessError:
         svn.svn_error = output.stderr.decode()
-        return ""
+        return output
     return output

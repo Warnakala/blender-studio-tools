@@ -1,6 +1,6 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 
-import threading
+import threading, subprocess
 
 import bpy
 from bpy.props import StringProperty, BoolVectorProperty
@@ -150,6 +150,11 @@ def async_svn_commit():
 
     context = bpy.context
     SVN_COMMIT_OUTPUT = execute_svn_command(context, f'svn commit -m "{SVN_COMMIT_MSG}" {filepaths}')
+    if type(SVN_COMMIT_OUTPUT) == subprocess.CalledProcessError:
+        print("Committing failed, try again.")
+        print(SVN_COMMIT_OUTPUT.stderr.decode())
+        SVN_COMMIT_OUTPUT = ""
+        svn_commit_background_stop()
     SVN_COMMIT_MSG = ""
     SVN_COMMIT_FILELIST = []
 
