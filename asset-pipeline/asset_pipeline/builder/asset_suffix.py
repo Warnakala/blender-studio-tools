@@ -23,175 +23,95 @@ from typing import List, Dict, Union, Any, Set, Optional, Tuple, Generator
 
 import bpy
 
-from .. import constants, util
+from .. import constants
 
 logger = logging.getLogger("BSP")
 
 
-def remove_suffix_from_collection_recursive(
-    collection: bpy.types.Collection, delimiter: str = constants.DELIMITER
-) -> None:
-    """Recursively remove a suffix to a hierarchy of collections."""
-    for coll in util.traverse_collection_tree(collection):
-        coll.name = delimiter.join(coll.name.split(delimiter)[:-1])
+def recursive_get_referenced_datablocks(data: Any, others=set()):
+    """Return a set of all Blender datablocks referenced by this one.
+    This was implemented in a rush, hopefully to be replaced soon by a Blender
+    PyAPI function.
+    """
+    if data in others:
+        return others
 
+    # Build key/value pairs of python properties
+    items = []
+    for key in dir(data):
+        if key in {'bl_rna', 'original', 'rna_type', 'id_data'}:
+            continue
+        value = getattr(data, key)
+        if not value or callable(value):
+            continue
+        items.append((key, value))
 
-def remove_suffix_from_node_tree_recursive(
-    node_tree: bpy.types.NodeTree,
-    done: List[bpy.types.NodeTree],
-    delimiter: str = constants.DELIMITER,
-) -> List[bpy.types.NodeTree]:
-    """Recursively remove a suffix from this node tree and all node trees within."""
-    if not (node_tree in done or node_tree.library):
-        if not node_tree.name.startswith("Shader Nodetree"):
-            node_tree.name = delimiter.join(node_tree.name.split(delimiter)[:-1])
-            done += [node_tree]
+    # Build key/value pairs of custom properties
+    if isinstance(data, bpy.types.ID):
+        if type(data) not in {bpy.types.PoseBone, bpy.types.Pose, bpy.types.ShaderNodeTree}:
+            others.add(data)
+        for key in data.keys():
+            value = data[key]
+            if value:
+                items.append((key, value))
 
-        for n in node_tree.nodes:
-            if n.type == "GROUP" and n.node_tree:
-                if not n.node_tree in done:
-                    done = remove_suffix_from_node_tree_recursive(
-                        n.node_tree, done, delimiter
-                    )
-    return done
+    # Go through the key/value pairs. Add values that are datablocks to the list.
+    # Recurse into datablocks and lists that could contain datablocks.
+    for key, value in items:
+        if key in ['cycles', 'user', 'name', 'parent'] or key.startswith("__"):
+            continue
+        typ = type(value)
 
+        if isinstance(value, bpy.types.ID) or isinstance(value, bpy.types.Pose):
+            # print("Recurse into Datablock: ", key, value)
+            recursive_get_referenced_datablocks(value, others)
+        elif 'bpy_prop_collection_idprop' in str(typ):
+            # print("Recurse into elements of CollectionProperty: ", key)
+            for elem in value:
+                recursive_get_referenced_datablocks(elem, others)
+        elif isinstance(data, bpy.types.PropertyGroup):
+            # print("Recurse into PropertyGroup: ", key)
+            recursive_get_referenced_datablocks(value, others)
+
+    # Special handling for certain types
+    if type(data) == bpy.types.ShaderNodeTree:
+        for node in data.nodes:
+            recursive_get_referenced_datablocks(node, others)
+    if type(data) == bpy.types.Collection:
+        for object in data.objects:
+            recursive_get_referenced_datablocks(object, others)
+        for coll in data.children:
+            recursive_get_referenced_datablocks(coll, others)
+    if type(data) == bpy.types.Object and data.type == 'ARMATURE':
+        for bone in data.pose.bones:
+            recursive_get_referenced_datablocks(bone, others)
+            for c in bone.constraints:
+                recursive_get_referenced_datablocks(c, others)
+
+    return others
 
 def remove_suffix_from_hierarchy(
     collection: bpy.types.Collection, delimiter: str = constants.DELIMITER
-) -> None:
-    """Removes the suffix after a set delimiter from all collections, objects, object_data, materials in a collection hierarchy"""
+):
+    """Removes the suffix after a set delimiter from all datablocks
+    referenced by a collection, itself included"""
 
-    remove_suffix_from_collection_recursive(collection, delimiter)
+    others = set()
+    datablocks = recursive_get_referenced_datablocks(collection, others)
+    for db in datablocks:
+        try:
+            db.name = delimiter.join(db.name.split(delimiter)[:-1])
+        except:
+            pass
 
-    materials: Set[bpy.types.Material] = set()
-    done_nt: List[bpy.types.NodeTree] = []
-    done_geonodes: List[bpy.types.GeometryNode] = []
+def add_suffix_to_hierarchy(collection: bpy.types.Collection, suffix: str):
+    """Add a suffix to the names of all datablocks referenced by a collection,
+    itself included."""
 
-    for obj in collection.all_objects:
-
-        # OBJECTS.
-        obj.name = delimiter.join(obj.name.split(delimiter)[:-1])
-
-        # OBJECT DATA.
-        if obj.data:
-            obj.data.name = delimiter.join(obj.data.name.split(delimiter)[:-1])
-
-        # MATERIALS.
-        for ms in obj.material_slots:
-            m = ms.material
-
-            if not m:
-                continue
-
-            if m in materials:
-                continue
-
-            m.name = delimiter.join(m.name.split(delimiter)[:-1])
-            materials.add(m)
-
-            if not m.node_tree:
-                continue
-
-            done_nt = remove_suffix_from_node_tree_recursive(
-                m.node_tree, done_nt, delimiter
-            )
-
-        # GEO-NODES.
-        for mod in obj.modifiers:
-            if not mod.type == "NODES":
-                continue
-            if not mod.node_group:
-                continue
-            if mod.node_group in done_geonodes:
-                continue
-            mod.node_group.name = delimiter.join(
-                mod.node_group.name.split(delimiter)[:-1]
-            )
-            done_geonodes.append(mod.node_group)
-
-
-def add_suffix_to_collection_recursive(
-    collection: bpy.types.Collection, suffix: str
-) -> None:
-    """Recursively add a suffix to a hierarchy of collections and objects."""
-    for coll in util.traverse_collection_tree(collection):
-        coll.name += suffix
-
-
-def add_suffix_to_node_tree_recursive(
-    node_tree: bpy.types.NodeTree, suffix: str
-) -> None:
-    """Recursively add a suffix to this node tree and all node trees within."""
-    # TODO: add traverse_node_tree function
-    if not (
-        node_tree.name.endswith(suffix)
-        or node_tree.library
-        or node_tree.name == "Shader Nodetree"
-    ):
-        node_tree.name += suffix
-
-    for n in node_tree.nodes:
-        if n.type == "GROUP" and n.node_tree and not n.node_tree.name.endswith(suffix):
-            add_suffix_to_node_tree_recursive(n.node_tree, suffix)
-
-
-def add_suffix_to_hierarchy(
-    collection: bpy.types.Collection, suffix: str
-) -> bpy.types.Collection:
-    """Add a suffix to the names of all sub-collections, objects,
-    materials and node groups of a collection."""
-
-    add_suffix_to_collection_recursive(collection, suffix)
-
-    materials: Set[bpy.types.Material] = set()
-
-    for obj in collection.all_objects:
-        # OBJECT.
-        new_name = obj.name + suffix
-
-        # Check if new name already exists for some reason.
-        if new_name in bpy.data.objects:
-            bad_object = bpy.data.objects[new_name]
-            bad_object.name += ".old"
-            logger.warning(
-                "Warning: Object %s with suffix already existed, added .old suffix.",
-                new_name,
-            )
-        obj.name = new_name
-
-        # OBJECT DATA.
-        if obj.data:
-            obj.data.name += suffix
-
-        # MATERIALS.
-        for ms in obj.material_slots:
-            m = ms.material
-
-            # Material can be None.
-            if not m:
-                continue
-
-            # Material can be processed
-            if m in materials:
-                continue
-
-            m.name += suffix
-            materials.add(m)
-
-            if not m.node_tree:
-                continue
-
-            add_suffix_to_node_tree_recursive(m.node_tree, suffix)
-
-        # GEO-NODES.
-        for mod in obj.modifiers:
-            if not mod.type == "NODES":
-                continue
-            if not mod.node_group:
-                continue
-            if not mod.node_group.name.endswith(suffix):
-                # TODO: could we run in collisions here, same
-                # as object name renaming couple lines up?
-                mod.node_group.name += suffix
-
-    return collection
+    others = set()
+    datablocks = recursive_get_referenced_datablocks(collection, others)
+    for db in datablocks:
+        try:
+            db.name += suffix
+        except:
+            pass
