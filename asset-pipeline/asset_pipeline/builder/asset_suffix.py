@@ -82,11 +82,17 @@ def recursive_get_referenced_datablocks(data: Any, others=set()):
             recursive_get_referenced_datablocks(object, others)
         for coll in data.children:
             recursive_get_referenced_datablocks(coll, others)
-    if type(data) == bpy.types.Object and data.type == 'ARMATURE':
-        for bone in data.pose.bones:
-            recursive_get_referenced_datablocks(bone, others)
-            for c in bone.constraints:
-                recursive_get_referenced_datablocks(c, others)
+    if type(data) == bpy.types.Object:
+        if data.type == 'ARMATURE':
+            for bone in data.pose.bones:
+                recursive_get_referenced_datablocks(bone, others)
+                for c in bone.constraints:
+                    recursive_get_referenced_datablocks(c, others)
+        elif data.type == 'MESH':
+            for m in data.modifiers:
+                recursive_get_referenced_datablocks(m, others)
+        for c in data.constraints:
+            recursive_get_referenced_datablocks(c, others)
 
     return others
 
