@@ -32,8 +32,8 @@ from gpu_extras.batch import batch_for_shader
 
 rect_coords = ((0, 0), (1, 0), (1, 1), (0, 1))
 
-ucolor_2d_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
-ucolor_2d_rect_batch = batch_for_shader(ucolor_2d_shader, 'TRI_FAN', {"pos": rect_coords})
+# ucolor_2d_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+# ucolor_2d_rect_batch = batch_for_shader(ucolor_2d_shader, 'TRI_FAN', {"pos": rect_coords})
 
 
 Float2 = typing.Tuple[float, float]
