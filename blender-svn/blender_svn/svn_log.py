@@ -27,7 +27,7 @@ from bpy.props import IntProperty, BoolProperty
 
 from .util import get_addon_prefs, svn_date_simple
 from . import constants
-from .execute_subprocess import execute_command
+from .execute_subprocess import execute_svn_command
 
 
 ################################################################################
@@ -376,7 +376,7 @@ def async_get_svn_log():
         # We have no way to know if latest_log_rev+1 will exist or not, but we 
         # must check, and there is no safe way to check it, so we let's just 
         # catch and handle the potential error.
-        SVN_LOG_OUTPUT = execute_command(svn.svn_directory, f"svn log {svn.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10")
+        SVN_LOG_OUTPUT = execute_svn_command(context, f"svn log {svn.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10")
     except subprocess.CalledProcessError as error:
         err_msg = error.stderr.decode()
         if 'No such revision' in err_msg:
