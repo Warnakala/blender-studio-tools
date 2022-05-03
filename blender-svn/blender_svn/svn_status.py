@@ -214,6 +214,7 @@ def timer_update_svn_status():
     context.scene.svn.ignore_next_status_update = False
     # print("Starting thread...")
     SVN_STATUS_THREAD = threading.Thread(target=async_get_verbose_svn_status, args=())
+    SVN_STATUS_THREAD.daemon = True
     SVN_STATUS_THREAD.start()
 
     return 1.0
@@ -333,8 +334,8 @@ def svn_status_background_fetch_start(_dummy1=None, _dummy2=None):
 def svn_status_background_fetch_stop(_dummy1=None, _dummy2=None):
     if bpy.app.timers.is_registered(timer_update_svn_status):
         bpy.app.timers.unregister(timer_update_svn_status)
-    global SVN_STATUS_POPEN
-    SVN_STATUS_POPEN = None
+    global SVN_STATUS_THREAD
+    SVN_STATUS_THREAD = None
 
 
 @bpy.app.handlers.persistent
