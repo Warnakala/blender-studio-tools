@@ -362,7 +362,6 @@ def async_get_svn_log():
     Blender's UI during execute_svn_command().
     """
     global SVN_LOG_OUTPUT
-    global SVN_LOG_THREAD
     SVN_LOG_OUTPUT = ""
 
     context = bpy.context
@@ -372,19 +371,22 @@ def async_get_svn_log():
     if len(svn.log) > 0:
         latest_log_rev = svn.log[-1].revision_number
 
-    try:
-        # We have no way to know if latest_log_rev+1 will exist or not, but we 
-        # must check, and there is no safe way to check it, so we let's just 
-        # catch and handle the potential error.
-        SVN_LOG_OUTPUT = execute_svn_command(context, f"svn log {svn.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10")
-    except subprocess.CalledProcessError as error:
-        err_msg = error.stderr.decode()
+    # We have no way to know if latest_log_rev+1 will exist or not, but we 
+    # must check, and there is no safe way to check it, so we let's just 
+    # catch and handle the potential error.
+    SVN_LOG_OUTPUT = execute_svn_command(
+        context, 
+        f"svn log {svn.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10", 
+        suppress_errors=True
+    )
+    if type(SVN_LOG_OUTPUT) == subprocess.CalledProcessError:
+        err_msg = SVN_LOG_OUTPUT.stderr.decode()
         if 'No such revision' in err_msg:
-            SVN_LOG_THREAD = None
             print("SVN: Log is now fully up to date.")
             svn_log_background_fetch_stop()
-        else:
-            raise error
+    else:
+        svn_log_background_fetch_stop()
+        raise SVN_LOG_OUTPUT
 
 
 @bpy.app.handlers.persistent
@@ -435,8 +437,8 @@ def svn_log_background_fetch_start(_dummy1=None, _dummy2=None):
 def svn_log_background_fetch_stop(_dummy1=None, _dummy2=None):
     if bpy.app.timers.is_registered(timer_update_svn_log):
         bpy.app.timers.unregister(timer_update_svn_log)
-    global SVN_LOG_POPEN
-    SVN_LOG_POPEN = None
+    global SVN_LOG_THREAD
+    SVN_LOG_THREAD = None
 
 
 ################################################################################
