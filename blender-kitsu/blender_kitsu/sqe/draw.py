@@ -32,8 +32,13 @@ from gpu_extras.batch import batch_for_shader
 
 rect_coords = ((0, 0), (1, 0), (1, 1), (0, 1))
 
-# ucolor_2d_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
-# ucolor_2d_rect_batch = batch_for_shader(ucolor_2d_shader, 'TRI_FAN', {"pos": rect_coords})
+# Setup shaders only if Blender runs in the foreground.
+# If running in the background, no handles are registered, as drawing extra UI
+# elements does not make sense.
+# See register() and unregister().
+if not bpy.app.background:
+    ucolor_2d_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+    ucolor_2d_rect_batch = batch_for_shader(ucolor_2d_shader, 'TRI_FAN', {"pos": rect_coords})
 
 
 Float2 = typing.Tuple[float, float]
@@ -115,9 +120,14 @@ draw_handles = []
 
 
 def register():
+    if bpy.app.background:
+        # Do not register anything if Blender runs in the background (no UI needed).
+        return
     draw_handles.append(bpy.types.SpaceSequenceEditor.draw_handler_add(draw_callback_px, (), "WINDOW", "POST_VIEW"))
 
 
 def unregister():
+    if bpy.app.background:
+        return
     for handle in reversed(draw_handles):
         bpy.types.SpaceSequenceEditor.draw_handler_remove(handle, 'WINDOW')
