@@ -375,18 +375,13 @@ def async_get_svn_log():
     # must check, and there is no safe way to check it, so we let's just 
     # catch and handle the potential error.
     SVN_LOG_OUTPUT = execute_svn_command(
-        context, 
+        context,
         f"svn log {svn.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10", 
         suppress_errors=True
     )
-    if type(SVN_LOG_OUTPUT) == subprocess.CalledProcessError:
-        err_msg = SVN_LOG_OUTPUT.stderr.decode()
-        if 'No such revision' in err_msg:
-            print("SVN: Log is now fully up to date.")
-            svn_log_background_fetch_stop()
-    else:
+    if SVN_LOG_OUTPUT == "":
+        print("SVN: Log is now fully up to date.")
         svn_log_background_fetch_stop()
-        raise SVN_LOG_OUTPUT
 
 
 @bpy.app.handlers.persistent

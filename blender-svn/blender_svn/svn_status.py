@@ -28,10 +28,10 @@ wheels.preload_dependencies()
 
 import xmltodict
 
-import bpy
+import bpy, subprocess
 from bpy.props import StringProperty
 
-from .execute_subprocess import execute_command_safe, execute_svn_command
+from .execute_subprocess import execute_svn_command
 from .util import get_addon_prefs, svn_date_simple
 from . import constants
 
@@ -71,8 +71,9 @@ class SVN_explain_status(bpy.types.Operator):
 
 def set_svn_info(context) -> bool:
     svn = context.scene.svn
-    output = execute_command_safe(str(Path(bpy.data.filepath).parent), 'svn info')
-    if type(output) != str:
+    try:
+        output = execute_svn_command(context, 'svn info', use_cred=False)
+    except subprocess.CalledProcessError as e:
         svn.is_in_repo = False
         return False
 

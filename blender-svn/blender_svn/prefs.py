@@ -26,7 +26,7 @@ import bpy
 from bpy.props import StringProperty, IntProperty, BoolProperty, CollectionProperty
 
 from . import svn_status
-from .execute_subprocess import execute_command_safe
+from .execute_subprocess import execute_svn_command
 
 
 class SVN_credential(bpy.types.PropertyGroup):
@@ -40,10 +40,13 @@ class SVN_credential(bpy.types.PropertyGroup):
         if not (self.username and self.password):
             # Only try to authenticate if BOTH username AND pw are entered.
             return
-        svn = context.scene.svn
-        output = execute_command_safe(svn.svn_directory, f'svn status --show-updates --username "{self.username}" --password "{self.password}"')
-        if type(output) == subprocess.CalledProcessError:
-            error = output.stderr.decode()
+        try:
+            execute_svn_command(
+                context, 
+                f'svn status --show-updates --username "{self.username}" --password "{self.password}"'
+            )
+        except subprocess.CalledProcessError as error:
+            error = error.stderr.decode()
             if "Authentication failed" in error:
                 self.authenticated = False
                 self.auth_failed = True
