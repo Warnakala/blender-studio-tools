@@ -31,7 +31,7 @@ import xmltodict
 import bpy, subprocess
 from bpy.props import StringProperty
 
-from .execute_subprocess import execute_svn_command
+from .execute_subprocess import execute_svn_command, execute_command
 from .util import get_addon_prefs, svn_date_simple
 from . import constants
 
@@ -71,8 +71,9 @@ class SVN_explain_status(bpy.types.Operator):
 
 def set_svn_info(context) -> bool:
     svn = context.scene.svn
+    svn.svn_directory = ""
     try:
-        output = execute_svn_command(context, 'svn info', use_cred=False)
+        output = execute_command(Path(bpy.data.filepath).parent.as_posix(), 'svn info')
     except subprocess.CalledProcessError as e:
         svn.is_in_repo = False
         return False
