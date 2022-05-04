@@ -703,6 +703,44 @@ class OBJECT_OT_PoseKey_Jump_To_Shape(Operator):
 
 		return {'FINISHED'}
 
+
+class OBJECT_OT_PoseKey_Copy_Data(Operator):
+	"""Copy Pose Key data from active object to selected ones"""
+
+	bl_idname = "object.posekey_copy_data"
+	bl_label = "Copy Pose Key Data"
+	bl_options = {'UNDO', 'REGISTER', 'INTERNAL'}
+
+	@classmethod
+	def poll(cls, context):
+		"""Only available if there is a selected mesh and the active mesh has pose key data."""
+		selected_meshes = [ob for ob in context.selected_objects if ob.type == 'MESH']
+		if len(selected_meshes) < 2:
+			return False
+		if context.object.type != 'MESH' or not context.object.data.pose_keys:
+			return False
+		return True
+
+	def execute(self, context):
+		source_ob = context.object
+		targets = [ob for ob in context.selected_objects if ob.type == 'MESH' and ob!=source_ob]
+
+		for target_ob in targets:
+			target_ob.data.pose_keys.clear()
+
+			for src_pk in source_ob.data.pose_keys:
+				new_pk = target_ob.data.pose_keys.add()
+				new_pk.name = src_pk.name
+				new_pk.action = src_pk.action
+				new_pk.frame = src_pk.frame
+				new_pk.storage_object = src_pk.storage_object
+				for src_sk_slot in src_pk.target_shapes:
+					new_sk_slot = new_pk.target_shapes.add()
+					new_sk_slot.name = src_sk_slot.name
+					new_sk_slot.mirror_x = src_sk_slot.mirror_x
+
+		return {'FINISHED'}
+
 registry = [
 	PoseShapeKeyTarget
 	,PoseShapeKey
@@ -714,6 +752,7 @@ registry = [
 	,OBJECT_OT_PoseKey_Clamp_Influence
 	,OBJECT_OT_PoseKey_Place_Objects_In_Grid
 	,OBJECT_OT_PoseKey_Jump_To_Shape
+	,OBJECT_OT_PoseKey_Copy_Data
 ]
 
 def update_posekey_index(self, context):

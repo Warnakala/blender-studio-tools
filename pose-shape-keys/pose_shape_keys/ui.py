@@ -207,6 +207,7 @@ class MESH_MT_pose_key_utils(Menu):
 		layout.operator('object.posekey_object_grid', icon='LIGHTPROBE_GRID')
 		layout.operator('object.posekey_push_all', icon='WORLD')
 		layout.operator('object.posekey_clamp_influence', icon='NORMALIZE_FCURVES')
+		layout.operator('object.posekey_copy_data', icon='PASTEDOWN')
 
 
 registry = [
