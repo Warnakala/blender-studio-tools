@@ -69,12 +69,35 @@ class SVN_explain_status(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def get_svn_info(context, dirpath: Path) -> Optional[str]:
+    try:
+        path = dirpath.as_posix()
+        return execute_command(path, 'svn info')
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.decode()
+        if "is not a working copy" in error_msg:
+            return
+        elif "E200009" in error_msg:
+            # If we're in a folder that wasn't yet added to the repo,
+            # try again one folder higher.
+            parent = dirpath.parent
+            if parent == dirpath:
+                return
+            return get_svn_info(context, dirpath.parent)
+        else:
+            raise e
+
+
 def set_svn_info(context) -> bool:
+    """Check if the current .blend file is in an SVN repository.
+    If it is, use `svn info` to initialize basic info like the SVN URL.
+    Return whether initialization was successful or not.
+    """
     svn = context.scene.svn
     svn.svn_directory = ""
-    try:
-        output = execute_command(Path(bpy.data.filepath).parent.as_posix(), 'svn info')
-    except subprocess.CalledProcessError as e:
+    dirpath = Path(bpy.data.filepath).parent
+    output = get_svn_info(context, dirpath)
+    if not output:
         svn.is_in_repo = False
         return False
 
