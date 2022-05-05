@@ -246,21 +246,24 @@ def timer_update_svn_status():
 
 
 def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
-    """Update the file list based on data from an svn command's output.
+    """Update the file list based on data from get_svn_file_statuses().
     (See timer_update_svn_status)"""
     svn = context.scene.svn
 
-    svn.remove_unversioned_files()
-
+    posix_paths = []
     for filepath_str, status_info in file_statuses.items():
         svn_path = Path(filepath_str)
-        if svn_path.suffix.startswith(".r") and svn_path.suffix[2:].isdecimal():
-            # Do not add .r### files to the file list, ever.
-            continue
-        if svn_path.suffix.startswith(".blend") and (svn_path.suffix[6:].isdecimal() or svn_path.suffix.endswith("@")):
-            # Do not add .blend@ or .blend### to the file list, ever.
+        suffix = svn_path.suffix
+        if (suffix.startswith(".r") and suffix[2:].isdecimal()) \
+                or (suffix.startswith(".blend") and suffix[6:].isdecimal()) \
+                or suffix.endswith("blend@"):
+            # Do not add certain file extensions, ever:
+            # .r### files are from SVN conflicts waiting to be resolved.
+            # .blend@ is the Blender filesave temp file.
+            # .blend### are Blender backup files.
             continue
 
+        posix_paths.append(svn_path.as_posix())
         wc_status, repos_status, revision = status_info
 
         file_entry = svn.get_file_by_svn_path(svn_path)
@@ -273,12 +276,19 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
         file_entry.status = wc_status
         file_entry.repos_status = repos_status
 
+
+    # Remove file entries who no longer seem to have an SVN status.
+    # This can happen if an unversioned file was removed from the filesystem,
+    # Or sub-folders whose parent was Un-Added to the SVN.
+    for file_entry in svn.external_files[:]:
+        if file_entry.svn_path not in posix_paths:
+            svn.remove_by_svn_path(file_entry.svn_path)
+
     current_blend = svn.current_blend_file
     if current_blend:
         current_blend.is_referenced = True
 
     svn.force_good_active_index(context)
-    # print("SVN: File statuses updated.")
 
 
 @bpy.app.handlers.persistent

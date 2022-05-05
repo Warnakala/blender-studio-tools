@@ -240,22 +240,9 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         for i, file_entry in enumerate(self.external_files):
             if file_entry.svn_path == path_to_remove:
                 self.external_files.remove(i)
+                if i <= self.external_files_active_index:
+                    self.external_files_active_index -= 1
                 return
-
-    def remove_unversioned_files(self) -> None:
-        """Update the status of unversioned files in the local repository."""
-
-        context = bpy.context
-        svn = context.scene.svn
-
-        if not svn.is_in_repo:
-            return
-
-        # Remove unversioned files from the list. The ones that are still around
-        # will be re-discovered below, through get_repo_file_statuses.
-        for i, file_entry in reversed(list(enumerate(self.external_files))):
-            if file_entry.status == "unversioned":
-                self.external_files.remove(i)
 
     def absolute_to_svn_path(self, absolute_path: Path) -> Path:
         if type(absolute_path) == str:
