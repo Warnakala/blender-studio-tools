@@ -26,7 +26,11 @@ from pathlib import Path
 import bpy
 from bpy.app.handlers import persistent
 
-import blender_kitsu.cache
+try:
+    import blender_kitsu.cache
+    kitsu_available = True
+except:
+    kitsu_available = False
 
 from . import opsdata
 
@@ -47,32 +51,37 @@ class BSP_ASSET_init_asset_collection(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         tmp_asset_coll = context.scene.bsp_asset.tmp_asset_collection
-        return bool(blender_kitsu.cache.asset_active_get() and tmp_asset_coll)
+        if tmp_asset_coll:
+            if kitsu_available:
+                return bool(blender_kitsu.cache.asset_active_get())
+            return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         # Query the Collection that should be initialized
         asset_coll: bpy.types.Collection = context.scene.bsp_asset.tmp_asset_collection
 
         # Update Asset Collection.
         context.scene.bsp_asset.asset_collection = asset_coll
 
-        # Get active asset.
-        asset = blender_kitsu.cache.asset_active_get()
-        asset_type = blender_kitsu.cache.asset_type_active_get()
+        if kitsu_available:
+            # Get active asset.
+            asset = blender_kitsu.cache.asset_active_get()
+            asset_type = blender_kitsu.cache.asset_type_active_get()
 
-        # Set Asset Collection attributes.
-        asset_coll.bsp_asset.is_asset = True
-        asset_coll.bsp_asset.entity_id = asset.id
-        asset_coll.bsp_asset.entity_name = asset.name
-        asset_coll.bsp_asset.project_id = asset.project_id
-        asset_coll.bsp_asset.entity_parent_id = asset_type.id
-        asset_coll.bsp_asset.entity_parent_name = asset_type.name
+            # Set Asset Collection attributes.
+            asset_coll.bsp_asset.is_asset = True
+            asset_coll.bsp_asset.entity_id = asset.id
+            asset_coll.bsp_asset.entity_name = asset.name
+            asset_coll.bsp_asset.project_id = asset.project_id
+            asset_coll.bsp_asset.entity_parent_id = asset_type.id
+            asset_coll.bsp_asset.entity_parent_name = asset_type.name
+
+            logger.info(f"Initiated Collection: {asset_coll.name} as Kitsu Asset: {asset.name}")
 
         # Clear tmp asset coll again.
         context.scene.bsp_asset.tmp_asset_collection = None
 
-        logger.info(f"Initiated Collection: {asset_coll.name} as Asset: {asset.name}")
+        logger.info(f"Initiated Collection: {asset_coll.name}")
 
         # Init Asset Context.
         if bpy.ops.bsp_asset.create_asset_context.poll():
@@ -106,7 +115,7 @@ class BSP_ASSET_clear_asset_collection(bpy.types.Operator):
 
         # Unitialize Asset Context.
         builder.ASSET_CONTEXT = None
-        opsdata.clear_task_layers()
+        opsdata.clear_task_layers(context)
 
         # Redraw UI.
         util.redraw_ui()

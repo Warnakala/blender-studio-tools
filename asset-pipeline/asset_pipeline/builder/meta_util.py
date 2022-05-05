@@ -34,8 +34,12 @@ from ..asset_files import AssetTask, AssetPublish
 
 from .. import constants
 
-from blender_kitsu import cache
-from blender_kitsu.types import User
+try:
+    import blender_kitsu.cache
+    from blender_kitsu.types import User as KitsuUser
+    kitsu_available = True
+except:
+    kitsu_available = False
 
 logger = logging.getLogger("BSP")
 
@@ -46,7 +50,6 @@ def init_meta_task_layer(
 
     d: Dict[str, Any] = {}
     time = datetime.now()
-    user: User = cache.user_active_get()
 
     d["id"] = task_layer.get_id()
     d["name"] = task_layer.name
@@ -57,8 +60,11 @@ def init_meta_task_layer(
 
     d["created_at"] = time.strftime(constants.TIME_FORMAT)
     d["updated_at"] = time.strftime(constants.TIME_FORMAT)
-    d["author"] = MetadataUser.from_dict(asdict(user))
     d["software_hash"] = bpy.app.build_hash.decode()
     d["hostname"] = socket.gethostname()
+
+    if kitsu_available:
+        user: KitsuUser = blender_kitsu.cache.user_active_get()
+        d["author"] = MetadataUser.from_dict(asdict(user))
 
     return MetadataTaskLayer.from_dict(d)
