@@ -4,6 +4,7 @@ from bpy.utils import register_class, unregister_class
 from .operators import select_similar_curves
 from .operators import lock_curves
 from .operators import bake_anim_across_armatures
+from . import easy_constraints
 
 bl_info = {
     'name' : "Animation Cupboard"
@@ -19,7 +20,8 @@ bl_info = {
 modules = (
     select_similar_curves,
     lock_curves,
-    bake_anim_across_armatures
+    bake_anim_across_armatures,
+    easy_constraints
 )
 
 def register():
