@@ -272,6 +272,20 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             file_entry = svn.external_files.add()
             file_entry['svn_path'] = svn_path.as_posix()
             file_entry['name'] = svn_path.name
+        if file_entry.status_predicted_flag == 'SINGLE':
+            # File status was predicted by a local svn file operation, 
+            # so we should ignore this status update and reset the flag.
+            # The file status will be updated on the next status update.
+            # This is because this status update was initiated before the file's
+            # status was predicted, so the prediction is likely to be correct,
+            # and the status we have here is likely to be outdated.
+            file_entry.status_predicted_flag = 'NONE'
+            continue
+        elif file_entry.status_predicted_flag != 'NONE':
+            # We wait for `svn up/commit` background processes to finish and
+            # set the predicted flag to SINGLE. Until then, we ignore status 
+            # updates on files that are being updated or committed.
+            continue
 
         file_entry['revision'] = revision
         file_entry.status = wc_status

@@ -58,6 +58,7 @@ class SVN_Operator_Single_File(SVN_Operator):
         file = self.get_file(context)
         if file:
             self.set_predicted_file_status(svn, file)
+            file.status_predicted_flag = "SINGLE"
 
         return ret
 
@@ -132,10 +133,6 @@ class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
         super().execute(context)
         if self.reload_file:
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
-        svn = context.scene.svn
-        file = self.get_file(context)
-        if file:
-            self.set_predicted_file_status(svn, file)
         return {'FINISHED'}
 
     def set_predicted_file_status(self, svn, file_entry: SVN_file):

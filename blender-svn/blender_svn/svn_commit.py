@@ -110,7 +110,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         SVN_COMMIT_MSG = commit_message
         SVN_COMMIT_FILELIST = filepaths
 
-        self.predict_file_statuses(context, filepaths)
+        self.set_predicted_file_statuses(context, filepaths)
         svn_commit_background_start()
 
         report = f"{(len(files_to_commit))} files"
@@ -120,21 +120,14 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def predict_file_statuses(self, context, filepaths):
-        context.scene.svn.ignore_next_update = True
+    def set_predicted_file_statuses(self, context, filepaths):
         for filepath in filepaths:
-            file_entry = context.scene.svn.get_file_by_svn_path(filepath)
-            if file_entry.repos_status == 'none':
-                file_entry.status = 'normal'
-            else:
-                file_entry.status = 'conflicted'
-
-    def set_predicted_file_statuses(self, files_to_commit: List[SVN_file]):
-        for f in files_to_commit:
+            f = context.scene.svn.get_file_by_svn_path(filepath)
             if f.repos_status == 'none':
                 f.status = 'normal'
             else:
                 f.status = 'conflicted'
+            f.status_predicted_flag = "COMMIT"
 
 
 def async_svn_commit():
@@ -169,7 +162,9 @@ def timer_svn_commit():
     elif SVN_COMMIT_OUTPUT:
         print(SVN_COMMIT_OUTPUT)
         svn_commit_background_stop()
-        context.scene.svn.ignore_next_update = True
+        for f in context.scene.svn.external_files:
+            if f.status_predicted_flag == 'COMMIT':
+                f.status_predicted_flag = 'SINGLE'
         SVN_COMMIT_OUTPUT = ""
         SVN_COMMIT_THREAD = None
         svn_log_background_fetch_start()

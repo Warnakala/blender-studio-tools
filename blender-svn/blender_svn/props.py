@@ -68,6 +68,17 @@ class SVN_file(bpy.types.PropertyGroup):
         items=constants.ENUM_SVN_STATUS,
         default="none",
     )
+    status_predicted_flag: EnumProperty(
+        name = "Status Predicted By Process",
+        items = [
+            ("NONE", "None", "File status is not predicted, but actual"),
+            ("UPDATE", "Update", "File status is predicted by `svn up`. Status is protected until process is finished"),
+            ("COMMIT", "Commit", "File status is predicted by `svn commit`. Status is protected until process is finished"),
+            ("SINGLE", "Single", "File status is predicted by a local svn file operation. Next status update is ignored, and this enum is set back to NONE"),
+        ],
+        description = "Internal flag that notes what process set a predicted status on this file. Should be empty string when the status is not predicted but confirmed. When svn commit/update predicts a status, that status should not be overwritten until the process is finished. With instantaneous processes, a single status update should be ignored since it may be outdated",
+    )
+
     @property
     def is_outdated(self):
         return self.repos_status == 'modified' and self.status == 'normal'
