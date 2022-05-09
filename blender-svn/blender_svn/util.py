@@ -25,12 +25,11 @@ import bpy
 from datetime import datetime
 
 
-def redraw_ui() -> None:
-    """
-    Forces blender to redraw the UI.
-    """
-    for screen in bpy.data.screens:
-        for area in screen.areas:
+def redraw_viewport() -> None:
+    """This causes the sidebar UI to refresh without having to mouse-hover it."""
+    context = bpy.context
+    for area in context.screen.areas:
+        if area.type == 'VIEW_3D':
             area.tag_redraw()
 
 

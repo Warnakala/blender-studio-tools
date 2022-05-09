@@ -344,15 +344,19 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         description="Timestamp of when the last successful file status update was completed"
     )
 
-    @property
-    def time_since_last_update(self) -> int:
+    def update_time_since_last_update(self) -> int:
         """Returns seconds passed since timestamp_last_status_update."""
         if not self.timestamp_last_status_update:
             return 1000
         last_update_time = datetime.strptime(self.timestamp_last_status_update, "%Y/%m/%d %H:%M:%S")
         current_time = datetime.now()
         delta = current_time - last_update_time
-        return delta.seconds
+        self.seconds_since_last_update = delta.seconds
+
+    seconds_since_last_update: IntProperty(
+        name = "Time Since Last Update",
+        description = "Time in seconds since the last status update was retrieved from the remote repository"
+    )
 
 
     ### SVN Log / Revision History #############################################

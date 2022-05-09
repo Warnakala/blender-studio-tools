@@ -263,9 +263,9 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
             warning.copy_on_click = True
 
         # Calculate time since last status update
-        seconds_since_last_update = context.scene.svn.time_since_last_update
-        if seconds_since_last_update > 30:
-            layout.operator("svn.custom_tooltip", icon='FILE_REFRESH', text="Refresh UI").tooltip="SVN file statuses are being fetched and should appear in a few seconds. Click here to re-draw the file list UI, since it doesn't refresh automatically"
+        if context.scene.svn.seconds_since_last_update > 30:
+            row = layout.row()
+            row.label(text="Acquiring file statuses from remote, please wait...")
             return
 
         main_row = layout.row()
@@ -274,7 +274,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         filepath_row.label(text="          Filepath")
 
         status_row = split.row()
-        status_row.label(text="             Status")
+        status_row.label(text="         Status")
         
         ops_row = main_row.row()
         ops_row.alignment = 'RIGHT'
@@ -282,7 +282,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
 
         timer_row = main_row.row()
         timer_row.alignment='RIGHT'
-        timer_row.operator("svn.custom_tooltip", icon='FILE_REFRESH', text="", emboss=False).tooltip="Time since last file status update: " + str(seconds_since_last_update) + 's'
+        timer_row.operator("svn.custom_tooltip", icon='BLANK1', text="", emboss=False).tooltip="Time since last file status update: " + str(context.scene.svn.seconds_since_last_update) + 's'
 
         row = layout.row()
         row.template_list(

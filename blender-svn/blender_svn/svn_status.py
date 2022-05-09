@@ -32,7 +32,7 @@ import bpy, subprocess
 from bpy.props import StringProperty
 
 from .execute_subprocess import execute_svn_command, execute_command
-from .util import get_addon_prefs, svn_date_simple
+from .util import get_addon_prefs, svn_date_simple, redraw_viewport
 from . import constants
 
 class SVN_explain_status(bpy.types.Operator):
@@ -219,6 +219,8 @@ def async_get_verbose_svn_status():
 def timer_update_svn_status():
     context = bpy.context
     svn = context.scene.svn
+    svn.update_time_since_last_update()
+    redraw_viewport()
     prefs = get_addon_prefs(context)
 
     cred = prefs.get_credentials()

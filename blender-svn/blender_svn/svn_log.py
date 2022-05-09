@@ -153,7 +153,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         if active_file.status in ['unversioned', 'added']:
             return False
         
-        if svn.time_since_last_update > 30:
+        if svn.seconds_since_last_update > 30:
             return False
         return True
 
