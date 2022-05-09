@@ -34,6 +34,7 @@ from bpy.props import StringProperty
 from .execute_subprocess import execute_svn_command, execute_command
 from .util import get_addon_prefs, svn_date_simple, redraw_viewport
 from . import constants
+from .svn_log import svn_log_background_fetch_start
 
 class SVN_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
@@ -249,6 +250,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     svn = context.scene.svn
 
     posix_paths = []
+    new_files_on_repo = False
     for filepath_str, status_info in file_statuses.items():
         svn_path = Path(filepath_str)
         suffix = svn_path.suffix
@@ -265,10 +267,15 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
         wc_status, repos_status, revision = status_info
 
         file_entry = svn.get_file_by_svn_path(svn_path)
+        entry_existed = True
         if not file_entry:
             file_entry = svn.external_files.add()
             file_entry['svn_path'] = svn_path.as_posix()
             file_entry['name'] = svn_path.name
+            entry_existed = False
+            if not file_entry.exists:
+                new_files_on_repo = True
+
         if file_entry.status_predicted_flag == 'SINGLE':
             # File status was predicted by a local svn file operation, 
             # so we should ignore this status update and reset the flag.
@@ -284,9 +291,17 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             # updates on files that are being updated or committed.
             continue
 
-        file_entry['revision'] = revision
+        if not entry_existed and (file_entry.repos_status == 'none' and repos_status != 'none'):
+            new_files_on_repo = True
+
+        file_entry.revision = revision
         file_entry.status = wc_status
         file_entry.repos_status = repos_status
+
+    if new_files_on_repo:
+        # File entry status has changed between local and repo.
+        print("SVN: Files have changed on the repository, updating log...")
+        svn_log_background_fetch_start()
 
 
     # Remove file entries who no longer seem to have an SVN status.
