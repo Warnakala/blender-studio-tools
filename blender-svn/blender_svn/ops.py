@@ -200,8 +200,11 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
     def set_predicted_file_status(self, svn, file_entry: SVN_file):
         file_entry['revision'] = self.revision
         latest_rev = svn.get_latest_revision_of_file(self.file_rel_path)
-        file_entry.status = 'normal' if latest_rev == self.revision else 'none'
-
+        if latest_rev == self.revision:
+            file_entry.status = 'normal'
+            file_entry.repos_status = 'none'
+        else:
+            file_entry.status = 'none'
 
 class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.restore_file"
