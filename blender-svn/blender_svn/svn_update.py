@@ -46,7 +46,7 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if self.reload_file:
-            self.execute_svn_command(context, 'svn up --accept "postpone"')
+            self.execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
             svn_log_background_fetch_start()
             predict_file_statuses(context)
@@ -65,7 +65,7 @@ def async_svn_update():
 
     context = bpy.context
     print("Updating SVN files in background...")
-    SVN_UPDATE_OUTPUT = execute_svn_command(context, 'svn up --accept "postpone"')
+    SVN_UPDATE_OUTPUT = execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
 
 
 def timer_svn_update():

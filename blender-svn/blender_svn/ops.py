@@ -32,14 +32,14 @@ from .execute_subprocess import execute_svn_command
 
 
 class SVN_Operator:
-    def execute_svn_command(self, context, command: str) -> str:
+    def execute_svn_command(self, context, command: str, use_cred=False) -> str:
         # Since a status update might already be being requested when an SVN operator is run,
         # we want to ignore the first update after any SVN operator.
         # Otherwise it can result in a predicted state being overwritten by an outdated state.
         # For example, the Commit operator sets a file to "Normal" state, then the old svn status
         # arrives and sets it back to "Modified" state, which it isn't anymore.
         context.scene.svn.ignore_next_status_update = True
-        return execute_svn_command(context, command)
+        return execute_svn_command(context, command, use_cred)
 
 
 class SVN_Operator_Single_File(SVN_Operator):
@@ -157,7 +157,7 @@ class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
         if file_entry.status != 'normal':
             self.will_conflict = True
 
-        self.execute_svn_command(context, f'svn up "{self.file_rel_path}" --accept "postpone"')
+        self.execute_svn_command(context, f'svn up "{self.file_rel_path}" --accept "postpone"', use_cred=True)
 
         self.report({'INFO'}, f"Updated {self.file_rel_path} to the latest version.")
 
@@ -196,7 +196,7 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
             self.report({'ERROR'}, "Cancelled: You have local modifications to this file. You must revert or commit it first!")
             return {'CANCELLED'}
 
-        self.execute_svn_command(context, f'svn up -r{self.revision} "{self.file_rel_path}" --accept "postpone"')
+        self.execute_svn_command(context, f'svn up -r{self.revision} "{self.file_rel_path}" --accept "postpone"', use_cred=True)
 
         self.report({'INFO'}, f"Checked out revision {self.revision} of {self.file_rel_path}")
 

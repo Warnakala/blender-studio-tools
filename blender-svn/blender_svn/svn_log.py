@@ -376,7 +376,8 @@ def async_get_svn_log():
     SVN_LOG_OUTPUT = execute_svn_command(
         context,
         f"svn log {svn.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10", 
-        suppress_errors=True
+        suppress_errors=True,
+        use_cred = True
     )
     if SVN_LOG_OUTPUT == "":
         print("SVN: Log is now fully up to date.")
