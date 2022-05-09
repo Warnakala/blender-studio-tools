@@ -16,15 +16,6 @@ SVN_COMMIT_OUTPUT = ""
 SVN_COMMIT_MSG = ""
 SVN_COMMIT_FILELIST: List[str] = []
 
-def predict_file_statuses(context):
-    for filepath in SVN_COMMIT_FILELIST:
-        file_entry = context.scene.svn.get_file_by_svn_path(filepath)
-        if file_entry.repos_status == 'none':
-            file_entry.status = 'normal'
-        else:
-            file_entry.status = 'conflicted'
-
-
 commit_message = StringProperty(
     name = "Commit Message",
     description = "Describe the changes being committed",
@@ -118,6 +109,8 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         global SVN_COMMIT_FILELIST
         SVN_COMMIT_MSG = commit_message
         SVN_COMMIT_FILELIST = filepaths
+
+        self.predict_file_statuses(context, filepaths)
         svn_commit_background_start()
 
         report = f"{(len(files_to_commit))} files"
@@ -126,6 +119,15 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         self.report({'INFO'}, f"Started committing {report}. See console for when it's finished.")
 
         return {"FINISHED"}
+
+    def predict_file_statuses(self, context, filepaths):
+        context.scene.svn.ignore_next_update = True
+        for filepath in filepaths:
+            file_entry = context.scene.svn.get_file_by_svn_path(filepath)
+            if file_entry.repos_status == 'none':
+                file_entry.status = 'normal'
+            else:
+                file_entry.status = 'conflicted'
 
     def set_predicted_file_statuses(self, files_to_commit: List[SVN_file]):
         for f in files_to_commit:
@@ -167,7 +169,6 @@ def timer_svn_commit():
     elif SVN_COMMIT_OUTPUT:
         print(SVN_COMMIT_OUTPUT)
         svn_commit_background_stop()
-        predict_file_statuses(context)
         context.scene.svn.ignore_next_update = True
         SVN_COMMIT_OUTPUT = ""
         SVN_COMMIT_THREAD = None

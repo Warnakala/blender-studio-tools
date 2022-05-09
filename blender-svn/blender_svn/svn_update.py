@@ -11,14 +11,6 @@ from .execute_subprocess import execute_svn_command
 SVN_UPDATE_THREAD = None
 SVN_UPDATE_OUTPUT = ""
 
-def predict_file_statuses(context):
-    for f in context.scene.svn.external_files:
-        if f.repos_status == 'modified':
-            if f.status == 'normal':
-                f.status = 'normal'
-                f.repos_status = 'none'
-            else:
-                f.status = 'conflicted'
 
 class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.update_all"
@@ -46,15 +38,25 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if self.reload_file:
+            self.predict_file_statuses(context)
+            context.scene.svn.ignore_next_status_update = True
             self.execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
             svn_log_background_fetch_start()
-            predict_file_statuses(context)
         else:
             svn_update_background_start()
 
         return {"FINISHED"}
 
+    def predict_file_statuses(self, context):
+        context.scene.svn.ignore_next_update = True
+        for f in context.scene.svn.external_files:
+            if f.repos_status == 'modified':
+                if f.status == 'normal':
+                    f.status = 'normal'
+                    f.repos_status = 'none'
+                else:
+                    f.status = 'conflicted'
 
 def async_svn_update():
     """This function should be executed from a separate thread to avoid freezing 
@@ -80,8 +82,6 @@ def timer_svn_update():
         print("SVN Update complete:")
         print(SVN_UPDATE_OUTPUT)
         svn_update_background_stop()
-        predict_file_statuses(context)
-        context.scene.svn.ignore_next_update = True
         svn_log_background_fetch_start()
         SVN_UPDATE_OUTPUT = ""
         SVN_UPDATE_THREAD = None

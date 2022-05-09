@@ -41,7 +41,6 @@ class SVN_Operator:
         context.scene.svn.ignore_next_status_update = True
         return execute_svn_command(context, command, use_cred)
 
-
 class SVN_Operator_Single_File(SVN_Operator):
     """Base class for SVN operators operating on a single file."""
     file_rel_path: StringProperty()
