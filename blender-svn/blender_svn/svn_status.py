@@ -294,7 +294,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     # Or sub-folders whose parent was Un-Added to the SVN.
     for file_entry in svn.external_files[:]:
         if file_entry.svn_path not in posix_paths:
-            svn.remove_by_svn_path(file_entry.svn_path)
+            svn.remove_file_entry(file_entry)
 
     current_blend = svn.current_blend_file
     if current_blend:

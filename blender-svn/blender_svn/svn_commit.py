@@ -123,10 +123,11 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     def set_predicted_file_statuses(self, context, filepaths):
         for filepath in filepaths:
             f = context.scene.svn.get_file_by_svn_path(filepath)
-            if f.repos_status == 'none':
-                f.status = 'normal'
-            else:
-                f.status = 'conflicted'
+            if f.status != 'deleted':
+                if f.repos_status == 'none':
+                    f.status = 'normal'
+                else:
+                    f.status = 'conflicted'
             f.status_predicted_flag = "COMMIT"
 
 

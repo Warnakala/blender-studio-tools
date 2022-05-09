@@ -285,7 +285,9 @@ class SVN_trash_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Opera
         send2trash([self.get_file_full_path(context)])
 
         f = self.get_file(context)
-        context.scene.svn.remove_by_svn_path(f.svn_path)
+        # Since this operator is only available for Unversioned files,
+        # we want to remove the file entry when removing the file.
+        context.scene.svn.remove_file_entry(f)
         return {"FINISHED"}
 
 

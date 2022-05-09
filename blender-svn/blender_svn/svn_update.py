@@ -53,7 +53,6 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
                 if f.status == 'normal':
                     f.status = 'normal'
                     f.repos_status = 'none'
-                    print("Predict file status to be normal/none due to svn up on ", f.svn_path)
                 else:
                     f.status = 'conflicted'
                 f.status_predicted_flag = "UPDATE"
