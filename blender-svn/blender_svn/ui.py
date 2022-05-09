@@ -23,8 +23,8 @@ from bpy.props import BoolProperty, StringProperty
 
 from .util import get_addon_prefs
 from . import constants
-from .svn_update import SVN_UPDATE_THREAD
-from .svn_commit import SVN_COMMIT_THREAD
+from . import svn_update
+from . import svn_commit
 
 class SVN_UL_file_list(bpy.types.UIList):
     UILST_FLT_ITEM = 1 << 30 # Value that indicates that this item has passed the filter process successfully. See rna_ui.c.
@@ -103,7 +103,8 @@ class SVN_UL_file_list(bpy.types.UIList):
 
         if ops:
             for op in ops:
-                op.file_rel_path = file_entry.svn_path
+                if hasattr(op, 'file_rel_path'):
+                    op.file_rel_path = file_entry.svn_path
 
         # Populate the status icons.
         for status in statuses:
@@ -247,12 +248,10 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        global SVN_UPDATE_THREAD
-        if SVN_UPDATE_THREAD:
+        if svn_update.SVN_UPDATE_THREAD:
             layout.label(text="SVN Update in progress...")
-        
-        global SVN_COMMIT_THREAD
-        if SVN_COMMIT_THREAD:
+
+        if svn_commit.SVN_COMMIT_THREAD:
             layout.label(text="SVN Commit in progress...")
 
         svn = context.scene.svn
