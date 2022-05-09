@@ -200,8 +200,8 @@ def async_get_verbose_svn_status():
     Blender's UI during execute_svn_command().
     """
     global SVN_STATUS_OUTPUT
-    SVN_STATUS_OUTPUT = ""
     global SVN_STATUS_NEWFILE
+    SVN_STATUS_OUTPUT = ""
 
     context = bpy.context
     prefs = get_addon_prefs(context)
@@ -217,8 +217,6 @@ def async_get_verbose_svn_status():
 
 @bpy.app.handlers.persistent
 def timer_update_svn_status():
-    global SVN_STATUS_OUTPUT
-    global SVN_STATUS_THREAD
     context = bpy.context
     svn = context.scene.svn
     prefs = get_addon_prefs(context)
@@ -229,6 +227,7 @@ def timer_update_svn_status():
         svn_status_background_fetch_stop()
         return
 
+    global SVN_STATUS_THREAD
     if SVN_STATUS_THREAD and SVN_STATUS_THREAD.is_alive():
         # Process is still running, so we just gotta wait. Let's try again in 1s.
         return 1.0

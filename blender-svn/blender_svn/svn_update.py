@@ -28,7 +28,6 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        global SVN_UPDATE_THREAD
         if SVN_UPDATE_THREAD:
             # Don't allow creating another thread while the previous one is still running.
             return False

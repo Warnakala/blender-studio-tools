@@ -17,7 +17,6 @@ SVN_COMMIT_MSG = ""
 SVN_COMMIT_FILELIST: List[str] = []
 
 def predict_file_statuses(context):
-    global SVN_COMMIT_FILELIST
     for filepath in SVN_COMMIT_FILELIST:
         file_entry = context.scene.svn.get_file_by_svn_path(filepath)
         if file_entry.repos_status == 'none':
@@ -59,7 +58,6 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        global SVN_COMMIT_THREAD
         if SVN_COMMIT_THREAD:
             # Don't allow starting a new commit if the previous one isn't finished yet.
             return False
@@ -142,10 +140,9 @@ def async_svn_commit():
     Blender's UI during execute_svn_command().
     """
     global SVN_COMMIT_OUTPUT
-    SVN_COMMIT_OUTPUT = ""
-
     global SVN_COMMIT_MSG
     global SVN_COMMIT_FILELIST
+    SVN_COMMIT_OUTPUT = ""
     filepaths = " ".join(SVN_COMMIT_FILELIST)
 
     context = bpy.context

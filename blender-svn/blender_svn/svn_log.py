@@ -162,7 +162,6 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        global SVN_LOG_THREAD
         if SVN_LOG_THREAD:
             layout.label(text="Recent log entries may be missing, updating in progress...", icon='ERROR')
 
