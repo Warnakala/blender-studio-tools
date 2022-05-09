@@ -10,7 +10,7 @@ def command_with_credential(context, command) -> str:
 def execute_command(path: str, command: str) -> str:
     return str(
         subprocess.check_output(
-            (command), shell=True, cwd=path+"/", stderr=subprocess.PIPE
+            (command), shell=True, cwd=path+"/", stderr=subprocess.PIPE, start_new_session=True
         ),
         'utf-8'
     )
