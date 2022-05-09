@@ -38,7 +38,6 @@ class SVN_Operator:
         # Otherwise it can result in a predicted state being overwritten by an outdated state.
         # For example, the Commit operator sets a file to "Normal" state, then the old svn status
         # arrives and sets it back to "Modified" state, which it isn't anymore.
-        context.scene.svn.ignore_next_status_update = True
         return execute_svn_command(context, command, use_cred)
 
 class SVN_Operator_Single_File(SVN_Operator):

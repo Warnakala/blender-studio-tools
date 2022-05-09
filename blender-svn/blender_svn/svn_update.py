@@ -39,7 +39,6 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         self.set_predicted_file_statuses(context)
         if self.reload_file:
-            context.scene.svn.ignore_next_status_update = True
             self.execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
             svn_log_background_fetch_start()

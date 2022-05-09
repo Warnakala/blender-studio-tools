@@ -233,14 +233,11 @@ def timer_update_svn_status():
     if SVN_STATUS_THREAD and SVN_STATUS_THREAD.is_alive():
         # Process is still running, so we just gotta wait. Let's try again in 1s.
         return 1.0
-    elif SVN_STATUS_OUTPUT and not context.scene.svn.ignore_next_status_update:
+    elif SVN_STATUS_OUTPUT:
         update_file_list(context, SVN_STATUS_OUTPUT)
         context.scene.svn.timestamp_last_status_update = datetime.strftime(datetime.now(), "%Y/%m/%d %H:%M:%S")
 
-    context.scene.svn.ignore_next_status_update = False
-    # print("Starting thread...")
     SVN_STATUS_THREAD = threading.Thread(target=async_get_verbose_svn_status, args=())
-    SVN_STATUS_THREAD.daemon = True
     SVN_STATUS_THREAD.start()
 
     return 1.0
@@ -395,13 +392,8 @@ def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
     current_blend = svn.current_blend_file
     if current_blend:
         current_blend.status = 'modified'
-        svn.ignore_next_status_update = True
+        current_blend.status_predicted_flag = 'SINGLE'
 
-@bpy.app.handlers.persistent
-def ignore_next_svn_status_update(_dummy1=None, _dummy2=None):
-    context = bpy.context
-    svn = context.scene.svn
-    svn.ignore_next_status_update = True
 
 ################################################################################
 ############################# REGISTER #########################################
@@ -409,7 +401,6 @@ def ignore_next_svn_status_update(_dummy1=None, _dummy2=None):
 
 def register():
     bpy.app.handlers.load_post.append(init_svn)
-    bpy.app.handlers.load_post.append(ignore_next_svn_status_update)
 
     bpy.app.handlers.save_post.append(init_svn)
     bpy.app.handlers.save_post.append(mark_current_file_as_modified)
@@ -419,7 +410,6 @@ def register():
 
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
-    bpy.app.handlers.load_post.remove(ignore_next_svn_status_update)
 
     bpy.app.handlers.save_post.remove(init_svn)
     bpy.app.handlers.save_post.remove(mark_current_file_as_modified)
