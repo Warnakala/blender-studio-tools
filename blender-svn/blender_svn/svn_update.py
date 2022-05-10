@@ -49,7 +49,9 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     def set_predicted_file_statuses(self, context):
         for f in context.scene.svn.external_files:
-            if f.repos_status == 'modified':
+            if f.repos_status in ['modified', 'added']:
+                if f.repos_status == 'added' and f.exists:
+                    f.status = 'conflicted'
                 if f.status == 'normal':
                     f.status = 'normal'
                     f.repos_status = 'none'

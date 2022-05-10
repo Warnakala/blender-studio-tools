@@ -52,6 +52,7 @@ class SVN_UL_file_list(bpy.types.UIList):
 
         ops_ui = split.row(align=True)
         ops_ui.alignment = 'RIGHT'
+        ops_ui.enabled = file_entry.status_predicted_flag == 'NONE'
 
         if self.show_file_paths:
             filepath_ui.prop(file_entry, 'svn_path', text="", emboss=False, icon=file_entry.file_icon)
