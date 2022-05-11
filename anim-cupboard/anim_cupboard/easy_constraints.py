@@ -198,7 +198,7 @@ class POSE_OT_easyconstraint_kill_influence(bpy.types.Operator):
 	def poll(cls, context):
 		# Since we're using the context-based bpy.ops.anim.keyframe_insert_menu(),
 		# we want to only allow this operator when there are no other bones selected.
-		return len(context.selected_pose_bones) == 1
+		return context.mode=='POSE' and len(context.selected_pose_bones) == 1
 
 	def execute(self, context):
 		active_pb = context.active_pose_bone
