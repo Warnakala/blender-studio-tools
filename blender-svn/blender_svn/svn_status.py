@@ -226,7 +226,7 @@ def timer_update_svn_status():
 
     cred = prefs.get_credentials()
 
-    if not svn.is_in_repo or not (cred.username and cred.password):
+    if not (svn.is_in_repo and cred and (cred.username and cred.password)):
         svn_status_background_fetch_stop()
         return
 
