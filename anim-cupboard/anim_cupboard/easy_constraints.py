@@ -31,22 +31,26 @@ class EasyConstraint(bpy.types.PropertyGroup):
 		items = [
 			('COPY_TRANSFORMS', 'Copy Transforms', 'Copy Transforms', 'CON_TRANSLIKE', 0),
 			('CHILD_OF', 'Child Of', 'Child Of', 'CON_CHILDOF', 1),
-		]
+		],
+		override={'LIBRARY_OVERRIDABLE'}
 	)
 	name: StringProperty(
 		name = "UUID",
-		description = "Unique identifier to match constraints to this EasyConstraint instance"
+		description = "Unique identifier to match constraints to this EasyConstraint instance",
+		override={'LIBRARY_OVERRIDABLE'}
 	)
 	# influence: FloatProperty(
 	# 	name = "Influence",
 	# 	description = "Influence of the constraints",
 	# 	default = 1.0,
 	# 	min = 0.0,
-	# 	max = 1.0
+	# 	max = 1.0,
+	#	override={'LIBRARY_OVERRIDABLE'}
 	# )
 	owner_bone: StringProperty(
 		name = "Owner Bone",
-		description = "Bone that this EasyConstraint is on. For internal use only. This should never change after initialization"
+		description = "Bone that this EasyConstraint is on. For internal use only. This should never change after initialization",
+		override={'LIBRARY_OVERRIDABLE'}
 	)
 
 	@property
@@ -102,12 +106,14 @@ class EasyConstraint(bpy.types.PropertyGroup):
 		type = bpy.types.Object,
 		name = "Object",
 		description = "Object to copy the transforms of",
-		update = update_target
+		update = update_target,
+		override={'LIBRARY_OVERRIDABLE'}
 	)
 	subtarget: StringProperty(
 		name = "Target Bone",
 		description = "Bone to copy the transforms of",
-		update = update_target
+		update = update_target,
+		override={'LIBRARY_OVERRIDABLE'}
 	)
 
 
@@ -127,12 +133,13 @@ class POSE_OT_easyconstraint_add(bpy.types.Operator):
 		easycon = active_pb.easy_constraints.add()
 		easycon.owner_bone = context.active_pose_bone.name
 		easycon.name = str(uuid4())[:8]
-		
+
 		# Custom Property to work around T48975. (TODO: Remove when fixed)
 		prop_name = f"EC_influence_{easycon.name}"
 		context.active_pose_bone[prop_name] = 1.0
 		prop_data = context.active_pose_bone.id_properties_ui(prop_name)
 		prop_data.update(min=0, max=1)
+		context.active_pose_bone.property_overridable_library_set(f'["{prop_name}"]', True)
 
 		easycon.type = 'COPY_TRANSFORMS'
 		if len(context.selected_pose_bones) == 2:
@@ -207,7 +214,11 @@ class POSE_OT_easyconstraint_kill_influence(bpy.types.Operator):
 		matrix = active_pb.matrix.copy()
 		ec.influence = 0.0
 		active_pb.matrix = matrix
-		bpy.ops.anim.keyframe_insert_menu()
+		if context.scene.tool_settings.use_keyframe_insert_auto:
+			keying_set = "LocRotScaleCProp"
+			if context.scene.keying_sets.active:
+				keying_set = context.scene.keying_sets.active.bl_idname
+			bpy.ops.anim.keyframe_insert_menu(type=keying_set)
 
 		return {'FINISHED'}
 
@@ -279,7 +290,11 @@ registry = [
 ]
 
 def register():
-	bpy.types.PoseBone.easy_constraints = CollectionProperty(type=EasyConstraint)
+	bpy.types.PoseBone.easy_constraints = CollectionProperty(
+		type=EasyConstraint,
+		options={'LIBRARY_EDITABLE'},
+		override={'LIBRARY_OVERRIDABLE', 'USE_INSERTION'},
+	)
 	bpy.types.PoseBone.easy_constraints_active_index = IntProperty()
 
 def unregister():
