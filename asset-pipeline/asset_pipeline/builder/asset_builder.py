@@ -213,6 +213,7 @@ class AssetBuilder:
         prod_task_layers = self.build_context.prod_context.task_layers
         prod_task_layers.sort(key=lambda tl: tl.order)
 
+        transfer_triplet.reset_rigs()
         # Apparently Blender does not evaluate objects or collections in the depsgraph
         # in some cases if they are not visible. Ensure visibility here.
         transfer_triplet.ensure_vis()
@@ -311,6 +312,7 @@ class AssetBuilder:
         locked_task_layer_ids = asset_publish.metadata.get_locked_task_layer_ids()
         meta_asset_tree = metadata.load_asset_metadata_tree_from_file(metadata_path)
 
+        transfer_triplet.reset_rigs()
         # Ensure visibility for depsgraph evaluation.
         transfer_triplet.ensure_vis()
 
@@ -430,6 +432,12 @@ class AssetBuilder:
         # This is quite an important one, if this goes wrong we can end up with
         # wrong data block names.
         bpy.ops.outliner.orphans_purge(do_recursive=True)
+
+        # Enable armature poses
+        for ob in transfer_triplet.target_coll.all_objects:
+            if ob.type != 'ARMATURE':
+                continue
+            ob.data.pose_position = 'POSE'
 
         # Remove suffix from TARGET Collection.
         asset_suffix.remove_suffix_from_hierarchy(transfer_triplet.target_coll)

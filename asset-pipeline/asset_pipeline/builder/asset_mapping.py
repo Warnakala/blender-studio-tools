@@ -55,6 +55,21 @@ class TransferCollectionTriplet:
     def get_collections(self) -> List[bpy.types.Collection]:
         return [self.task_coll, self.publish_coll, self.target_coll]
 
+    def reset_rigs(self) -> None:
+        """To ensure correct data transferring, make sure all rigs are in their
+        default positions."""
+        for main_coll in self.get_collections():
+            for ob in main_coll.all_objects:
+                if ob.type != "ARMATURE":
+                    continue
+                util.reset_armature_pose(
+                    ob,
+                    only_selected=False,
+                    reset_properties=True,
+                    reset_transforms=True,
+                )
+                ob.data.pose_position = "REST"
+
     def ensure_vis(self) -> None:
         # Apparently Blender does not evaluate objects or collections in the depsgraph
         # in some cases if they are not visible. This is something Users should not have to take
