@@ -94,7 +94,7 @@ class EasyConstraint(bpy.types.PropertyGroup):
 				d.expression = "var"
 				var = d.variables.new()
 				var.type = 'SINGLE_PROP'
-				var.targets[0].id = self.target
+				var.targets[0].id = context.object
 				# var.targets[0].data_path = f'pose.bones["{self.owner_bone}"].easy_constraints["{self.name}"].influence'
 				var.targets[0].data_path = f'pose.bones["{self.owner_bone}"]["EC_influence_{self.name}"]'
 
