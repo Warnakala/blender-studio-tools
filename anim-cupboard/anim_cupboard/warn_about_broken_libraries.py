@@ -98,9 +98,11 @@ def store_lib_paths(dummy1=None, dummy2=None):
     lib_paths_before_save = get_library_paths()
 
 def register():
-    bpy.app.handlers.load_post.append(store_lib_paths)
-    bpy.app.handlers.save_post.append(warn_about_incorrect_lib_paths)
+    if not bpy.app.background:
+        bpy.app.handlers.load_post.append(store_lib_paths)
+        bpy.app.handlers.save_post.append(warn_about_incorrect_lib_paths)
 
 def unregister():
-    bpy.app.handlers.load_post.remove(store_lib_paths)
-    bpy.app.handlers.save_post.remove(warn_about_incorrect_lib_paths)
+    if not bpy.app.background:
+        bpy.app.handlers.load_post.remove(store_lib_paths)
+        bpy.app.handlers.save_post.remove(warn_about_incorrect_lib_paths)
