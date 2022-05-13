@@ -224,7 +224,7 @@ class AssetBuilder:
         # on. The asset importer already handles this logic by supplying as with the right TARGET collection
         # after import. That's why we could exclude the first task layer here in the loop.
         # But people at the Studio pointed out it might still be useful sometimes to still let
-        # this task layer run the transfer_data() functions as there can be cases like:
+        # this task layer run the transfer() functions as there can be cases like:
         # Prefixing modififers that are coming from a task layer with the task layer name.
         logger.info(f"Using {prod_task_layers[0].name} as base.")
 
@@ -263,9 +263,10 @@ class AssetBuilder:
                 logger.info(
                     f"Transferring {task_layer.name} from {transfer_triplet.publish_coll.name} to {transfer_triplet.target_coll.name}."
                 )
-                task_layer.transfer_data(
+                task_layer.transfer(
                     context, self.build_context, mapping_publish_target, self.transfer_settings
                 )
+
                 # Update source meta task layer source path.
                 # Save path relative to asset directory, otherwise we have system paths in the start
                 # which might differ on various systems.
@@ -279,11 +280,15 @@ class AssetBuilder:
                 logger.info(
                     f"Transferring {task_layer.name} from {transfer_triplet.task_coll.name} to {transfer_triplet.target_coll.name}."
                 )
-                task_layer.transfer_data(
+                task_layer.transfer(
                     context, self.build_context, mapping_task_target, self.transfer_settings
                 )
 
                 # Here we don't want to update source path, we keep it as is, as we are just 'retaining' here.
+
+        # Set Task Collection reference to the new one.
+        bsp = context.scene.bsp_asset
+        bsp.task_layer_collection = mapping_task_target.collection_map.get(bsp.task_layer_collection)
 
         # Cleanup transfer.
         self._clean_up_transfer(context, transfer_triplet)
@@ -340,7 +345,7 @@ class AssetBuilder:
         # on. The asset importer already handles this logic by supplying as with the right TARGET collection
         # after import. That's why we could exclude the first task layer here in the loop.
         # But people at the Studio pointed out it might still be useful sometimes to still let
-        # this task layer run the transfer_data() functions as there can be cases like:
+        # this task layer run the transfer() functions as there can be cases like:
         # Prefixing modififers that are coming from a task layer with the task layer name.
         logger.info(f"Using {prod_task_layers[0].name} as base.")
 
@@ -376,7 +381,8 @@ class AssetBuilder:
                 logger.info(
                     f"Transferring {task_layer.name} from {transfer_triplet.task_coll.name} to {transfer_triplet.target_coll.name}."
                 )
-                task_layer.transfer_data(
+
+                task_layer.transfer(
                     context, self.build_context, mapping_task_target, self.transfer_settings
                 )
 
@@ -393,7 +399,7 @@ class AssetBuilder:
                 logger.info(
                     f"Transferring {task_layer.name} from {transfer_triplet.publish_coll.name} to {transfer_triplet.target_coll.name}."
                 )
-                task_layer.transfer_data(
+                task_layer.transfer(
                     context, self.build_context, mapping_publish_target, self.transfer_settings
                 )
 

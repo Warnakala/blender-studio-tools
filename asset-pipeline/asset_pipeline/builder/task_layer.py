@@ -63,6 +63,17 @@ class TaskLayer:
         return bool(cls.name and cls.order >= 0)
 
     @classmethod
+    def transfer(
+        cls,
+        context: bpy.types.Context,
+        build_context: "BuildContext", # Otherwise get stupid circular import errors.
+        transfer_mapping: AssetTransferMapping,
+        transfer_settings: bpy.types.PropertyGroup,
+    ) -> None:
+        cls.transfer_data(context, build_context, transfer_mapping, transfer_settings)
+        cls.transfer_collections(transfer_mapping)
+
+    @classmethod
     def transfer_data(
         cls,
         context: bpy.types.Context,
@@ -105,6 +116,50 @@ class TaskLayer:
         transfer_settings.custom_option
         """
         raise NotImplementedError
+
+    @classmethod
+    def transfer_collections(cls, transfer_mapping: AssetTransferMapping):
+        root_coll = transfer_mapping.source_coll
+        for src_coll in root_coll.children:
+            if src_coll.bsp_asset.task_layer_name == cls.name:
+                # If this collection is assigned to this Task Layer.
+                cls.transfer_collection_objects(transfer_mapping, src_coll, root_coll)
+                tgt_coll = transfer_mapping.collection_map.get(src_coll)
+                tgt_coll.bsp_asset.task_layer_name = src_coll.bsp_asset.task_layer_name
+
+    @classmethod
+    def transfer_collection_objects(cls, 
+            transfer_mapping: AssetTransferMapping, 
+            src_coll: bpy.types.Collection, 
+            parent_coll: bpy.types.Collection):
+        """Transfer object assignments from source to target.
+        If an object ends up being un-assigned, it may get purged.
+        New collections will be created as necessary.
+        """
+        # Ensure target collection exists.
+        tgt_coll = transfer_mapping.collection_map.get(src_coll)
+        if not tgt_coll:
+            src_suffix = transfer_mapping.source_coll.bsp_asset.transfer_suffix
+            tgt_suffix = transfer_mapping.target_coll.bsp_asset.transfer_suffix
+            tgt_coll = bpy.data.collections.new(src_coll.name.replace(src_suffix, tgt_suffix))
+            tgt_parent = transfer_mapping.collection_map.get(parent_coll)
+            assert tgt_parent, "The corresponding target parent collection should've been created in the previous recursion: " + src_coll.name
+            tgt_parent.children.link(tgt_coll)
+
+        # Un-assigning everything from the target coll.
+        for o in tgt_coll.objects:
+            tgt_coll.objects.unlink(o)
+
+        # Re-assign those objects which correspond to the ones in source coll.
+        for src_ob in src_coll.objects:
+            tgt_ob = transfer_mapping.object_map.get(src_ob)
+            if not tgt_ob:
+                tgt_ob = src_ob
+            tgt_coll.objects.link(tgt_ob)
+        
+        # Do the same recursively for child collections.
+        for child_coll in src_coll.children:
+            cls.transfer_collection_objects(transfer_mapping, child_coll, src_coll)
 
     def __repr__(self) -> str:
         return f"TaskLayer{self.name}"

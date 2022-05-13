@@ -69,6 +69,13 @@ class BSP_ASSET_asset_collection(bpy.types.PropertyGroup):
 
     # Metadata for Asset Builder.
     transfer_suffix: bpy.props.StringProperty(name="Transfer Suffix")  # type: ignore
+    task_layer_name: bpy.props.StringProperty(
+        name="Task Layer",
+        description="If user selects a Task Collection for their file and pushes, "
+        "that task collection should get this value set to the name of the chosen task layer. "
+        "This way, all task layers can be aware of which other task layers own which collections, "
+        "without having to assign all collections in all working files",
+    )  # type: ignore
 
     # Display properties that can't be set by User in UI.
     displ_entity_name: bpy.props.StringProperty(name="Asset Name", get=lambda self: self.entity_name)  # type: ignore
@@ -304,18 +311,41 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
     task_layers_pull: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
 
     def task_layers(self, context):
-        return [(tl.name, tl.name, tl.name) for tl in builder.PROD_CONTEXT.task_layers] if builder.PROD_CONTEXT else []
+        return (
+            [(tl.name, tl.name, tl.name) for tl in builder.PROD_CONTEXT.task_layers]
+            if builder.PROD_CONTEXT
+            else []
+        )
 
+    def update_task_layer_collection(self, context):
+        # Assign Task Layer Name to the Task Collection, so it can be
+        # identified during the publishing process.
+        # Un-assign the same name from any other child collection.
+        bsp = context.scene.bsp_asset
+        for c in bsp.asset_collection.children:
+            if c == bsp.task_layer_collection:
+                c.bsp_asset.task_layer_name = bsp.active_task_layer
+            elif c.bsp_asset.task_layer_name == bsp.active_task_layer:
+                c.bsp_asset.task_layer_name = ""
+    task_layer_collection: bpy.props.PointerProperty(
+        name="Task Collection",
+        description="The objects assigned to this sub-collection of the asset will remain assigned when pushing and pulling",
+        type=bpy.types.Collection,
+        poll=lambda self, coll: coll.name in self.asset_collection.children,
+        update=update_task_layer_collection
+    )  # type: ignore
     active_task_layer: bpy.props.EnumProperty(
-        name = "Task Layer",
-        description = "Select which task layer this file is responsible for",
-        items = task_layers
-    )
+        name="Task Layer",
+        description="Select which task layer this file is responsible for",
+        items=task_layers,
+        update=update_task_layer_collection
+    )  # type: ignore
     use_manual_task_layers: bpy.props.BoolProperty(
-        name = "Set Task Layers Manually",
-        description = "Advanced option. Enable to more granularily control what task layers should be pushed and pulled",
-        default = False
-    )
+        name="Set Task Layers Manually",
+        description="Advanced option. Enable to more granularily control what task layers should be pushed and pulled",
+        default=False,
+    )  # type: ignore
+
     asset_publishes: bpy.props.CollectionProperty(type=BSP_asset_file)  # type: ignore
 
     task_layers_push_index: bpy.props.IntProperty(name="Task Layers Push Index", min=0)  # type: ignore

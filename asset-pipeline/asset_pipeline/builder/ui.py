@@ -226,6 +226,7 @@ class BSP_ASSET_PT_vi3d_asset_pipeline(BSP_ASSET_main_panel, bpy.types.Panel):
             row = layout.row(align=True)
             row.prop(bsp, "active_task_layer")
             row.prop(bsp, "use_manual_task_layers", text="", icon='PRESET')
+            layout.prop(bsp, "task_layer_collection")
 
 
 class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
