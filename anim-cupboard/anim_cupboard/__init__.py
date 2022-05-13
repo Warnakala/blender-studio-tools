@@ -5,6 +5,7 @@ from .operators import select_similar_curves
 from .operators import lock_curves
 from .operators import bake_anim_across_armatures
 from . import easy_constraints
+from . import warn_about_broken_libraries
 
 bl_info = {
     'name' : "Animation Cupboard"
@@ -21,7 +22,8 @@ modules = (
     select_similar_curves,
     lock_curves,
     bake_anim_across_armatures,
-    easy_constraints
+    easy_constraints,
+    warn_about_broken_libraries
 )
 
 def register():
