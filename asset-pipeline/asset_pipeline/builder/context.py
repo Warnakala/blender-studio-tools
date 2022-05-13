@@ -447,20 +447,22 @@ class AssetContext:
 
         # TODO: we should take in to account that in the meantime
         # production TaskLayers could have been updated.
-        for item in bl_context.scene.bsp_asset.task_layers_pull:
+        bsp = bl_context.scene.bsp_asset
+        for item in bsp.task_layers_pull:
             task_layer_config = self.task_layer_assembly.get_task_layer_config(
                 item.task_layer_id
             )
-            task_layer_config.use = item.use
+            task_layer_config.use = item.use if bsp.use_manual_task_layers else item.task_layer_name != bsp.active_task_layer
 
     def _update_task_layer_assembly_from_context_push(
         self, bl_context: bpy.types.Context
     ) -> None:
-        for item in bl_context.scene.bsp_asset.task_layers_push:
+        bsp = bl_context.scene.bsp_asset
+        for item in bsp.task_layers_push:
             task_layer_config = self.task_layer_assembly.get_task_layer_config(
                 item.task_layer_id
             )
-            task_layer_config.use = item.use
+            task_layer_config.use = item.use if bsp.use_manual_task_layers else item.task_layer_name == bsp.active_task_layer
 
     def _update_transfer_settings_from_context(
         self, bl_context: bpy.types.Context

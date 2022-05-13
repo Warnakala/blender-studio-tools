@@ -225,8 +225,11 @@ def are_any_task_layers_enabled_push(context: bpy.types.Context) -> bool:
     """
     Returns true if any task layers are selected in the task layer push list.
     """
+    bsp = context.scene.bsp_asset
+    if not bsp.use_manual_task_layers:
+        return True
     enabled_task_layers = [
-        tlg for tlg in context.scene.bsp_asset.task_layers_push.values() if tlg.use
+        tlg for tlg in bsp.task_layers_push.values() if tlg.use
     ]
     return bool(enabled_task_layers)
 
@@ -235,7 +238,10 @@ def are_any_task_layers_enabled_pull(context: bpy.types.Context) -> bool:
     """
     Returns true if any task layers are selected in the task layer pull list.
     """
+    bsp = context.scene.bsp_asset
+    if not bsp.use_manual_task_layers:
+        return True
     enabled_task_layers = [
-        tlg for tlg in context.scene.bsp_asset.task_layers_pull.values() if tlg.use
+        tlg for tlg in bsp.task_layers_pull.values() if tlg.use
     ]
     return bool(enabled_task_layers)

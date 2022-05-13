@@ -303,6 +303,19 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
     task_layers_push: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
     task_layers_pull: bpy.props.CollectionProperty(type=BSP_task_layer)  # type: ignore
 
+    def task_layers(self, context):
+        return [(tl.name, tl.name, tl.name) for tl in builder.PROD_CONTEXT.task_layers] if builder.PROD_CONTEXT else []
+
+    active_task_layer: bpy.props.EnumProperty(
+        name = "Task Layer",
+        description = "Select which task layer this file is responsible for",
+        items = task_layers
+    )
+    use_manual_task_layers: bpy.props.BoolProperty(
+        name = "Set Task Layers Manually",
+        description = "Advanced option. Enable to more granularily control what task layers should be pushed and pulled",
+        default = False
+    )
     asset_publishes: bpy.props.CollectionProperty(type=BSP_asset_file)  # type: ignore
 
     task_layers_push_index: bpy.props.IntProperty(name="Task Layers Push Index", min=0)  # type: ignore
