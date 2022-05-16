@@ -26,7 +26,7 @@ def get_absolute_libraries() -> Set[Library]:
 
 def get_library_paths() -> Set[str]:
     """Simply return a set of all library paths."""
-    return [l.filepath for l in bpy.data.libraries]
+    return {l.filepath for l in bpy.data.libraries}
 
 def throw_popup_dialog(context):
     context.window_manager.invoke_popup(self, width=300)
@@ -47,23 +47,21 @@ def draw_invalid_library_warning(self, context):
 
     print("Saved with invalid library paths!")
     lib_paths_after_save = get_library_paths()
-    for new_path in lib_paths_after_save:
-        if new_path in lib_paths_before_save:
-            lib_paths_after_save.remove(new_path)
-            lib_paths_before_save.remove(new_path)
+    diff_added = lib_paths_after_save - lib_paths_before_save
+    diff_removed = lib_paths_before_save - lib_paths_after_save
 
-    if len(lib_paths_before_save) > 0:
+    if len(diff_removed) > 0:
         layout.label(text="Libraries disappeared since last save:")
         print("Old paths that have changed:")
-        for old_path in lib_paths_before_save:
+        for old_path in diff_removed:
             text = f'     "{old_path}"'
             layout.label(text=text, icon='REMOVE')
             print(text)
 
-    if len(lib_paths_after_save) > 0:
+    if len(diff_added) > 0:
         layout.label(text="Libraries added since last save:")
         print("New paths that appeared:")
-        for new_path in lib_paths_after_save:
+        for new_path in diff_added:
             text = f'     "{new_path}"'
             layout.label(text=text, icon='ADD')
             print(text)
