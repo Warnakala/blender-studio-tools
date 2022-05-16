@@ -34,7 +34,7 @@ except:
 
 from . import opsdata
 
-from .. import asset_status, util, builder
+from .. import asset_status, util, builder, constants
 from ..asset_status import AssetStatus
 
 logger = logging.getLogger("BSP")
@@ -433,11 +433,41 @@ class BSP_ASSET_push_task_layers(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def draw_task_layers_list(
+    layout: bpy.types.UILayout,
+    context: bpy.types.Context,
+    prop_name: str,
+    disable: bool = False,
+) -> bpy.types.UILayout:
+    """
+    Draws context.bsp_asset.task_layers_owner.
+    `prop_name`: str has to be either: 'task_layer_pull' or 'task_layer_push'
+    """
+
+    row = layout.row(align=True)
+
+    # Ui-list.
+    row.template_list(
+        "BSP_UL_task_layers",
+        f"{prop_name}_list",
+        context.scene.bsp_asset,
+        prop_name,
+        context.scene.bsp_asset,
+        f"{prop_name}_index",
+        rows=constants.DEFAULT_ROWS,
+        type="DEFAULT",
+    )
+    if disable:
+        row.enabled = False
+
+    return row
+
+
 class BSP_ASSET_pull(bpy.types.Operator):
     bl_idname = "bsp_asset.pull"
-    bl_label = "Pull"
+    bl_label = "Pull Task Layers"
     bl_description = (
-        "Calls the pull function of the Asset Builder with the current Build Context"
+        "Pull in data from a set of Task Layers. The initial set is those task layers which are not owned by this file"
     )
 
     @classmethod
@@ -449,6 +479,17 @@ class BSP_ASSET_pull(bpy.types.Operator):
             and builder.ASSET_CONTEXT
             and opsdata.are_any_task_layers_enabled_pull(context)
         )
+
+    def invoke(self, context, event):
+        bsp = context.scene.bsp_asset
+        
+        for tl_owned, tl_pull in zip(bsp.task_layers_push, bsp.task_layers_pull):
+            tl_pull.use = not tl_owned.use
+
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def draw(self, context):
+        draw_task_layers_list(self.layout, context, "task_layers_pull")
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
 

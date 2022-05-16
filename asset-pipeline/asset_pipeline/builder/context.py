@@ -452,7 +452,7 @@ class AssetContext:
             task_layer_config = self.task_layer_assembly.get_task_layer_config(
                 item.task_layer_id
             )
-            task_layer_config.use = item.use if bsp.use_manual_task_layers else item.task_layer_name != bsp.active_task_layer
+            task_layer_config.use = item.use
 
     def _update_task_layer_assembly_from_context_push(
         self, bl_context: bpy.types.Context
@@ -462,7 +462,7 @@ class AssetContext:
             task_layer_config = self.task_layer_assembly.get_task_layer_config(
                 item.task_layer_id
             )
-            task_layer_config.use = item.use if bsp.use_manual_task_layers else item.task_layer_name == bsp.active_task_layer
+            task_layer_config.use = item.use
 
     def _update_transfer_settings_from_context(
         self, bl_context: bpy.types.Context

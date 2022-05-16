@@ -49,6 +49,7 @@ class TaskLayer:
     name: str = ""
     description: str = ""
     order: int = -1
+    task_suffix: str = ""
 
     @classmethod
     def get_id(cls) -> str:
@@ -120,12 +121,13 @@ class TaskLayer:
     @classmethod
     def transfer_collections(cls, transfer_mapping: AssetTransferMapping):
         root_coll = transfer_mapping.source_coll
+        transfer_suffix = root_coll.bsp_asset.transfer_suffix
+
         for src_coll in root_coll.children:
-            if src_coll.bsp_asset.task_layer_name == cls.name:
+            original_name = src_coll.name.replace(transfer_suffix, "")
+            if cls.task_suffix and original_name.endswith(cls.task_suffix):
                 # If this collection is assigned to this Task Layer.
                 cls.transfer_collection_objects(transfer_mapping, src_coll, root_coll)
-                tgt_coll = transfer_mapping.collection_map.get(src_coll)
-                tgt_coll.bsp_asset.task_layer_name = src_coll.bsp_asset.task_layer_name
 
     @classmethod
     def transfer_collection_objects(cls, 

@@ -286,10 +286,6 @@ class AssetBuilder:
 
                 # Here we don't want to update source path, we keep it as is, as we are just 'retaining' here.
 
-        # Set Task Collection reference to the new one.
-        bsp = context.scene.bsp_asset
-        bsp.task_layer_collection = mapping_task_target.collection_map.get(bsp.task_layer_collection)
-
         # Cleanup transfer.
         self._clean_up_transfer(context, transfer_triplet)
 

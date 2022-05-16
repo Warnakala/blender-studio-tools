@@ -23,6 +23,7 @@ from typing import List, Dict, Union, Any, Set, Optional
 import bpy
 
 from .ops import (
+    draw_task_layers_list,
     BSP_ASSET_init_asset_collection,
     BSP_ASSET_clear_asset_collection,
     BSP_ASSET_initial_publish,
@@ -88,43 +89,6 @@ def draw_error_asset_collection_not_init(
     box: bpy.types.UILayout,
 ) -> bpy.types.UILayout:
     box.row().label(text="Initialize Asset Collection")
-
-
-def draw_task_layers_list(
-    self: bpy.types.Panel,
-    context: bpy.types.Context,
-    prop_name: str,
-    disable: bool = False,
-) -> bpy.types.UILayout:
-    layout: bpy.types.UILayout = self.layout
-
-    """
-    Draws the task layers that are saved as a collection property on
-    context.bsp_asset.task_layers_pull or context.bsp_asset.task_layers_push.
-    `prop_name`: str has to be either: 'task_layer_pull' or 'task_layer_push'
-    """
-
-    box = layout.box()
-    row = box.row(align=True)
-    row.label(text="Task Layers")
-    row.operator(BSP_ASSET_create_prod_context.bl_idname, icon="FILE_REFRESH", text="")
-
-    # Ui-list.
-    row = box.row()
-    row.template_list(
-        "BSP_UL_task_layers",
-        f"{prop_name}_list",
-        context.scene.bsp_asset,
-        prop_name,
-        context.scene.bsp_asset,
-        f"{prop_name}_index",
-        rows=constants.DEFAULT_ROWS,
-        type="DEFAULT",
-    )
-    if disable:
-        row.enabled = False
-
-    return box
 
 
 def draw_affected_asset_publishes_list(
@@ -223,15 +187,10 @@ class BSP_ASSET_PT_vi3d_asset_pipeline(BSP_ASSET_main_panel, bpy.types.Panel):
                 "displ_entity_name",
                 text="Asset",
             )
-            row = layout.row(align=True)
-            row.prop(bsp, "active_task_layer")
-            row.prop(bsp, "use_manual_task_layers", text="", icon='PRESET')
-            layout.prop(bsp, "task_layer_collection")
 
 
-class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
-
-    bl_label = "Asset Colllection"
+class BSP_ASSET_PT_vi3d_configure(BSP_ASSET_main_panel, bpy.types.Panel):
+    bl_label = "Configure"
     bl_parent_id = "BSP_ASSET_PT_vi3d_asset_pipeline"
     bl_options = {"DEFAULT_CLOSED"}
 
@@ -252,7 +211,15 @@ class BSP_ASSET_PT_vi3d_asset_collection(BSP_ASSET_main_panel, bpy.types.Panel):
             )
             layout.row().operator(BSP_ASSET_clear_asset_collection.bl_idname)
 
-        return
+        layout.separator()
+
+        # Draw Task Layer List.
+        row = layout.row()
+        row.label(text="Owned Task Layers")
+        row = row.row()
+        row.enabled = False # TODO: This operator is crashing Blender!
+        row.operator(BSP_ASSET_create_prod_context.bl_idname, icon="FILE_REFRESH", text="")
+        draw_task_layers_list(layout, context, "task_layers_push")
 
 
 class BSP_ASSET_PT_vi3d_publish(BSP_ASSET_main_panel, bpy.types.Panel):
@@ -283,12 +250,12 @@ class BSP_ASSET_PT_vi3d_publish(BSP_ASSET_main_panel, bpy.types.Panel):
         # ---------------------------------
         if bsp.is_publish_in_progress:
 
-            if bsp.use_manual_task_layers:
-                # Draw Task Layer List.
-                box = draw_task_layers_list(self, context, "task_layers_push", disable=True)
-
             # Draw abort button.
-            layout.row().operator(BSP_ASSET_abort_publish.bl_idname)
+            layout.row().operator(BSP_ASSET_abort_publish.bl_idname, icon='X')
+
+            # Draw Task Layer List.
+            layout.label(text="Pushing Task Layers:")
+            draw_task_layers_list(layout, context, "task_layers_push", disable=True)
 
             # If new publish, draw task layer lock list.
             if len(bsp.task_layer_lock_plans.items()) > 0:
@@ -315,10 +282,6 @@ class BSP_ASSET_PT_vi3d_publish(BSP_ASSET_main_panel, bpy.types.Panel):
                 BSP_ASSET_create_prod_context.bl_idname, icon="FILE_REFRESH"
             )
             return
-
-        # Draw Task Layer List.
-        if bsp.use_manual_task_layers:
-            draw_task_layers_list(self, context, "task_layers_push")
 
         # Production Context is initialized.
         row = layout.row(align=True)
@@ -357,9 +320,6 @@ class BSP_ASSET_PT_vi3d_pull(BSP_ASSET_main_panel, bpy.types.Panel):
         if not bpy.data.filepath:
             layout.row().label(text="Blend files needs to be saved", icon="ERROR")
             return
-
-        if context.scene.bsp_asset.use_manual_task_layers:
-            draw_task_layers_list(self, context, "task_layers_pull", disable=False)
 
         box = layout.box()
         box.label(text="Pull")
@@ -571,7 +531,7 @@ classes = [
     BSP_UL_task_layers,
     BSP_UL_affected_asset_publishes,
     BSP_ASSET_PT_vi3d_asset_pipeline,
-    BSP_ASSET_PT_vi3d_asset_collection,
+    BSP_ASSET_PT_vi3d_configure,
     BSP_ASSET_PT_vi3d_publish,
     BSP_ASSET_PT_vi3d_pull,
     BSP_ASSET_PT_vi3d_status,
