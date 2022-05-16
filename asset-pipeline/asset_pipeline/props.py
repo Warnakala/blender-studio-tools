@@ -24,11 +24,19 @@ from pathlib import Path
 
 import bpy
 
-from . import constants
-from . import builder
+try:
+    import blender_kitsu.cache
+
+    kitsu_available = True
+except:
+    kitsu_available = False
+from . import constants, builder, asset_files, lib_util
 from .builder.metadata import MetadataAsset, MetadataTaskLayer
-from . import asset_files, lib_util
 from .asset_files import AssetPublish
+
+import logging
+
+logger = logging.getLogger("BSP")
 
 
 class FailedToGetAssetPublish(Exception):
@@ -279,23 +287,54 @@ class BSP_task_layer_lock_plan(bpy.types.PropertyGroup):
 
 
 class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
-    """
-    Scene Properties for Asset Pipeline
-    """
+    """Scene Properties for Asset Pipeline"""
 
-    # Gets set by BSP_ASSET_init_asset_collection
-    asset_collection: bpy.props.PointerProperty(type=bpy.types.Collection)  # type: ignore
+    def update_asset_collection(self, context):
+        """There should only be one asset collection per file, so before
+        initializing another asset collection, wipe any asset collection
+        data in the entire file.
+        """
 
-    # Display properties that can't be set by User in UI.
-    displ_asset_collection: bpy.props.StringProperty(name="Asset Collection", get=lambda self: self.asset_collection.name)  # type: ignore
+        for coll in bpy.data.collections:
+            # Clear Asset Collection attributes.
+            coll.bsp_asset.clear()
 
-    # There should only be one asset_collection per working task.
-    # We don't want that the User can directly set the tasks Asset Collection.
-    # The tmp_asset_collection property is used for the
-    # BSP_ASSET_init_asset_collection operator to know what Collection it should initialize as Asset Collection.
-    # This logic prevents having multiple Asset Collection per scene and forces user to clear the Asset Collection
-    # before initializing another one.
-    tmp_asset_collection: bpy.props.PointerProperty(type=bpy.types.Collection)  # type: ignore
+        if not self.asset_collection:
+            return
+
+        # Unitialize Asset Context.
+        builder.ASSET_CONTEXT = None
+        builder.opsdata.clear_task_layers(context)
+
+        if kitsu_available:
+            # Get active asset.
+            asset = blender_kitsu.cache.asset_active_get()
+            asset_type = blender_kitsu.cache.asset_type_active_get()
+
+            if asset:
+                # Set Asset Collection attributes.
+                self.is_asset = True
+                self.entity_id = asset.id
+                self.entity_name = asset.name
+                self.project_id = asset.project_id
+                self.entity_parent_id = asset_type.id
+                self.entity_parent_name = asset_type.name
+
+            logger.info(
+                f"Initiated Collection: {self.asset_collection.name} as Kitsu Asset: {asset.name}"
+            )
+
+        logger.info(f"Initiated Collection: {self.asset_collection.name}")
+
+        # Init Asset Context.
+        if bpy.ops.bsp_asset.create_asset_context.poll():
+            bpy.ops.bsp_asset.create_asset_context()
+
+    asset_collection: bpy.props.PointerProperty(
+        type=bpy.types.Collection,
+        name="Asset Collection",
+        update=update_asset_collection,
+    )  # type: ignore
 
     is_publish_in_progress: bpy.props.BoolProperty()  # type: ignore
     are_task_layers_pushed: bpy.props.BoolProperty()  # type: ignore

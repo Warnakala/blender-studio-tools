@@ -40,89 +40,6 @@ from ..asset_status import AssetStatus
 logger = logging.getLogger("BSP")
 
 
-class BSP_ASSET_init_asset_collection(bpy.types.Operator):
-    bl_idname = "bsp_asset.init_asset_collection"
-    bl_label = "Init Asset Collection"
-    bl_description = (
-        "Initializes a Collection as an Asset Collection. "
-        "This fills out the required metadata properties"
-    )
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        tmp_asset_coll = context.scene.bsp_asset.tmp_asset_collection
-        if tmp_asset_coll:
-            if kitsu_available:
-                return bool(blender_kitsu.cache.asset_active_get())
-            return True
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        # Query the Collection that should be initialized
-        asset_coll: bpy.types.Collection = context.scene.bsp_asset.tmp_asset_collection
-
-        # Update Asset Collection.
-        context.scene.bsp_asset.asset_collection = asset_coll
-
-        if kitsu_available:
-            # Get active asset.
-            asset = blender_kitsu.cache.asset_active_get()
-            asset_type = blender_kitsu.cache.asset_type_active_get()
-
-            # Set Asset Collection attributes.
-            asset_coll.bsp_asset.is_asset = True
-            asset_coll.bsp_asset.entity_id = asset.id
-            asset_coll.bsp_asset.entity_name = asset.name
-            asset_coll.bsp_asset.project_id = asset.project_id
-            asset_coll.bsp_asset.entity_parent_id = asset_type.id
-            asset_coll.bsp_asset.entity_parent_name = asset_type.name
-
-            logger.info(f"Initiated Collection: {asset_coll.name} as Kitsu Asset: {asset.name}")
-
-        # Clear tmp asset coll again.
-        context.scene.bsp_asset.tmp_asset_collection = None
-
-        logger.info(f"Initiated Collection: {asset_coll.name}")
-
-        # Init Asset Context.
-        if bpy.ops.bsp_asset.create_asset_context.poll():
-            bpy.ops.bsp_asset.create_asset_context()
-
-        # Redraw UI.
-        util.redraw_ui()
-
-        return {"FINISHED"}
-
-
-class BSP_ASSET_clear_asset_collection(bpy.types.Operator):
-    bl_idname = "bsp_asset.clear_asset_collection"
-    bl_label = "Clear Asset Collection"
-    bl_description = "Clears the Asset Collection. Removes all metadata properties"
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        asset_coll = context.scene.bsp_asset.asset_collection
-        return bool(asset_coll and not context.scene.bsp_asset.is_publish_in_progress)
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-
-        asset_coll = context.scene.bsp_asset.asset_collection
-
-        # Clear Asset Collection attributes.
-        asset_coll.bsp_asset.clear()
-        context.scene.bsp_asset.asset_collection = None
-
-        logger.info(f"Cleared Asset Collection: {asset_coll.name}")
-
-        # Unitialize Asset Context.
-        builder.ASSET_CONTEXT = None
-        opsdata.clear_task_layers(context)
-
-        # Redraw UI.
-        util.redraw_ui()
-
-        return {"FINISHED"}
-
-
 class BSP_ASSET_initial_publish(bpy.types.Operator):
     bl_idname = "bsp_asset.initial_publish"
     bl_label = "Create First Publish"
@@ -866,8 +783,6 @@ def create_prod_context(_):
 # ----------------REGISTER--------------.
 
 classes = [
-    BSP_ASSET_init_asset_collection,
-    BSP_ASSET_clear_asset_collection,
     BSP_ASSET_create_prod_context,
     BSP_ASSET_create_asset_context,
     BSP_ASSET_initial_publish,

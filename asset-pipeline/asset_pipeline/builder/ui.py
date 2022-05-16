@@ -24,8 +24,6 @@ import bpy
 
 from .ops import (
     draw_task_layers_list,
-    BSP_ASSET_init_asset_collection,
-    BSP_ASSET_clear_asset_collection,
     BSP_ASSET_initial_publish,
     BSP_ASSET_start_publish,
     BSP_ASSET_start_publish_new_version,
@@ -180,14 +178,6 @@ class BSP_ASSET_PT_vi3d_asset_pipeline(BSP_ASSET_main_panel, bpy.types.Panel):
             if poll_asset_collection_not_init(context):
                 draw_error_asset_collection_not_init(box)
 
-        # Display Asset Collection.
-        if bsp.asset_collection:
-            layout.row().prop(
-                bsp.asset_collection.bsp_asset,
-                "displ_entity_name",
-                text="Asset",
-            )
-
 
 class BSP_ASSET_PT_vi3d_configure(BSP_ASSET_main_panel, bpy.types.Panel):
     bl_label = "Configure"
@@ -203,14 +193,7 @@ class BSP_ASSET_PT_vi3d_configure(BSP_ASSET_main_panel, bpy.types.Panel):
                 box.label(text="Warning", icon="ERROR")
                 box.row(align=True).label(text="Select Asset in Kitsu Context Browser")
 
-            layout.row().prop(context.scene.bsp_asset, "tmp_asset_collection", text="")
-            layout.row().operator(BSP_ASSET_init_asset_collection.bl_idname)
-        else:
-            layout.row().prop(
-                context.scene.bsp_asset, "displ_asset_collection", text=""
-            )
-            layout.row().operator(BSP_ASSET_clear_asset_collection.bl_idname)
-
+        layout.row().prop(context.scene.bsp_asset, "asset_collection")
         layout.separator()
 
         # Draw Task Layer List.
