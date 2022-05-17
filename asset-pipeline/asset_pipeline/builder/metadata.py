@@ -192,10 +192,10 @@ class MetadataUser(MetadataClass):
     Tries to mirror Kitsu Asset data structure as much as possible.
     """
 
-    id: str
-    first_name: str
-    last_name: str
-    full_name: str
+    id: str = "00000000-0000-0000-0000-000000000000"
+    first_name: str = "Unknown"
+    last_name: str = "Unknown"
+    full_name: str = "Unknown"
 
 
 @dataclass

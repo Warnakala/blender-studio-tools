@@ -63,8 +63,9 @@ def init_meta_task_layer(
     d["software_hash"] = bpy.app.build_hash.decode()
     d["hostname"] = socket.gethostname()
 
+    user_dict = dict()
     if kitsu_available:
-        user: KitsuUser = blender_kitsu.cache.user_active_get()
-        d["author"] = MetadataUser.from_dict(asdict(user))
+        user_dict = asdict(blender_kitsu.cache.user_active_get())
+    d["author"] = MetadataUser.from_dict(user_dict)
 
     return MetadataTaskLayer.from_dict(d)
