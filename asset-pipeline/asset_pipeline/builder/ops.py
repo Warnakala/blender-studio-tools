@@ -394,7 +394,6 @@ class BSP_ASSET_pull(bpy.types.Operator):
             and util.is_file_saved()
             and builder.PROD_CONTEXT
             and builder.ASSET_CONTEXT
-            and opsdata.are_any_task_layers_enabled_pull(context)
         )
 
     def invoke(self, context, event):
