@@ -67,11 +67,14 @@ def populate_task_layers(
 
             # Restore previous settings.
             if key in tmp_backup:
-                item.use = tmp_backup[key]["use"]
+                bkp = tmp_backup.get(key)
+                if not bkp:
+                    continue
+                item.use = bkp["use"]
 
                 # Update actual ASSET_CONTEXT, which will transfer the task layer settings,
                 # which we restored from scene level.
-                task_layer_config.use = tmp_backup[key]["use"]
+                task_layer_config.use = bkp["use"]
 
 
 def add_asset_publish_to_context(

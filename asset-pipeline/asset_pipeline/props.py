@@ -304,7 +304,6 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
 
         # Unitialize Asset Context.
         builder.ASSET_CONTEXT = None
-        builder.opsdata.clear_task_layers(context)
 
         if kitsu_available:
             # Get active asset.
