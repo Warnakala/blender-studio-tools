@@ -25,9 +25,9 @@ from pathlib import Path
 import bpy
 
 try:
+    from .util import is_addon_active
     import blender_kitsu.cache
-
-    kitsu_available = True
+    kitsu_available = is_addon_active("blender_kitsu")
 except:
     kitsu_available = False
 from . import constants, builder, asset_files, lib_util

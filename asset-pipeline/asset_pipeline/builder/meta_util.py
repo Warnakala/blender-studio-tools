@@ -35,9 +35,9 @@ from ..asset_files import AssetTask, AssetPublish
 from .. import constants
 
 try:
+    from .util import is_addon_active
     import blender_kitsu.cache
-    from blender_kitsu.types import User as KitsuUser
-    kitsu_available = True
+    kitsu_available = is_addon_active("blender_kitsu")
 except:
     kitsu_available = False
 

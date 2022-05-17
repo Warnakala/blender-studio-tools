@@ -21,6 +21,7 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple, Generator
 
 import bpy
+import addon_utils
 
 
 def redraw_ui() -> None:
@@ -51,6 +52,16 @@ def traverse_collection_tree(
 def del_collection(collection: bpy.types.Collection) -> None:
     collection.user_clear()
     bpy.data.collections.remove(collection)
+
+
+def is_addon_active(context, module_name):
+    """Returns whether an addon is loaded and enabled in the current workspace."""
+    is_enabled_in_prefs = addon_utils.check(module_name)[1]
+    if is_enabled_in_prefs and context.workspace.use_filter_by_owner:
+        is_enabled_in_workspace = module_name in context.workspace.owner_ids
+        return is_enabled_in_workspace
+
+    return is_enabled_in_prefs
 
 
 def reset_armature_pose(

@@ -39,8 +39,9 @@ from .ops import (
 from .. import builder, constants, prop_utils, util
 
 try:
+    from .util import is_addon_active
     import blender_kitsu.cache
-    kitsu_available = True
+    kitsu_available = is_addon_active("blender_kitsu")
 except:
     kitsu_available = False
 
