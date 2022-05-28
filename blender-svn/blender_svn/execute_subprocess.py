@@ -8,12 +8,11 @@ def command_with_credential(context, command) -> str:
     return command + f' --username "{cred.username}" --password "{cred.password}"'
 
 def execute_command(path: str, command: str) -> str:
-    return str(
-        subprocess.check_output(
-            (command), shell=True, cwd=path+"/", stderr=subprocess.PIPE, start_new_session=True
-        ),
-        'utf-8'
+    output_bytes = subprocess.check_output(
+        (command), shell=True, cwd=path+"/", stderr=subprocess.PIPE, start_new_session=True
     )
+    
+    return output_bytes.decode(encoding='utf-8', errors='replace')
 
 def execute_svn_command(context, command: str, suppress_errors=False, use_cred=False) -> str:
     """Execute an svn command in the root of the current svn repository.

@@ -146,6 +146,8 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         svn = context.scene.svn
+        if len(context.scene.svn.log) == 0:
+            return False
         any_visible = svn.get_visible_indicies(context)
         if not any_visible:
             return False

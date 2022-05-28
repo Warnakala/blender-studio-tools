@@ -373,7 +373,10 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
     @property
     def active_log(self):
-        return self.log[self.log_active_index]
+        try:
+            return self.log[self.log_active_index]
+        except IndexError:
+            return None
 
     def get_log_by_revision(self, revision: int) -> Tuple[int, SVN_log]:
         for i, log in enumerate(self.log):
