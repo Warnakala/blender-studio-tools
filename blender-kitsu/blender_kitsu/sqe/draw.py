@@ -130,4 +130,8 @@ def unregister():
     if bpy.app.background:
         return
     for handle in reversed(draw_handles):
-        bpy.types.SpaceSequenceEditor.draw_handler_remove(handle, 'WINDOW')
+        try:
+            bpy.types.SpaceSequenceEditor.draw_handler_remove(handle, 'WINDOW')
+        except ValueError:
+            # Not sure why, but sometimes the handler seems to already be removed...??
+            pass
