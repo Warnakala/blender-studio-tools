@@ -54,8 +54,10 @@ def del_collection(collection: bpy.types.Collection) -> None:
     bpy.data.collections.remove(collection)
 
 
-def is_addon_active(context, module_name):
+def is_addon_active(module_name, context=None):
     """Returns whether an addon is loaded and enabled in the current workspace."""
+    if not context:
+        context=bpy.context
     is_enabled_in_prefs = addon_utils.check(module_name)[1]
     if is_enabled_in_prefs and context.workspace.use_filter_by_owner:
         is_enabled_in_workspace = module_name in context.workspace.owner_ids

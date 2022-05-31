@@ -27,7 +27,7 @@ import bpy
 try:
     from .util import is_addon_active
     import blender_kitsu.cache
-    kitsu_available = is_addon_active("blender_kitsu")
+    kitsu_available = True
 except:
     kitsu_available = False
 from . import constants, builder, asset_files, lib_util
@@ -302,22 +302,25 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
         if not self.asset_collection:
             return
 
+        bsp_asset = self.asset_collection.bsp_asset
+        bsp_asset.entity_name = self.asset_collection.name.split("-")[-1].title()
+
         # Unitialize Asset Context.
         builder.ASSET_CONTEXT = None
 
-        if kitsu_available:
+        if kitsu_available and is_addon_active("blender_kitsu", context):
             # Get active asset.
             asset = blender_kitsu.cache.asset_active_get()
             asset_type = blender_kitsu.cache.asset_type_active_get()
 
             if asset:
                 # Set Asset Collection attributes.
-                self.is_asset = True
-                self.entity_id = asset.id
-                self.entity_name = asset.name
-                self.project_id = asset.project_id
-                self.entity_parent_id = asset_type.id
-                self.entity_parent_name = asset_type.name
+                bsp_asset.is_asset = True
+                bsp_asset.entity_id = asset.id
+                bsp_asset.entity_name = asset.name
+                bsp_asset.project_id = asset.project_id
+                bsp_asset.entity_parent_id = asset_type.id
+                bsp_asset.entity_parent_name = asset_type.name
 
             logger.info(
                 f"Initiated Collection: {self.asset_collection.name} as Kitsu Asset: {asset.name}"

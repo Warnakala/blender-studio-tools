@@ -26,13 +26,6 @@ from pathlib import Path
 import bpy
 from bpy.app.handlers import persistent
 
-try:
-    from .util import is_addon_active
-    import blender_kitsu.cache
-    kitsu_available = is_addon_active("blender_kitsu")
-except:
-    kitsu_available = False
-
 from . import opsdata
 
 from .. import asset_status, util, builder, constants

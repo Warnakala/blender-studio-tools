@@ -41,7 +41,7 @@ from .. import builder, constants, prop_utils, util
 try:
     from .util import is_addon_active
     import blender_kitsu.cache
-    kitsu_available = is_addon_active("blender_kitsu")
+    kitsu_available = True
 except:
     kitsu_available = False
 
@@ -189,7 +189,7 @@ class BSP_ASSET_PT_vi3d_configure(BSP_ASSET_main_panel, bpy.types.Panel):
         layout: bpy.types.UILayout = self.layout
 
         if not context.scene.bsp_asset.asset_collection:
-            if kitsu_available and not blender_kitsu.cache.asset_active_get():
+            if kitsu_available and is_addon_active("blender_kitsu", context) and not blender_kitsu.cache.asset_active_get():
                 box = layout.box()
                 box.label(text="Warning", icon="ERROR")
                 box.row(align=True).label(text="Select Asset in Kitsu Context Browser")

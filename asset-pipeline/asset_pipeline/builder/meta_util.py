@@ -37,7 +37,7 @@ from .. import constants
 try:
     from .util import is_addon_active
     import blender_kitsu.cache
-    kitsu_available = is_addon_active("blender_kitsu")
+    kitsu_available = True
 except:
     kitsu_available = False
 
@@ -64,7 +64,7 @@ def init_meta_task_layer(
     d["hostname"] = socket.gethostname()
 
     user_dict = dict()
-    if kitsu_available:
+    if kitsu_available and is_addon_active("blender_kitsu"):
         user_dict = asdict(blender_kitsu.cache.user_active_get())
     d["author"] = MetadataUser.from_dict(user_dict)
 
