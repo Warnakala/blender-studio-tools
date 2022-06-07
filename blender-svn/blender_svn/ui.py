@@ -249,25 +249,25 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        if svn_update.SVN_UPDATE_THREAD:
-            layout.label(text="SVN Update in progress...")
-
-        if svn_commit.SVN_COMMIT_THREAD:
-            layout.label(text="SVN Commit in progress...")
-
         svn = context.scene.svn
         if svn.svn_error:
             row = layout.row()
             row.alert = True
-            warning = row.operator('svn.custom_tooltip', text="SVN: Error Occurred", icon='ERROR')
+            warning = row.operator('svn.clear_error', text="SVN: Error Occurred", icon='ERROR')
             warning.tooltip = svn.svn_error
             warning.copy_on_click = True
+        else:
+            if svn_update.SVN_UPDATE_THREAD:
+                layout.label(text="SVN Update in progress...")
 
-        # Calculate time since last status update
-        if context.scene.svn.seconds_since_last_update > 30:
-            row = layout.row()
-            row.label(text="Acquiring file statuses from remote, please wait...")
-            return
+            if svn_commit.SVN_COMMIT_THREAD:
+                layout.label(text="SVN Commit in progress...")
+
+            # Calculate time since last status update
+            if svn.seconds_since_last_update > 30:
+                row = layout.row()
+                row.label(text="Acquiring file statuses from remote, please wait...")
+                return
 
         main_row = layout.row()
         split = main_row.split(factor=0.6)
@@ -330,6 +330,18 @@ class SVN_custom_tooltip(bpy.types.Operator):
             context.window_manager.clipboard = self.tooltip
         return {'FINISHED'}
 
+class SVN_clear_error(SVN_custom_tooltip):
+    bl_idname = "svn.clear_error"
+    bl_label = "Error:"
+    bl_description = ""
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        super().execute(context)
+        context.scene.svn.svn_error = ""
+        svn_update.SVN_UPDATE_THREAD = None
+        svn_commit.SVN_COMMIT_THREAD = None
+        return {'FINISHED'}
 
 def draw_outdated_file_warning(self, context):
     svn = context.scene.svn
@@ -358,7 +370,8 @@ registry = [
     SVN_UL_file_list,
     VIEW3D_PT_svn_credentials,
     VIEW3D_PT_svn_files,
-    SVN_custom_tooltip
+    SVN_custom_tooltip,
+    SVN_clear_error
 ]
 
 

@@ -367,6 +367,8 @@ def async_get_svn_log():
 
     context = bpy.context
     svn = context.scene.svn
+    if svn.svn_error:
+        return
 
     latest_log_rev = 0
     if len(svn.log) > 0:

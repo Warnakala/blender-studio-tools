@@ -138,14 +138,21 @@ def async_svn_commit():
     global SVN_COMMIT_OUTPUT
     global SVN_COMMIT_MSG
     global SVN_COMMIT_FILELIST
+    global SVN_COMMIT_THREAD
     SVN_COMMIT_OUTPUT = ""
     filepaths = " ".join(SVN_COMMIT_FILELIST)
 
     context = bpy.context
-    SVN_COMMIT_OUTPUT = execute_svn_command(context, f'svn commit -m "{SVN_COMMIT_MSG}" {filepaths}', use_cred=True)
-    if type(SVN_COMMIT_OUTPUT) == subprocess.CalledProcessError:
-        print("Committing failed, try again.")
-        print(SVN_COMMIT_OUTPUT.stderr.decode())
+    if context.scene.svn.svn_error:
+        return
+    if not SVN_COMMIT_MSG:
+        SVN_COMMIT_THREAD = None
+        return
+    try:
+        sanitized_commit_msg = SVN_COMMIT_MSG.replace('"', "'")
+        SVN_COMMIT_OUTPUT = execute_svn_command(context, f'svn commit -m "{sanitized_commit_msg}" {filepaths}', use_cred=True)
+    except subprocess.CalledProcessError as error:
+        print("Commit failed.")
         SVN_COMMIT_OUTPUT = ""
         svn_commit_background_stop()
     SVN_COMMIT_MSG = ""

@@ -209,6 +209,8 @@ def async_get_verbose_svn_status():
     cred = prefs.get_credentials()
     if not cred.authenticated:
         return
+    if context.scene.svn.svn_error:
+        return
     svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml')
     SVN_STATUS_OUTPUT = get_repo_file_statuses(svn_status_str)
 
@@ -291,7 +293,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             # updates on files that are being updated or committed.
             continue
 
-        if not entry_existed and (file_entry.repos_status == 'none' and repos_status != 'none'):
+        if entry_existed and (file_entry.repos_status == 'none' and repos_status != 'none'):
             new_files_on_repo = True
 
         file_entry.revision = revision

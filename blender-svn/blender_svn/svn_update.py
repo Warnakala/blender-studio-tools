@@ -67,6 +67,8 @@ def async_svn_update():
     SVN_UPDATE_OUTPUT = ""
 
     context = bpy.context
+    if context.scene.svn.svn_error:
+        return
     print("Updating SVN files in background...")
     SVN_UPDATE_OUTPUT = execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
 
