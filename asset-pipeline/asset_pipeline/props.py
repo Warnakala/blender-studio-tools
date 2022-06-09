@@ -238,7 +238,15 @@ class BSP_asset_file(bpy.types.PropertyGroup):
 
 class BSP_ASSET_imported_asset_collection(bpy.types.PropertyGroup):
 
-    collection: bpy.props.PointerProperty(type=bpy.types.Collection)  # type: ignore
+    # XXX: This is not a pointer due to a bug where disabled/excluded collections
+    # that have a pointer from the scene cause them to be partially evaluated.
+    collection_name: bpy.props.StringProperty(name="Collection Name", description="Name of the imported asset collection")  # type: ignore
+    @property
+    def collection(self):
+        return bpy.data.collections.get(self.collection_name)
+    @collection.setter
+    def collection(self, value):
+        self.collection_name = value.name
 
     asset_publishes: bpy.props.CollectionProperty(type=BSP_asset_file)  # type: ignore
 
