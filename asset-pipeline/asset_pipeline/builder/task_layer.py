@@ -71,8 +71,8 @@ class TaskLayer:
         transfer_mapping: AssetTransferMapping,
         transfer_settings: bpy.types.PropertyGroup,
     ) -> None:
-        cls.transfer_data(context, build_context, transfer_mapping, transfer_settings)
         cls.transfer_collections(transfer_mapping)
+        cls.transfer_data(context, build_context, transfer_mapping, transfer_settings)
 
     @classmethod
     def transfer_data(
