@@ -144,6 +144,7 @@ class TaskLayer:
             src_suffix = transfer_mapping.source_coll.bsp_asset.transfer_suffix
             tgt_suffix = transfer_mapping.target_coll.bsp_asset.transfer_suffix
             tgt_coll = bpy.data.collections.new(src_coll.name.replace(src_suffix, tgt_suffix))
+            transfer_mapping._collection_map[src_coll] = tgt_coll
             tgt_parent = transfer_mapping.collection_map.get(parent_coll)
             assert tgt_parent, "The corresponding target parent collection should've been created in the previous recursion: " + src_coll.name
             tgt_parent.children.link(tgt_coll)
