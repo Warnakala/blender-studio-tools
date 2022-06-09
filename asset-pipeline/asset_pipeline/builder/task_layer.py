@@ -149,7 +149,7 @@ class TaskLayer:
             assert tgt_parent, "The corresponding target parent collection should've been created in the previous recursion: " + src_coll.name
             tgt_parent.children.link(tgt_coll)
 
-        # Un-assigning everything from the target coll.
+        '''# Un-assigning everything from the target coll.
         for o in tgt_coll.objects:
             tgt_coll.objects.unlink(o)
 
@@ -158,7 +158,7 @@ class TaskLayer:
             tgt_ob = transfer_mapping.object_map.get(src_ob)
             if not tgt_ob:
                 tgt_ob = src_ob
-            tgt_coll.objects.link(tgt_ob)
+            tgt_coll.objects.link(tgt_ob)'''
         
         # Do the same recursively for child collections.
         for child_coll in src_coll.children:
