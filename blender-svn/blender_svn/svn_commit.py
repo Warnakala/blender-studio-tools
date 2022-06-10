@@ -63,7 +63,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         row = layout.row()
         row.label(text="Filename")
         row.label(text="Status")
-        for idx, file in enumerate(files):
+        for idx, file in enumerate(files[:32]):
             row = layout.row()
             row.prop(self, "selection", index=idx, text=file.name)
             text = file.status_name
@@ -90,7 +90,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         committable_files = self.get_committable_files(context)
-        files_to_commit = [f for i, f in enumerate(committable_files) if self.selection[i]]
+        files_to_commit = [f for i, f in enumerate(committable_files[:32]) if self.selection[i]]
 
         if not files_to_commit:
             self.report({'ERROR'}, "No files were selected, nothing to commit.")
