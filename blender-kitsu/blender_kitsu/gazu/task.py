@@ -1,8 +1,15 @@
 import string
+import json
+
+from gazu.exception import TaskStatusNotFound
 
 from . import client as raw
 from .sorting import sort_by_name
-from .helpers import normalize_model_parameter
+from .helpers import (
+    download_file,
+    normalize_model_parameter,
+    normalize_list_of_models_for_links,
+)
 
 from .cache import cache
 
@@ -27,6 +34,32 @@ def all_task_types(client=default):
     """
     task_types = raw.fetch_all("task-types", client=client)
     return sort_by_name(task_types)
+
+
+@cache
+def all_task_types_for_project(project, client=default):
+    """
+    Returns:
+        list: Task types stored in database.
+    """
+    project = normalize_model_parameter(project)
+    task_types = raw.fetch_all(
+        "projects/%s/task-types" % project["id"], client=client
+    )
+    return sort_by_name(task_types)
+
+
+@cache
+def all_task_statuses_for_project(project, client=default):
+    """
+    Returns:
+        list: Task status stored in database.
+    """
+    project = normalize_model_parameter(project)
+    task_statuses = raw.fetch_all(
+        "projects/%s/settings/task-status" % project["id"], client=client
+    )
+    return sort_by_name(task_statuses)
 
 
 @cache
@@ -143,6 +176,20 @@ def all_shot_tasks_for_episode(episode, relations=False, client=default):
 
 
 @cache
+def all_assets_tasks_for_episode(episode, relations=False, client=default):
+    """
+    Retrieve all tasks directly linked to all assets of given episode.
+    """
+    episode = normalize_model_parameter(episode)
+    params = {}
+    if relations:
+        params = {"relations": "true"}
+    path = "episodes/%s/asset-tasks" % episode["id"]
+    tasks = raw.fetch_all(path, params, client=client)
+    return sort_by_name(tasks)
+
+
+@cache
 def all_tasks_for_task_status(project, task_type, task_status, client=default):
     """
     Args:
@@ -163,7 +210,7 @@ def all_tasks_for_task_status(project, task_type, task_status, client=default):
             "task_type_id": task_type["id"],
             "task_status_id": task_status["id"],
         },
-        client=client
+        client=client,
     )
 
 
@@ -185,7 +232,7 @@ def all_tasks_for_task_type(project, task_type, client=default):
             "project_id": project["id"],
             "task_type_id": task_type["id"],
         },
-        client=client
+        client=client,
     )
 
 
@@ -325,7 +372,7 @@ def get_task_by_name(entity, task_type, name="main", client=default):
             "task_type_id": task_type["id"],
             "entity_id": entity["id"],
         },
-        client=client
+        client=client,
     )
 
 
@@ -401,6 +448,18 @@ def get_task_status_by_name(name, client=default):
 
 
 @cache
+def get_default_task_status(client=default):
+    """
+    Args:
+        name (str / dict): The name of claimed task status.
+
+    Returns:
+        dict: Task status matching given name.
+    """
+    return raw.fetch_first("task-status", {"is_default": True}, client=client)
+
+
+@cache
 def get_task_status_by_short_name(task_status_short_name, client=default):
     """
     Args:
@@ -411,6 +470,21 @@ def get_task_status_by_short_name(task_status_short_name, client=default):
     """
     return raw.fetch_first(
         "task-status", {"short_name": task_status_short_name}, client=client
+    )
+
+
+def remove_task_type(task_type, client=default):
+    """
+    Remove given task type from database.
+
+    Args:
+        task_type (str / dict): The task type dict or ID.
+    """
+    task_type = normalize_model_parameter(task_type)
+    return raw.delete(
+        "data/task-types/%s" % task_type["id"],
+        {"force": "true"},
+        client=client,
     )
 
 
@@ -425,7 +499,7 @@ def remove_task_status(task_status, client=default):
     return raw.delete(
         "data/task-status/%s" % task_status["id"],
         {"force": "true"},
-        client=client
+        client=client,
     )
 
 
@@ -448,8 +522,8 @@ def new_task(
     name="main",
     task_status=None,
     assigner=None,
-    assignees=None,
-    client=default
+    assignees=[],
+    client=default,
 ):
     """
     Create a new task for given entity and task type.
@@ -468,23 +542,19 @@ def new_task(
     entity = normalize_model_parameter(entity)
     task_type = normalize_model_parameter(task_type)
     if task_status is None:
-        task_status = get_task_status_by_name("Todo", client=client)
+        task_status = get_default_task_status()
 
     data = {
         "project_id": entity["project_id"],
         "entity_id": entity["id"],
         "task_type_id": task_type["id"],
         "task_status_id": task_status["id"],
+        "assignees": normalize_list_of_models_for_links(assignees),
         "name": name,
     }
 
     if assigner is not None:
-        data["assigner_id"] = assigner["id"]
-
-    if assignees is not None:
-        data["assignees"] = [person["id"] for person in assignees]
-    else:
-        data["assignees"] = []
+        data["assigner_id"] = normalize_model_parameter(assigner)["id"]
 
     task = get_task_by_name(entity, task_type, name, client=client)
     if task is None:
@@ -503,19 +573,32 @@ def remove_task(task, client=default):
     raw.delete("data/tasks/%s" % task["id"], {"force": "true"}, client=client)
 
 
-def start_task(task, client=default):
+def start_task(task, started_task_status=None, client=default):
     """
-    Change a task status to WIP and set its real start date to now.
+    Create a comment to change task status to started_task_status
+    (by default WIP) and set its real start date to now.
 
     Args:
         task (str / dict): The task dict or the task ID.
 
     Returns:
-        dict: Modified task.
+        dict: Created comment.
     """
-    task = normalize_model_parameter(task)
-    path = "actions/tasks/%s/start" % task["id"]
-    return raw.put(path, {}, client=client)
+    if started_task_status is None:
+        started_task_status = get_task_status_by_short_name(
+            "wip", client=client
+        )
+        if started_task_status is None:
+            raise TaskStatusNotFound(
+                (
+                    "started_task_status is None : 'wip' task status is "
+                    "non-existent. You have to create it or to set an other "
+                    "task status for started_task_status in the parameters "
+                    "of the function."
+                )
+            )
+
+    return add_comment(task, started_task_status, client=client)
 
 
 def task_to_review(
@@ -625,7 +708,7 @@ def add_comment(
     checklist=[],
     attachments=[],
     created_at=None,
-    client=default
+    client=default,
 ):
     """
     Add comment to given task. Each comment requires a task_status. Since the
@@ -647,7 +730,7 @@ def add_comment(
     data = {
         "task_status_id": task_status["id"],
         "comment": comment,
-        "checklist": checklist
+        "checklist": checklist,
     }
 
     if person is not None:
@@ -659,20 +742,61 @@ def add_comment(
 
     if len(attachments) == 0:
         return raw.post(
-            "actions/tasks/%s/comment" % task["id"],
-            data,
-            client=client
+            "actions/tasks/%s/comment" % task["id"], data, client=client
         )
-
     else:
         attachment = attachments.pop()
+        data["checklist"] = json.dumps(checklist)
         return raw.upload(
             "actions/tasks/%s/comment" % task["id"],
             attachment,
             data=data,
             extra_files=attachments,
-            client=client
+            client=client,
         )
+
+
+def add_attachment_files_to_comment(
+    task, comment, attachments=[], client=default
+):
+    """
+    Add attachments files to a given comment.
+
+    Args:
+        task (dict / ID): The task dict or the task ID.
+        comment (dict / ID): The comment dict or the comment ID.
+        attachments (list / str) : A list of path for attachments or directly the path.
+
+    Returns:
+        dict: Added attachment files.
+    """
+    if isinstance(attachments, str):
+        attachments = [attachments]
+    if len(attachments) == 0:
+        raise ValueError("The attachments list is empty")
+    task = normalize_model_parameter(task)
+    comment = normalize_model_parameter(comment)
+    attachment = attachments.pop()
+    return raw.upload(
+        "actions/tasks/%s/comments/%s/add-attachment"
+        % (task["id"], comment["id"]),
+        attachment,
+        extra_files=attachments,
+        client=client,
+    )
+
+
+def get_comment(comment_id, client=default):
+    """
+    Get comment instance
+
+    Args:
+        comment_id (ID): The comment ID.
+
+    Returns:
+        dict: Given comment instance.
+    """
+    return raw.fetch_one("comments", comment_id, client=client)
 
 
 def remove_comment(comment, client=default):
@@ -684,7 +808,7 @@ def remove_comment(comment, client=default):
         comment (str / dict): The comment dict or the comment ID.
     """
     comment = normalize_model_parameter(comment)
-    return raw.delete("data/comments/%s" % comment["id"], client=client)
+    return raw.delete("data/comments/%s" % (comment["id"]), client=client)
 
 
 def create_preview(task, comment, client=default):
@@ -707,7 +831,9 @@ def create_preview(task, comment, client=default):
     return raw.post(path, {}, client=client)
 
 
-def upload_preview_file(preview, file_path, client=default):
+def upload_preview_file(
+    preview, file_path, normalize_movie=True, client=default
+):
     """
     Create a preview into given comment.
 
@@ -715,11 +841,22 @@ def upload_preview_file(preview, file_path, client=default):
         task (str / dict): The task dict or the task ID.
         file_path (str): Path of the file to upload as preview.
     """
-    path = "pictures/preview-files/%s" % preview["id"]
-    raw.upload(path, file_path, client=client)
+    path = (
+        "pictures/preview-files/%s" % normalize_model_parameter(preview)["id"]
+    )
+    if not normalize_movie:
+        path += "?normalize=false"
+    return raw.upload(path, file_path, client=client)
 
 
-def add_preview(task, comment, preview_file_path, client=default):
+def add_preview(
+    task,
+    comment,
+    preview_file_path=None,
+    preview_file_url=None,
+    normalize_movie=True,
+    client=default,
+):
     """
     Add a preview to given comment.
 
@@ -731,9 +868,18 @@ def add_preview(task, comment, preview_file_path, client=default):
     Returns:
         dict: Created preview file model.
     """
+    if preview_file_url is not None:
+        preview_file_path = download_file(
+            preview_file_url,
+        )
+
     preview_file = create_preview(task, comment, client=client)
-    upload_preview_file(preview_file, preview_file_path, client=client)
-    return preview_file
+    return upload_preview_file(
+        preview_file,
+        preview_file_path,
+        normalize_movie=normalize_movie,
+        client=client,
+    )
 
 
 def set_main_preview(preview_file, client=default):
@@ -839,6 +985,10 @@ def update_task(task, client=default):
     Returns:
         dict: Updated task.
     """
+    if "assignees" in task:
+        task["assignees"] = normalize_list_of_models_for_links(
+            task["assignees"]
+        )
     return raw.put("data/tasks/%s" % task["id"], task, client=client)
 
 
@@ -861,7 +1011,7 @@ def update_task_data(task, data={}, client=default):
     if updated_task["data"] is None:
         updated_task["data"] = {}
     updated_task["data"].update(data)
-    update_task(updated_task, client=client)
+    return update_task(updated_task, client=client)
 
 
 @cache
@@ -893,3 +1043,17 @@ def all_tasks_for_project(project, client=default):
     project = normalize_model_parameter(project)
     path = "/data/projects/%s/tasks" % project["id"]
     return raw.get(path, client=client)
+
+
+def update_comment(comment, client=default):
+    """
+    Save given comment data into the API. Metadata are fully replaced by the ones
+    set on given comment.
+
+    Args:
+        comment (dict): The comment dict to update.
+
+    Returns:
+        dict: Updated comment.
+    """
+    return raw.put("data/comments/%s" % comment["id"], comment, client=client)

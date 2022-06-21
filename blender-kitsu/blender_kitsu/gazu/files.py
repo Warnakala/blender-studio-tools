@@ -41,7 +41,7 @@ def all_output_types_for_asset_instance(
     return raw.fetch_all(
         "asset-instances/%s/entities/%s/output-types"
         % (asset_instance["id"], temporal_entity["id"]),
-        client=client
+        client=client,
     )
 
 
@@ -107,7 +107,7 @@ def get_output_file(output_file_id, client=default):
 def get_output_file_by_path(path, client=default):
     """
     Args:
-        output_file_id (str, client=default): Path of claimed output file.
+        path (str): Path of claimed output file.
 
     Returns:
         dict: Output file matching given path.
@@ -124,7 +124,7 @@ def get_all_working_files_for_entity(
     """
     entity = normalize_model_parameter(entity)
     task = normalize_model_parameter(task)
-    path = "entities/{entity_id}/working-files?".format(entity_id=entity["id"])
+    path = "entities/{entity_id}/working-files".format(entity_id=entity["id"])
 
     params = {}
     if task is not None:
@@ -161,6 +161,20 @@ def get_all_preview_files_for_task(task, client=default):
     )
 
 
+@cache
+def get_all_attachment_files_for_task(task, client=default):
+    """
+    Retrieves all the attachment files for a given task.
+
+    Args:
+        task (str, id): Target task
+    """
+    task = normalize_model_parameter(task)
+    return raw.fetch_all(
+        "tasks/%s/attachment-files" % task["id"], client=client
+    )
+
+
 def all_output_files_for_entity(
     entity,
     output_type=None,
@@ -168,7 +182,7 @@ def all_output_files_for_entity(
     name=None,
     representation=None,
     file_status=None,
-    client=default
+    client=default,
 ):
     """
     Args:
@@ -214,7 +228,7 @@ def all_output_files_for_asset_instance(
     name=None,
     representation=None,
     file_status=None,
-    client=default
+    client=default,
 ):
     """
     Args:
@@ -321,7 +335,7 @@ def build_working_file_path(
     software=None,
     revision=1,
     sep="/",
-    client=default
+    client=default,
 ):
     """
     From the file path template configured at the project level and arguments,
@@ -364,7 +378,7 @@ def build_entity_output_file_path(
     revision=0,
     nb_elements=1,
     sep="/",
-    client=default
+    client=default,
 ):
     """
     From the file path template configured at the project level and arguments,
@@ -421,7 +435,7 @@ def build_asset_instance_output_file_path(
     revision=0,
     nb_elements=1,
     sep="/",
-    client=default
+    client=default,
 ):
     """
     From the file path template configured at the project level and arguments,
@@ -481,7 +495,7 @@ def new_working_file(
     person=None,
     revision=0,
     sep="/",
-    client=default
+    client=default,
 ):
     """
     Create a new working_file for given task. It generates and store the
@@ -516,7 +530,9 @@ def new_working_file(
     if software is not None:
         data["software_id"] = software["id"]
 
-    return raw.post("data/tasks/%s/working-files/new" % task["id"], data, client=client)
+    return raw.post(
+        "data/tasks/%s/working-files/new" % task["id"], data, client=client
+    )
 
 
 def new_entity_output_file(
@@ -533,7 +549,7 @@ def new_entity_output_file(
     representation="",
     sep="/",
     file_status_id=None,
-    client=default
+    client=default,
 ):
     """
     Create a new output file for given entity, task type and output type.
@@ -605,7 +621,7 @@ def new_asset_instance_output_file(
     representation="",
     sep="/",
     file_status_id=None,
-    client=default
+    client=default,
 ):
     """
     Create a new output file for given asset instance, temporal entity, task
@@ -696,7 +712,7 @@ def get_next_asset_instance_output_revision(
     output_type,
     task_type,
     name="master",
-    client=default
+    client=default,
 ):
     """
     Args:
@@ -713,9 +729,9 @@ def get_next_asset_instance_output_revision(
     temporal_entity = normalize_model_parameter(temporal_entity)
     output_type = normalize_model_parameter(output_type)
     task_type = normalize_model_parameter(task_type)
-    path = (
-        "data/asset-instances/%s/entities/%s/output-files/next-revision"
-        % (asset_instance["id"], temporal_entity["id"])
+    path = "data/asset-instances/%s/entities/%s/output-files/next-revision" % (
+        asset_instance["id"],
+        temporal_entity["id"],
     )
     data = {
         "name": name,
@@ -756,7 +772,7 @@ def get_last_asset_instance_output_revision(
     output_type,
     task_type,
     name="master",
-    client=default
+    client=default,
 ):
     """
     Generate last output revision for given asset instance.
@@ -766,8 +782,12 @@ def get_last_asset_instance_output_revision(
     output_type = normalize_model_parameter(output_type)
     task_type = normalize_model_parameter(task_type)
     revision = get_next_asset_instance_output_revision(
-        asset_instance, temporal_entity, output_type, task_type, name=name,
-        client=client
+        asset_instance,
+        temporal_entity,
+        output_type,
+        task_type,
+        name=name,
+        client=client,
     )
     if revision != 1:
         revision -= 1
@@ -782,7 +802,7 @@ def get_last_output_files_for_entity(
     name=None,
     representation=None,
     file_status=None,
-    client=default
+    client=default,
 ):
     """
     Args:
@@ -830,7 +850,7 @@ def get_last_output_files_for_asset_instance(
     name=None,
     representation=None,
     file_status=None,
-    client=default
+    client=default,
 ):
     """
     Args:
@@ -946,7 +966,7 @@ def update_comment(working_file, comment, client=default):
     return raw.put(
         "/actions/working-files/%s/comment" % working_file["id"],
         {"comment": comment},
-        client=client
+        client=client,
     )
 
 
@@ -961,8 +981,9 @@ def update_modification_date(working_file, client=default):
         dict: Modified working file
     """
     return raw.put(
-        "/actions/working-files/%s/modified" % working_file["id"], {},
-        client=client
+        "/actions/working-files/%s/modified" % working_file["id"],
+        {},
+        client=client,
     )
 
 
@@ -1042,13 +1063,14 @@ def download_working_file(working_file, file_path=None, client=default):
     """
     working_file = normalize_model_parameter(working_file)
     if file_path is None:
-        working_file = \
-            raw.fetch_one("working-files", working_file["id"], client=client)
+        working_file = raw.fetch_one(
+            "working-files", working_file["id"], client=client
+        )
         file_path = working_file["path"]
     return raw.download(
         "data/working-files/%s/file" % (working_file["id"]),
         file_path,
-        client=client
+        client=client,
     )
 
 
@@ -1060,16 +1082,29 @@ def download_preview_file(preview_file, file_path, client=default):
         preview_file (str / dict): The preview file dict or ID.
         file_path (str): Location on hard drive where to save the file.
     """
+    return raw.download(
+        get_preview_file_url(preview_file),
+        file_path,
+        client=client,
+    )
+
+
+def get_preview_file_url(preview_file, client=default):
+    """
+    Return given preview file URL
+
+    Args:
+        preview_file (str / dict): The preview file dict or ID.
+    """
     preview_file = normalize_model_parameter(preview_file)
     preview_file = raw.fetch_one(
         "preview-files", preview_file["id"], client=client
     )
-    file_type = 'movies' if preview_file['extension'] == 'mp4' else 'pictures'
-    return raw.download(
-        "%s/originals/preview-files/%s.%s"
-        % (file_type, preview_file["id"], preview_file["extension"]),
-        file_path,
-        client=client
+    file_type = "movies" if preview_file["extension"] == "mp4" else "pictures"
+    return "%s/originals/preview-files/%s.%s" % (
+        file_type,
+        preview_file["id"],
+        preview_file["extension"],
     )
 
 
@@ -1094,12 +1129,10 @@ def download_attachment_file(attachment_file, file_path, client=default):
     attachment_file = normalize_model_parameter(attachment_file)
     attachment_file = get_attachment_file(attachment_file["id"], client=client)
     return raw.download(
-        "data/attachment-files/%s/file/%s" % (
-            attachment_file["id"],
-            attachment_file["name"]
-        ),
+        "data/attachment-files/%s/file/%s"
+        % (attachment_file["id"], attachment_file["name"]),
         file_path,
-        client=client
+        client=client,
     )
 
 
@@ -1116,7 +1149,52 @@ def download_preview_file_thumbnail(preview_file, file_path, client=default):
     return raw.download(
         "pictures/thumbnails/preview-files/%s.png" % (preview_file["id"]),
         file_path,
-        client=client
+        client=client,
+    )
+
+
+def download_preview_file_cover(preview_file, file_path, client=default):
+    """
+    Download given preview file cover and save it at given location.
+    Args:
+        preview_file (str / dict): The preview file dict or ID.
+        file_path (str): Location on hard drive where to save the file.
+    """
+    preview_file = normalize_model_parameter(preview_file)
+    return raw.download(
+        "pictures/originals/preview-files/%s.png" % (preview_file["id"]),
+        file_path,
+        client=client,
+    )
+
+
+def download_person_avatar(person, file_path, client=default):
+    """
+    Download given person's avatar and save it at given location.
+    Args:
+        person (str / dict): The person dict or ID.
+        file_path (str): Location on hard drive where to save the file.
+    """
+    person = normalize_model_parameter(person)
+    return raw.download(
+        "pictures/thumbnails/persons/%s.png" % (person["id"]),
+        file_path,
+        client=client,
+    )
+
+
+def download_project_avatar(project, file_path, client=default):
+    """
+    Download given project's avatar and save it at given location.
+    Args:
+        project (str / dict): The project dict or ID.
+        file_path (str): Location on hard drive where to save the file.
+    """
+    project = normalize_model_parameter(project)
+    return raw.download(
+        "pictures/thumbnails/projects/%s.png" % (project["id"]),
+        file_path,
+        client=client,
     )
 
 

@@ -1,4 +1,5 @@
 import datetime
+from gazu.exception import NotAuthenticatedException
 
 from . import client as raw
 from .sorting import sort_by_name
@@ -237,6 +238,15 @@ def all_tasks_to_do(client=default):
     return raw.fetch_all("user/tasks", client=client)
 
 
+@cache
+def all_done_tasks(client=default):
+    """
+    Returns:
+        list: Tasks assigned to current user which are done.
+    """
+    return raw.fetch_all("user/done-tasks", client=client)
+
+
 def log_desktop_session_log_in(client=default):
     """
     Add a log entry to mention that the user logged in his computer.
@@ -247,3 +257,14 @@ def log_desktop_session_log_in(client=default):
     path = "/data/user/desktop-login-logs"
     data = {"date": datetime.datetime.now().isoformat()}
     return raw.post(path, data, client=client)
+
+
+def is_authenticated(client=default):
+    """
+    Returns:
+        boolean: Current user authenticated or not
+    """
+    try:
+        return raw.get("auth/authenticated")["authenticated"]
+    except NotAuthenticatedException:
+        return False

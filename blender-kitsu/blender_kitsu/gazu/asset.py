@@ -7,6 +7,8 @@ from .sorting import sort_by_name
 
 from .cache import cache
 
+from .shot import get_episode
+
 default = raw.default_client
 
 
@@ -156,7 +158,7 @@ def get_asset_url(asset, client=default):
         project_id=asset["project_id"],
         asset_id=asset["id"],
         episode_id=episode_id,
-        client=client
+        client=client,
     )
 
 
@@ -167,7 +169,7 @@ def new_asset(
     description="",
     extra_data={},
     episode=None,
-    client=default
+    client=default,
 ):
     """
     Create a new asset in the database for given project and asset type.
@@ -198,7 +200,7 @@ def new_asset(
             "data/projects/%s/asset-types/%s/assets/new"
             % (project["id"], asset_type["id"]),
             data,
-            client=client
+            client=client,
         )
     return asset
 
@@ -232,7 +234,7 @@ def update_asset_data(asset, data={}, client=default):
     current_asset = get_asset(asset["id"], client=client)
     updated_asset = {"id": current_asset["id"], "data": current_asset["data"]}
     updated_asset["data"].update(data)
-    update_asset(updated_asset, client=client)
+    return update_asset(updated_asset, client=client)
 
 
 def remove_asset(asset, force=False, client=default):
@@ -286,22 +288,23 @@ def all_asset_types_for_shot(shot, client=default):
 
 
 @cache
-def get_asset_type(asset_id, client=default):
+def get_asset_type(asset_type_id, client=default):
     """
     Args:
-        asset_type_id (str): Id of claimed asset type.
+        asset_type_id (str/): Id of claimed asset type.
 
     Returns:
         dict: Asset Type matching given ID.
     """
-    return raw.fetch_one("asset-types", asset_id, client=client)
+    asset_type_id = normalize_model_parameter(asset_type_id)["id"]
+    return raw.fetch_one("asset-types", asset_type_id, client=client)
 
 
 @cache
 def get_asset_type_by_name(name, client=default):
     """
     Args:
-        asset_type_id (str): Id of claimed asset type.
+        name (str): name of asset type.
 
     Returns:
         dict: Asset Type matching given name.
@@ -320,9 +323,7 @@ def new_asset_type(name, client=default):
         (dict): Created asset type.
     """
     data = {"name": name}
-    asset_type = raw.fetch_first(
-        "entity-types", {"name": name}, client=client
-    )
+    asset_type = raw.fetch_first("entity-types", {"name": name}, client=client)
     if asset_type is None:
         asset_type = raw.create("entity-types", data, client=client)
     return asset_type
@@ -447,10 +448,7 @@ def all_asset_instances_for_asset(asset, client=default):
 
 
 def new_asset_asset_instance(
-    asset,
-    asset_to_instantiate,
-    description="",
-    client=default
+    asset, asset_to_instantiate, description="", client=default
 ):
     """
     Creates a new asset instance for given asset. The instance number is
@@ -473,5 +471,60 @@ def new_asset_asset_instance(
     return raw.post(
         "data/assets/%s/asset-asset-instances" % asset["id"],
         data,
-        client=client
+        client=client,
     )
+
+
+def import_assets_with_csv(project, csv_file_path, client=default):
+    project = normalize_model_parameter(project)
+    return raw.upload(
+        "import/csv/projects/%s/assets" % project["id"],
+        csv_file_path,
+        client=client,
+    )
+
+
+def export_assets_with_csv(
+    project, csv_file_path, episode=None, assigned_to=None, client=default
+):
+    project = normalize_model_parameter(project)
+    episode = normalize_model_parameter(episode)
+    assigned_to = normalize_model_parameter(assigned_to)
+    params = {}
+    if episode:
+        params["episode_id"] = episode["id"]
+    if assigned_to:
+        params["assigned_to"] = assigned_to["id"]
+    return raw.download(
+        "export/csv/projects/%s/assets.csv" % project["id"],
+        csv_file_path,
+        params=params,
+        client=client,
+    )
+
+
+@cache
+def get_episode_from_asset(asset, client=default):
+    """
+    Args:
+        asset (dict): The asset dict.
+
+    Returns:
+        dict: Episode which is parent of given asset.
+    """
+    if asset["parent_id"] is None:
+        return None
+    else:
+        return get_episode(asset["parent_id"], client=client)
+
+
+@cache
+def get_asset_type_from_asset(asset, client=default):
+    """
+    Args:
+        asset (dict): The asset dict.
+
+    Returns:
+        dict: Asset type which is the type of given asset.
+    """
+    return get_asset_type(asset["entity_type_id"], client=client)

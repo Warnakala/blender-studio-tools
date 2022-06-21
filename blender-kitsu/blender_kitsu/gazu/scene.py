@@ -16,9 +16,7 @@ def new_scene(project, sequence, name, client=default):
     sequence = normalize_model_parameter(sequence)
     shot = {"name": name, "sequence_id": sequence["id"]}
     return raw.post(
-        "data/projects/%s/scenes" % project["id"],
-        shot,
-        client=client
+        "data/projects/%s/scenes" % project["id"], shot, client=client
     )
 
 
@@ -30,8 +28,7 @@ def all_scenes(project=None, client=default):
     project = normalize_model_parameter(project)
     if project is not None:
         scenes = raw.fetch_all(
-            "projects/%s/scenes" % project["id"],
-            client=client
+            "projects/%s/scenes" % project["id"], client=client
         )
     else:
         scenes = raw.fetch_all("scenes", client=client)
@@ -44,10 +41,7 @@ def all_scenes_for_project(project, client=default):
     Retrieve all scenes for given project.
     """
     project = normalize_model_parameter(project)
-    scenes = raw.fetch_all(
-        "projects/%s/scenes" % project["id"],
-        client=client
-    )
+    scenes = raw.fetch_all("projects/%s/scenes" % project["id"], client=client)
     return sort_by_name(scenes)
 
 
@@ -79,7 +73,7 @@ def get_scene_by_name(sequence, scene_name, client=default):
     result = raw.fetch_all(
         "scenes/all",
         {"parent_id": sequence["id"], "name": scene_name},
-        client=client
+        client=client,
     )
     return next(iter(result or []), None)
 
@@ -100,9 +94,7 @@ def new_scene_asset_instance(scene, asset, description="", client=default):
     asset = normalize_model_parameter(asset)
     data = {"asset_id": asset["id"], "description": description}
     return raw.post(
-        "data/scenes/%s/asset-instances" % scene["id"],
-        data,
-        client=client
+        "data/scenes/%s/asset-instances" % scene["id"], data, client=client
     )
 
 
@@ -113,8 +105,7 @@ def all_asset_instances_for_scene(scene, client=default):
     """
     scene = normalize_model_parameter(scene)
     return raw.get(
-        "data/scenes/%s/asset-instances" % scene["id"],
-        client=client
+        "data/scenes/%s/asset-instances" % scene["id"], client=client
     )
 
 
@@ -126,7 +117,7 @@ def get_asset_instance_by_name(scene, name, client=default):
     return raw.fetch_first(
         "asset-instances",
         {"name": name, "scene_id": scene["id"]},
-        client=client
+        client=client,
     )
 
 
@@ -137,8 +128,7 @@ def all_camera_instances_for_scene(scene, client=default):
     """
     scene = normalize_model_parameter(scene)
     return raw.get(
-        "data/scenes/%s/camera-instances" % scene["id"],
-        client=client
+        "data/scenes/%s/camera-instances" % scene["id"], client=client
     )
 
 
@@ -148,10 +138,7 @@ def all_shots_for_scene(scene, client=default):
     Return the list of shots issued from given scene.
     """
     scene = normalize_model_parameter(scene)
-    return raw.get(
-        "data/scenes/%s/shots" % scene["id"],
-        client=client
-    )
+    return raw.get("data/scenes/%s/shots" % scene["id"], client=client)
 
 
 def add_shot_to_scene(scene, shot, client=default):
@@ -162,11 +149,7 @@ def add_shot_to_scene(scene, shot, client=default):
     scene = normalize_model_parameter(scene)
     shot = normalize_model_parameter(shot)
     data = {"shot_id": shot["id"]}
-    return raw.post(
-        "data/scenes/%s/shots" % scene["id"],
-        data,
-        client=client
-    )
+    return raw.post("data/scenes/%s/shots" % scene["id"], data, client=client)
 
 
 def remove_shot_from_scene(scene, shot, client=default):
@@ -176,8 +159,7 @@ def remove_shot_from_scene(scene, shot, client=default):
     scene = normalize_model_parameter(scene)
     shot = normalize_model_parameter(shot)
     return raw.delete(
-        "data/scenes/%s/shots/%s" % (scene["id"], shot["id"]),
-        client=client
+        "data/scenes/%s/shots/%s" % (scene["id"], shot["id"]), client=client
     )
 
 

@@ -1,6 +1,6 @@
 from . import client as raw
 
-from .helpers import normalize_model_parameter
+from .helpers import normalize_model_parameter, validate_date_format
 
 default = raw.default_client
 
@@ -27,9 +27,9 @@ def get_last_events(
         project = normalize_model_parameter(project)
         params["project_id"] = project["id"]
     if after is not None:
-        params["after"] = after
+        params["after"] = validate_date_format(after)
     if before is not None:
-        params["before"] = before
+        params["before"] = validate_date_format(before)
     return raw.get(path, params=params, client=client)
 
 
@@ -88,7 +88,9 @@ def get_model_list_diff(source_list, target_list):
     for model in source_list:
         if model["id"] not in target_ids:
             missing.append(model)
-    unexpected = [model for model in target_list if model["id"] not in source_ids]
+    unexpected = [
+        model for model in target_list if model["id"] not in source_ids
+    ]
     return (missing, unexpected)
 
 
@@ -103,7 +105,10 @@ def get_link_list_diff(source_list, target_list):
         and one containing the links that should not be in the target list.
         Links are identified by their in ID and their out ID.
     """
-    def get_link_key(l): return l["entity_in_id"] + "-" + l["entity_out_id"]
+
+    def get_link_key(l):
+        return l["entity_in_id"] + "-" + l["entity_out_id"]
+
     missing = []
     unexpected = []
     source_ids = {get_link_key(m): True for m in source_list}
@@ -135,7 +140,29 @@ def get_id_map_by_name(source_list, target_list):
         name_map[model["name"].lower()] = model["id"]
     for model in source_list:
         if model["name"].lower() in name_map:
-            link_map[model["id"]] = name_map[model["name"].lower()]
+            link_map[model["name"]] = name_map[model["name"].lower()]
+    return link_map
+
+
+def get_id_map_by_id(source_list, target_list, field="name"):
+    """
+    Args:
+        source_list (list): List of links to compare.
+        target_list (list): List of links for which we want a diff.
+
+    Returns:
+        dict: A dict where keys are the source model names and the values are
+        the IDs of the target models with same name.
+        It's useful to match a model from the source list to its relative in
+        the target list based on its name.
+    """
+    link_map = {}
+    name_map = {}
+    for model in target_list:
+        name_map[model[field].lower()] = model["id"]
+    for model in source_list:
+        if model[field].lower() in name_map:
+            link_map[model["id"]] = name_map[model[field].lower()]
     return link_map
 
 

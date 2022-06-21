@@ -49,9 +49,7 @@ def log_in(email, password, client=raw.default_client):
 def log_out(client=raw.default_client):
     tokens = {}
     try:
-        raw.get(
-            "auth/logout", client=client
-        )
+        raw.get("auth/logout", client=client)
     except ParameterException:
         pass
     raw.set_tokens(tokens, client=client)

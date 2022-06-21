@@ -1,9 +1,15 @@
+import sys
 import functools
 import json
 import shutil
 import urllib
 
 from .encoder import CustomJSONEncoder
+
+if sys.version_info[0] == 3:
+    from json import JSONDecodeError
+else:
+    JSONDecodeError = ValueError
 
 from .__version__ import __version__
 
@@ -20,15 +26,17 @@ from .exception import (
 
 
 class KitsuClient(object):
-    def __init__(self, host):
+    def __init__(self, host, ssl_verify=True, cert=None):
         self.tokens = {"access_token": "", "refresh_token": ""}
         self.session = requests.Session()
+        self.session.verify = ssl_verify
+        self.session.cert = cert
         self.host = host
         self.event_host = host
 
 
-def create_client(host):
-    return KitsuClient(host)
+def create_client(host, ssl_verify=True, cert=None):
+    return KitsuClient(host, ssl_verify, cert=None)
 
 
 default_client = None
@@ -44,7 +52,7 @@ try:
     # host = "http://gazu.change.serverhost/api"
     host = ""
     default_client = create_client(host)
-except:
+except Exception:
     print("Warning, running in setup mode!")
 
 
@@ -55,7 +63,7 @@ def host_is_up(client=default_client):
     """
     try:
         response = client.session.head(client.host)
-    except:
+    except Exception:
         return False
     return response.status_code == 200
 
@@ -132,7 +140,7 @@ def make_auth_header(client=default_client):
     Returns:
         Headers required to authenticate.
     """
-    headers = { "User-Agent": "CGWire Gazu %s" % __version__ }
+    headers = {"User-Agent": "CGWire Gazu %s" % __version__}
     if "access_token" in client.tokens:
         headers["Authorization"] = "Bearer %s" % client.tokens["access_token"]
     return headers
@@ -191,7 +199,7 @@ def get(path, json_response=True, params=None, client=default_client):
     path = build_path_with_params(path, params)
     response = client.session.get(
         get_full_url(path, client=client),
-        headers=make_auth_header(client=client)
+        headers=make_auth_header(client=client),
     )
     check_status(response, path)
 
@@ -209,11 +217,17 @@ def post(path, data, client=default_client):
         The request result.
     """
     response = client.session.post(
-        get_full_url(path, client), json=data,
-        headers=make_auth_header(client=client)
+        get_full_url(path, client),
+        json=data,
+        headers=make_auth_header(client=client),
     )
     check_status(response, path)
-    return response.json()
+    try:
+        result = response.json()
+    except JSONDecodeError:
+        print(response.text)
+        raise
+    return result
 
 
 def put(path, data, client=default_client):
@@ -226,7 +240,7 @@ def put(path, data, client=default_client):
     response = client.session.put(
         get_full_url(path, client),
         json=data,
-        headers=make_auth_header(client=client)
+        headers=make_auth_header(client=client),
     )
     check_status(response, path)
     return response.json()
@@ -234,7 +248,7 @@ def put(path, data, client=default_client):
 
 def delete(path, params=None, client=default_client):
     """
-    Run a get request toward given path for configured host.
+    Run a delete request toward given path for configured host.
 
     Returns:
         The request result.
@@ -242,8 +256,7 @@ def delete(path, params=None, client=default_client):
     path = build_path_with_params(path, params)
 
     response = client.session.delete(
-        get_full_url(path, client),
-        headers=make_auth_header(client=client)
+        get_full_url(path, client), headers=make_auth_header(client=client)
     )
     check_status(response, path)
     return response.text
@@ -251,8 +264,8 @@ def delete(path, params=None, client=default_client):
 
 def check_status(request, path):
     """
-    Raise an exception related to status code, if the status code does not match
-    a success code. Print error message when it's relevant.
+    Raise an exception related to status code, if the status code does not
+    match a success code. Print error message when it's relevant.
 
     Args:
         request (Request): The request to validate.
@@ -297,7 +310,7 @@ def check_status(request, path):
             print("A server error occured!\n")
             print("Server stacktrace:\n%s" % stacktrace)
             print("Error message:\n%s\n" % message)
-        except:
+        except Exception:
             print(request.text)
         raise ServerErrorException(path)
     return status_code
@@ -332,7 +345,8 @@ def fetch_first(path, params=None, client=default_client):
 
 def fetch_one(model_name, id, client=default_client):
     """
-    Function dedicated at targeting routes that returns a single model instance.
+    Function dedicated at targeting routes that returns a single model
+    instance.
 
     Args:
         model_name (str): Model type name.
@@ -348,10 +362,31 @@ def create(model_name, data, client=default_client):
     """
     Create an entry for given model and data.
 
+    Args:
+        model (str): The model type involved
+        data (str): The data to use for creation
+
     Returns:
         dict: Created entry
     """
     return post(url_path_join("data", model_name), data, client=client)
+
+
+def update(model_name, model_id, data, client=default_client):
+    """
+    Update an entry for given model, id and data.
+
+    Args:
+        model (str): The model type involved
+        id (str): The target model id
+        data (dict): The data to update
+
+    Returns:
+        dict: Updated entry
+    """
+    return put(
+        url_path_join("data", model_name, model_id), data, client=client
+    )
 
 
 def upload(path, file_path, data={}, extra_files=[], client=default_client):
@@ -368,13 +403,14 @@ def upload(path, file_path, data={}, extra_files=[], client=default_client):
     url = get_full_url(path, client)
     files = _build_file_dict(file_path, extra_files)
     response = client.session.post(
-        url,
-        data=data,
-        headers=make_auth_header(client=client),
-        files=files
+        url, data=data, headers=make_auth_header(client=client), files=files
     )
     check_status(response, path)
-    result = response.json()
+    try:
+        result = response.json()
+    except JSONDecodeError:
+        print(response.text)
+        raise
     if "message" in result:
         raise UploadFailedException(result["message"])
     return result
@@ -389,7 +425,7 @@ def _build_file_dict(file_path, extra_files):
     return files
 
 
-def download(path, file_path, client=default_client):
+def download(path, file_path, params=None, client=default_client):
     """
     Download file located at *file_path* to given url *path*.
 
@@ -401,14 +437,15 @@ def download(path, file_path, client=default_client):
         Response: Request response object.
 
     """
-    url = get_full_url(path, client)
+    path = build_path_with_params(path, params)
     with client.session.get(
-        url,
+        get_full_url(path, client),
         headers=make_auth_header(client=client),
-        stream=True
+        stream=True,
     ) as response:
         with open(file_path, "wb") as target_file:
             shutil.copyfileobj(response.raw, target_file)
+        return response
 
 
 def get_file_data_from_url(url, full=False, client=default_client):
@@ -421,10 +458,9 @@ def get_file_data_from_url(url, full=False, client=default_client):
         url,
         stream=True,
         headers=make_auth_header(client=client),
-        client=client
     )
     check_status(response, url)
-    return response
+    return response.content
 
 
 def import_data(model_name, data, client=default_client):
