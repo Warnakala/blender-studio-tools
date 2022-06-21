@@ -1,7 +1,6 @@
 from . import client as raw
 from . import cache
 from . import helpers
-from . import events
 
 from . import asset
 from . import casting
