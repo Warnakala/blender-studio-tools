@@ -1,7 +1,7 @@
 import string
 import json
 
-from gazu.exception import TaskStatusNotFound
+from .exception import TaskStatusNotFound
 
 from . import client as raw
 from .sorting import sort_by_name

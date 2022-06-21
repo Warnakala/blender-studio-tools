@@ -7,7 +7,7 @@ import requests
 import tempfile
 import mimetypes
 
-from gazu.exception import DownloadFileException
+from .exception import DownloadFileException
 
 if sys.version_info[0] == 3:
     import urllib.parse as urlparse

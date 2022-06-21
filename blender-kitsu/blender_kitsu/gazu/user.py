@@ -1,5 +1,5 @@
 import datetime
-from gazu.exception import NotAuthenticatedException
+from .exception import NotAuthenticatedException
 
 from . import client as raw
 from .sorting import sort_by_name
