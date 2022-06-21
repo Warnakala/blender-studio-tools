@@ -136,7 +136,7 @@ def get_episode_by_name(project, episode_name, client=default):
     return raw.fetch_first(
         "episodes",
         {"project_id": project["id"], "name": episode_name},
-        client=client
+        client=client,
     )
 
 
@@ -144,13 +144,15 @@ def get_episode_by_name(project, episode_name, client=default):
 def get_episode_from_sequence(sequence, client=default):
     """
     Args:
-        sequence (str / dict): The sequence dict or the sequence ID.
+        sequence (dict): The sequence dict.
 
     Returns:
         dict: Episode which is parent of given sequence.
     """
-    sequence = normalize_model_parameter(sequence)
-    return get_episode(sequence["parent_id"], client=client)
+    if sequence["parent_id"] is None:
+        return None
+    else:
+        return get_episode(sequence["parent_id"], client=client)
 
 
 @cache
@@ -225,7 +227,7 @@ def get_shot_by_name(sequence, shot_name, client=default):
     return raw.fetch_first(
         "shots/all",
         {"sequence_id": sequence["id"], "name": shot_name},
-        client=client
+        client=client,
     )
 
 
@@ -271,6 +273,7 @@ def get_shot_url(shot, client=default):
         episode_id=shot["episode_id"],
     )
 
+
 def new_sequence(project, name, episode=None, client=default):
     """
     Create a sequence for given project and episode.
@@ -290,8 +293,9 @@ def new_sequence(project, name, episode=None, client=default):
         episode = normalize_model_parameter(episode)
         data["episode_id"] = episode["id"]
 
-    sequence = \
-        get_sequence_by_name(project, name, episode=episode, client=client)
+    sequence = get_sequence_by_name(
+        project, name, episode=episode, client=client
+    )
     if sequence is None:
         path = "data/projects/%s/sequences" % project["id"]
         return raw.post(path, data, client=client)
@@ -306,8 +310,9 @@ def new_shot(
     nb_frames=None,
     frame_in=None,
     frame_out=None,
+    description=None,
     data={},
-    client=default
+    client=default,
 ):
     """
     Create a shot for given sequence and project. Add frame in and frame out
@@ -335,6 +340,9 @@ def new_shot(
     data = {"name": name, "data": data, "sequence_id": sequence["id"]}
     if nb_frames is not None:
         data["nb_frames"] = nb_frames
+
+    if description is not None:
+        data["description"] = description
 
     shot = get_shot_by_name(sequence, name, client=client)
     if shot is None:
@@ -369,7 +377,9 @@ def update_sequence(sequence, client=default):
     Returns:
         dict: Updated sequence.
     """
-    return raw.put("data/entities/%s" % sequence["id"], sequence, client=client)
+    return raw.put(
+        "data/entities/%s" % sequence["id"], sequence, client=client
+    )
 
 
 @cache
@@ -377,6 +387,7 @@ def get_asset_instances_for_shot(shot, client=default):
     """
     Return the list of asset instances linked to given shot.
     """
+    shot = normalize_model_parameter(shot)
     return raw.get("data/shots/%s/asset-instances" % shot["id"], client=client)
 
 
@@ -396,7 +407,7 @@ def update_shot_data(shot, data={}, client=default):
     current_shot = get_shot(shot["id"], client=client)
     updated_shot = {"id": current_shot["id"], "data": current_shot["data"]}
     updated_shot["data"].update(data)
-    update_shot(updated_shot, client=client)
+    return update_shot(updated_shot, client=client)
 
 
 def update_sequence_data(sequence, data={}, client=default):
@@ -414,12 +425,12 @@ def update_sequence_data(sequence, data={}, client=default):
     sequence = normalize_model_parameter(sequence)
     current_sequence = get_sequence(sequence["id"], client=client)
 
-    if not current_sequence.get('data'):
+    if not current_sequence.get("data"):
         current_sequence["data"] = {}
 
     updated_sequence = {
         "id": current_sequence["id"],
-        "data": current_sequence["data"]
+        "data": current_sequence["data"],
     }
     updated_sequence["data"].update(data)
     return update_sequence(updated_sequence, client)
@@ -440,6 +451,19 @@ def remove_shot(shot, force=False, client=default):
     return raw.delete(path, params, client=client)
 
 
+def restore_shot(shot, client=default):
+    """
+    Restore given shot into database (uncancel it).
+
+    Args:
+        shot (dict / str): Shot to restore.
+    """
+    shot = normalize_model_parameter(shot)
+    path = "data/shots/%s" % shot["id"]
+    data = {"canceled": False}
+    return raw.put(path, data, client=client)
+
+
 def new_episode(project, name, client=default):
     """
     Create an episode for given project.
@@ -456,9 +480,7 @@ def new_episode(project, name, client=default):
     episode = get_episode_by_name(project, name, client=client)
     if episode is None:
         return raw.post(
-            "data/projects/%s/episodes" % project["id"],
-            data,
-            client=client
+            "data/projects/%s/episodes" % project["id"], data, client=client
         )
     else:
         return episode
@@ -494,7 +516,7 @@ def update_episode_data(episode, data={}, client=default):
     current_episode = get_sequence(episode["id"], client=client)
     updated_episode = {
         "id": current_episode["id"],
-        "data": current_episode["data"]
+        "data": current_episode["data"],
     }
     updated_episode["data"].update(data)
     return update_episode(updated_episode, client=client)
@@ -576,3 +598,31 @@ def remove_asset_instance_from_shot(shot, asset_instance, client=default):
         asset_instance["id"],
     )
     return raw.delete(path, client=client)
+
+
+def import_shots_with_csv(project, csv_file_path, client=default):
+    project = normalize_model_parameter(project)
+    return raw.upload(
+        "import/csv/projects/%s/shots" % project["id"],
+        csv_file_path,
+        client=client,
+    )
+
+
+def export_shots_with_csv(
+    project, csv_file_path, episode=None, assigned_to=None, client=default
+):
+    project = normalize_model_parameter(project)
+    episode = normalize_model_parameter(episode)
+    assigned_to = normalize_model_parameter(assigned_to)
+    params = {}
+    if episode:
+        params["episode_id"] = episode["id"]
+    if assigned_to:
+        params["assigned_to"] = assigned_to["id"]
+    return raw.download(
+        "export/csv/projects/%s/shots.csv" % project["id"],
+        csv_file_path,
+        params=params,
+        client=client,
+    )

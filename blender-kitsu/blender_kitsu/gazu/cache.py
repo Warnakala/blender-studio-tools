@@ -154,17 +154,13 @@ def cache(function, maxsize=300, expire=120):
     cache_store = {}
     state = {"enabled": True, "expire": expire, "maxsize": maxsize}
 
-    statistics = {
-        "hits": 0,
-        "misses": 0,
-        "expired_hits": 0
-    }
+    statistics = {"hits": 0, "misses": 0, "expired_hits": 0}
 
     def clear_cache():
         cache_store.clear()
 
     def get_cache_infos():
-        size = {'current_size': len(cache_store)}
+        size = {"current_size": len(cache_store)}
         infos = {}
         for d in [state, statistics, size]:
             infos.update(d)
