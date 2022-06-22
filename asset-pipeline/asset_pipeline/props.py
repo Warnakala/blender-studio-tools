@@ -340,12 +340,21 @@ class BSP_ASSET_scene_properties(bpy.types.PropertyGroup):
         if bpy.ops.bsp_asset.create_asset_context.poll():
             bpy.ops.bsp_asset.create_asset_context()
 
-    asset_collection: bpy.props.PointerProperty(
-        type=bpy.types.Collection,
-        name="Asset Collection",
-        update=update_asset_collection,
-    )  # type: ignore
+    # asset_collection: bpy.props.PointerProperty(
+    #     type=bpy.types.Collection,
+    #     name="Asset Collection",
+    #     update=update_asset_collection,
+    # )
+    @property
+    def asset_collection(self):
+        return bpy.data.collections.get(self.asset_collection_name)
+    
+    @asset_collection.setter
+    def asset_collection(self, value):
+        self.asset_collection_name = value.name
 
+    asset_collection_name: bpy.props.StringProperty(name="Asset Collection", update=update_asset_collection)
+ 
     is_publish_in_progress: bpy.props.BoolProperty()  # type: ignore
     are_task_layers_pushed: bpy.props.BoolProperty()  # type: ignore
 
