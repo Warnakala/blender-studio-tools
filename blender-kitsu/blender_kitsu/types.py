@@ -693,13 +693,12 @@ class TaskType(Entity):
 
     @classmethod
     def all_shot_task_types(cls) -> List[TaskType]:
-        return [cls.from_dict(t) for t in gazu.task.all_task_types() if t["for_shots"]]
+        return [cls.from_dict(t) for t in gazu.task.all_task_types() if t["for_entity"] == "Shot"]
 
     @classmethod
     def all_asset_task_types(cls) -> List[TaskType]:
         return [
-            cls.from_dict(t) for t in gazu.task.all_task_types() if not t["for_shots"]
-        ]
+            cls.from_dict(t) for t in gazu.task.all_task_types() if t["for_entity"] == "Asset"]
 
     def __bool__(self) -> bool:
         return bool(self.id)
