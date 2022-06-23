@@ -194,7 +194,7 @@ class BSP_ASSET_PT_vi3d_configure(BSP_ASSET_main_panel, bpy.types.Panel):
                 box.label(text="Warning", icon="ERROR")
                 box.row(align=True).label(text="Select Asset in Kitsu Context Browser")
 
-        layout.row().prop(context.scene.bsp_asset, "asset_collection")
+        layout.row().prop_search(context.scene.bsp_asset, "asset_collection_name", bpy.data, 'collections')
         layout.separator()
 
         # Draw Task Layer List.
