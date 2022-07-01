@@ -79,9 +79,13 @@ class TransferCollectionTriplet:
         # Catch mistake if someone calls this twice without restoring before.
         if self._vis_colls:
             self.restore_vis()
-
         for main_coll in self.get_collections():
-            self._vis_colls.append(EnsureCollectionVisibility(main_coll))
+            self.recursive_ensure_vis(main_coll)
+
+    def recursive_ensure_vis(self, coll):
+        self._vis_colls.append(EnsureCollectionVisibility(coll))
+        for subcoll in coll.children:
+            self.recursive_ensure_vis(subcoll)
 
     def restore_vis(self) -> None:
         for vis_coll in self._vis_colls:
