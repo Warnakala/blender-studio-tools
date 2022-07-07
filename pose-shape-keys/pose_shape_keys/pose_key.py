@@ -79,6 +79,14 @@ class PoseShapeKey(PropertyGroup):
 		key_block_idx = ob.data.shape_keys.key_blocks.find(sk_name)
 		if key_block_idx > -1:
 			ob.active_shape_key_index = key_block_idx
+		
+		# If in weight paint mode and there is a mask vertex group, 
+		# also set that vertex group as active.
+		if context.mode == 'PAINT_WEIGHT':
+			key_block = ob.data.shape_keys.key_blocks[key_block_idx]
+			vg_idx = ob.vertex_groups.find(key_block.vertex_group)
+			if vg_idx > -1:
+				ob.vertex_groups.active_index = vg_idx
 
 	active_target_shape_index: IntProperty(update=update_active_sk_index)
 
