@@ -306,6 +306,8 @@ class OBJECT_OT_PoseKey_Set_Pose(Operator):
 		return {'FINISHED'}
 
 def get_active_pose_key(ob):
+	if ob.type != 'MESH':
+		return
 	if len(ob.data.pose_keys) == 0:
 		return
 
