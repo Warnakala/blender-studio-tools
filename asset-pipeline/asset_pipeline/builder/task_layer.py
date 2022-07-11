@@ -73,6 +73,7 @@ class TaskLayer:
     ) -> None:
         cls.transfer_collections(transfer_mapping)
         cls.transfer_data(context, build_context, transfer_mapping, transfer_settings)
+        cls.assign_objects(transfer_mapping)
 
     @classmethod
     def transfer_data(
@@ -164,6 +165,36 @@ class TaskLayer:
         # Do the same recursively for child collections.
         for child_coll in src_coll.children:
             cls.transfer_collection_objects(transfer_mapping, child_coll, src_coll)
+
+    @classmethod
+    def assign_objects(cls,
+            transfer_mapping: AssetTransferMapping):
+        """Unassign remaining source collections/objects and replace them with target collections/objects for the whole file.
+        """
+        # iterate through all collections in the file
+        for coll in list(bpy.data.collections) + [scene.collection for scene in bpy.data.scenes]:
+            collection_map = transfer_mapping.collection_map
+            transfer_collections = set().union(*[{k, v} for k, v in collection_map.items()])
+            if coll in transfer_collections:
+                continue
+            for child_coll in coll.children:
+                if child_coll not in collection_map:
+                    continue
+                if child_coll in {transfer_mapping.source_coll, transfer_mapping.target_coll}:
+                    continue
+                tgt_coll = collection_map.get(child_coll)
+                if not tgt_coll:
+                    continue
+                coll.children.unlink(child_coll)
+                coll.children.link(tgt_coll)
+            for ob in coll.objects:
+                if not ob in transfer_mapping.object_map:
+                    continue
+                tgt_ob = transfer_mapping.object_map.get(ob)
+                if not tgt_ob:
+                    continue
+                coll.objects.unlink(ob)
+                coll.objects.link(tgt_ob)
 
     def __repr__(self) -> str:
         return f"TaskLayer{self.name}"
