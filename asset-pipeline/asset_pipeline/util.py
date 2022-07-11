@@ -164,6 +164,23 @@ ID_INFO = [
     (types.Texture, 'TEXTURE', 'textures'),
 ]
 
+# Map datablock Python classes to their string representation.
+ID_CLASS_TO_IDENTIFIER: Dict[type, Tuple[str, int]] = dict(
+    [(tup[0], (tup[1])) for tup in ID_INFO]
+)
 
-# Map datablock type to storage collection property.
-ID_TYPE_TO_STORAGE: Dict[type, 'bpy_prop_collection'] = {tup[0] : getattr(bpy.data, tup[2]) for tup in ID_INFO}
+def get_fundamental_id_type(datablock: bpy.types.ID) -> Any:
+    """Certain datablocks have very specific types.
+    This function should return their fundamental type, ie. parent class."""
+    for id_type in ID_CLASS_TO_IDENTIFIER.keys():
+        if isinstance(datablock, id_type):
+            return id_type
+
+
+def get_storage_of_id(datablock: bpy.types.ID) -> 'bpy_prop_collection':
+    """Return the storage collection property of the datablock.
+    Eg. for an object, returns bpy.data.objects.
+    """
+
+    fundamental_type = get_fundamental_id_type(datablock)
+    return getattr(bpy.data, ID_INFO[fundamental_type][2])
