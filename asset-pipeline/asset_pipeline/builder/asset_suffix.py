@@ -25,6 +25,7 @@ import bpy
 from bpy_extras.id_map_utils import get_id_reference_map, get_all_referenced_ids
 
 from .. import constants
+from  ..util import get_storage_of_id
 
 logger = logging.getLogger("BSP")
 
@@ -53,6 +54,9 @@ def add_suffix_to_hierarchy(collection: bpy.types.Collection, suffix: str):
     datablocks = get_all_referenced_ids(collection, ref_map)
     datablocks.add(collection)
     for db in datablocks:
+        collision_db = get_storage_of_id(db).get(db.name+suffix)
+        if collision_db:
+            collision_db.name += '.OLD'
         try:
             db.name += suffix
         except:
