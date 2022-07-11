@@ -21,6 +21,7 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple, Generator
 
 import bpy
+from bpy import types
 import addon_utils
 
 
@@ -114,3 +115,55 @@ def reset_armature_pose(
                 if type(pb[key]) not in (float, int):
                     continue
                 pb[key] = ui_data["default"]
+
+
+ID_INFO = [
+    (types.WindowManager, 'WINDOWMANAGER', 'window_managers'),
+    (types.Scene, 'SCENE', 'scenes'),
+    (types.World, 'WORLD', 'worlds'),
+    (types.Collection, 'COLLECTION', 'collections'),
+
+    (types.Armature, 'ARMATURE', 'armatures'),
+    (types.Mesh, 'MESH', 'meshes'),
+    (types.Camera, 'CAMERA', 'cameras'),
+    (types.Lattice, 'LATTICE', 'lattices'),
+    (types.Light, 'LIGHT', 'lights'),
+    (types.Speaker, 'SPEAKER', 'speakers'),
+    (types.Volume, 'VOLUME', 'volumes'),
+    (types.GreasePencil, 'GREASEPENCIL', 'grease_pencils'),
+    (types.Curve, 'CURVE', 'curves'),
+    (types.LightProbe, 'LIGHT_PROBE', 'lightprobes'),
+
+    (types.MetaBall, 'METABALL', 'metaballs'),
+    (types.Object, 'OBJECT', 'objects'),
+    (types.Action, 'ACTION', 'actions'),
+    (types.Key, 'KEY', 'shape_keys'),
+    (types.Sound, 'SOUND', 'sounds'),
+ 
+    (types.Material, 'MATERIAL', 'materials'),
+    (types.NodeTree, 'NODETREE', 'node_groups'),
+    (types.Image, 'IMAGE', 'images'),
+
+    (types.Mask, 'MASK', 'masks'),
+    (types.FreestyleLineStyle, 'LINESTYLE', 'linestyles'),
+    (types.Library, 'LIBRARY', 'libraries'),
+    (types.VectorFont, 'FONT', 'fonts'),
+    (types.CacheFile, 'CACHE_FILE', 'cache_files'),
+    (types.PointCloud, 'POINT_CLOUD', 'pointclouds'),
+    (types.Curves, 'HAIR_CURVES', 'hair_curves'),
+    (types.Text, 'TEXT', 'texts'),
+    (types.Simulation, 'SIMULATION', 'simulations'),
+    (types.ParticleSettings, 'PARTICLE', 'particles'),
+    (types.Palette, 'PALETTE', 'palettes'),
+    (types.PaintCurve, 'PAINT_CURVE', 'paint_curves'),
+    (types.MovieClip, 'MOVIE_CLIP', 'movieclips'),
+
+    (types.WorkSpace, 'WORKSPACE', 'workspaces'),
+    (types.Screen, 'SCREEN', 'screens'),
+    (types.Brush, 'BRUSH', 'brushes'),
+    (types.Texture, 'TEXTURE', 'textures'),
+]
+
+
+# Map datablock type to storage collection property.
+ID_TYPE_TO_STORAGE: Dict[type, 'bpy_prop_collection'] = {tup[0] : getattr(bpy.data, tup[2]) for tup in ID_INFO}
