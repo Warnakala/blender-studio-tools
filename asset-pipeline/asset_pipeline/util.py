@@ -117,7 +117,7 @@ def reset_armature_pose(
                 pb[key] = ui_data["default"]
 
 
-ID_INFO = [
+ID_INFO = {
     (types.WindowManager, 'WINDOWMANAGER', 'window_managers'),
     (types.Scene, 'SCENE', 'scenes'),
     (types.World, 'WORLD', 'worlds'),
@@ -162,11 +162,16 @@ ID_INFO = [
     (types.Screen, 'SCREEN', 'screens'),
     (types.Brush, 'BRUSH', 'brushes'),
     (types.Texture, 'TEXTURE', 'textures'),
-]
+}
 
 # Map datablock Python classes to their string representation.
 ID_CLASS_TO_IDENTIFIER: Dict[type, Tuple[str, int]] = dict(
     [(tup[0], (tup[1])) for tup in ID_INFO]
+)
+
+# Map datablock Python classes to the name of their bpy.data container.
+ID_CLASS_TO_STORAGE_NAME: Dict[type, str] = dict(
+    [(tup[0], (tup[2])) for tup in ID_INFO]
 )
 
 def get_fundamental_id_type(datablock: bpy.types.ID) -> Any:
@@ -183,4 +188,4 @@ def get_storage_of_id(datablock: bpy.types.ID) -> 'bpy_prop_collection':
     """
 
     fundamental_type = get_fundamental_id_type(datablock)
-    return getattr(bpy.data, ID_INFO[fundamental_type][2])
+    return getattr(bpy.data, ID_CLASS_TO_STORAGE_NAME[fundamental_type])
