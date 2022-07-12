@@ -70,9 +70,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
         # If render is sequence folder user wants to review whole sequence.
         if opsdata.is_sequence_dir(render_dir):
-            shot_folders.extend(list(render_dir.iterdir()))
+            for shot_dir in render_dir.iterdir():
+                shot_folders.extend(list(shot_dir.iterdir()))
         else:
-            shot_folders.append(render_dir)
+            shot_folders.extend(list(render_dir.iterdir()))
 
         shot_folders.sort(key=lambda d: d.name)
         prev_frame_end: int = 0
@@ -169,7 +170,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 if kitsu.is_auth_and_project():
 
                     shot_name = shot_folder.name
-                    sequence_name = shot_folder.parent.name
+                    sequence_name = shot_folder.parent.parent.name
 
                     # Create metastrip.
                     metastrip = kitsu.create_meta_strip(context, strip_longest)
