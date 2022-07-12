@@ -397,7 +397,7 @@ class Project(Entity):
 @dataclass
 class Sequence(Entity):
     """
-    Class to get object oriented representation of backend sequence data structure.
+    Class to get object-oriented representation of backend sequence data structure.
     Has multiple constructor functions (by_name, by_id, init>by_dict)
     """
 

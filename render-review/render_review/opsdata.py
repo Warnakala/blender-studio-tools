@@ -152,7 +152,7 @@ def get_best_preview_sequence(dir: Path) -> List[Path]:
     )
     if not files:
         raise NoImageSequenceAvailableException(
-            f"No peview files found in: {dir.as_posix()}"
+            f"No preview files found in: {dir.as_posix()}"
         )
 
     # Select the right images sequence.
@@ -166,7 +166,7 @@ def get_best_preview_sequence(dir: Path) -> List[Path]:
         if len(files[".jpg"]) == len(files[".png"]):
             preview_seq = files[".png"]
         else:
-            # If not take whichever is longest.
+            # If not, take whichever is longest.
             preview_seq = [files[".jpg"], files[".png"]].sort(key=lambda x: len(x))[-1]
 
     return preview_seq

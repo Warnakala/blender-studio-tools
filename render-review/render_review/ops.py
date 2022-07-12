@@ -36,7 +36,7 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 class RR_OT_sqe_create_review_session(bpy.types.Operator):
     """
-    Has to modes to either review sequence or a single shot.
+    Review a sequence of shots or a single shot.
     Review shot will load all available preview sequences (.jpg / .png) of each found rendering
     in to the sequence editor of the specified shot.
     Review sequence does it for each shot in that sequence.
@@ -97,7 +97,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
             output_dirs.append(output_dirs[0])
             output_dirs.pop(0)
 
-            # Init sqe.
+            # Init sequencer
             if not context.scene.sequence_editor:
                 context.scene.sequence_editor_create()
 
