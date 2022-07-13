@@ -71,8 +71,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         # If render is sequence folder user wants to review whole sequence.
         if opsdata.is_sequence_dir(render_dir):
             for shot_dir in render_dir.iterdir():
+                # TODO: Handle case when directory is empty
                 shot_folders.extend(list(shot_dir.iterdir()))
         else:
+            # TODO: Handle case when directory is empty
             shot_folders.extend(list(render_dir.iterdir()))
 
         shot_folders.sort(key=lambda d: d.name)
