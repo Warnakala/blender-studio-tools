@@ -201,7 +201,8 @@ def upload_preview(
 def init_start_frame_offset(strip: bpy.types.Sequence) -> None:
     # Frame start offset.
     offset_start = strip.frame_final_start - strip.frame_start
-    strip.kitsu.frame_start_offset = offset_start
+    # Cast offset start to int, since after Blender 3.3 strip values are floats
+    strip.kitsu.frame_start_offset = int(offset_start)
 
 
 def append_sequence_color(
