@@ -79,8 +79,8 @@ def timer_svn_update():
     context = bpy.context
 
     if SVN_UPDATE_THREAD and SVN_UPDATE_THREAD.is_alive():
-        # Process is still running, so we just gotta wait. Let's try again in 1s.
-        return 1.0
+        # Process is still running, so we just gotta wait.
+        return 5.0
     elif SVN_UPDATE_OUTPUT:
         print("SVN Update complete:")
         print(SVN_UPDATE_OUTPUT)
@@ -96,7 +96,7 @@ def timer_svn_update():
     SVN_UPDATE_THREAD = threading.Thread(target=async_svn_update, args=())
     SVN_UPDATE_THREAD.start()
 
-    return 1.0
+    return 3.0
 
 
 def svn_update_background_start(_dummy1=None, _dummy2=None):

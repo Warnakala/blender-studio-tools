@@ -165,8 +165,8 @@ def timer_svn_commit():
     context = bpy.context
 
     if SVN_COMMIT_THREAD and SVN_COMMIT_THREAD.is_alive():
-        # Process is still running, so we just gotta wait. Let's try again in 1s.
-        return 1.0
+        # Process is still running, so we just gotta wait.
+        return 5.0
     elif SVN_COMMIT_OUTPUT:
         print(SVN_COMMIT_OUTPUT)
         svn_commit_background_stop()
@@ -181,7 +181,7 @@ def timer_svn_commit():
     SVN_COMMIT_THREAD = threading.Thread(target=async_svn_commit, args=())
     SVN_COMMIT_THREAD.start()
 
-    return 1.0
+    return 30.0
 
 
 def svn_commit_background_start(_dummy1=None, _dummy2=None):

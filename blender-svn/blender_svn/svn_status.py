@@ -234,8 +234,8 @@ def timer_update_svn_status():
 
     global SVN_STATUS_THREAD
     if SVN_STATUS_THREAD and SVN_STATUS_THREAD.is_alive():
-        # Process is still running, so we just gotta wait. Let's try again in 1s.
-        return 1.0
+        # Process is still running, so we just gotta wait.
+        return 5.0
     elif SVN_STATUS_OUTPUT:
         update_file_list(context, SVN_STATUS_OUTPUT)
         context.scene.svn.timestamp_last_status_update = datetime.strftime(datetime.now(), "%Y/%m/%d %H:%M:%S")
@@ -243,7 +243,7 @@ def timer_update_svn_status():
     SVN_STATUS_THREAD = threading.Thread(target=async_get_verbose_svn_status, args=())
     SVN_STATUS_THREAD.start()
 
-    return 1.0
+    return 60.0
 
 
 def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
