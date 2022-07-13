@@ -115,12 +115,12 @@ def set_svn_info(context) -> bool:
     relative_url = lines[3].split("Relative URL: ")[1][1:]
     base_url = full_url.replace(relative_url, "")
     svn.svn_url = base_url
-    _relative_filepath = lines[3].split("Relative URL: ^")[1]
-    _revision_number = int(lines[6].split("Revision: ")[1])
+    # _relative_filepath = lines[3].split("Relative URL: ^")[1]
+    # _revision_number = int(lines[6].split("Revision: ")[1])
 
-    datetime_str = lines[-3].split("Last Changed Date: ")[1]
-    _revision_date = svn_date_simple(datetime_str)
-    _revision_author = lines[-5].split("Last Changed Author: ")[1]
+    # datetime_str = lines[-3].split("Last Changed Date: ")[1]
+    # _revision_date = svn_date_simple(datetime_str)
+    # _revision_author = lines[-5].split("Last Changed Author: ")[1]
     return True
 
 
