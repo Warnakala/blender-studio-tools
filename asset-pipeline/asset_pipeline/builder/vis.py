@@ -122,17 +122,22 @@ class EnsureCollectionVisibility:
     def restore(self) -> None:
         """Restore visibility settings to their original state."""
         coll = bpy.data.collections.get(self.coll_name)
+        if not coll:
+            return
 
         # Screen icon
         coll.hide_viewport = self.hide_viewport
 
+        # Objects
+        for ob_vis in self.object_visibilities:
+            ob_vis.restore()
+
         # Exclude
         layer_coll = get_layer_coll_from_coll(coll)
+        if not layer_coll:
+            print(f"WARNING: Collection '{coll.name}' has no layer collection!")
+            return
         layer_coll.exclude = self.exclude
 
         # Eye icon
         layer_coll.hide_viewport = self.hide
-
-        # Objects
-        for ob_vis in self.object_visibilities:
-            ob_vis.restore()
