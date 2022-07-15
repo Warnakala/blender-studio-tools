@@ -115,20 +115,16 @@ def get_shot_previews_path(strip: bpy.types.ImageSequence) -> Path:
     # Fo > farm_output.
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     fo_dir = Path(bpy.path.abspath(strip.directory))
-    # 110_0150_A.lighting-2021-04-09_134706 -> 110_0150_A.lighting.
-    shot_previews_dir_name = get_shot_dot_task_type(fo_dir)
-
     shot_previews_dir = (
         addon_prefs.shot_previews_path
-        / fo_dir.parent.relative_to(fo_dir.parents[2])
-        / shot_previews_dir_name
+        / fo_dir.parent.relative_to(fo_dir.parents[3])
     )
 
     return shot_previews_dir
 
 
 def get_shot_dot_task_type(path: Path):
-    return path.name.split("-")[0]
+    return path.parent.name
 
 
 def get_farm_output_mp4_path(strip: bpy.types.ImageSequence) -> Path:
@@ -140,7 +136,7 @@ def get_farm_output_mp4_path(strip: bpy.types.ImageSequence) -> Path:
     # last frame in the folder
     preview_seq = get_best_preview_sequence(render_dir)
 
-    mp4_filename = f"{shot_name}.lighting-{int(preview_seq[0].stem)}-{int(preview_seq[-1].stem)}.mp4"
+    mp4_filename = f"{shot_name}-{int(preview_seq[0].stem)}-{int(preview_seq[-1].stem)}.mp4"
 
     return render_dir / mp4_filename
 
