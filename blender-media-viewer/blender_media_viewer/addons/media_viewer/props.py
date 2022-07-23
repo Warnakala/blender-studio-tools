@@ -25,16 +25,24 @@ from typing import Tuple, Any, List, Union, Dict, Optional
 import bpy
 
 from media_viewer.log import LoggerFactory
-from media_viewer import vars
+from media_viewer import vars, opsdata, ops
 
 logger = LoggerFactory.getLogger(name=__name__)
 
+def update_interpret_image_sequences(self, context):
+
+    opsdata.del_all_images()
+    ops.force_update_media = True
 
 class MV_property_group(bpy.types.PropertyGroup):
     """
     Property group that will be registered on scene.
     """
-
+    interpret_sequences: bpy.props.BoolProperty(
+        name = "Interpret Image Sequences",
+        default = False,
+        update = update_interpret_image_sequences,
+    )
     review_output_dir: bpy.props.StringProperty(
         name="Review Outpout",
         subtype="DIR_PATH",

@@ -167,6 +167,10 @@ class MV_PT_review_settings(bpy.types.Panel):
         # Display Settings.
         layout.row().label(text="Display Settings")
         layout.row().prop(
+            context.window_manager.media_viewer,
+            "interpret_sequences",
+        )
+        layout.row().prop(
             context.preferences.view,
             "show_playback_fps",
         )

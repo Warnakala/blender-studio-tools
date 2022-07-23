@@ -36,6 +36,7 @@ logger = LoggerFactory.getLogger(name=__name__)
 # Global variables
 active_media_area: str = "SEQUENCE_EDITOR"
 active_media_area_obj: bpy.types.Area = None  # Is initialized by init_active_media_area_obj()  # TODO: replace finding active media area with this global area obj
+force_update_media = False
 
 # Global variables for frame handler to check previous value.
 prev_dirpath: Path = Path.home()  # TODO: read from json on register
@@ -276,7 +277,6 @@ class MV_OT_load_media_image(bpy.types.Operator):
         # If sequence should be loaded and sequence actually detected
         # set source to SEQUENCE and correct frame range settings
         if self.load_sequence and len(file_list) > 1:
-
             image.source = "SEQUENCE"
 
             # Get frame counters from filepaths. Will always work because
@@ -937,6 +937,7 @@ class MV_OT_next_media_file(bpy.types.Operator):
         global prev_relpath  # Is relative path to prev_dirpath.
         global prev_dirpath
         area_fb = opsdata.find_area(context, "FILE_BROWSER")
+        settings = context.window_manager.media_viewer
 
         if not context.screen.show_fullscreen and area_fb:
             # If not fullscreen, just call select_wall op
@@ -1003,7 +1004,7 @@ class MV_OT_next_media_file(bpy.types.Operator):
         elif opsdata.is_image(filepath):
             bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
             # Load media image handles image sequences.
-            bpy.ops.media_viewer.load_media_image(filepath=filepath.as_posix())
+            bpy.ops.media_viewer.load_media_image(filepath=filepath.as_posix(), load_sequence=settings.interpret_sequences)
 
         elif opsdata.is_text(filepath) or opsdata.is_script(filepath):
             bpy.ops.media_viewer.set_media_area_type(area_type="TEXT_EDITOR")
@@ -1639,6 +1640,7 @@ def callback_filename_change(dummy: None):
     global prev_relpath  # :Optional[str]
     global prev_dirpath  # :Path
     global prev_filepath_list  # :List[Path]
+    global force_update_media  # :bool
 
     # Because frame handler runs in area,
     # context has active_file, and selected_files.
@@ -1725,13 +1727,16 @@ def callback_filename_change(dummy: None):
 
         # Early return filename did not change.
         if prev_relpath == active_relpath:
-            return None
+            if force_update_media:
+                force_update_media = False
+            else:
+                return None
 
         # Set area type.
         bpy.ops.media_viewer.set_media_area_type(area_type="IMAGE_EDITOR")
 
         # Load media image handles image sequences.
-        bpy.ops.media_viewer.load_media_image(filepath=active_filepath.as_posix())
+        bpy.ops.media_viewer.load_media_image(filepath=active_filepath.as_posix(), load_sequence=bpy.context.window_manager.media_viewer.interpret_sequences)
 
     elif opsdata.is_text(active_filepath) or opsdata.is_script(active_filepath):
 
