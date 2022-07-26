@@ -239,7 +239,42 @@ class SVN_show_commit_message(bpy.types.Operator):
     @classmethod
     def description(cls, context, properties):
         log_entry = context.scene.svn.get_log_by_revision(properties.log_rev)[1]
-        return log_entry.commit_message
+        commit_msg = log_entry.commit_message
+
+        # Prettify the tooltips.
+        pretty_msg = ""
+        for line in commit_msg.split("\n"):
+            # Remove leading/trailing whitespace
+            line = line.strip()
+
+            # Add punctuation mark
+            if not (line.endswith(".") or line.endswith("!") or line.endswith("?")):
+                line = line + "."
+
+            # Split long lines into several
+            limit = 300
+            if len(line) > limit:
+                words = line.split(" ")
+                sub_lines = []
+                
+                new_line = ""
+                for word in words:
+                    if len(new_line) + len(word) < limit:
+                        new_line += " "+word
+                    else:
+                        sub_lines.append(new_line)
+                        new_line = word
+                else:
+                    sub_lines.append(new_line)
+                line = "\n".join(sub_lines)
+
+            pretty_msg += "\n"+line
+
+        # Remove last period because Blender adds it.
+        if pretty_msg.endswith("."):
+            pretty_msg = pretty_msg[:-1]
+
+        return pretty_msg
 
     execute = execute_tooltip_log
 
