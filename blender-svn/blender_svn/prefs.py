@@ -30,7 +30,7 @@ from .background_process import BackgroundProcess, process_in_background
 from .execute_subprocess import execute_svn_command
 from .util import redraw_viewport
 
-class SVN_Authenticate(BackgroundProcess):
+class BGP_SVN_Authenticate(BackgroundProcess):
     name = "Authenticate"
     needs_authentication = False
     timeout = 10
@@ -87,7 +87,7 @@ class SVN_credential(bpy.types.PropertyGroup):
             # Only try to authenticate if BOTH username AND pw are entered.
             return
 
-        process_in_background(SVN_Authenticate)
+        process_in_background(BGP_SVN_Authenticate)
         svn_status.init_svn(context, None)
 
         # For some ungodly reason, ONLY with this addon, 

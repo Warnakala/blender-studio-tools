@@ -14,7 +14,7 @@ def execute_command(path: str, command: str) -> str:
     
     return output_bytes.decode(encoding='utf-8', errors='replace')
 
-def execute_svn_command(context, command: str, suppress_errors=False, use_cred=False) -> str:
+def execute_svn_command(context, command: str, suppress_errors=False, print_errors=True, use_cred=False) -> str:
     """Execute an svn command in the root of the current svn repository.
     So any file paths that are part of the command should be relative to the
     SVN root.
@@ -23,15 +23,16 @@ def execute_svn_command(context, command: str, suppress_errors=False, use_cred=F
     svn.svn_error = ""
     if use_cred:
         command = command_with_credential(context, command)
-    
+
     try:
         return execute_command(svn.svn_directory, command)
     except subprocess.CalledProcessError as error:
         if suppress_errors:
             return ""
         else:
-            print(f"Command returned error: {command}")
-            svn.svn_error = error.stderr.decode()
+            # svn.svn_error = error.stderr.decode()     TODO: This error storage should be implemented on a per process basis, not a single error for the entire SVN add-on.
             err_msg = error.stderr.decode()
-            print(err_msg)
+            if print_errors:
+                print(f"Command returned error: {command}")
+                print(err_msg)
             raise error

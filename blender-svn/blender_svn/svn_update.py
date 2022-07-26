@@ -1,15 +1,13 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 
-import threading
+import threading, subprocess
 
 import bpy
 
-from .svn_log import svn_log_background_fetch_start
 from .ops import May_Modifiy_Current_Blend
 from .execute_subprocess import execute_svn_command
-
-SVN_UPDATE_THREAD = None
-SVN_UPDATE_OUTPUT = ""
+from .background_process import BackgroundProcess, process_in_background, processes
+from .util import redraw_viewport
 
 
 class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
@@ -20,13 +18,15 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if SVN_UPDATE_THREAD:
+        if 'Update' in processes and processes['Update'].is_running:
             # Don't allow creating another thread while the previous one is still running.
             return False
+
         for f in context.scene.svn.external_files:
             if f.repos_status != 'none':
                 return True
-        return False
+
+        return True
 
     def invoke(self, context, event):
         svn = context.scene.svn
@@ -41,9 +41,9 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
         if self.reload_file:
             self.execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
-            svn_log_background_fetch_start()
+            processes['Log'].start()
         else:
-            svn_update_background_start()
+            process_in_background(BGP_SVN_Update)
 
         return {"FINISHED"}
 
@@ -59,56 +59,31 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
                     f.status = 'conflicted'
                 f.status_predicted_flag = "UPDATE"
 
-def async_svn_update():
-    """This function should be executed from a separate thread to avoid freezing 
-    Blender's UI during execute_svn_command().
-    """
-    global SVN_UPDATE_OUTPUT
-    SVN_UPDATE_OUTPUT = ""
+class BGP_SVN_Update(BackgroundProcess):
+    name = "Update"
+    needs_authentication = True
+    timeout = 5*60
+    repeat_delay = 0
 
-    context = bpy.context
-    if context.scene.svn.svn_error:
-        return
-    print("Updating SVN files in background...")
-    SVN_UPDATE_OUTPUT = execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
+    def tick(self, context, prefs):
+        redraw_viewport()
 
+    def acquire_output(self, context, prefs):
+        try:
+            self.output = execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
+        except subprocess.CalledProcessError as error:
+            self.error = error.stderr.decode()
 
-def timer_svn_update():
-    global SVN_UPDATE_OUTPUT
-    global SVN_UPDATE_THREAD
-    context = bpy.context
-
-    if SVN_UPDATE_THREAD and SVN_UPDATE_THREAD.is_alive():
-        # Process is still running, so we just gotta wait.
-        return 5.0
-    elif SVN_UPDATE_OUTPUT:
+    def process_output(self, context, prefs):
         print("SVN Update complete:")
-        print(SVN_UPDATE_OUTPUT)
+        print("\n".join(self.output.split("\n")[1:]))
         for f in context.scene.svn.external_files:
             if f.status_predicted_flag == 'UPDATE':
                 f.status_predicted_flag = 'SINGLE'
-        svn_update_background_stop()
-        svn_log_background_fetch_start()
-        SVN_UPDATE_OUTPUT = ""
-        SVN_UPDATE_THREAD = None
-        return
 
-    SVN_UPDATE_THREAD = threading.Thread(target=async_svn_update, args=())
-    SVN_UPDATE_THREAD.start()
+        print("update the log maybe?")
+        processes['Log'].start()
 
-    return 3.0
-
-
-def svn_update_background_start(_dummy1=None, _dummy2=None):
-    if not bpy.app.timers.is_registered(timer_svn_update):
-        bpy.app.timers.register(timer_svn_update, persistent=True)
-
-
-def svn_update_background_stop(_dummy1=None, _dummy2=None):
-    if bpy.app.timers.is_registered(timer_svn_update):
-        bpy.app.timers.unregister(timer_svn_update)
-    global SVN_UPDATE_THREAD
-    SVN_UPDATE_THREAD = None
 
 registry = [
     SVN_update_all

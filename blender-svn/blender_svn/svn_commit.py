@@ -5,7 +5,7 @@ import threading, subprocess
 import bpy
 from bpy.props import StringProperty, BoolVectorProperty
 
-from .svn_log import svn_log_background_fetch_start
+from .background_process import processes
 from .props import SVN_file
 from .ops import SVN_Operator, Popup_Operator
 from .execute_subprocess import execute_svn_command
@@ -175,7 +175,7 @@ def timer_svn_commit():
                 f.status_predicted_flag = 'SINGLE'
         SVN_COMMIT_OUTPUT = ""
         SVN_COMMIT_THREAD = None
-        svn_log_background_fetch_start()
+        processes['Log'].start()
         return
 
     SVN_COMMIT_THREAD = threading.Thread(target=async_svn_commit, args=())

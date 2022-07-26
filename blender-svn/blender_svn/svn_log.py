@@ -28,6 +28,7 @@ from bpy.props import IntProperty, BoolProperty
 from .util import get_addon_prefs, svn_date_simple
 from . import constants
 from .execute_subprocess import execute_svn_command
+from .background_process import BackgroundProcess, process_in_background, processes
 
 
 ################################################################################
@@ -164,7 +165,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        if SVN_LOG_THREAD:
+        if processes['Log'].is_running:
             layout.label(text="Recent log entries may be missing, updating in progress...", icon='ERROR')
 
         num, auth, date, msg = layout_log_split(layout.row())
@@ -360,7 +361,15 @@ def reload_svn_log(self, context):
 
 
 def write_to_svn_log_file_and_storage(context, data_str: str) -> int:
-    """Return how many SVN log entries were contained in data_str."""
+    """
+    Get all SVN Log entries from the remote repo in the background,
+    without freezing up the UI, by calling this function every 3 seconds.
+    These are then stored in a file, so each log entry only needs to be fetched
+    once per computer that runs the addon.
+
+    Return how many SVN log entries were contained in data_str.
+    """
+
     svn = context.scene.svn
     log_file_path = get_log_file_path(context)
 
@@ -391,88 +400,45 @@ def write_to_svn_log_file_and_storage(context, data_str: str) -> int:
     print(f"SVN Log now at r{context.scene.svn.log[-1].revision_number}")
     return len(svn.log) - num_entries
 
-SVN_LOG_THREAD = None
-SVN_LOG_OUTPUT = ""
-def async_get_svn_log():
-    """This function should be executed from a separate thread to avoid freezing 
-    Blender's UI during execute_svn_command().
-    """
-    global SVN_LOG_OUTPUT
-    SVN_LOG_OUTPUT = ""
 
-    context = bpy.context
-    svn = context.scene.svn
-    if svn.svn_error:
-        return
+class BGP_SVN_Log(BackgroundProcess):
+    name = "Log"
+    needs_authentication = True
+    timeout = 10
+    repeat_delay = 3
 
-    latest_log_rev = 0
-    if len(svn.log) > 0:
-        latest_log_rev = svn.log[-1].revision_number
+    def acquire_output(self, context, prefs):
+        """This function should be executed from a separate thread to avoid freezing 
+        Blender's UI during execute_svn_command().
+        """
+        svn = context.scene.svn
 
-    # We have no way to know if latest_log_rev+1 will exist or not, but we 
-    # must check, and there is no safe way to check it, so we let's just 
-    # catch and handle the potential error.
-    SVN_LOG_OUTPUT = execute_svn_command(
-        context,
-        f"svn log {svn.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10", 
-        suppress_errors=True,
-        use_cred = True
-    )
-    if SVN_LOG_OUTPUT == "":
-        print("SVN: Log is now fully up to date.")
-        svn_log_background_fetch_stop()
+        latest_log_rev = 0
+        if len(svn.log) > 0:
+            latest_log_rev = svn.log[-1].revision_number
 
+        # We have no way to know if latest_log_rev+1 will exist or not, but we 
+        # must check, and there is no safe way to check it, so let's just 
+        # catch and handle the potential error.
+        try:
+            self.output = execute_svn_command(
+                context,
+                f"svn log {svn.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10", 
+                print_errors = False,
+                use_cred = True
+            )
+        except subprocess.CalledProcessError as error:
+            error_msg = error.stderr.decode()
+            if "No such revision" in error_msg:
+                print("SVN: Log is now fully up to date.")
+                self.stop()
+            else:
+                self.error = error_msg
 
-@bpy.app.handlers.persistent
-def timer_update_svn_log():
-    """Get all SVN Log entries from the remote repo in the background,
-    without freezing up the UI, by calling this function every 3 seconds.
-    These are then stored in a file, so each log entry only needs to be fetched
-    once per computer that runs the addon.
-    """
-    global SVN_LOG_THREAD
-    global SVN_LOG_OUTPUT
-    context = bpy.context
-    svn = context.scene.svn
-    prefs = get_addon_prefs(context)
-    cred = prefs.get_credentials()
-
-    if not svn.is_in_repo or not cred.authenticated:
-        return
-
-    if SVN_LOG_THREAD and SVN_LOG_THREAD.is_alive():
-        # Process is still running, so we just gotta wait. Let's try again in 3 seconds.
-        return 3.0
-    elif SVN_LOG_OUTPUT:
-        num_logs = write_to_svn_log_file_and_storage(context, SVN_LOG_OUTPUT)
-        SVN_LOG_OUTPUT = ""
-        SVN_LOG_THREAD = None
+    def process_output(self, context, prefs):
+        num_logs = write_to_svn_log_file_and_storage(context, self.output)
         if num_logs < 10:
-            svn_log_background_fetch_stop()
-            return
-
-    SVN_LOG_THREAD = threading.Thread(target=async_get_svn_log, args=())
-    SVN_LOG_THREAD.start()
-    return 3.0
-
-
-@bpy.app.handlers.persistent
-def svn_log_handler(_dummy1, _dummy2):
-    # This damn thing needs 2 positional arguments even though neither of them get anything!
-    svn_log_background_fetch_start()
-
-
-def svn_log_background_fetch_start(_dummy1=None, _dummy2=None):
-    if not bpy.app.timers.is_registered(timer_update_svn_log):
-        print("Updating SVN Log...")
-        bpy.app.timers.register(timer_update_svn_log, persistent=True)
-
-
-def svn_log_background_fetch_stop(_dummy1=None, _dummy2=None):
-    if bpy.app.timers.is_registered(timer_update_svn_log):
-        bpy.app.timers.unregister(timer_update_svn_log)
-    global SVN_LOG_THREAD
-    SVN_LOG_THREAD = None
+            self.stop()
 
 
 ################################################################################
@@ -487,9 +453,4 @@ registry = [
 ]
 
 def register():
-    bpy.app.handlers.load_post.append(svn_log_handler)
-    svn_log_background_fetch_start()
-    
-def unregister():
-    bpy.app.handlers.load_post.remove(svn_log_handler)
-    svn_log_background_fetch_stop()
+    process_in_background(BGP_SVN_Log)

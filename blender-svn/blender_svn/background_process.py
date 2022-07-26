@@ -102,6 +102,10 @@ class BackgroundProcess:
 
         self.tick(context, prefs)
         self.debug_print("Waiting...")
+        if not self.is_running:
+            # Since unregistering timers seems to be broken, let's allow setting is_running 
+            # to False in order to shut down this process.
+            return
 
         cred = prefs.get_credentials()
         if self.needs_authentication:
@@ -148,12 +152,14 @@ class BackgroundProcess:
         self.is_running = True
         if not bpy.app.timers.is_registered(self.timer_function):
             self.debug_print("Register timer")
-            bpy.app.timers.register(self.timer_function, persistent=persistent)
+            bpy.app.timers.register(self.timer_function, first_interval = 1, persistent=persistent)
 
     def stop(self):
         self.is_running = False
         if bpy.app.timers.is_registered(self.timer_function):
             # This won't work if the timer has returned None at any point, as that
             # will have already unregistered it.
+
+            # Actually, it doesn't seem to work anyways...
             self.debug_print("Force-unregistered.")
             bpy.app.timers.unregister(self.timer_function)

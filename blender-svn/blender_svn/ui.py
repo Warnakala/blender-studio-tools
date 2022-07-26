@@ -268,7 +268,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
             warning.tooltip = svn.svn_error
             warning.copy_on_click = True
         else:
-            if svn_update.SVN_UPDATE_THREAD:
+            if 'Update' in processes and processes['Update'].is_running:
                 layout.label(text="SVN Update in progress" + dots())
 
             if svn_commit.SVN_COMMIT_THREAD:
@@ -350,8 +350,6 @@ class SVN_clear_error(SVN_custom_tooltip):
     def execute(self, context):
         super().execute(context)
         context.scene.svn.svn_error = ""
-        svn_update.SVN_UPDATE_THREAD = None
-        svn_commit.SVN_COMMIT_THREAD = None
         return {'FINISHED'}
 
 def draw_outdated_file_warning(self, context):

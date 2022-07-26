@@ -34,9 +34,8 @@ from bpy.props import StringProperty
 from .execute_subprocess import execute_svn_command, execute_command
 from .util import get_addon_prefs, svn_date_simple, redraw_viewport
 from . import constants
-from .svn_log import svn_log_background_fetch_start
 
-from .background_process import BackgroundProcess, process_in_background
+from .background_process import BackgroundProcess, process_in_background, processes
 
 class SVN_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
@@ -170,7 +169,7 @@ def init_svn(context, dummy):
         print("SVN: Initialization failed. Try entering credentials.")
         return
 
-    process_in_background(SVN_Status)
+    process_in_background(BGP_SVN_Status)
 
     print("SVN: Initialization successful.")
 
@@ -179,7 +178,7 @@ def init_svn(context, dummy):
 ############## AUTOMATICALLY KEEPING FILE STATUSES UP TO DATE ##################
 ################################################################################
 
-class SVN_Status(BackgroundProcess):
+class BGP_SVN_Status(BackgroundProcess):
     name = "Status"
     needs_authentication = True
     timeout = 10
@@ -273,7 +272,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     if new_files_on_repo:
         # File entry status has changed between local and repo.
         print("SVN: Files have changed on the repository, updating log...")
-        svn_log_background_fetch_start()
+        processes['Log'].start()
 
 
     # Remove file entries who no longer seem to have an SVN status.
@@ -385,14 +384,10 @@ def register():
 
     bpy.app.timers.register(timer_init_svn, first_interval=1)
 
-    # bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
-
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
 
     bpy.app.handlers.save_post.remove(init_svn)
     bpy.app.handlers.save_post.remove(mark_current_file_as_modified)
-
-    # bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)
 
 registry = [SVN_explain_status]
