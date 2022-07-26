@@ -271,7 +271,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
             if 'Update' in processes and processes['Update'].is_running:
                 layout.label(text="SVN Update in progress" + dots())
 
-            if svn_commit.SVN_COMMIT_THREAD:
+            if 'Commit' in processes and processes['Commit'].is_running:
                 layout.label(text="SVN Commit in progress" + dots())
 
             # Calculate time since last status update

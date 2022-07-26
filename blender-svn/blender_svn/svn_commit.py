@@ -5,16 +5,11 @@ import threading, subprocess
 import bpy
 from bpy.props import StringProperty, BoolVectorProperty
 
-from .background_process import processes
+from .background_process import processes, BackgroundProcess, process_in_background
 from .props import SVN_file
 from .ops import SVN_Operator, Popup_Operator
 from .execute_subprocess import execute_svn_command
 
-SVN_COMMIT_THREAD = None
-SVN_COMMIT_OUTPUT = ""
-
-SVN_COMMIT_MSG = ""
-SVN_COMMIT_FILELIST: List[str] = []
 
 commit_message = StringProperty(
     name = "Commit Message",
@@ -34,9 +29,9 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     __annotations__ = {f'commit_message_{i}' : commit_message for i in range(MAX_LINES)}
 
     selection: BoolVectorProperty(
-        size=32,
-        options={'SKIP_SAVE'},
-        default = [True]*32
+        size = 32,
+        options = {'SKIP_SAVE'},
+        default = [True] * 32
     )
 
     @staticmethod
@@ -49,7 +44,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if SVN_COMMIT_THREAD:
+        if 'Commit' in processes and processes['Commit'].is_running:
             # Don't allow starting a new commit if the previous one isn't finished yet.
             return False
         return cls.get_committable_files(context)
@@ -105,13 +100,8 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         filepaths = [f.svn_path for f in files_to_commit]
 
-        global SVN_COMMIT_MSG
-        global SVN_COMMIT_FILELIST
-        SVN_COMMIT_MSG = commit_message
-        SVN_COMMIT_FILELIST = filepaths
-
         self.set_predicted_file_statuses(context, filepaths)
-        svn_commit_background_start()
+        process_in_background(BGP_SVN_Commit, commit_msg=commit_message, file_list = filepaths)
 
         report = f"{(len(files_to_commit))} files"
         if len(files_to_commit) == 1:
@@ -131,69 +121,44 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             f.status_predicted_flag = "COMMIT"
 
 
-def async_svn_commit():
-    """This function should be executed from a separate thread to avoid freezing 
-    Blender's UI during execute_svn_command().
-    """
-    global SVN_COMMIT_OUTPUT
-    global SVN_COMMIT_MSG
-    global SVN_COMMIT_FILELIST
-    global SVN_COMMIT_THREAD
-    SVN_COMMIT_OUTPUT = ""
-    filepaths = " ".join(SVN_COMMIT_FILELIST)
+class BGP_SVN_Commit(BackgroundProcess):
+    name = "Commit"
+    needs_authentication = True
+    timeout = 5*60
+    repeat_delay = 0
 
-    context = bpy.context
-    if context.scene.svn.svn_error:
-        return
-    if not SVN_COMMIT_MSG:
-        SVN_COMMIT_THREAD = None
-        return
-    try:
-        sanitized_commit_msg = SVN_COMMIT_MSG.replace('"', "'")
-        SVN_COMMIT_OUTPUT = execute_svn_command(context, f'svn commit -m "{sanitized_commit_msg}" {filepaths}', use_cred=True)
-    except subprocess.CalledProcessError as error:
-        print("Commit failed.")
-        SVN_COMMIT_OUTPUT = ""
-        svn_commit_background_stop()
-    SVN_COMMIT_MSG = ""
-    SVN_COMMIT_FILELIST = []
+    def __init__(self, commit_msg: str, file_list: List[str]):
+        super().__init__()
 
+        self.commit_msg = commit_msg
+        self.file_list = file_list
 
-def timer_svn_commit():
-    global SVN_COMMIT_OUTPUT
-    global SVN_COMMIT_THREAD
-    context = bpy.context
+    def acquire_output(self, context, prefs):
+        """This function should be executed from a separate thread to avoid freezing 
+        Blender's UI during execute_svn_command().
+        """
+        filepaths = " ".join(self.file_list)
 
-    if SVN_COMMIT_THREAD and SVN_COMMIT_THREAD.is_alive():
-        # Process is still running, so we just gotta wait.
-        return 5.0
-    elif SVN_COMMIT_OUTPUT:
-        print(SVN_COMMIT_OUTPUT)
-        svn_commit_background_stop()
+        if not self.commit_msg:
+            self.stop()
+            return
+
+        try:
+            sanitized_commit_msg = self.commit_msg.replace('"', "'")
+            self.output = execute_svn_command(context, f'svn commit -m "{sanitized_commit_msg}" {filepaths}', use_cred=True)
+        except subprocess.CalledProcessError as error:
+            print("Commit failed.")
+            self.error = error.stderr.decode()
+
+    def process_output(self, context, prefs):
+        print(self.output)
         for f in context.scene.svn.external_files:
             if f.status_predicted_flag == 'COMMIT':
                 f.status_predicted_flag = 'SINGLE'
-        SVN_COMMIT_OUTPUT = ""
-        SVN_COMMIT_THREAD = None
         processes['Log'].start()
-        return
 
-    SVN_COMMIT_THREAD = threading.Thread(target=async_svn_commit, args=())
-    SVN_COMMIT_THREAD.start()
-
-    return 30.0
-
-
-def svn_commit_background_start(_dummy1=None, _dummy2=None):
-    if not bpy.app.timers.is_registered(timer_svn_commit):
-        bpy.app.timers.register(timer_svn_commit, persistent=True)
-
-
-def svn_commit_background_stop(_dummy1=None, _dummy2=None):
-    if bpy.app.timers.is_registered(timer_svn_commit):
-        bpy.app.timers.unregister(timer_svn_commit)
-    global SVN_COMMIT_THREAD
-    SVN_COMMIT_THREAD = None
+        self.commit_msg = ""
+        self.file_list = []
 
 registry = [
     SVN_commit

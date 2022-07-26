@@ -2,19 +2,19 @@ import bpy
 import threading
 from bpy.app.handlers import persistent
 from time import time
+import random
 
 from .util import get_addon_prefs, redraw_viewport
 
 processes = {}
 
-def process_in_background(bgp_class: type):
+def process_in_background(bgp_class: type, **kwargs):
     """This should be used to instantiate BackgroundProcess classes."""
     global processes
     if bgp_class.name in processes:
-        processes[bgp_class.name].restart()
-        return
+        processes[bgp_class.name].stop()
 
-    processes[bgp_class.name] = bgp_class()
+    processes[bgp_class.name] = bgp_class(**kwargs)
 
 
 # TODO: If a process fails, show information about the failed process in the UI.
@@ -49,7 +49,7 @@ class BackgroundProcess:
 
     def debug_print(self, msg: str):
         if self.debug:
-            print(self.name + ": " + msg)
+            print(f"{self.name} (#{self.id}): {msg}")
 
     def __init__(self):
         self.thread = None
@@ -58,6 +58,7 @@ class BackgroundProcess:
         self.is_running = False
         self.output = ""
         self.error = ""
+        self.id = int(random.random() * 10000)
 
         self.output_processed = False
 
@@ -96,6 +97,7 @@ class BackgroundProcess:
         context = bpy.context
         svn = context.scene.svn
         if not svn.is_in_repo:
+            self.debug_print("Shutdown: Not in repo.")
             return
 
         prefs = get_addon_prefs(context)
@@ -105,11 +107,13 @@ class BackgroundProcess:
         if not self.is_running:
             # Since unregistering timers seems to be broken, let's allow setting is_running 
             # to False in order to shut down this process.
+            self.debug_print("Shutdown: is_running was set to False.")
             return
 
         cred = prefs.get_credentials()
         if self.needs_authentication:
             if not cred or not cred.authenticated:
+                self.debug_print("Shutdown: Credentials needed.")
                 return
 
         if not self.thread or not self.thread.is_alive() and self.output_processed:
@@ -133,20 +137,11 @@ class BackgroundProcess:
         self.debug_print(f"Repeat delay: {self.repeat_delay}")
 
         if self.repeat_delay == 0:
-            self.debug_print("Finished\n")
+            self.debug_print("Shutdown: Finished.\n")
             self.is_running = False
             return
 
-        self.debug_print("")
-
         return self.repeat_delay
-
-    def restart(self):
-        self.thread = None
-        self.output = ""
-
-        self.stop()
-        self.start()
 
     def start(self, persistent=True):
         self.is_running = True

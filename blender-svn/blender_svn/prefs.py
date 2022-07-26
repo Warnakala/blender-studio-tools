@@ -26,7 +26,7 @@ import bpy
 from bpy.props import StringProperty, IntProperty, BoolProperty, CollectionProperty
 
 from . import svn_status
-from .background_process import BackgroundProcess, process_in_background
+from .background_process import BackgroundProcess, process_in_background, processes
 from .execute_subprocess import execute_svn_command
 from .util import redraw_viewport
 
