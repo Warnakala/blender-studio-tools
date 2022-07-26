@@ -36,6 +36,8 @@ from .util import get_addon_prefs, svn_date_simple, redraw_viewport
 from . import constants
 from .svn_log import svn_log_background_fetch_start
 
+from .background_process import BackgroundProcess, process_in_background
+
 class SVN_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
     bl_label = "" # Don't want the first line of the tooltip on mouse hover.
@@ -128,16 +130,6 @@ def set_svn_info(context) -> bool:
 def init_svn(context, dummy):
     """Initialize SVN info when opening a .blend file that is in a repo."""
 
-    # We need to reset our global vars, otherwise with unlucky timing,
-    # we can end up writing file entries of one repository to the .blend file
-    # in another repository, when doing File->Open from one to the other.
-    global SVN_STATUS_OUTPUT
-    global SVN_STATUS_THREAD
-    global SVN_STATUS_NEWFILE
-    SVN_STATUS_OUTPUT = {}
-    SVN_STATUS_THREAD = None
-    SVN_STATUS_NEWFILE = True
-
     if not context:
         context = bpy.context
 
@@ -178,7 +170,8 @@ def init_svn(context, dummy):
         print("SVN: Initialization failed. Try entering credentials.")
         return
 
-    svn_status_background_fetch_start()
+    process_in_background(SVN_Status)
+
     print("SVN: Initialization successful.")
 
 
@@ -186,64 +179,41 @@ def init_svn(context, dummy):
 ############## AUTOMATICALLY KEEPING FILE STATUSES UP TO DATE ##################
 ################################################################################
 
-import threading
-SVN_STATUS_OUTPUT = {}
-SVN_STATUS_THREAD = None
-# Flag to let is_referenced flags be set only once on file open and file save.
-# We need the flag because this needs to happen not immediately on file open,
-# but after the first `svn status` call has finished in the background.
-# Also we want it to run in the background even on file save, otherwise the UI
-# lock-up from the file saving process is noticably longer.
-SVN_STATUS_NEWFILE = True
+class SVN_Status(BackgroundProcess):
+    name = "Status"
+    needs_authentication = True
+    timeout = 10
+    repeat_delay = 15
 
-def async_get_verbose_svn_status():
-    """This function should be executed from a separate thread to avoid freezing 
-    Blender's UI during execute_svn_command().
-    """
-    global SVN_STATUS_OUTPUT
-    global SVN_STATUS_NEWFILE
-    SVN_STATUS_OUTPUT = ""
+    def __init__(self):
+        super().__init__()
 
-    context = bpy.context
-    prefs = get_addon_prefs(context)
-    cred = prefs.get_credentials()
-    if not cred.authenticated:
-        return
-    if context.scene.svn.svn_error:
-        return
-    svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml')
-    SVN_STATUS_OUTPUT = get_repo_file_statuses(svn_status_str)
+        # Flag to let is_referenced flags be set only once on file open and file save.
+        # We need the flag because this needs to happen not immediately on file open,
+        # but after the first `svn status` call has finished in the background.
+        # Also we want it to run in the background even on file save, otherwise the UI
+        # lock-up from the file saving process is noticably longer.
+        self.is_new_file = True
 
-    if SVN_STATUS_NEWFILE:
-        update_file_is_referenced_flags()
-        SVN_STATUS_NEWFILE = False
+    def tick(self, context, prefs):
+        if context.scene.svn.seconds_since_last_update > 30:
+            redraw_viewport()
 
-@bpy.app.handlers.persistent
-def timer_update_svn_status():
-    context = bpy.context
-    svn = context.scene.svn
-    svn.update_time_since_last_update()
-    redraw_viewport()
-    prefs = get_addon_prefs(context)
+    def acquire_output(self, context, prefs):
+        try:
+            svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml')
+        except subprocess.CalledProcessError as error:
+            self.error = error.stderr.decode()
 
-    cred = prefs.get_credentials()
+        self.output = get_repo_file_statuses(svn_status_str)
 
-    if not (svn.is_in_repo and cred and (cred.username and cred.password)):
-        svn_status_background_fetch_stop()
-        return
+        if self.is_new_file:
+            update_file_is_referenced_flags()
+            self.is_new_file = False
 
-    global SVN_STATUS_THREAD
-    if SVN_STATUS_THREAD and SVN_STATUS_THREAD.is_alive():
-        # Process is still running, so we just gotta wait.
-        return 5.0
-    elif SVN_STATUS_OUTPUT:
-        update_file_list(context, SVN_STATUS_OUTPUT)
+    def process_output(self, context, prefs):
+        update_file_list(context, self.output)
         context.scene.svn.timestamp_last_status_update = datetime.strftime(datetime.now(), "%Y/%m/%d %H:%M:%S")
-
-    SVN_STATUS_THREAD = threading.Thread(target=async_get_verbose_svn_status, args=())
-    SVN_STATUS_THREAD.start()
-
-    return 60.0
 
 
 def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
@@ -390,19 +360,6 @@ def get_repo_file_statuses(svn_status_str: str) -> Dict[str, Tuple[str, str, int
 
 
 @bpy.app.handlers.persistent
-def svn_status_background_fetch_start(_dummy1=None, _dummy2=None):
-    if not bpy.app.timers.is_registered(timer_update_svn_status):
-        bpy.app.timers.register(timer_update_svn_status, persistent=True)
-
-
-def svn_status_background_fetch_stop(_dummy1=None, _dummy2=None):
-    if bpy.app.timers.is_registered(timer_update_svn_status):
-        bpy.app.timers.unregister(timer_update_svn_status)
-    global SVN_STATUS_THREAD
-    SVN_STATUS_THREAD = None
-
-
-@bpy.app.handlers.persistent
 def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
     context = bpy.context
     svn = context.scene.svn
@@ -416,12 +373,17 @@ def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
 ############################# REGISTER #########################################
 ################################################################################
 
+def timer_init_svn(_dummy1=None, _dummy2=None):
+    print("Initialize SVN with some delay...")
+    init_svn(bpy.context, None)
+
 def register():
     bpy.app.handlers.load_post.append(init_svn)
 
     bpy.app.handlers.save_post.append(init_svn)
     bpy.app.handlers.save_post.append(mark_current_file_as_modified)
-    svn_status_background_fetch_start()
+
+    bpy.app.timers.register(timer_init_svn, first_interval=1)
 
     # bpy.app.handlers.load_post.append(update_file_is_referenced_flags)
 
@@ -430,7 +392,6 @@ def unregister():
 
     bpy.app.handlers.save_post.remove(init_svn)
     bpy.app.handlers.save_post.remove(mark_current_file_as_modified)
-    svn_status_background_fetch_stop()
 
     # bpy.app.handlers.load_post.remove(update_file_is_referenced_flags)
 

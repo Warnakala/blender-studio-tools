@@ -25,6 +25,8 @@ from .util import get_addon_prefs
 from . import constants
 from . import svn_update
 from . import svn_commit
+from .background_process import processes
+from time import time
 
 class SVN_UL_file_list(bpy.types.UIList):
     UILST_FLT_ITEM = 1 << 30 # Value that indicates that this item has passed the filter process successfully. See rna_ui.c.
@@ -225,10 +227,19 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
         url.copy_on_click = True
         col.prop(cred, 'username', icon='USER')
         col.prop(cred, 'password', icon='UNLOCKED')
+        global processes
+        auth_proc = processes.get('Authenticate')
+        if auth_proc and auth_proc.is_running:
+            col.enabled = False
+            layout.label(text="Authenticating" + dots())
         if cred.auth_failed:
             row = layout.row()
             row.alert = True
             row.label(text="Authentication failed. Double-check your details.")
+
+
+def dots():
+    return "." * int((time() % 10) + 3)
 
 
 class VIEW3D_PT_svn_files(bpy.types.Panel):
@@ -258,15 +269,15 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
             warning.copy_on_click = True
         else:
             if svn_update.SVN_UPDATE_THREAD:
-                layout.label(text="SVN Update in progress...")
+                layout.label(text="SVN Update in progress" + dots())
 
             if svn_commit.SVN_COMMIT_THREAD:
-                layout.label(text="SVN Commit in progress...")
+                layout.label(text="SVN Commit in progress" + dots())
 
             # Calculate time since last status update
             if svn.seconds_since_last_update > 30:
                 row = layout.row()
-                row.label(text="Acquiring file statuses from remote, please wait...")
+                row.label(text="Acquiring file statuses from remote" + dots())
                 return
 
         main_row = layout.row()

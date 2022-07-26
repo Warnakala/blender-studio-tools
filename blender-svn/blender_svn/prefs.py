@@ -26,7 +26,53 @@ import bpy
 from bpy.props import StringProperty, IntProperty, BoolProperty, CollectionProperty
 
 from . import svn_status
+from .background_process import BackgroundProcess, process_in_background
 from .execute_subprocess import execute_svn_command
+from .util import redraw_viewport
+
+class SVN_Authenticate(BackgroundProcess):
+    name = "Authenticate"
+    needs_authentication = False
+    timeout = 10
+    repeat_delay = 0
+
+    def tick(self, context, prefs):
+        redraw_viewport()
+
+    def acquire_output(self, context, prefs):
+        cred = prefs.get_credentials()
+        if not cred:
+            return
+
+        try:
+            self.output = execute_svn_command(
+                context, 
+                f'svn status --show-updates --username "{cred.username}" --password "{cred.password}"'
+            )
+            self.debug_print("Output: \n" + self.output)
+        except subprocess.CalledProcessError as error:
+            self.error = error.stderr.decode()
+
+    def process_output(self, context, prefs):
+        self.debug_print("process_output()")
+        cred = prefs.get_credentials()
+        if not cred:
+            return
+
+        if self.output:
+            cred.authenticated = True
+            cred.auth_failed = False
+            self.debug_print("Run init_svn()")
+            svn_status.init_svn(context, None)
+            return
+        elif self.error:
+            if "Authentication failed" in self.error:
+                cred.authenticated = False
+                cred.auth_failed = True
+            else:
+                cred.authenticated = False
+                cred.auth_failed = False
+            return
 
 
 class SVN_credential(bpy.types.PropertyGroup):
@@ -40,24 +86,9 @@ class SVN_credential(bpy.types.PropertyGroup):
         if not (self.username and self.password):
             # Only try to authenticate if BOTH username AND pw are entered.
             return
-        try:
-            execute_svn_command(
-                context, 
-                f'svn status --show-updates --username "{self.username}" --password "{self.password}"'
-            )
-        except subprocess.CalledProcessError as error:
-            error = error.stderr.decode()
-            if "Authentication failed" in error:
-                self.authenticated = False
-                self.auth_failed = True
-            else:
-                self.authenticated = False
-                self.auth_failed = False
-            return
 
+        process_in_background(SVN_Authenticate)
         svn_status.init_svn(context, None)
-        self.authenticated = True
-        self.auth_failed = False
 
         # For some ungodly reason, ONLY with this addon, 
         # CollectionProperties stored in the AddonPrefs do not get
