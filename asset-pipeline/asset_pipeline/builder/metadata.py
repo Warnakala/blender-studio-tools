@@ -244,7 +244,6 @@ class MetadataAsset(MetadataClass):
     Tries to mirror Kitsu Asset data structure as much as possible.
     """
 
-    id: str
     name: str
     parent_id: str
     parent_name: str
@@ -252,6 +251,8 @@ class MetadataAsset(MetadataClass):
 
     version: str
     status: AssetStatus
+
+    id: str = "00000000-0000-0000-0000-000000000000"
 
     # Optional.
     flags: List[str] = field(default_factory=list)
