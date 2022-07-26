@@ -28,7 +28,7 @@ from bpy.props import StringProperty, IntProperty, BoolProperty, CollectionPrope
 from . import svn_status
 from .background_process import BackgroundProcess, process_in_background, processes
 from .execute_subprocess import execute_svn_command
-from .util import redraw_viewport
+from .util import redraw_viewport, get_addon_prefs
 
 class BGP_SVN_Authenticate(BackgroundProcess):
     name = "Authenticate"
@@ -164,6 +164,19 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
         )
 
 
+@bpy.app.handlers.persistent
+def try_authenticating_on_file_load(_dummy1, _dummy2):
+    print("Try authenticating...")
+    context = bpy.context
+    prefs = get_addon_prefs(context)
+    cred = prefs.get_credentials()
+    if cred:
+        # Don't assume that a previously saved password is still correct.
+        cred.authenticated = False
+        # Trigger the update callback.
+        cred.password = cred.password
+
+
 # ----------------REGISTER--------------.
 
 registry = [
@@ -171,3 +184,9 @@ registry = [
     SVN_credential,
     SVN_addon_preferences
 ]
+
+def register():
+    bpy.app.handlers.load_post.append(try_authenticating_on_file_load)
+
+def unregister():
+    bpy.app.handlers.load_post.remove(try_authenticating_on_file_load)

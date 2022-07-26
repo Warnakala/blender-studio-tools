@@ -160,14 +160,13 @@ def init_svn(context, dummy):
         f.is_referenced = True
 
     prefs = get_addon_prefs(context)
-    svn_url = svn.svn_url
     cred = prefs.get_credentials()
     if not cred:
         cred = prefs.svn_credentials.add()
-        cred.url = svn_url
+        cred.url = svn.svn_url
         cred.name = Path(svn.svn_directory).name
         print("SVN: Initialization failed. Try entering credentials.")
-        return
+        return 1
 
     process_in_background(BGP_SVN_Status)
 
@@ -374,7 +373,10 @@ def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
 
 def timer_init_svn(_dummy1=None, _dummy2=None):
     print("Initialize SVN with some delay...")
-    init_svn(bpy.context, None)
+    ret = init_svn(bpy.context, None)
+
+    return ret
+
 
 def register():
     bpy.app.handlers.load_post.append(init_svn)
@@ -384,10 +386,12 @@ def register():
 
     bpy.app.timers.register(timer_init_svn, first_interval=1)
 
+
 def unregister():
     bpy.app.handlers.load_post.remove(init_svn)
 
     bpy.app.handlers.save_post.remove(init_svn)
     bpy.app.handlers.save_post.remove(mark_current_file_as_modified)
+
 
 registry = [SVN_explain_status]
