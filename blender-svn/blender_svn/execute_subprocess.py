@@ -24,6 +24,8 @@ def execute_svn_command(context, command: str, suppress_errors=False, print_erro
     if use_cred:
         command = command_with_credential(context, command)
 
+    command += " --non-interactive"
+
     try:
         return execute_command(svn.svn_directory, command)
     except subprocess.CalledProcessError as error:

@@ -87,6 +87,8 @@ class SVN_credential(bpy.types.PropertyGroup):
             # Only try to authenticate if BOTH username AND pw are entered.
             return
 
+        self.auth_failed = False
+
         process_in_background(BGP_SVN_Authenticate)
         svn_status.init_svn(context, None)
 

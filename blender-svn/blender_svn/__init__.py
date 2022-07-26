@@ -20,7 +20,6 @@
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
 # TODO:
-# - Handle entering an incorrect password
 # - Avoid having to manually authenticate when the information is already entered.
 # - Implement per-process error handling and UI.
 # - Updating of local file statuses should be de-coupled from updating of online file statuses, so it can be significantly more responsive.
