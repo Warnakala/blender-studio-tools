@@ -21,5 +21,14 @@ from ..builder.context import BuildContext
 from ..builder.task_layer import TaskLayer
 from ..builder.asset_mapping import AssetTransferMapping
 from ..builder.hook import hook, Wildcard, DoNotMatch
+from ..builder.vis import EnsureObjectVisibility, EnsureCollectionVisibility
 
-__all__ = ["TaskLayer", "BuildContext", "AssetTransferMapping", "hook", "Wildcard", "DoNotMatch"]
+__all__ = ["TaskLayer",
+            "BuildContext",
+            "AssetTransferMapping",
+            "hook",
+            "Wildcard",
+            "DoNotMatch",
+            "EnsureObjectVisibility",
+            "EnsureCollectionVisibility",
+            ]
