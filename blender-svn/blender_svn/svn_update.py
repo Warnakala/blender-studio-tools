@@ -81,7 +81,6 @@ class BGP_SVN_Update(BackgroundProcess):
             if f.status_predicted_flag == 'UPDATE':
                 f.status_predicted_flag = 'SINGLE'
 
-        print("update the log maybe?")
         processes['Log'].start()
 
 

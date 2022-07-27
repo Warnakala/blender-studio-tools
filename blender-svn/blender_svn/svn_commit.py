@@ -11,11 +11,15 @@ from .ops import SVN_Operator, Popup_Operator
 from .execute_subprocess import execute_svn_command
 
 
-commit_message = StringProperty(
-    name = "Commit Message",
-    description = "Describe the changes being committed",
-    options={'SKIP_SAVE'}
-)
+class SVN_commit_msg_clear(bpy.types.Operator):
+    bl_idname = "svn.clear_commit_message"
+    bl_label = "Clear SVN Commit Message"
+    bl_description = "Clear the commit message"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        context.scene.svn.commit_message = ""
+        return {'FINISHED'}
 
 
 class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
@@ -23,15 +27,18 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     bl_label = "SVN Commit"
     bl_description = "Commit a selection of files to the remote repository"
     bl_options = {'INTERNAL'}
-    bl_property = "commit_message_0"  # Focus the text input box
+    bl_property = "first_line"  # Focus the text input box
 
-    MAX_LINES = 32
-    __annotations__ = {f'commit_message_{i}' : commit_message for i in range(MAX_LINES)}
+    # The first line of the commit message needs to be an operator property in order
+    # for us to be able to focus the input box automatically when the window pops up
+    # (see bl_property above)
+    def update_first_line(self, context):
+        context.scene.svn.commit_lines[0].line = self.first_line
 
-    selection: BoolVectorProperty(
-        size = 32,
-        options = {'SKIP_SAVE'},
-        default = [True] * 32
+    first_line: StringProperty(
+        name="First Line",
+        description = "First line of the commit message",
+        update=update_first_line
     )
 
     @staticmethod
@@ -49,6 +56,20 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             return False
         return cls.get_committable_files(context)
 
+    def invoke(self, context, event):
+        svn = context.scene.svn
+        if svn.commit_message == "":
+            svn.commit_message = ""
+
+        self.first_line = svn.commit_lines[0].line
+
+        for f in svn.external_files:
+            f.include_in_commit = False
+        for f in self.get_committable_files(context):
+            f.include_in_commit = True
+
+        return super().invoke(context, event)
+
     def draw(self, context):
         """Draws the boolean toggle list with a list of strings for the button texts."""
         layout = self.layout
@@ -58,9 +79,9 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         row = layout.row()
         row.label(text="Filename")
         row.label(text="Status")
-        for idx, file in enumerate(files[:32]):
+        for file in files:
             row = layout.row()
-            row.prop(self, "selection", index=idx, text=file.name)
+            row.prop(file, "include_in_commit", text=file.name)
             text = file.status_name
             icon = file.status_icon
             if file == svn.current_blend_file and bpy.data.is_dirty:
@@ -71,37 +92,36 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         row = layout.row()
         row.label(text="Commit message:")
-        self.last_idx = 0
-        for i in range(type(self).MAX_LINES):
-            if getattr(self, f'commit_message_{i}') != "":
-                self.last_idx = min(i+1, self.MAX_LINES)
-        for i in range(0, max(3, self.last_idx+2)):
+        # Draw input box for first line, which is special because we want it to 
+        # get focused automatically for smooth UX. (see `bl_property` above)
+        row = layout.row()
+        row.prop(self, 'first_line', text="")
+        row.operator(SVN_commit_msg_clear.bl_idname, text="", icon='TRASH')
+        for i in range(1, len(context.scene.svn.commit_lines)):
             # Draw input boxes until the last one that has text, plus two, minimum three.
             # Why two after the last line? Because then you can use Tab to go to the next line.
             # Why at least 3 lines? Because then you can write a one-liner without
             # the OK button jumping away.
-            layout.prop(self, f'commit_message_{i}', text="")
+            layout.prop(context.scene.svn.commit_lines[i], 'line', index=i, text="")
             continue
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         committable_files = self.get_committable_files(context)
-        files_to_commit = [f for i, f in enumerate(committable_files[:32]) if self.selection[i]]
+        files_to_commit = [f for i, f in enumerate(committable_files) if f.include_in_commit]
 
         if not files_to_commit:
             self.report({'ERROR'}, "No files were selected, nothing to commit.")
             return {'CANCELLED'}
 
-        if len(self.commit_message_0) < 2:
+        if len(context.scene.svn.commit_message) < 2:
             self.report({'ERROR'}, "Please describe your changes in the commit message.")
             return {'CANCELLED'}
-
-        commit_message_lines = [getattr(self, f'commit_message_{i}') for i in range(self.last_idx)]
-        commit_message = "\n".join(commit_message_lines)
 
         filepaths = [f.svn_path for f in files_to_commit]
 
         self.set_predicted_file_statuses(context, filepaths)
-        process_in_background(BGP_SVN_Commit, commit_msg=commit_message, file_list = filepaths)
+        process_in_background(BGP_SVN_Commit, commit_msg=context.scene.svn.commit_message, file_list = filepaths)
+        context.scene.svn.commit_message = ""
 
         report = f"{(len(files_to_commit))} files"
         if len(files_to_commit) == 1:
@@ -161,5 +181,6 @@ class BGP_SVN_Commit(BackgroundProcess):
         self.file_list = []
 
 registry = [
+    SVN_commit_msg_clear,
     SVN_commit
 ]

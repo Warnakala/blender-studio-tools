@@ -22,7 +22,6 @@
 # TODO:
 # - Implement per-process error handling and UI.
 # - Updating of local file statuses should be de-coupled from updating of online file statuses, so it can be significantly more responsive.
-# - Commit messages should be stored in a property so that it isn't lost when cancelling a commit.
 
 import bpy
 import importlib

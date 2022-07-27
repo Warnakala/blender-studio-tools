@@ -78,6 +78,11 @@ class SVN_file(bpy.types.PropertyGroup):
         ],
         description = "Internal flag that notes what process set a predicted status on this file. Should be empty string when the status is not predicted but confirmed. When svn commit/update predicts a status, that status should not be overwritten until the process is finished. With instantaneous processes, a single status update should be ignored since it may be outdated",
     )
+    include_in_commit: BoolProperty(
+        name = "Commit",
+        description = "Whether this file should be included in the commit or not",
+        default = False
+    )
 
     @property
     def is_outdated(self):
@@ -165,9 +170,25 @@ class SVN_log(bpy.types.PropertyGroup):
         return False
 
 
+class SVN_commit_line(bpy.types.PropertyGroup):
+    """Property Group representing a single line of a commit message.
+    Only needed for UI/UX purpose, so we can store the commit message
+    even if the user changes their mind about wanting to commit."""
+
+    def update_line(self, context):
+        line_entries = context.scene.svn.commit_lines
+        for i, line_entry in enumerate(line_entries):
+            if line_entry == self and i >= len(line_entries)-2:
+                # The last line was just modified
+                if self.line:
+                    # Content was added to the last line - add another line.
+                    line_entries.add()
+
+    line: StringProperty(update=update_line)
+
+
 class SVN_scene_properties(bpy.types.PropertyGroup):
     """Subversion properties and functions"""
-
 
     ### Basic SVN Info #########################################################
 
@@ -358,6 +379,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         delta = current_time - last_update_time
         return delta.seconds
 
+
     ### SVN Log / Revision History #############################################
 
     log: bpy.props.CollectionProperty(type=SVN_log)
@@ -395,12 +417,29 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         return latest > current
 
 
+    ### SVN Commit Message #####################################################
+    commit_lines: CollectionProperty(type=SVN_commit_line)
+
+    @property
+    def commit_message(self):
+        return "\n".join([l.line for l in self.commit_lines]).strip()
+    
+    @commit_message.setter
+    def commit_message(self, msg: str):
+        self.commit_lines.clear()
+        for line in msg.split("\n"):
+            line_entry = self.commit_lines.add()
+            line_entry.line = line
+        while len(self.commit_lines) < 3:
+            self.commit_lines.add()
+
 
 # ----------------REGISTER--------------.
 
 registry = [
     SVN_file,
     SVN_log,
+    SVN_commit_line,
     SVN_scene_properties,
 ]
 
