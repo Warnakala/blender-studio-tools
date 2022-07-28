@@ -129,6 +129,13 @@ class TaskLayer:
             if cls.task_suffix and original_name.endswith(cls.task_suffix):
                 # If this collection is assigned to this Task Layer.
                 cls.transfer_collection_objects(transfer_mapping, src_coll, root_coll)
+        
+        # Unlink target collections that no longer exist in source.
+        for target_coll in transfer_mapping.target_coll.children:
+            if cls.task_suffix and cls.task_suffix in target_coll.name:
+                for child_coll in target_coll.children:
+                    if child_coll in transfer_mapping.no_match_target_colls:
+                        target_coll.children.unlink(child_coll)
 
     @classmethod
     def transfer_collection_objects(cls, 

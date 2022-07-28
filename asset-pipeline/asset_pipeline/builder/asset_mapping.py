@@ -122,6 +122,9 @@ class AssetTransferMapping:
 
         self._no_match_source_objs: Set[bpy.types.Object] = set()
         self._no_match_target_objs: Set[bpy.types.Object] = set()
+        
+        self._no_match_source_colls: Set[bpy.types.Object] = set()
+        self._no_match_target_colls: Set[bpy.types.Object] = set()
 
         # TODO: gen_map functions almost have the same code,
         # refactor it to one function with the right parameters.
@@ -148,6 +151,20 @@ class AssetTransferMapping:
         All objects that exist in target but not in source
         """
         return self._no_match_target_objs
+    
+    @property
+    def no_match_source_colls(self) -> Set[bpy.types.Object]:
+        """
+        All collections that exist in source but not in target
+        """
+        return self._no_match_source_colls
+
+    @property
+    def no_match_target_colls(self) -> Set[bpy.types.Object]:
+        """
+        All collections that exist in target but not in source
+        """
+        return self._no_match_target_colls
 
     def generate_mapping(self) -> None:
         self._object_map = self._gen_object_map()
@@ -230,6 +247,7 @@ class AssetTransferMapping:
                     s_coll.name,
                     target_coll_name,
                 )
+                self._no_match_source_colls.add(s_coll)
                 continue
             else:
                 coll_map[s_coll] = t_coll
@@ -238,6 +256,11 @@ class AssetTransferMapping:
                 #     s_coll.name,
                 #     t_coll.name,
                 # )
+
+        all_tgt_colls = set(self.target_coll.children_recursive)
+        all_tgt_colls.add(self.target_coll)
+        match_target_colls = set([coll for coll in coll_map.values()])
+        self._no_match_target_colls = all_tgt_colls - match_target_colls
 
         return coll_map
 
