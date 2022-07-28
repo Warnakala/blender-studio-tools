@@ -28,6 +28,7 @@ from pathlib import Path
 import bpy
 
 from .asset_mapping import AssetTransferMapping
+from ..util import unlink_collections_recursive
 
 logger = logging.getLogger("BSP")
 
@@ -133,9 +134,7 @@ class TaskLayer:
         # Unlink target collections that no longer exist in source.
         for target_coll in transfer_mapping.target_coll.children:
             if cls.task_suffix and cls.task_suffix in target_coll.name:
-                for child_coll in target_coll.children:
-                    if child_coll in transfer_mapping.no_match_target_colls:
-                        target_coll.children.unlink(child_coll)
+                unlink_collections_recursive(target_coll, transfer_mapping.no_match_target_colls)
 
     @classmethod
     def transfer_collection_objects(cls, 

@@ -54,6 +54,15 @@ def del_collection(collection: bpy.types.Collection) -> None:
     collection.user_clear()
     bpy.data.collections.remove(collection)
 
+def unlink_collections_recursive(
+        parent_coll: bpy.types.Collection,
+        bad_colls: Set[bpy.types.Collection]
+    ):
+    for child_coll in parent_coll.children:
+        if child_coll in bad_colls:
+            parent_coll.children.unlink(child_coll)
+        else:
+            unlink_collections_recursive(child_coll, bad_colls)
 
 def is_addon_active(module_name, context=None):
     """Returns whether an addon is loaded and enabled in the current workspace."""
