@@ -125,14 +125,19 @@ class BackgroundProcess:
             self.thread.start()
             return self.tick_delay
 
-        # TODO: Add a timeout mechanism right about here.
-
-        if not (self.output or self.error):
+        if self.error:
+            # TODO: Display error in the UI on a per process basis, with an option to try the process again.
+            pass
+        elif self.output:
+            self.process_output(context, prefs)
+            self.output_processed = True
+            redraw_viewport()
+        else:
+            # There's no error or output, this should mean
+            # the thread is still running and we're waiting for it to finish.
+            
+            # TODO: Add a timeout mechanism right about here.
             return self.tick_delay
-
-        self.process_output(context, prefs)
-        self.output_processed = True
-        redraw_viewport()
 
         self.debug_print(f"Repeat delay: {self.repeat_delay}")
 
