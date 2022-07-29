@@ -138,7 +138,10 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     svn_credentials: CollectionProperty(type=SVN_credential)
-    svn_cred_active_idx: IntProperty()
+    svn_cred_active_idx: IntProperty(
+        name = "SVN Credentials",
+        options = set()
+    )
 
     def get_credentials(self) -> Optional[SVN_credential]:
         svn_url = bpy.context.scene.svn.svn_url
@@ -166,11 +169,11 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 
 @bpy.app.handlers.persistent
 def try_authenticating_on_file_load(_dummy1, _dummy2):
-    print("Try authenticating...")
     context = bpy.context
     prefs = get_addon_prefs(context)
     cred = prefs.get_credentials()
     if cred:
+        print("SVN: Credentials found. Try authenticating on file load...")
         # Don't assume that a previously saved password is still correct.
         cred.authenticated = False
         # Trigger the update callback.

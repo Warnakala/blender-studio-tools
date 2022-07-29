@@ -6,7 +6,6 @@ import bpy
 from bpy.props import StringProperty, BoolVectorProperty
 
 from .background_process import processes, BackgroundProcess, process_in_background
-from .props import SVN_file
 from .ops import SVN_Operator, Popup_Operator
 from .execute_subprocess import execute_svn_command
 
@@ -42,7 +41,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     )
 
     @staticmethod
-    def get_committable_files(context) -> List[SVN_file]:
+    def get_committable_files(context) -> List["SVN_file"]:
         """Return the list of file entries whose status allows committing"""
         svn_file_list = context.scene.svn.external_files
         committable_statuses = ['modified', 'added', 'deleted']

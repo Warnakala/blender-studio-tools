@@ -27,7 +27,6 @@ from bpy.props import StringProperty, IntProperty, EnumProperty, BoolProperty
 
 from send2trash import send2trash
 
-from .props import SVN_file
 from .execute_subprocess import execute_svn_command
 
 
@@ -39,6 +38,7 @@ class SVN_Operator:
         # For example, the Commit operator sets a file to "Normal" state, then the old svn status
         # arrives and sets it back to "Modified" state, which it isn't anymore.
         return execute_svn_command(context, command, use_cred)
+
 
 class SVN_Operator_Single_File(SVN_Operator):
     """Base class for SVN operators operating on a single file."""
@@ -68,7 +68,7 @@ class SVN_Operator_Single_File(SVN_Operator):
         svn = context.scene.svn
         return Path.joinpath(Path(svn.svn_directory), Path(self.file_rel_path))
 
-    def get_file(self, context) -> SVN_file:
+    def get_file(self, context) -> "SVN_file":
         return context.scene.svn.get_file_by_svn_path(self.file_rel_path)
 
     def file_exists(self, context) -> bool:
@@ -134,7 +134,7 @@ class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
         return {'FINISHED'}
 
-    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+    def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
         return
 
 
@@ -156,7 +156,7 @@ class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
 
         self.report({'INFO'}, f"Updated {self.file_rel_path} to the latest version.")
 
-    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+    def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
         if self.will_conflict: 
             file_entry.status = 'conflicted'
         else:
@@ -197,7 +197,7 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+    def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
         file_entry['revision'] = self.revision
         latest_rev = svn.get_latest_revision_of_file(self.file_rel_path)
         if latest_rev == self.revision:
@@ -205,6 +205,7 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
             file_entry.repos_status = 'none'
         else:
             file_entry.status = 'none'
+
 
 class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.restore_file"
@@ -220,7 +221,7 @@ class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
         f = self.get_file(context)
         return {"FINISHED"}
 
-    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+    def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
         file_entry.status = 'normal'
 
 
@@ -254,7 +255,7 @@ class SVN_add_file(SVN_Operator_Single_File, bpy.types.Operator):
             f = self.get_file(context)
         return {"FINISHED"}
 
-    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+    def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
         file_entry.status = 'added'
 
 
@@ -269,7 +270,7 @@ class SVN_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+    def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
             file_entry.status = 'unversioned'
 
 
@@ -310,7 +311,7 @@ class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Oper
 
         return {"FINISHED"}
 
-    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+    def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
         file_entry.status = 'deleted'
 
 
@@ -351,7 +352,7 @@ class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def set_predicted_file_status(self, svn, file_entry: SVN_file):
+    def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
         if self.resolve_method == 'mine-full':
             file_entry.status = 'modified'
         else:

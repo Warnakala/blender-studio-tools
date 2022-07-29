@@ -200,10 +200,9 @@ class BGP_SVN_Status(BackgroundProcess):
     def acquire_output(self, context, prefs):
         try:
             svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml')
+            self.output = get_repo_file_statuses(svn_status_str)
         except subprocess.CalledProcessError as error:
             self.error = error.stderr.decode()
-
-        self.output = get_repo_file_statuses(svn_status_str)
 
         if self.is_new_file:
             update_file_is_referenced_flags()

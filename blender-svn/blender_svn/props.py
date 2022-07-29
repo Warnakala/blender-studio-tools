@@ -303,7 +303,10 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         # SVN Revisions are not 0-indexed, so we need to subtract 1.
         self.log_active_index = latest_idx-1
     external_files_active_index: bpy.props.IntProperty(
-        update = update_active_file
+        name = "File List",
+        description = "Files tracked by SVN",
+        update = update_active_file,
+        options = set()
     )
 
     @property
@@ -383,7 +386,10 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     ### SVN Log / Revision History #############################################
 
     log: bpy.props.CollectionProperty(type=SVN_log)
-    log_active_index: bpy.props.IntProperty()
+    log_active_index: bpy.props.IntProperty(
+        name = "SVN Log",
+        options = set()
+    )
 
     reload_svn_log = reload_svn_log
 

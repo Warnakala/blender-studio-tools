@@ -161,5 +161,5 @@ class BackgroundProcess:
             # will have already unregistered it.
 
             # Actually, it doesn't seem to work anyways...
-            self.debug_print("Force-unregistered.")
             bpy.app.timers.unregister(self.timer_function)
+            self.debug_print("Force-unregistered.")

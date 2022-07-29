@@ -25,11 +25,11 @@ import threading, subprocess
 import bpy
 from bpy.props import IntProperty, BoolProperty
 
-from .util import get_addon_prefs, svn_date_simple
+from .util import get_addon_prefs, svn_date_simple, redraw_viewport
 from . import constants
 from .execute_subprocess import execute_svn_command
 from .background_process import BackgroundProcess, process_in_background, processes
-
+from .ui import dots
 
 ################################################################################
 ################################ UI / UX #######################################
@@ -166,7 +166,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         layout.use_property_decorate = False
 
         if processes['Log'].is_running:
-            layout.label(text="Recent log entries may be missing, updating in progress...", icon='ERROR')
+            layout.label(text="Recent log entries may be missing, update in progress" + dots(), icon='ERROR')
 
         num, auth, date, msg = layout_log_split(layout.row())
         num.label(text="r#")
@@ -355,7 +355,7 @@ def reload_svn_log(self, context):
             log_file_entry['name'] = Path(file_path).name
             log_file_entry['svn_path'] = Path(file_path).as_posix()
             log_file_entry.revision = r_number
-            log_file_entry.status = constants.SVN_STATUS_CHAR[status_char]
+            log_file_entry.status = constants.SVN_STATUS_CHAR_TO_NAME[status_char]
 
         log_entry['commit_message'] = "\n".join(chunk[-r_msg_length:])
 
@@ -407,6 +407,9 @@ class BGP_SVN_Log(BackgroundProcess):
     timeout = 10
     repeat_delay = 3
 
+    def tick(self, context, prefs):
+            redraw_viewport()
+
     def acquire_output(self, context, prefs):
         """This function should be executed from a separate thread to avoid freezing 
         Blender's UI during execute_svn_command().
@@ -416,6 +419,8 @@ class BGP_SVN_Log(BackgroundProcess):
         latest_log_rev = 0
         if len(svn.log) > 0:
             latest_log_rev = svn.log[-1].revision_number
+        
+        self.debug_print("Acquire output...")
 
         # We have no way to know if latest_log_rev+1 will exist or not, but we 
         # must check, and there is no safe way to check it, so let's just 
@@ -427,6 +432,7 @@ class BGP_SVN_Log(BackgroundProcess):
                 print_errors = False,
                 use_cred = True
             )
+            self.debug_print("Output: \n" + self.output)
         except subprocess.CalledProcessError as error:
             error_msg = error.stderr.decode()
             if "No such revision" in error_msg:
