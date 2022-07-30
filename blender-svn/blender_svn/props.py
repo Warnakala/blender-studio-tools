@@ -85,6 +85,18 @@ class SVN_file(bpy.types.PropertyGroup):
     )
 
     @property
+    def absolute_path(self) -> Path:
+        """Return absolute path on the file system."""
+        scene = self.id_data
+        svn = scene.svn
+        return Path(svn.svn_directory).joinpath(Path(self.svn_path))
+
+    @property
+    def relative_path(self) -> str:
+        """Return relative path with Blender's path conventions."""
+        return bpy.path.relpath(self.absolute_path.as_posix())
+
+    @property
     def is_outdated(self):
         return self.repos_status == 'modified' and self.status == 'normal'
 

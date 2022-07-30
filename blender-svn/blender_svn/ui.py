@@ -194,6 +194,23 @@ class SVN_UL_file_list(bpy.types.UIList):
         col.prop(svn, 'include_normal', toggle=True, text="", icon="CHECKMARK")
 
 
+def svn_file_list_context_menu(self: bpy.types.UIList, context: bpy.types.Context) -> None:
+    def is_svn_file_list() -> bool:
+        # Important: Must check context first, or the menu is added for every kind of list.
+        ui_list = getattr(context, "ui_list", None)
+        return ui_list and ui_list.bl_idname == 'SVN_UL_file_list'
+
+    if not is_svn_file_list():
+        return
+
+    layout = self.layout
+    layout.separator()
+    active_file = context.scene.svn.active_file
+    layout.operator("wm.path_open", text=f"Open {active_file.name}").filepath=active_file.relative_path
+    layout.operator("wm.path_open", text=f"Open Containing Folder").filepath=active_file.absolute_path.parent.as_posix()
+    layout.separator()
+
+
 class VIEW3D_PT_svn_credentials(bpy.types.Panel):
     """Prompt the user to enter their username and password for the remote repository of the current .blend file."""
     bl_space_type = 'VIEW_3D'
@@ -398,6 +415,10 @@ registry = [
 def register():
     bpy.types.VIEW3D_HT_header.prepend(draw_outdated_file_warning)
 
+    bpy.types.UI_MT_list_item_context_menu.append(svn_file_list_context_menu)
+
 
 def unregister():
     bpy.types.VIEW3D_HT_header.remove(draw_outdated_file_warning)
+    
+    bpy.types.UI_MT_list_item_context_menu.remove(svn_file_list_context_menu)
