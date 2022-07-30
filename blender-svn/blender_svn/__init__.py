@@ -20,7 +20,6 @@
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
 # TODO:
-# - Implement per-process error handling and UI.
 # - Updating of local file statuses should be de-coupled from updating of online file statuses, so it can be significantly more responsive.
 
 import bpy

@@ -165,9 +165,6 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        if processes['Log'].is_running:
-            layout.label(text="Recent log entries may be missing, update in progress" + dots(), icon='ERROR')
-
         num, auth, date, msg = layout_log_split(layout.row())
         num.label(text="r#")
         auth.label(text="Author")
@@ -406,6 +403,7 @@ class BGP_SVN_Log(BackgroundProcess):
     needs_authentication = True
     timeout = 10
     repeat_delay = 3
+    debug = False
 
     def tick(self, context, prefs):
             redraw_viewport()
@@ -446,6 +444,8 @@ class BGP_SVN_Log(BackgroundProcess):
         if num_logs < 10:
             self.stop()
 
+    def get_ui_message(self, context):
+        return f"Updating. Current: {context.scene.svn.log[-1].revision_number}..."
 
 ################################################################################
 ############################### REGISTER #######################################

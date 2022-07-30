@@ -45,6 +45,9 @@ class BackgroundProcess:
 
     needs_authentication = False
 
+    # Sub-classes should specify if clearing the error will retry the process.
+    error_description = "Click here to clear the error"
+
     debug = False
 
     def debug_print(self, msg: str):
@@ -59,8 +62,6 @@ class BackgroundProcess:
         self.output = ""
         self.error = ""
         self.id = int(random.random() * 10000)
-
-        self.output_processed = False
 
         self.start()
 
@@ -98,12 +99,12 @@ class BackgroundProcess:
         svn = context.scene.svn
         if not svn.is_in_repo:
             self.debug_print("Shutdown: Not in repo.")
+            self.is_running = False
             return
 
         prefs = get_addon_prefs(context)
 
         self.tick(context, prefs)
-        self.debug_print("Waiting...")
         if not self.is_running:
             # Since unregistering timers seems to be broken, let's allow setting is_running 
             # to False in order to shut down this process.
@@ -114,39 +115,54 @@ class BackgroundProcess:
         if self.needs_authentication:
             if not cred or not cred.authenticated:
                 self.debug_print("Shutdown: Credentials needed.")
+                self.is_running = False
                 return
 
-        if not self.thread or not self.thread.is_alive() and self.output_processed:
-            self.debug_print("Started thread")
-            self.output_processed = False
-            self.output = ""
-            self.error = ""
+        if not self.thread or not self.thread.is_alive() and not self.output and not self.error:
             self.thread = threading.Thread(target=self.acquire_output, args=(context, prefs))
             self.thread.start()
+            self.debug_print("Started thread")
             return self.tick_delay
-
-        if self.error:
-            # TODO: Display error in the UI on a per process basis, with an option to try the process again.
-            pass
+        elif self.error:
+            self.debug_print("Shutdown: There was an error.")
+            self.is_running = False
+            return
         elif self.output:
             self.process_output(context, prefs)
-            self.output_processed = True
+            self.output = ""
             redraw_viewport()
-        else:
-            # There's no error or output, this should mean
-            # the thread is still running and we're waiting for it to finish.
-            
-            # TODO: Add a timeout mechanism right about here.
-            return self.tick_delay
-
-        self.debug_print(f"Repeat delay: {self.repeat_delay}")
-
-        if self.repeat_delay == 0:
+            if self.repeat_delay == 0:
+                self.debug_print("Shutdown: Output was processed, repeat_delay==0.")
+                self.is_running = False
+                return
+            self.debug_print(f"Processed output. Waiting {self.repeat_delay}")
+            return self.repeat_delay
+        elif not self.thread and not self.thread.is_alive() and self.repeat_delay == 0:
             self.debug_print("Shutdown: Finished.\n")
             self.is_running = False
             return
 
-        return self.repeat_delay
+        self.debug_print(f"Repeat delay: {self.repeat_delay}")
+
+        return self.tick_delay
+
+    def get_ui_message(self, context) -> str:
+        """Return a string that should be drawn in the UI for user feedback, 
+        depending on the state of the process."""
+
+        if self.is_running:
+            return "Running..."
+        return ""
+
+    def clear_error(self):
+        """Sub-classes should override this function to define behaviour on how to handle their errors."""
+        self.error = ""
+        self.output = ""
+
+        self.stop()
+
+        if self.repeat_delay > 0:
+            self.start()
 
     def start(self, persistent=True):
         self.is_running = True

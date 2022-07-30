@@ -65,6 +65,7 @@ class BGP_SVN_Update(BackgroundProcess):
     needs_authentication = True
     timeout = 5*60
     repeat_delay = 0
+    debug = False
 
     def tick(self, context, prefs):
         redraw_viewport()

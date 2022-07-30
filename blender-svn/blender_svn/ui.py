@@ -261,26 +261,27 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_decorate = False
 
         svn = context.scene.svn
-        if svn.svn_error:
-            row = layout.row()
-            row.alert = True
-            warning = row.operator('svn.clear_error', text="SVN: Error Occurred", icon='ERROR')
-            warning.tooltip = svn.svn_error
-            warning.copy_on_click = True
-        else:
-            if 'Update' in processes and processes['Update'].is_running:
-                layout.label(text="SVN Update in progress" + dots())
 
-            if 'Commit' in processes and processes['Commit'].is_running:
-                layout.label(text="SVN Commit in progress" + dots())
+        for process_id in ['Commit', 'Update', 'Log', 'Status']:
+            if process_id not in processes:
+                continue
+            process = processes[process_id]
 
-            # Calculate time since last status update
-            if svn.seconds_since_last_update > 30:
+            if process.is_running:
+                progress_message = process.get_ui_message(context)
+                if progress_message:
+                    text = progress_message.replace("...", dots())
+                    layout.label(text=f"SVN {process_id}: {text}")
+            elif process.error:
                 row = layout.row()
-                row.label(text="Acquiring file statuses from remote" + dots())
-                return
+                warning = row.operator('svn.clear_error', text=f"SVN {process_id}: Error Occurred. Hover to view", icon='ERROR')
+                warning.alert = True
+                warning.process_id = process_id
+                warning.copy_on_click = True
 
-        main_row = layout.row()
+        main_col = layout.column()
+        main_col.enabled = svn.seconds_since_last_update < 30
+        main_row = main_col.row()
         split = main_row.split(factor=0.6)
         filepath_row = split.row()
         filepath_row.label(text="          Filepath")
@@ -296,7 +297,7 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         timer_row.alignment='RIGHT'
         timer_row.operator("svn.custom_tooltip", icon='BLANK1', text="", emboss=False).tooltip="Time since last file status update: " + str(context.scene.svn.seconds_since_last_update) + 's'
 
-        row = layout.row()
+        row = main_col.row()
         row.template_list(
             "SVN_UL_file_list",
             "svn_file_list",
@@ -341,16 +342,26 @@ class SVN_custom_tooltip(bpy.types.Operator):
             context.window_manager.clipboard = self.tooltip
         return {'FINISHED'}
 
+
 class SVN_clear_error(SVN_custom_tooltip):
     bl_idname = "svn.clear_error"
     bl_label = "Error:"
     bl_description = ""
     bl_options = {'INTERNAL'}
 
+    process_id: StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        process = processes[properties.process_id]
+        return process.error + "\n\n" + process.error_description
+
     def execute(self, context):
         super().execute(context)
+        processes[self.process_id].clear_error()
         context.scene.svn.svn_error = ""
         return {'FINISHED'}
+
 
 def draw_outdated_file_warning(self, context):
     svn = context.scene.svn

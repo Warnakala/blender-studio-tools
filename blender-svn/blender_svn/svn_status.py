@@ -183,6 +183,7 @@ class BGP_SVN_Status(BackgroundProcess):
     needs_authentication = True
     timeout = 10
     repeat_delay = 15
+    debug = False
 
     def __init__(self):
         super().__init__()
@@ -212,6 +213,12 @@ class BGP_SVN_Status(BackgroundProcess):
     def process_output(self, context, prefs):
         update_file_list(context, self.output)
         context.scene.svn.timestamp_last_status_update = datetime.strftime(datetime.now(), "%Y/%m/%d %H:%M:%S")
+    
+    def get_ui_message(self, context):
+        # Calculate time since last status update
+        svn = context.scene.svn
+        if svn.seconds_since_last_update > 30:
+            return "Updating file statuses..."
 
 
 def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
