@@ -99,7 +99,7 @@ ENUM_SVN_STATUS = [
 ]
 
 
-SVN_STATUS_CHAR = {
+SVN_STATUS_CHAR_TO_NAME = {
     '' : 'normal',
     'A' : 'added',
     'D' : 'deleted',
@@ -112,3 +112,5 @@ SVN_STATUS_CHAR = {
     '!' : 'missing',
     '~' : 'replaced'
 }
+
+SVN_STATUS_NAME_TO_CHAR = {value: key for key, value in SVN_STATUS_CHAR_TO_NAME.items()}

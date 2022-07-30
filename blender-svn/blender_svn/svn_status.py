@@ -169,6 +169,7 @@ def init_svn(context, dummy):
         return 1
 
     process_in_background(BGP_SVN_Status)
+    processes['Log'].start()
 
     print("SVN: Initialization successful.")
 
@@ -219,7 +220,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     svn = context.scene.svn
 
     posix_paths = []
-    new_files_on_repo = False
+    new_files_on_repo = set()
     for filepath_str, status_info in file_statuses.items():
         svn_path = Path(filepath_str)
         suffix = svn_path.suffix
@@ -243,7 +244,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             file_entry['name'] = svn_path.name
             entry_existed = False
             if not file_entry.exists:
-                new_files_on_repo = True
+                new_files_on_repo.add((file_entry, repos_status))
 
         if file_entry.status_predicted_flag == 'SINGLE':
             # File status was predicted by a local svn file operation, 
@@ -261,7 +262,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             continue
 
         if entry_existed and (file_entry.repos_status == 'none' and repos_status != 'none'):
-            new_files_on_repo = True
+            new_files_on_repo.add((file_entry, repos_status))
 
         file_entry.revision = revision
         file_entry.status = wc_status
@@ -269,7 +270,12 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
 
     if new_files_on_repo:
         # File entry status has changed between local and repo.
-        print("SVN: Files have changed on the repository, updating log...")
+        file_strings = [constants.SVN_STATUS_NAME_TO_CHAR[repos_status] + "    " + file_entry.svn_path for file_entry, repos_status in new_files_on_repo]
+        print(
+            "SVN: Detected file changes on remote:\n", 
+            "\n".join(file_strings), 
+            "\nUpdating log...\n"
+        )
         processes['Log'].start()
 
 
@@ -371,10 +377,8 @@ def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
 ################################################################################
 
 def timer_init_svn(_dummy1=None, _dummy2=None):
-    print("Initialize SVN with some delay...")
-    ret = init_svn(bpy.context, None)
-
-    return ret
+    print("SVN: Initializing with some delay after file load...")
+    return init_svn(bpy.context, None)
 
 
 def register():
