@@ -50,9 +50,10 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if 'Commit' in processes and processes['Commit'].is_running:
-            # Don't allow starting a new commit if the previous one isn't finished yet.
+        if context.scene.svn.is_busy:
+            # Don't allow attempting to Update/Commit while either is still running.
             return False
+
         return cls.get_committable_files(context)
 
     def invoke(self, context, event):
@@ -120,7 +121,6 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         self.set_predicted_file_statuses(context, filepaths)
         process_in_background(BGP_SVN_Commit, commit_msg=context.scene.svn.commit_message, file_list = filepaths)
-        context.scene.svn.commit_message = ""
 
         report = f"{(len(files_to_commit))} files"
         if len(files_to_commit) == 1:
@@ -168,6 +168,7 @@ class BGP_SVN_Commit(BackgroundProcess):
         except subprocess.CalledProcessError as error:
             print("Commit failed.")
             self.error = error.stderr.decode()
+            context.scene.svn.is_busy = False
 
     def process_output(self, context, prefs):
         print(self.output)
@@ -177,6 +178,8 @@ class BGP_SVN_Commit(BackgroundProcess):
         processes['Log'].start()
 
         self.commit_msg = ""
+        context.scene.svn.commit_message = ""
+        context.scene.svn.is_busy = False
         self.file_list = []
 
 registry = [

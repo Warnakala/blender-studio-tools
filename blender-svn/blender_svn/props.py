@@ -213,6 +213,11 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         default="",
         description="If SVN throws an error other than authentication error, store it here",
     )
+    is_busy: BoolProperty(
+        name = "Is Busy",
+        description = "Indicates whether there is an ongoing SVN Update or Commit. For internal use only, to prevent both processes from trying to run at the same time, which is not allowed by SVN",
+        default = False
+    )
 
     def reset_info(self):
         """Reset SVN repository information."""
@@ -284,8 +289,8 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
     def get_file_by_svn_path(self, svn_path: str or Path, get_index=False) -> Optional[Tuple[int, SVN_file]]:
         if isinstance(svn_path, Path):
-            # We must use isinstance() instead of type() because apparently the Path() constructor
-            # returns a WindowsPath object on Windows.
+            # We must use isinstance() instead of type() because apparently 
+            # the Path() constructor returns a WindowsPath object on Windows.
             svn_path = svn_path.as_posix()
 
         for i, file in enumerate(self.external_files):

@@ -18,8 +18,8 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if 'Update' in processes and processes['Update'].is_running:
-            # Don't allow creating another thread while the previous one is still running.
+        if context.scene.svn.is_busy:
+            # Don't allow attempting to Update/Commit while either is still running.
             return False
 
         for f in context.scene.svn.external_files:
@@ -44,6 +44,7 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
             processes['Log'].start()
         else:
             process_in_background(BGP_SVN_Update)
+            context.scene.svn.is_busy = True
 
         return {"FINISHED"}
 
@@ -73,6 +74,7 @@ class BGP_SVN_Update(BackgroundProcess):
             self.output = execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
         except subprocess.CalledProcessError as error:
             self.error = error.stderr.decode()
+            context.scene.svn.is_busy = False
 
     def process_output(self, context, prefs):
         print("SVN Update complete:")
@@ -81,6 +83,7 @@ class BGP_SVN_Update(BackgroundProcess):
             if f.status_predicted_flag == 'UPDATE':
                 f.status_predicted_flag = 'SINGLE'
 
+        context.scene.svn.is_busy = False
         processes['Log'].start()
 
 
