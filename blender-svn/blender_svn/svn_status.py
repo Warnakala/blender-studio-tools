@@ -268,7 +268,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             # updates on files that are being updated or committed.
             continue
 
-        if entry_existed and (file_entry.repos_status == 'none' and repos_status != 'none'):
+        if entry_existed and (file_entry.repos_status == 'none' and repos_status not in ['none', None]):
             new_files_on_repo.add((file_entry, repos_status))
 
         file_entry.revision = revision
