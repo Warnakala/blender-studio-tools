@@ -136,6 +136,7 @@ def init_svn(context, dummy):
     if not bpy.data.filepath:
         svn.reset_info()
         return
+    svn.is_busy = False
 
     in_repo = set_svn_info(context)
 

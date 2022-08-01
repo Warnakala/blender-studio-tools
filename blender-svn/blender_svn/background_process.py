@@ -128,6 +128,7 @@ class BackgroundProcess:
             self.is_running = False
             return
         elif self.output:
+            self.debug_print("Processing output: \n" + str(self.output))
             self.process_output(context, prefs)
             self.output = ""
             redraw_viewport()
@@ -142,7 +143,7 @@ class BackgroundProcess:
             self.is_running = False
             return
 
-        self.debug_print(f"Repeat delay: {self.repeat_delay}")
+        self.debug_print(f"Tick delay: {self.tick_delay}")
 
         return self.tick_delay
 
