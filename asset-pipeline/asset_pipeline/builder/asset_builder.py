@@ -506,6 +506,9 @@ class AssetBuilder:
         for hook in hooks_to_run:
             hook(**params)
 
+        # Purge again.
+        bpy.ops.outliner.orphans_purge(do_recursive=True)
+
     def _create_first_version(self) -> AssetPublish:
         first_publish = AssetPublish(
             self._build_context.asset_dir.get_first_publish_path()
