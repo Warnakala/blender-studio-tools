@@ -269,7 +269,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             # updates on files that are being updated or committed.
             continue
 
-        if entry_existed and (file_entry.repos_status == 'none' and repos_status not in ['none', None]):
+        if entry_existed and (file_entry.repos_status == 'none' and repos_status != 'none'):
             new_files_on_repo.add((file_entry, repos_status))
 
         file_entry.revision = revision
@@ -278,7 +278,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
 
     if new_files_on_repo:
         # File entry status has changed between local and repo.
-        file_strings = [constants.SVN_STATUS_NAME_TO_CHAR[repos_status] + "    " + file_entry.svn_path for file_entry, repos_status in new_files_on_repo]
+        file_strings = [constants.SVN_STATUS_NAME_TO_CHAR[repos_status] + "    " + file_entry.svn_path for file_entry, repos_status in new_files_on_repo if repos_status]
         print(
             "SVN: Detected file changes on remote:\n", 
             "\n".join(file_strings), 
