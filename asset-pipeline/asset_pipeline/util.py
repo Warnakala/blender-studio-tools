@@ -61,6 +61,7 @@ def unlink_collections_recursive(
     for child_coll in parent_coll.children:
         if child_coll in bad_colls:
             parent_coll.children.unlink(child_coll)
+            child_coll.use_fake_user = False
         else:
             unlink_collections_recursive(child_coll, bad_colls)
 
