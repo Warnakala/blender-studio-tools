@@ -415,6 +415,49 @@ class AssetBuilder:
         # Run hook phase.
         self._run_hooks(context)
 
+    @staticmethod
+    def _remap_users(context):
+        """
+        When objects inside the asset collection reference datablocks outside of
+        the asset collection or vice versa, some duplication can occur, as
+        outside objects end up with a .TASK suffix, and they end up referencing
+        objects that are no longer linked to the scene.
+
+        Objects inside the asset collection correctly lose their suffix, but
+        also end up referencing outside objects without the suffix, which are 
+        actually the wrong ones.
+
+        So this function remaps references such that everything inside and outside
+        the asset collection reference each other once again, and removes
+        any leftover .TASK suffixes.
+        """
+
+        suf = constants.TASK_SUFFIX
+        for datablock in bpy.data.user_map():
+            if hasattr(datablock, 'type') and datablock.type == 'OBJECT' \
+                    and datablock not in context.scene.objects:
+                # Objects that aren't in the scene have been replaced by the pull
+                # process, so we don't want to remap any references to them.
+                continue
+            storage = util.get_storage_of_id(datablock)
+            if not datablock.name.endswith(suf):
+                continue
+
+            without_suffix = datablock.name.replace(suf, "")
+            other_db = storage.get(without_suffix)
+            if not other_db:
+                continue
+
+            # print(f'REMAP USERS: "{other_db.name}" -> "{datablock.name}"')
+            other_db.user_remap(datablock)
+            # Rename the object to make its name available.
+            # This datablock should get purged soon, otherwise it's a bug.
+            other_db.name += "_Users_Remapped"
+            datablock.name = without_suffix
+
+        # Since this process can leave unused datablocks behind, let's purge.
+        bpy.ops.outliner.orphans_purge(do_recursive=True)
+
     def _clean_up_transfer(
         self, context: bpy.types.Context, transfer_triplet: TransferCollectionTriplet
     ):
@@ -443,6 +486,8 @@ class AssetBuilder:
 
         # Remove suffix from TARGET Collection.
         asset_suffix.remove_suffix_from_hierarchy(transfer_triplet.target_coll)
+
+        self._remap_users(context)
 
         # Remove transfer suffix.
         transfer_triplet.target_coll.bsp_asset.transfer_suffix = ""
