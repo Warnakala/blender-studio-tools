@@ -291,8 +291,8 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
                     layout.label(text=f"SVN {process_id}: {text}")
             elif process.error:
                 row = layout.row()
+                row.alert = True
                 warning = row.operator('svn.clear_error', text=f"SVN {process_id}: Error Occurred. Hover to view", icon='ERROR')
-                warning.alert = True
                 warning.process_id = process_id
                 warning.copy_on_click = True
 
