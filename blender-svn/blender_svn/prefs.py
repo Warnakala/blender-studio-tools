@@ -45,12 +45,16 @@ class BGP_SVN_Authenticate(BackgroundProcess):
         if not cred:
             return
 
+        # TODO: This code has a lot of overlap with BGP_SVN_Status. 
+        # I think this class should extend that one.
         try:
-            self.output = execute_svn_command(
+            svn_status_str = execute_svn_command(
                 context, 
-                f'svn status --show-updates --username "{cred.username}" --password "{cred.password}"'
+                f'svn status --show-updates --verbose --xml',
+                use_cred = True
             )
-            self.debug_print("Output: \n" + self.output)
+            self.debug_print("Output: \n" + svn_status_str)
+            self.output = svn_status.get_repo_file_statuses(svn_status_str)
         except subprocess.CalledProcessError as error:
             self.error = error.stderr.decode()
 
@@ -65,6 +69,7 @@ class BGP_SVN_Authenticate(BackgroundProcess):
             cred.auth_failed = False
             self.debug_print("Run init_svn()")
             svn_status.init_svn(context, None)
+            svn_status.update_file_list(context, self.output)
             return
         elif self.error:
             if "Authentication failed" in self.error:

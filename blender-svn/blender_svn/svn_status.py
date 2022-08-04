@@ -205,6 +205,8 @@ class BGP_SVN_Status(BackgroundProcess):
             svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml')
             self.output = get_repo_file_statuses(svn_status_str)
         except subprocess.CalledProcessError as error:
+            # TODO: If this is an authentication error, we should set cred.authenticated=False.
+            # This could happen if the user's password has changed while Blender was running.
             self.error = error.stderr.decode()
 
         if self.is_new_file:
@@ -213,8 +215,7 @@ class BGP_SVN_Status(BackgroundProcess):
 
     def process_output(self, context, prefs):
         update_file_list(context, self.output)
-        context.scene.svn.timestamp_last_status_update = datetime.strftime(datetime.now(), "%Y/%m/%d %H:%M:%S")
-    
+
     def get_ui_message(self, context):
         # Calculate time since last status update
         svn = context.scene.svn
@@ -226,6 +227,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     """Update the file list based on data from get_svn_file_statuses().
     (See timer_update_svn_status)"""
     svn = context.scene.svn
+    svn.timestamp_last_status_update = datetime.strftime(datetime.now(), "%Y/%m/%d %H:%M:%S")
 
     posix_paths = []
     new_files_on_repo = set()
