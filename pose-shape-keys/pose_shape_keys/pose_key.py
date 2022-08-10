@@ -14,6 +14,7 @@ DEFORM_MODIFIERS = ['ARMATURE', 'CAST', 'CURVE', 'DISPLACE', 'HOOK',
 'LAPLACIANDEFORM', 'LATTICE', 'MESH_DEFORM', 'SHRINKWRAP', 'SIMPLE_DEFORM', 
 'SMOOTH', 'CORRECTIVE_SMOOTH', 'LAPLACIANSMOOTH', 'SURFACE_DEFORM', 'WARP', 
 'WAVE']
+GOOD_MODIFIERS = ['ARMATURE']
 
 def get_addon_prefs(context):
 	return context.preferences.addons[__package__].preferences
@@ -198,7 +199,7 @@ class SaveAndRestoreState:
 		for ob, lst in zip([storage_ob, rigged_ob], [self.disabled_mods_storage, self.disabled_mods_rigged]):
 			if not ob: continue
 			for m in ob.modifiers:
-				if m.type not in DEFORM_MODIFIERS and m.show_viewport:
+				if m.type not in GOOD_MODIFIERS and m.show_viewport:
 					lst.append(m.name)
 					m.show_viewport = False
 
