@@ -133,31 +133,30 @@ class SVN_UL_file_list(bpy.types.UIList):
         flt_neworder = helper_funcs.sort_items_by_name(list_items, "name")
 
         svn = context.scene.svn
+        has_default_status = lambda f: f.status == 'normal' and f.repos_status == 'none'
+
         if svn.search_filter:
             flt_flags = helper_funcs.filter_items_by_name(svn.search_filter, cls.UILST_FLT_ITEM, list_items, "name",
                                                             reverse=False)
-
-        has_default_status = lambda f: f.status == 'normal' and f.repos_status == 'none'
-
-        if not flt_flags:
+        else:
             # Start with all files visible.
             flt_flags = [cls.UILST_FLT_ITEM] * len(list_items)
 
-        for i, item in enumerate(list_items):
-            if has_default_status(item) and not item.is_referenced:
-                # ALWAYS filter out files that have default statuses and aren't referenced.
-                flt_flags[i] = 0
+            for i, item in enumerate(list_items):
+                if has_default_status(item) and not item.is_referenced:
+                    # ALWAYS filter out files that have default statuses and aren't referenced.
+                    flt_flags[i] = 0
 
-            if svn.only_referenced_files:
-                # Filter out files that are not being referenced, regardless of status.
-                flt_flags[i] *= int(item.is_referenced)
-                if has_default_status(item) and not svn.include_normal:
-                    # Filter out files that are being referenced but have default status.
-                    flt_flags[i] = 0
-            else:
-                # Filter out files that have default status.
-                if has_default_status(item):
-                    flt_flags[i] = 0
+                if svn.only_referenced_files:
+                    # Filter out files that are not being referenced, regardless of status.
+                    flt_flags[i] *= int(item.is_referenced)
+                    if has_default_status(item) and not svn.include_normal:
+                        # Filter out files that are being referenced but have default status.
+                        flt_flags[i] = 0
+                else:
+                    # Filter out files that have default status.
+                    if has_default_status(item):
+                        flt_flags[i] = 0
 
         return flt_flags, flt_neworder
 
