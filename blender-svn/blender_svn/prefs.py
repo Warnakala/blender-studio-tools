@@ -21,16 +21,14 @@
 
 from typing import Optional, Any, Set, Tuple, List
 
-import subprocess
 import bpy
 from bpy.props import StringProperty, IntProperty, BoolProperty, CollectionProperty
 
 from . import svn_status
-from .background_process import BackgroundProcess, process_in_background, processes
-from .execute_subprocess import execute_svn_command
+from .background_process import process_in_background
 from .util import redraw_viewport, get_addon_prefs
 
-class BGP_SVN_Authenticate(BackgroundProcess):
+class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
     name = "Authenticate"
     needs_authentication = False
     timeout = 10
@@ -45,21 +43,9 @@ class BGP_SVN_Authenticate(BackgroundProcess):
         if not cred:
             return
 
-        # TODO: This code has a lot of overlap with BGP_SVN_Status. 
-        # I think this class should extend that one.
-        try:
-            svn_status_str = execute_svn_command(
-                context, 
-                f'svn status --show-updates --verbose --xml',
-                use_cred = True
-            )
-            self.debug_print("Output: \n" + svn_status_str)
-            self.output = svn_status.get_repo_file_statuses(svn_status_str)
-        except subprocess.CalledProcessError as error:
-            self.error = error.stderr.decode()
+        super().acquire_output(context, prefs)
 
     def process_output(self, context, prefs):
-        self.debug_print("process_output()")
         cred = prefs.get_credentials()
         if not cred:
             return
@@ -69,7 +55,8 @@ class BGP_SVN_Authenticate(BackgroundProcess):
             cred.auth_failed = False
             self.debug_print("Run init_svn()")
             svn_status.init_svn(context, None)
-            svn_status.update_file_list(context, self.output)
+
+            super().process_output(context, prefs)
             return
         elif self.error:
             if "Authentication failed" in self.error:
@@ -78,7 +65,6 @@ class BGP_SVN_Authenticate(BackgroundProcess):
             else:
                 cred.authenticated = False
                 cred.auth_failed = False
-            return
 
 
 class SVN_credential(bpy.types.PropertyGroup):

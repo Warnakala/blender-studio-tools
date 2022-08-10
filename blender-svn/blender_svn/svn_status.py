@@ -280,7 +280,14 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
 
     if new_files_on_repo:
         # File entry status has changed between local and repo.
-        file_strings = [constants.SVN_STATUS_NAME_TO_CHAR[repos_status] + "    " + file_entry.svn_path for file_entry, repos_status in new_files_on_repo if repos_status]
+        file_strings = []
+        for file_entry, repos_status in new_files_on_repo:
+            try:
+                file_string = constants.SVN_STATUS_NAME_TO_CHAR[repos_status] + "    " + file_entry.svn_path
+            except KeyError:
+                print(f"No status character for this status: {file_entry.svn_path} - {repos_status}")
+                continue
+            file_strings.append(file_string)
         print(
             "SVN: Detected file changes on remote:\n", 
             "\n".join(file_strings), 
