@@ -434,8 +434,9 @@ class AssetBuilder:
 
         suf = constants.TASK_SUFFIX
         for datablock in bpy.data.user_map():
-            if hasattr(datablock, 'type') and datablock.type == 'OBJECT' \
-                    and datablock not in context.scene.objects:
+            has_type = hasattr(datablock, 'type')
+            if has_type and datablock.type == 'OBJECT' \
+                    and datablock.name not in context.scene.objects:
                 # Objects that aren't in the scene have been replaced by the pull
                 # process, so we don't want to remap any references to them.
                 continue

@@ -159,7 +159,6 @@ class TaskLayer:
         # Un-assigning everything from the target coll.
         for o in tgt_coll.objects:
             tgt_coll.objects.unlink(o)
-        
 
         # Re-assign those objects which correspond to the ones in source coll.
         for src_ob in src_coll.objects:
@@ -175,7 +174,8 @@ class TaskLayer:
     @classmethod
     def assign_objects(cls,
             transfer_mapping: AssetTransferMapping):
-        """Unassign remaining source collections/objects and replace them with target collections/objects for the whole file.
+        """Unassign remaining source collections/objects and replace them with 
+        target collections/objects for the whole file.
         """
         # iterate through all collections in the file
         for coll in list(bpy.data.collections) + [scene.collection for scene in bpy.data.scenes]:
@@ -201,6 +201,7 @@ class TaskLayer:
                     continue
                 coll.objects.unlink(ob)
                 coll.objects.link(tgt_ob)
+                ob.user_remap(tgt_ob)
 
     def __repr__(self) -> str:
         return f"TaskLayer{self.name}"
