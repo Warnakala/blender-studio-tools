@@ -324,7 +324,7 @@ class ElementMetadata(Element):
         # Add a "id" attribute to the element for convenient
         # querying.
         instance = cls()
-        if hasattr(meta_class, "id"):
+        if hasattr(meta_class, "id") and meta_class.id:
             instance.attrib.update({"id": meta_class.id})
 
         # This function makes sure that the input  MetadataClass
