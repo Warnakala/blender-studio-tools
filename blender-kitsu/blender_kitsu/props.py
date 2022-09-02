@@ -348,7 +348,7 @@ def _calc_kitsu_frame_start(self):
     )
     # 101 - (-10) +(-10) = 101.
 
-    return frame_start_final
+    return int(frame_start_final)
 
 
 def _calc_kitsu_frame_end(self):
@@ -373,7 +373,7 @@ def _calc_kitsu_frame_end(self):
     )
     # 101 + 1000 - 10 + ((101 -1) - 1040) = 151.
 
-    return frame_end_final
+    return int(frame_end_final)
 
 
 def _get_frame_final_duration(self):
