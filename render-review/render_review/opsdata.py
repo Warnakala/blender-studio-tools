@@ -98,14 +98,12 @@ def get_valid_cs_sequences(
 
 
 def get_shot_frames_dir(strip: bpy.types.ImageSequence) -> Path:
-    # Sf > shot_frames | fo > farm_output.
+    # sf = shot_frames | fo = farm_output.
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     fo_dir = Path(strip.directory)
-    sf_dir_name = get_shot_dot_task_type(fo_dir)
     sf_dir = (
         addon_prefs.shot_frames_dir
-        / fo_dir.parent.relative_to(fo_dir.parents[2])
-        / sf_dir_name
+        / fo_dir.parent.relative_to(fo_dir.parents[3])
     )
 
     return sf_dir
