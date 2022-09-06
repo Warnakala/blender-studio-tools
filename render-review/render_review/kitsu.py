@@ -18,11 +18,12 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
-from typing import List, Dict, Union, Any, Set
+from typing import List, Dict, Union, Any, Set, Optional
 import bpy
 
 from render_review import util
 from blender_kitsu import cache
+from blender_kitsu import types
 from blender_kitsu.sqe import opsdata, pull, push
 
 from render_review.log import LoggerFactory
@@ -33,6 +34,10 @@ logger = LoggerFactory.getLogger(name=__name__)
 
 def is_auth() -> bool:
     return bpy.context.preferences.addons["blender_kitsu"].preferences.session.is_auth()
+
+
+def get_project() -> Optional[types.Project]:
+    return cache.project_active_get()
 
 
 def is_active_project() -> bool:

@@ -30,6 +30,7 @@ from render_review import vars, prefs, opsdata, util, kitsu
 
 from render_review.exception import NoImageSequenceAvailableException
 from render_review.log import LoggerFactory
+import render_review.kitsu
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -99,6 +100,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
             # This folder is [0] in output dirs > needs to be moved to [-1].
             output_dirs.append(output_dirs[0])
             output_dirs.pop(0)
+
 
             # Init sequencer
             if not context.scene.sequence_editor:
@@ -189,9 +191,23 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             prev_frame_end = strip_longest.frame_final_end
 
-        # Set scene resolution to resolution of loaded image.
-        context.scene.render.resolution_x = vars.RESOLUTION[0]
-        context.scene.render.resolution_y = vars.RESOLUTION[1]
+        # Set default scene resolution to resolution of loaded image.
+        render_resolution_x = vars.RESOLUTION[0]
+        render_resolution_y = vars.RESOLUTION[1]
+        # If Kitsu add-on is enabled, fetch the resolution from the online project
+        if (
+                addon_prefs.enable_blender_kitsu
+                and prefs.is_blender_kitsu_enabled()
+        ) and render_review.kitsu.is_active_project():
+            # TODO: make the resolution fetching a bit more robust
+            # Assume resolution is a string '<str:width>x<str:height>'
+            project = render_review.kitsu.get_project()
+            resolution = project.resolution.split('x')
+            render_resolution_x = int(resolution[0])
+            render_resolution_y = int(resolution[1])
+
+        context.scene.render.resolution_x = render_resolution_x
+        context.scene.render.resolution_y = render_resolution_y
 
         # Change frame range and frame start.
         opsdata.fit_frame_range_to_strips(context)
