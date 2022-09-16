@@ -209,6 +209,12 @@ class MESH_MT_pose_key_utils(Menu):
 		layout.operator('object.posekey_clamp_influence', icon='NORMALIZE_FCURVES')
 		layout.operator('object.posekey_copy_data', icon='PASTEDOWN')
 
+@classmethod
+def shape_key_panel_new_poll(cls, context):
+	engine = context.engine
+	obj = context.object
+	return (obj and obj.type in {'LATTICE', 'CURVE', 'SURFACE'} and (engine in cls.COMPAT_ENGINES))
+
 
 registry = [
 	CK_UL_pose_keys
@@ -226,8 +232,9 @@ def register():
 			,('POSE_KEYS', 'Pose Keys', "Organize shape keys into a higher-level concept called Pose Keys. These can store vertex positions and push one shape to multiple shape keys at once, relative to existing deformation")
 		]
 	)
-	bpy.utils.unregister_class(DATA_PT_shape_keys)
+	DATA_PT_shape_keys.old_poll = DATA_PT_shape_keys.poll
+	DATA_PT_shape_keys.poll = shape_key_panel_new_poll
 
 def unregister():
 	del bpy.types.Mesh.shape_key_ui_type
-	bpy.utils.register_class(DATA_PT_shape_keys)
+	DATA_PT_shape_keys.poll = DATA_PT_shape_keys.old_poll
