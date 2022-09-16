@@ -196,12 +196,20 @@ class SaveAndRestoreState:
 		# Disable non-deforming modifiers
 		self.disabled_mods_storage = []
 		self.disabled_mods_rigged = []
+		self.disabled_fcurves = []
 		for ob, lst in zip([storage_ob, rigged_ob], [self.disabled_mods_storage, self.disabled_mods_rigged]):
 			if not ob: continue
 			for m in ob.modifiers:
 				if m.type not in GOOD_MODIFIERS and m.show_viewport:
 					lst.append(m.name)
 					m.show_viewport = False
+					if m.show_viewport:
+						data_path = f'modifiers["{m.name}"].show_viewport'
+						fc = ob.animation_data.drivers.find(data_path)
+						if fc:
+							fc.mute = True
+							self.disabled_fcurves.append(data_path)
+							m.show_viewport = False
 
 	def restore_non_deform_modifiers(self, storage_ob: Object, rigged_ob: Object):
 		# Re-enable non-deforming modifiers
@@ -209,6 +217,10 @@ class SaveAndRestoreState:
 			if not ob: continue
 			for m_name in m_list:
 				ob.modifiers[m_name].show_viewport = True
+		for data_path in self.disabled_fcurves:
+			fc = ob.animation_data.drivers.find(data_path)
+			if fc:
+				fc.mute = False
 
 	def save_state(self, context):
 		rigged_ob = context.object
