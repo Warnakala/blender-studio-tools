@@ -315,6 +315,7 @@ def update_file_is_referenced_flags(_dummy1=None, _dummy2=None):
     """Update the file list's is_referenced flags. This should only be called on
     file save, because it relies on BAT, which relies on reading a file from disk,
     so calling it any more frequently would be pointless."""
+    return
     import sys
     if sys.platform == 'win32':
         # TODO: Apparently, calling BAT's trace.deps() on Windows on the
