@@ -365,6 +365,11 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
     bl_description = "Resolve issues that can arise from previous SVN processes having been interrupted"
     bl_options = {'INTERNAL'}
 
+    @classmethod
+    def poll(cls, context):
+        # Don't allow attempting to cleanup while Update/Commit is running.
+        return not context.scene.svn.is_busy
+
     def execute(self, context: bpy.types.Context) -> Set[str]:
         context.scene.svn.external_files.clear()
         self.execute_svn_command(context, 'svn cleanup')

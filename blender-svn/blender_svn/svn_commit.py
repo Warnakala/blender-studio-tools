@@ -121,6 +121,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         self.set_predicted_file_statuses(context, filepaths)
         process_in_background(BGP_SVN_Commit, commit_msg=context.scene.svn.commit_message, file_list = filepaths)
+        context.scene.svn.is_busy = True
 
         report = f"{(len(files_to_commit))} files"
         if len(files_to_commit) == 1:
