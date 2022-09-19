@@ -1,6 +1,6 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 
-import threading, subprocess
+import subprocess
 
 import bpy
 
@@ -38,6 +38,7 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         self.set_predicted_file_statuses(context)
+        processes['Status'].stop()
         if self.reload_file:
             self.execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
@@ -76,6 +77,7 @@ class BGP_SVN_Update(BackgroundProcess):
         except subprocess.CalledProcessError as error:
             self.error = error.stderr.decode()
             context.scene.svn.is_busy = False
+            processes['Status'].start()
 
     def process_output(self, context, prefs):
         print("SVN Update complete:")
@@ -86,6 +88,7 @@ class BGP_SVN_Update(BackgroundProcess):
 
         context.scene.svn.is_busy = False
         processes['Log'].start()
+        processes['Status'].start()
 
 
 registry = [

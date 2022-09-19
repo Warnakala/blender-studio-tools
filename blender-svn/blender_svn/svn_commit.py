@@ -1,9 +1,9 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 
-import threading, subprocess
+import subprocess
 
 import bpy
-from bpy.props import StringProperty, BoolVectorProperty
+from bpy.props import StringProperty
 
 from .background_process import processes, BackgroundProcess, process_in_background
 from .ops import SVN_Operator, Popup_Operator
@@ -107,7 +107,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         committable_files = self.get_committable_files(context)
-        files_to_commit = [f for i, f in enumerate(committable_files) if f.include_in_commit]
+        files_to_commit = [f for f in committable_files if f.include_in_commit]
 
         if not files_to_commit:
             self.report({'ERROR'}, "No files were selected, nothing to commit.")
@@ -119,8 +119,9 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         filepaths = [f.svn_path for f in files_to_commit]
 
-        self.set_predicted_file_statuses(context, filepaths)
+        self.set_predicted_file_statuses(context, files_to_commit)
         process_in_background(BGP_SVN_Commit, commit_msg=context.scene.svn.commit_message, file_list = filepaths)
+        processes['Status'].stop()
         context.scene.svn.is_busy = True
 
         report = f"{(len(files_to_commit))} files"
@@ -130,9 +131,8 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def set_predicted_file_statuses(self, context, filepaths):
-        for filepath in filepaths:
-            f = context.scene.svn.get_file_by_svn_path(filepath)
+    def set_predicted_file_statuses(self, file_entries):
+        for f in file_entries:
             if f.status != 'deleted':
                 if f.repos_status == 'none':
                     f.status = 'normal'
@@ -170,6 +170,7 @@ class BGP_SVN_Commit(BackgroundProcess):
             print("Commit failed.")
             self.error = error.stderr.decode()
             context.scene.svn.is_busy = False
+            processes['Status'].start()
 
     def process_output(self, context, prefs):
         print(self.output)
@@ -177,6 +178,7 @@ class BGP_SVN_Commit(BackgroundProcess):
             if f.status_predicted_flag == 'COMMIT':
                 f.status_predicted_flag = 'SINGLE'
         processes['Log'].start()
+        processes['Status'].start()
 
         self.commit_msg = ""
         context.scene.svn.commit_message = ""
