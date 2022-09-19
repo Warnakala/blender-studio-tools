@@ -178,7 +178,7 @@ class TaskLayer:
         target collections/objects for the whole file.
         """
         # iterate through all collections in the file
-        for coll in list(bpy.data.collections) + [scene.collection for scene in bpy.data.scenes]:
+        for coll in list(bpy.data.collections):
             collection_map = transfer_mapping.collection_map
             transfer_collections = set().union(*[{k, v} for k, v in collection_map.items()])
             if coll in transfer_collections:

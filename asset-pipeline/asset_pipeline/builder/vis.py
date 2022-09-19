@@ -78,6 +78,13 @@ class EnsureObjectVisibility:
         self.hide_viewport = obj.hide_viewport
         obj.hide_viewport = False
 
+        # Temporarily assign the object to the scene root collection, and
+        # take note of whether it was already assigned previously, or not.
+        self.assigned_to_scene_root = False
+        if obj.name not in bpy.context.scene.collection.objects:
+            self.assigned_to_scene_root = True
+            bpy.context.scene.collection.objects.link(obj)
+
 
     def restore(self):
         obj = bpy.data.objects.get(self.obj_name)
@@ -90,9 +97,12 @@ class EnsureObjectVisibility:
 
         obj.hide_viewport = self.hide_viewport
 
+        if self.assigned_to_scene_root:
+            bpy.context.scene.collection.objects.unlink(obj)
+
 
 class EnsureCollectionVisibility:
-    """Ensure a collection and all objects within it are visible.
+    """Ensure all objects in a collection are visible.
     The original visibility states can be restored using .restore().
     NOTE: Collection and Object names must not change until restore() is called!!!
     """
@@ -100,18 +110,10 @@ class EnsureCollectionVisibility:
     def __init__(self, coll: bpy.types.Collection, do_objects=True):
         self.coll_name = coll.name
 
-        # Screen icon
-        self.hide_viewport = coll.hide_viewport
-        coll.hide_viewport = False
-
-        # Exclude
-        layer_coll = get_layer_coll_from_coll(coll)
-        self.exclude = layer_coll.exclude
-        layer_coll.exclude = False
-
-        # Eye icon
-        self.hide = layer_coll.hide_viewport
-        layer_coll.hide_viewport = False
+        # Assign object to scene root to make sure it doesn't get hidden by collection
+        # settings.
+        # NOTE: Previously, we just messed with and then reset collection settings,
+        # but that stopped working in the background Blender process since D15885.
 
         # Objects
         self.object_visibilities = []
@@ -125,19 +127,6 @@ class EnsureCollectionVisibility:
         if not coll:
             return
 
-        # Screen icon
-        coll.hide_viewport = self.hide_viewport
-
         # Objects
         for ob_vis in self.object_visibilities:
             ob_vis.restore()
-
-        # Exclude
-        layer_coll = get_layer_coll_from_coll(coll)
-        if not layer_coll:
-            print(f"WARNING: Collection '{coll.name}' has no layer collection!")
-            return
-        layer_coll.exclude = self.exclude
-
-        # Eye icon
-        layer_coll.hide_viewport = self.hide
