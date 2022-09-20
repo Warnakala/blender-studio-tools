@@ -43,6 +43,9 @@ class BackgroundProcess:
     # How many seconds to wait between checks for whether output has been acquired yet.
     tick_delay = 1.0
 
+    # Time in seconds to delay the first execution by.
+    first_interval = 0
+
     needs_authentication = False
 
     # Sub-classes should specify if clearing the error will retry the process.
@@ -169,7 +172,7 @@ class BackgroundProcess:
         self.is_running = True
         if not bpy.app.timers.is_registered(self.timer_function):
             self.debug_print("Register timer")
-            bpy.app.timers.register(self.timer_function, first_interval = 1, persistent=persistent)
+            bpy.app.timers.register(self.timer_function, first_interval = self.first_interval, persistent=persistent)
 
     def stop(self):
         self.is_running = False

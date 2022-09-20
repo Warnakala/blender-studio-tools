@@ -67,7 +67,8 @@ class SVN_UL_log(bpy.types.UIList):
 
         num, auth, date, msg = layout_log_split(layout.row())
 
-        active_file = svn.active_file
+        is_filebrowser = context.space_data.type == 'FILE_BROWSER'
+        active_file = svn.get_filebrowser_active_file(context) if is_filebrowser else svn.active_file
         num.label(text=str(log_entry.revision_number))
         if item.revision_number == active_file.revision:
             num.operator('svn.tooltip_log', text="", icon='LAYER_ACTIVE', emboss=False).log_rev=log_entry.revision_number
@@ -98,7 +99,8 @@ class SVN_UL_log(bpy.types.UIList):
         flt_neworder = sorted(range(len(log_entries)), key=lambda i: log_entries[i].revision_number)
         flt_neworder.reverse()
 
-        active_file = svn.active_file
+        is_filebrowser = context.space_data.type == 'FILE_BROWSER'
+        active_file = svn.get_filebrowser_active_file(context) if is_filebrowser else svn.active_file
 
         if not self.show_all_logs:
             # Filter out log entries that did not affect the selected file.
@@ -165,37 +167,40 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        num, auth, date, msg = layout_log_split(layout.row())
-        num.label(text="r#")
-        auth.label(text="Author")
-        date.label(text="Date")
-        msg.label(text="Message")
-        layout.template_list(
-            "SVN_UL_log",
-            "svn_log",
-            context.scene.svn,
-            "log",
-            context.scene.svn,
-            "log_active_index",
-        )
+        draw_svn_log(context, layout, file_browser=False)
 
-        active_log = context.scene.svn.active_log
-        layout.label(text=f"Files changed in revision `r{active_log.revision_number}`:")
+def draw_svn_log(context, layout, file_browser: bool):
+    num, auth, date, msg = layout_log_split(layout.row())
+    num.label(text="r#")
+    auth.label(text="Author")
+    date.label(text="Date")
+    msg.label(text="Message")
+    layout.template_list(
+        "SVN_UL_log",
+        "svn_log",
+        context.scene.svn,
+        "log",
+        context.scene.svn,
+        "log_active_index_filebrowser" if file_browser else "log_active_index",
+    )
 
-        col = layout.column(align=True)
+    active_log = context.scene.svn.active_log_filebrowser if file_browser else context.scene.svn.active_log
+    layout.label(text=f"Files changed in revision `r{active_log.revision_number}`:")
+
+    col = layout.column(align=True)
+    row = col.row()
+    split = row.split(factor=0.80)
+    split.label(text="          Filepath")
+    row = split.row()
+    row.alignment='RIGHT'
+    row.label(text="Action")
+    for f in active_log.changed_files:
         row = col.row()
-        split = row.split(factor=0.80)
-        split.label(text="          Filepath")
+        split = row.split(factor=0.90)
+        split.prop(f, 'svn_path', emboss=False, text="", icon=f.file_icon)
         row = split.row()
         row.alignment='RIGHT'
-        row.label(text="Action")
-        for f in active_log.changed_files:
-            row = col.row()
-            split = row.split(factor=0.90)
-            split.prop(f, 'svn_path', emboss=False, text="", icon=f.file_icon)
-            row = split.row()
-            row.alignment='RIGHT'
-            row.operator('svn.explain_status', text="", icon=f.status_icon, emboss=False).status = f.status
+        row.operator('svn.explain_status', text="", icon=f.status_icon, emboss=False).status = f.status
 
 
 def execute_tooltip_log(self, context):
@@ -203,7 +208,10 @@ def execute_tooltip_log(self, context):
     click-through in the UIList."""
     tup = context.scene.svn.get_log_by_revision(self.log_rev)
     if tup:
-        context.scene.svn.log_active_index = tup[0]
+        if context.area.type == 'FILE_BROWSER':
+            context.scene.svn.log_active_index_filebrowser = tup[0]
+        else:
+            context.scene.svn.log_active_index = tup[0]
     return {'FINISHED'}
 
 

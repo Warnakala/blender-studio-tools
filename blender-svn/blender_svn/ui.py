@@ -276,61 +276,64 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        svn = context.scene.svn
+        draw_svn_file_list(context, layout)
 
-        for process_id in ['Commit', 'Update', 'Log', 'Status']:
-            if process_id not in processes:
-                continue
-            process = processes[process_id]
+def draw_svn_file_list(context, layout):
+    svn = context.scene.svn
 
-            if process.is_running:
-                progress_message = process.get_ui_message(context)
-                if progress_message:
-                    text = progress_message.replace("...", dots())
-                    layout.label(text=f"SVN {process_id}: {text}")
-            elif process.error:
-                row = layout.row()
-                row.alert = True
-                warning = row.operator('svn.clear_error', text=f"SVN {process_id}: Error Occurred. Hover to view", icon='ERROR')
-                warning.process_id = process_id
-                warning.copy_on_click = True
+    for process_id in ['Commit', 'Update', 'Log', 'Status']:
+        if process_id not in processes:
+            continue
+        process = processes[process_id]
 
-        main_col = layout.column()
-        main_col.enabled = svn.seconds_since_last_update < 30
-        main_row = main_col.row()
-        split = main_row.split(factor=0.6)
-        filepath_row = split.row()
-        filepath_row.label(text="          Filepath")
+        if process.is_running:
+            progress_message = process.get_ui_message(context)
+            if progress_message:
+                text = progress_message.replace("...", dots())
+                layout.label(text=f"SVN {process_id}: {text}")
+        elif process.error:
+            row = layout.row()
+            row.alert = True
+            warning = row.operator('svn.clear_error', text=f"SVN {process_id}: Error Occurred. Hover to view", icon='ERROR')
+            warning.process_id = process_id
+            warning.copy_on_click = True
 
-        status_row = split.row()
-        status_row.label(text="         Status")
-        
-        ops_row = main_row.row()
-        ops_row.alignment = 'RIGHT'
-        ops_row.label(text="Operations")
+    main_col = layout.column()
+    main_col.enabled = svn.seconds_since_last_update < 30
+    main_row = main_col.row()
+    split = main_row.split(factor=0.6)
+    filepath_row = split.row()
+    filepath_row.label(text="          Filepath")
 
-        timer_row = main_row.row()
-        timer_row.alignment='RIGHT'
-        timer_row.operator("svn.custom_tooltip", icon='BLANK1', text="", emboss=False).tooltip="Time since last file status update: " + str(context.scene.svn.seconds_since_last_update) + 's'
+    status_row = split.row()
+    status_row.label(text="         Status")
+    
+    ops_row = main_row.row()
+    ops_row.alignment = 'RIGHT'
+    ops_row.label(text="Operations")
 
-        row = main_col.row()
-        row.template_list(
-            "SVN_UL_file_list",
-            "svn_file_list",
-            context.scene.svn,
-            "external_files",
-            context.scene.svn,
-            "external_files_active_index",
-        )
+    timer_row = main_row.row()
+    timer_row.alignment='RIGHT'
+    timer_row.operator("svn.custom_tooltip", icon='BLANK1', text="", emboss=False).tooltip="Time since last file status update: " + str(context.scene.svn.seconds_since_last_update) + 's'
 
-        col = row.column()
+    row = main_col.row()
+    row.template_list(
+        "SVN_UL_file_list",
+        "svn_file_list",
+        context.scene.svn,
+        "external_files",
+        context.scene.svn,
+        "external_files_active_index",
+    )
 
-        col.separator()
-        col.operator("svn.commit", icon='EXPORT', text="")
-        col.operator("svn.update_all", icon='IMPORT', text="")
+    col = row.column()
 
-        col.separator()
-        col.operator("svn.cleanup", icon='BRUSH_DATA', text="")
+    col.separator()
+    col.operator("svn.commit", icon='EXPORT', text="")
+    col.operator("svn.update_all", icon='IMPORT', text="")
+
+    col.separator()
+    col.operator("svn.cleanup", icon='BRUSH_DATA', text="")
 
 
 class SVN_custom_tooltip(bpy.types.Operator):

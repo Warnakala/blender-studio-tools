@@ -32,9 +32,10 @@ from . import wheels
 wheels.preload_dependencies()
 from blender_asset_tracer import trace
 
-from .util import make_getter_func, make_setter_func_readonly
+from .util import make_getter_func, make_setter_func_readonly, redraw_viewport
 from .svn_log import reload_svn_log
 from . import constants
+from .background_process import processes
 
 logger = logging.getLogger("SVN")
 
@@ -49,24 +50,28 @@ class SVN_file(bpy.types.PropertyGroup):
         name="File Name",
         get=make_getter_func("name", ""),
         set=make_setter_func_readonly("name"),
+        options = set()
     )
     svn_path: StringProperty(
         name = "SVN Path",
         description="Filepath relative to the SVN root",
         get=make_getter_func("svn_path", ""),
         set=make_setter_func_readonly("svn_path"),
+        options = set()
     )
     status: EnumProperty(
         name="Status",
         description = "SVN Status of the file in the local repository (aka working copy)",
         items=constants.ENUM_SVN_STATUS,
         default="normal",
+        options = set()
     )
     repos_status: EnumProperty(
         name="Remote's Status",
         description = "SVN Status of the file in the remote repository (periodically updated)",
         items=constants.ENUM_SVN_STATUS,
         default="none",
+        options = set()
     )
     status_predicted_flag: EnumProperty(
         name = "Status Predicted By Process",
@@ -77,11 +82,13 @@ class SVN_file(bpy.types.PropertyGroup):
             ("SINGLE", "Single", "File status is predicted by a local svn file operation. Next status update is ignored, and this enum is set back to NONE"),
         ],
         description = "Internal flag that notes what process set a predicted status on this file. Should be empty string when the status is not predicted but confirmed. When svn commit/update predicts a status, that status should not be overwritten until the process is finished. With instantaneous processes, a single status update should be ignored since it may be outdated",
+        options = set()
     )
     include_in_commit: BoolProperty(
         name = "Commit",
         description = "Whether this file should be included in the commit or not",
-        default = False
+        default = False,
+        options = set()
     )
 
     @property
@@ -101,13 +108,15 @@ class SVN_file(bpy.types.PropertyGroup):
         return self.repos_status == 'modified' and self.status == 'normal'
 
     revision: IntProperty(
-        name="Revision",
-        description="Revision number",
+        name = "Revision",
+        description = "Revision number",
+        options = set()
     )
     is_referenced: BoolProperty(
-        name="Is Referenced",
-        description="True when this file is referenced by this .blend file either directly or indirectly. Flag used for list filtering",
-        default=False,
+        name = "Is Referenced",
+        description = "True when this file is referenced by this .blend file either directly or indirectly. Flag used for list filtering",
+        default = False,
+        options = set()
     )
 
     @property
@@ -316,9 +325,21 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     def update_active_file(self, context):
         """When user clicks on a different file, the latest log entry of that file
         should become the active log entry."""
+
         latest_idx = self.get_latest_revision_of_file(self.active_file.svn_path)
         # SVN Revisions are not 0-indexed, so we need to subtract 1.
         self.log_active_index = latest_idx-1
+
+        if context.space_data.type == 'FILE_BROWSER':
+            # Set the active file in the file browser to whatever was selected in the SVN Files panel.
+            self.log_active_index_filebrowser = latest_idx-1
+
+            context.space_data.params.directory = self.active_file.absolute_path.parent.as_posix().encode()
+            context.space_data.params.filename = self.active_file.name.encode()
+            context.space_data.activate_file_by_relative_path(relative_path=self.active_file.name)
+            # print("activate file...!")
+            processes['Activate File'].start()
+
     external_files_active_index: bpy.props.IntProperty(
         name = "File List",
         description = "Files tracked by SVN",
@@ -327,11 +348,39 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     )
 
     @property
-    def active_file(self):
+    def active_file(self) -> SVN_file:
         return self.external_files[self.external_files_active_index]
 
+    def is_filebrowser_directory_in_repo(self, context) -> bool:
+        assert context.space_data.type == 'FILE_BROWSER', "This function needs a File Browser context."
+
+        params = context.space_data.params
+        abs_path = Path(params.directory.decode())
+
+        if not abs_path.exists():
+            return False
+
+        return Path(self.svn_directory) in [abs_path] + list(abs_path.parents)
+
+    def get_filebrowser_active_file(self, context) -> SVN_file:
+        assert context.space_data.type == 'FILE_BROWSER', "This function needs a File Browser context."
+
+        params = context.space_data.params
+        abs_path = Path(params.directory.decode()) / Path(params.filename)
+
+        if not abs_path.exists():
+            return
+
+        if Path(self.svn_directory) not in abs_path.parents:
+            return False
+
+        svn_path = self.absolute_to_svn_path(abs_path)
+        svn_file = self.get_file_by_svn_path(svn_path)
+
+        return svn_file
+
     @property
-    def current_blend_file(self):
+    def current_blend_file(self) -> SVN_file:
         return self.get_file_by_svn_path(self.absolute_to_svn_path(Path(bpy.data.filepath)))
 
 
@@ -407,6 +456,10 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         name = "SVN Log",
         options = set()
     )
+    log_active_index_filebrowser: bpy.props.IntProperty(
+        name = "SVN Log",
+        options = set()
+    )
 
     reload_svn_log = reload_svn_log
 
@@ -414,6 +467,13 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     def active_log(self):
         try:
             return self.log[self.log_active_index]
+        except IndexError:
+            return None
+
+    @property
+    def active_log_filebrowser(self):
+        try:
+            return self.log[self.log_active_index_filebrowser]
         except IndexError:
             return None
 

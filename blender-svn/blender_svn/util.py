@@ -29,7 +29,7 @@ def redraw_viewport() -> None:
     """This causes the sidebar UI to refresh without having to mouse-hover it."""
     context = bpy.context
     for area in context.screen.areas:
-        if area.type == 'VIEW_3D':
+        if area.type in {'VIEW_3D', 'FILE_BROWSER'}:
             area.tag_redraw()
 
 
