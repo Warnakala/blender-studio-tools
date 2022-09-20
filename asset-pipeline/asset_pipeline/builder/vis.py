@@ -97,7 +97,7 @@ class EnsureObjectVisibility:
 
         obj.hide_viewport = self.hide_viewport
 
-        if self.assigned_to_scene_root:
+        if self.assigned_to_scene_root and obj.name in bpy.context.scene.collection.objects:
             bpy.context.scene.collection.objects.unlink(obj)
 
 
