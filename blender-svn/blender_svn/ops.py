@@ -29,6 +29,7 @@ from send2trash import send2trash
 
 from .execute_subprocess import execute_svn_command
 
+# TODO: Maybe add an operator to revert all local changes to the working copy?
 
 class SVN_Operator:
     def execute_svn_command(self, context, command: str, use_cred=False) -> str:
@@ -207,6 +208,28 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
             file_entry.status = 'none'
 
 
+class SVN_download_repo_revision(SVN_Operator, bpy.types.Operator):
+    bl_idname = "svn.download_repo_revision"
+    bl_label = "Download Repository Revision"
+    bl_description = "Revert the entire working copy to this revision. Can be used to see what state a project was in at a certain point in time. May take a long time to download all the files"
+    bl_options = {'INTERNAL'}
+
+    missing_file_allowed = True
+
+    revision: IntProperty()
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        # TODO: 
+        # This will probably fail if any files that would be affected are already locally modified. 
+        # Figure out how that should be handled.
+        # Also, this could take a long time potentially, we should either figure out a way to provide a progress bar (impossible) or do it in the background (may be dangerous, since current file could end up getting modified and not reloaded)
+        self.execute_svn_command(context, f'svn up -r{self.revision} --accept "postpone"', use_cred=True)
+        return {"FINISHED"}
+
+    def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
+        file_entry.status = 'normal'
+
+
 class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.restore_file"
     bl_label = "Restore File"
@@ -382,6 +405,7 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
 registry = [
     SVN_update_single,
     SVN_download_file_revision,
+    SVN_download_repo_revision,
     SVN_revert_file,
     SVN_restore_file,
     SVN_unadd_file,

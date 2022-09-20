@@ -52,12 +52,13 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
     def set_predicted_file_statuses(self, context):
         for f in context.scene.svn.external_files:
             if f.repos_status in ['modified', 'added']:
-                if f.repos_status == 'added' and f.exists:
-                    f.status = 'conflicted'
+                # This case seemed to be triggering on false-positives
+                # if f.repos_status == 'added' and f.exists:
+                #     f.status = 'conflicted'
                 if f.status == 'normal':
                     f.status = 'normal'
                     f.repos_status = 'none'
-                else:
+                elif f.exists:
                     f.status = 'conflicted'
                 f.status_predicted_flag = "UPDATE"
 

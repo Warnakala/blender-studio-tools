@@ -210,6 +210,22 @@ def svn_file_list_context_menu(self: bpy.types.UIList, context: bpy.types.Contex
     layout.separator()
 
 
+def svn_log_list_context_menu(self: bpy.types.UIList, context: bpy.types.Context) -> None:
+    def is_svn_log_list() -> bool:
+        # Important: Must check context first, or the menu is added for every kind of list.
+        ui_list = getattr(context, "ui_list", None)
+        return ui_list and ui_list.bl_idname == 'SVN_UL_log'
+        
+    if not is_svn_log_list():
+        return
+
+    is_filebrowser = context.space_data.type == 'FILE_BROWSER'
+    layout = self.layout
+    layout.separator()
+    active_log = context.scene.svn.active_log_filebrowser if is_filebrowser else context.scene.svn.active_log
+    layout.operator("svn.download_repo_revision", text=f"Revert Repository To r{active_log.revision_number}").revision=active_log.revision_number
+    layout.separator()
+
 class VIEW3D_PT_svn_credentials(bpy.types.Panel):
     """Prompt the user to enter their username and password for the remote repository of the current .blend file."""
     bl_space_type = 'VIEW_3D'
@@ -418,9 +434,11 @@ def register():
     bpy.types.VIEW3D_HT_header.prepend(draw_outdated_file_warning)
 
     bpy.types.UI_MT_list_item_context_menu.append(svn_file_list_context_menu)
+    bpy.types.UI_MT_list_item_context_menu.append(svn_log_list_context_menu)
 
 
 def unregister():
     bpy.types.VIEW3D_HT_header.remove(draw_outdated_file_warning)
     
     bpy.types.UI_MT_list_item_context_menu.remove(svn_file_list_context_menu)
+    bpy.types.UI_MT_list_item_context_menu.remove(svn_log_list_context_menu)
