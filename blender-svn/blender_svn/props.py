@@ -329,15 +329,17 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         latest_idx = self.get_latest_revision_of_file(self.active_file.svn_path)
         # SVN Revisions are not 0-indexed, so we need to subtract 1.
         self.log_active_index = latest_idx-1
-
-        if context.space_data.type == 'FILE_BROWSER':
+        
+        space = context.space_data
+        if space and space.type == 'FILE_BROWSER':
             # Set the active file in the file browser to whatever was selected in the SVN Files panel.
             self.log_active_index_filebrowser = latest_idx-1
 
-            context.space_data.params.directory = self.active_file.absolute_path.parent.as_posix().encode()
-            context.space_data.params.filename = self.active_file.name.encode()
-            context.space_data.activate_file_by_relative_path(relative_path=self.active_file.name)
-            # print("activate file...!")
+            space.params.directory = self.active_file.absolute_path.parent.as_posix().encode()
+            space.params.filename = self.active_file.name.encode()
+
+            space.deselect_all()
+            space.activate_file_by_relative_path(relative_path=self.active_file.name)
             processes['Activate File'].start()
 
     external_files_active_index: bpy.props.IntProperty(
