@@ -119,7 +119,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         filepaths = [f.svn_path for f in files_to_commit]
 
-        self.set_predicted_file_statuses(context, files_to_commit)
+        self.set_predicted_file_statuses(files_to_commit)
         process_in_background(BGP_SVN_Commit, commit_msg=context.scene.svn.commit_message, file_list = filepaths)
         processes['Status'].stop()
         context.scene.svn.is_busy = True
