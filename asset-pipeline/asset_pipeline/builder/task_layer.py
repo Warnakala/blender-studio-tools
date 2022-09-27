@@ -122,16 +122,27 @@ class TaskLayer:
         raise NotImplementedError
 
     @classmethod
-    def transfer_collections(cls, transfer_mapping: AssetTransferMapping):
-        root_coll = transfer_mapping.source_coll
+    def get_task_collections(cls, root_coll: bpy.types.Collection) -> Set[bpy.types.Collection]:
+        """Return direct children of an Asset Collection who have the suffix of this Task Layer (eg. "einar.rig").
+        The root_coll that is the Asset Collection can be either the .TASK or .PUBLISH or .TARGET collection.
+        """
         transfer_suffix = root_coll.bsp_asset.transfer_suffix
-
-        for src_coll in root_coll.children:
-            original_name = src_coll.name.replace(transfer_suffix, "")
-            if cls.task_suffix and original_name.endswith(cls.task_suffix):
-                # If this collection is assigned to this Task Layer.
-                cls.transfer_collection_objects(transfer_mapping, src_coll, root_coll)
+        task_collections = set()
         
+        for c in root_coll.children:
+            if cls.task_suffix and c.name.replace(transfer_suffix, "").endswith(cls.task_suffix):
+                task_collections.add(c)
+        
+        return task_collections
+
+
+    @classmethod
+    def transfer_collections(cls, transfer_mapping: AssetTransferMapping):
+        source_root_coll = transfer_mapping.source_coll
+
+        for src_coll in cls.get_task_collections(source_root_coll):
+            cls.transfer_collection_objects(transfer_mapping, src_coll, source_root_coll)
+
         # Unlink target collections that no longer exist in source.
         for target_coll in transfer_mapping.target_coll.children:
             if cls.task_suffix and cls.task_suffix in target_coll.name:
@@ -141,19 +152,21 @@ class TaskLayer:
     def transfer_collection_objects(cls, 
             transfer_mapping: AssetTransferMapping, 
             src_coll: bpy.types.Collection, 
-            parent_coll: bpy.types.Collection):
-        """Transfer object assignments from source to target.
+            src_parent_coll: bpy.types.Collection):
+        """
+        Recursively transfer object assignments from source to target collections.
         If an object ends up being un-assigned, it may get purged.
         New collections will be created as necessary.
         """
-        # Ensure target collection exists.
+
+        # Create target collection if necessary.
         tgt_coll = transfer_mapping.collection_map.get(src_coll)
         if not tgt_coll:
             src_suffix = transfer_mapping.source_coll.bsp_asset.transfer_suffix
             tgt_suffix = transfer_mapping.target_coll.bsp_asset.transfer_suffix
             tgt_coll = bpy.data.collections.new(src_coll.name.replace(src_suffix, tgt_suffix))
             transfer_mapping._collection_map[src_coll] = tgt_coll
-            tgt_parent = transfer_mapping.collection_map.get(parent_coll)
+            tgt_parent = transfer_mapping.collection_map.get(src_parent_coll)
             assert tgt_parent, "The corresponding target parent collection should've been created in the previous recursion: " + src_coll.name
             tgt_parent.children.link(tgt_coll)
 
@@ -173,7 +186,7 @@ class TaskLayer:
                         tgt_dependency = transfer_mapping.object_map.get(dependency)
                         dependency.user_remap(tgt_dependency)
             tgt_coll.objects.link(tgt_ob)
-        
+
         # Do the same recursively for child collections.
         for child_coll in src_coll.children:
             cls.transfer_collection_objects(transfer_mapping, child_coll, src_coll)
@@ -181,7 +194,8 @@ class TaskLayer:
     @classmethod
     def assign_objects(cls,
             transfer_mapping: AssetTransferMapping):
-        """Unassign remaining source collections/objects and replace them with 
+        """
+        Unassign remaining source collections/objects and replace them with 
         target collections/objects for the whole file.
         """
         # iterate through all collections in the file
@@ -201,7 +215,7 @@ class TaskLayer:
                 coll.children.unlink(child_coll)
                 coll.children.link(tgt_coll)
             for ob in coll.objects:
-                if not ob in transfer_mapping.object_map:
+                if ob not in transfer_mapping.object_map:
                     continue
                 tgt_ob = transfer_mapping.object_map.get(ob)
                 if not tgt_ob:
