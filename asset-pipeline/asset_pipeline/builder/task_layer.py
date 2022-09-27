@@ -26,6 +26,7 @@ from types import ModuleType
 from pathlib import Path
 
 import bpy
+from bpy_extras.id_map_utils import get_id_reference_map
 
 from .asset_mapping import AssetTransferMapping
 from ..util import unlink_collections_recursive
@@ -164,7 +165,13 @@ class TaskLayer:
         for src_ob in src_coll.objects:
             tgt_ob = transfer_mapping.object_map.get(src_ob)
             if not tgt_ob:
+                # Allow task layers to add objects that didn't previously exist in target coll.
                 tgt_ob = src_ob
+                ref_map = get_id_reference_map()
+                for dependency in ref_map[src_ob]:
+                    if type(dependency) == bpy.types.Object:
+                        tgt_dependency = transfer_mapping.object_map.get(dependency)
+                        dependency.user_remap(tgt_dependency)
             tgt_coll.objects.link(tgt_ob)
         
         # Do the same recursively for child collections.
