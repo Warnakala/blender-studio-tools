@@ -184,7 +184,8 @@ class TaskLayer:
                 for dependency in ref_map[src_ob]:
                     if type(dependency) == bpy.types.Object:
                         tgt_dependency = transfer_mapping.object_map.get(dependency)
-                        dependency.user_remap(tgt_dependency)
+                        if tgt_dependency:
+                            dependency.user_remap(tgt_dependency)
             tgt_coll.objects.link(tgt_ob)
 
         # Do the same recursively for child collections.
