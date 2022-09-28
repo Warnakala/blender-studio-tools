@@ -160,6 +160,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         
         if svn.seconds_since_last_update > 30:
             return False
+
         return True
 
     def draw(self, context):
@@ -185,6 +186,8 @@ def draw_svn_log(context, layout, file_browser: bool):
     )
 
     active_log = context.scene.svn.active_log_filebrowser if file_browser else context.scene.svn.active_log
+    if not active_log:
+        return
     layout.label(text=f"Files changed in revision `r{active_log.revision_number}`:")
 
     col = layout.column(align=True)
