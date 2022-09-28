@@ -31,7 +31,7 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
     def invoke(self, context, event):
         svn = context.scene.svn
         current_blend = svn.current_blend_file
-        if current_blend.repos_status != 'none':
+        if current_blend and current_blend.repos_status != 'none':
             self.file_rel_path = current_blend.svn_path
             return context.window_manager.invoke_props_dialog(self, width=500)
         return self.execute(context)

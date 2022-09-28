@@ -202,7 +202,7 @@ class BGP_SVN_Status(BackgroundProcess):
 
     def acquire_output(self, context, prefs):
         try:
-            svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml')
+            svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml', use_cred=True)
             self.output = get_repo_file_statuses(svn_status_str)
         except subprocess.CalledProcessError as error:
             # TODO: If this is an authentication error, we should set cred.authenticated=False.

@@ -456,7 +456,10 @@ class BGP_SVN_Log(BackgroundProcess):
             self.stop()
 
     def get_ui_message(self, context):
-        return f"Updating. Current: {context.scene.svn.log[-1].revision_number}..."
+        try:
+            return f"Updating. Current: {context.scene.svn.log[-1].revision_number}..."
+        except IndexError:
+            return ""
 
 ################################################################################
 ############################### REGISTER #######################################
