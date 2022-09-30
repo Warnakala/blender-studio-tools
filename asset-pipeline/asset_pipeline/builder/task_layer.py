@@ -30,6 +30,7 @@ from bpy_extras.id_map_utils import get_id_reference_map
 
 from .asset_mapping import AssetTransferMapping
 from ..util import unlink_collections_recursive
+from ..constants import FULLY_OWNED_SUFFIX
 
 logger = logging.getLogger("BSP")
 
@@ -139,6 +140,17 @@ class TaskLayer:
     @classmethod
     def transfer_collections(cls, transfer_mapping: AssetTransferMapping):
         source_root_coll = transfer_mapping.source_coll
+
+        # Empty target collections that end in ".FULLY_OWNED".
+        fully_owned_colls = {c for c in transfer_mapping.target_coll.children_recursive if FULLY_OWNED_SUFFIX in c.name}
+        for fully_owned_coll in fully_owned_colls:
+            if cls.task_suffix and cls.task_suffix in fully_owned_coll.name:
+                for ob in fully_owned_coll.objects[:]:
+                    fully_owned_coll.objects.unlink(ob)
+                    # The object mapping also needs to be removed (this should be more effective than purging, I think)
+                    for key in list(transfer_mapping.object_map.keys()):
+                        if transfer_mapping.object_map[key] == ob:
+                            del transfer_mapping.object_map[key]
 
         for src_coll in cls.get_task_collections(source_root_coll):
             cls.transfer_collection_objects(transfer_mapping, src_coll, source_root_coll)
