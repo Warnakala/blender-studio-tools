@@ -151,13 +151,9 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
 
             # Setup video sequence editor space.
             if "Video Editing" not in [ws.name for ws in bpy.data.workspaces]:
-                blender_version = bpy.app.version  # gets (3, 0, 0)
-                blender_version_str = f"{blender_version[0]}.{blender_version[1]}"
-                ws_filepath = (
-                    Path(bpy.path.abspath(bpy.app.binary_path)).parent
-                    / blender_version_str
-                    / "scripts/startup/bl_app_templates_system/Video_Editing/startup.blend"
-                )
+                scripts_path = bpy.utils.script_paths(use_user=False)[0]
+                template_path = "/startup/bl_app_templates_system/Video_Editing/startup.blend"
+                ws_filepath = Path(scripts_path + template_path)
                 bpy.ops.workspace.append_activate(
                     idname="Video Editing",
                     filepath=ws_filepath.as_posix(),
