@@ -79,10 +79,11 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
             shot_folders.extend(list(render_dir.iterdir()))
 
         shot_folders.sort(key=lambda d: d.name)
+
         prev_frame_end: int = 0
 
         for shot_folder in shot_folders:
-
+            print("\n\nSETTING UP ", shot_folder)
             logger.info("Processing %s", shot_folder.name)
 
             imported_sequences: bpy.types.ImageSequence = []
@@ -95,12 +96,6 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 if d.is_dir() and "__intermediate" not in d.name
             ]
             output_dirs = sorted(output_dirs, key=lambda d: d.name)
-
-            # 070_0010_A.lighting is the latest render > with current structure
-            # This folder is [0] in output dirs > needs to be moved to [-1].
-            output_dirs.append(output_dirs[0])
-            output_dirs.pop(0)
-
 
             # Init sequencer
             if not context.scene.sequence_editor:
