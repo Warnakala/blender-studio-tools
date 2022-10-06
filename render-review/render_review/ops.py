@@ -154,7 +154,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 # Compose frames found text.
                 frames_found_text = opsdata.gen_frames_found_text(output_dir)
 
-                if context.scene.rr.use_video and output_dir == output_dirs[-1]:
+                if context.scene.rr.use_video and output_dir == output_dirs[-1] or not context.scene.rr.use_video_latest_only:
                     video_path = opsdata.get_farm_output_mp4_path_from_folder(output_dir)
                     if not video_path:
                         logger.warning("%s found no .mp4 preview sequence", output_dir.name)
