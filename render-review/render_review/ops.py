@@ -128,7 +128,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
         shot_folders.sort(key=lambda d: d.name)
 
-        prev_frame_end: int = 0
+        prev_frame_end: int = 1
 
         for shot_folder in shot_folders:
             context.scene.timeline_markers.new(shot_folder.name, frame=prev_frame_end)
