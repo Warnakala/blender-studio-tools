@@ -384,6 +384,8 @@ def get_repo_file_statuses(svn_status_str: str) -> Dict[str, Tuple[str, str, int
 def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
     context = bpy.context
     svn = context.scene.svn
+    if not svn.svn_directory:
+        return
     current_blend = svn.current_blend_file
     if current_blend:
         current_blend.status = 'modified'
