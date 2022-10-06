@@ -154,7 +154,8 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 # Compose frames found text.
                 frames_found_text = opsdata.gen_frames_found_text(output_dir)
 
-                if context.scene.rr.use_video and output_dir == output_dirs[-1] or not context.scene.rr.use_video_latest_only:
+                if context.scene.rr.use_video and \
+                    not (output_dir != output_dirs[-1] and context.scene.rr.use_video_latest_only):
                     video_path = opsdata.get_farm_output_mp4_path_from_folder(output_dir)
                     if not video_path:
                         logger.warning("%s found no .mp4 preview sequence", output_dir.name)
@@ -236,7 +237,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
         # scan for approved renders, will modify strip.rr.is_approved prop
         # which controls the custom gpu overlay
-        opsdata.update_is_approved(context)
+        opsdata.update_sequence_statuses(context)
         util.redraw_ui()
 
         self.report(
@@ -483,7 +484,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
             opsdata.save_to_json(json_dict, metadata_path)
 
         # Scan for approved renders.
-        opsdata.update_is_approved(context)
+        opsdata.update_sequence_statuses(context)
         util.redraw_ui()
 
         # Log.
@@ -516,12 +517,13 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
         layout.row(align=True).label(text="Update Shot Frames?")
 
 
-class RR_OT_sqe_update_is_approved(bpy.types.Operator):
-    bl_idname = "rr.update_is_approved"
-    bl_label = "Update is Approved"
+class RR_OT_sqe_update_sequence_statuses(bpy.types.Operator):
+    bl_idname = "rr.update_sequence_statuses"
+    bl_label = "Update Sequence Statuses"
     bl_description = (
-        "Scans sequence editor and checks for each render strip if it is approved."
-        "by reading the metadata.json file"
+        "Scans sequence editor and updates flags for which ones are pushed "
+        "to the edit and which one is the currently approved version "
+        "by reading the metadata.json files"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -530,7 +532,7 @@ class RR_OT_sqe_update_is_approved(bpy.types.Operator):
         return bool(context.scene.sequence_editor.sequences_all)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        approved_strips = opsdata.update_is_approved(context)
+        approved_strips = opsdata.update_sequence_statuses(context)[0]
 
         if approved_strips:
             self.report(
@@ -836,7 +838,7 @@ classes = [
     RR_OT_sqe_inspect_exr_sequence,
     RR_OT_sqe_clear_exr_inspect,
     RR_OT_sqe_approve_render,
-    RR_OT_sqe_update_is_approved,
+    RR_OT_sqe_update_sequence_statuses,
     RR_OT_open_path,
     RR_OT_sqe_isolate_strip_enter,
     RR_OT_sqe_isolate_strip_exit,

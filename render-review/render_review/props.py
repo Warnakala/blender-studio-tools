@@ -71,6 +71,7 @@ class RR_property_group_sequence(bpy.types.PropertyGroup):
 
     is_render: bpy.props.BoolProperty(name="Is Render")
     is_approved: bpy.props.BoolProperty(name="Is Approved")
+    is_pushed_to_edit: bpy.props.BoolProperty(name="Is Pushed To Edit")
     frames_found_text: bpy.props.StringProperty(name="Frames Found")
     shot_name: bpy.props.StringProperty(name="Shot")
 

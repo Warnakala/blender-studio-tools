@@ -100,7 +100,7 @@ def get_valid_cs_sequences(
 def get_shot_frames_dir(strip: bpy.types.Sequence) -> Path:
     # sf = shot_frames | fo = farm_output.
     addon_prefs = prefs.addon_prefs_get(bpy.context)
-    fo_dir = Path(strip.directory)
+    fo_dir = get_strip_folder(strip)
     sf_dir = (
         addon_prefs.shot_frames_dir
         / fo_dir.parent.relative_to(fo_dir.parents[3])
@@ -187,6 +187,10 @@ def get_shot_frames_metadata_path(strip: bpy.types.Sequence) -> Path:
     fs_dir = get_shot_frames_dir(strip)
     return fs_dir.parent / "metadata.json"
 
+def get_shot_previews_metadata_path(strip: bpy.types.Sequence) -> Path:
+    fs_dir = get_shot_previews_path(strip)
+    return fs_dir / "metadata.json"
+
 
 def load_json(path: Path) -> Any:
     with open(path.as_posix(), "r") as file:
@@ -199,13 +203,18 @@ def save_to_json(obj: Any, path: Path) -> None:
         json.dump(obj, file, indent=4)
 
 
+def update_sequence_statuses(
+    context: bpy.types.Context,
+) -> List[bpy.types.Sequence]:
+    return update_is_approved(context), update_is_pushed_to_edit(context)
+
 def update_is_approved(
     context: bpy.types.Context,
 ) -> List[bpy.types.Sequence]:
     sequences = [
         s
         for s in context.scene.sequence_editor.sequences_all
-        if s.type == "IMAGE" and s.rr.is_render and s.directory
+        if s.rr.is_render
     ]
 
     approved_strips = []
@@ -218,7 +227,7 @@ def update_is_approved(
             metadata_path
         )  # TODO: prevent opening same json multi times
 
-        if Path(json_obj["source_current"]) == Path(bpy.path.abspath(s.directory)):
+        if Path(json_obj["source_current"]) == get_strip_folder(s):
             s.rr.is_approved = True
             approved_strips.append(s)
             logger.info("Detected approved strip: %s", s.name)
@@ -226,6 +235,38 @@ def update_is_approved(
             s.rr.is_approved = False
 
     return approved_strips
+
+
+def update_is_pushed_to_edit(
+    context: bpy.types.Context,
+) -> List[bpy.types.Sequence]:
+    sequences = [
+        s
+        for s in context.scene.sequence_editor.sequences_all
+        if s.rr.is_render
+    ]
+
+    pushed_strips = []
+
+    for s in sequences:
+        metadata_path = get_shot_previews_metadata_path(s)
+        if not metadata_path.exists():
+            continue
+
+        json_obj = load_json(
+            metadata_path
+        )
+
+        valid_paths = {Path(value).parent for _key, value in json_obj.items()}
+
+        if get_strip_folder(s) in valid_paths:
+            s.rr.is_pushed_to_edit = True
+            pushed_strips.append(s)
+            logger.info("Detected pushed strip: %s", s.name)
+        else:
+            s.rr.is_pushed_to_edit = False
+
+    return pushed_strips
 
 
 def gather_files_by_suffix(

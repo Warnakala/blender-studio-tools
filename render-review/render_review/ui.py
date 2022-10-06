@@ -30,7 +30,7 @@ from render_review.ops import (
     RR_OT_sqe_inspect_exr_sequence,
     RR_OT_sqe_clear_exr_inspect,
     RR_OT_sqe_approve_render,
-    RR_OT_sqe_update_is_approved,
+    RR_OT_sqe_update_sequence_statuses,
     RR_OT_open_path,
     RR_OT_sqe_push_to_edit,
 )
@@ -128,7 +128,7 @@ class RR_PT_render_review(bpy.types.Panel):
             row = box.row(align=True)
             row.operator(RR_OT_sqe_approve_render.bl_idname, icon="CHECKMARK")
             row.operator(
-                RR_OT_sqe_update_is_approved.bl_idname, text="", icon="FILE_REFRESH"
+                RR_OT_sqe_update_sequence_statuses.bl_idname, text="", icon="FILE_REFRESH"
             )
 
             # Push to edit.

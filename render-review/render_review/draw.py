@@ -29,6 +29,7 @@ import bgl
 import gpu
 
 APPROVED_COLOR = (0.24, 1, 0.139, 0.7)
+PUSHED_TO_EDIT_COLOR = (0.8, .8, 0.1, 0.5)
 
 # Glsl.
 gpu_vertex_shader = """
@@ -183,6 +184,15 @@ def draw_callback_px(line_drawer: LineDrawer):
                 strip_coords,
                 pixel_size_x,
                 APPROVED_COLOR,
+                0.05,
+                coords,
+                colors,
+            )
+        elif strip.rr.is_pushed_to_edit:
+            line_in_strip(
+                strip_coords,
+                pixel_size_x,
+                PUSHED_TO_EDIT_COLOR,
                 0.05,
                 coords,
                 colors,
