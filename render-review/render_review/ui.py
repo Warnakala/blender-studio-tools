@@ -102,7 +102,7 @@ class RR_PT_render_review(bpy.types.Panel):
 
             # Render dir name label and open file op.
             row = box.row(align=True)
-            directory = Path(active_strip.filepath).parent
+            directory = opsdata.get_strip_folder(active_strip)
             row.label(text=f"Folder: {directory.name}")
             row.operator(
                 RR_OT_open_path.bl_idname, icon="FILEBROWSER", text="", emboss=False

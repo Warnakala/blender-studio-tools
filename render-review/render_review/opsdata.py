@@ -97,7 +97,7 @@ def get_valid_cs_sequences(
     return valid_sequences
 
 
-def get_shot_frames_dir(strip: bpy.types.ImageSequence) -> Path:
+def get_shot_frames_dir(strip: bpy.types.Sequence) -> Path:
     # sf = shot_frames | fo = farm_output.
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     fo_dir = Path(strip.directory)
@@ -109,10 +109,17 @@ def get_shot_frames_dir(strip: bpy.types.ImageSequence) -> Path:
     return sf_dir
 
 
-def get_shot_previews_path(strip: bpy.types.ImageSequence) -> Path:
+def get_strip_folder(strip: bpy.types.Sequence) -> Path:
+    if hasattr(strip, 'directory'):
+        return Path(strip.directory)
+    else:
+        return Path(strip.filepath).parent
+
+
+def get_shot_previews_path(strip: bpy.types.Sequence) -> Path:
     # Fo > farm_output.
     addon_prefs = prefs.addon_prefs_get(bpy.context)
-    fo_dir = Path(bpy.path.abspath(strip.filepath)).parent
+    fo_dir = get_strip_folder(strip)
     shot_previews_dir = (
         addon_prefs.shot_previews_path
         / fo_dir.parent.relative_to(fo_dir.parents[3])
