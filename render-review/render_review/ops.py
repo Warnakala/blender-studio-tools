@@ -132,7 +132,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         for shot_folder in shot_folders:
             logger.info("Processing %s", shot_folder.name)
 
-            imported_sequences: bpy.types.ImageSequence = []
+            imported_sequences: bpy.types.Sequence = []
 
             # Find existing output dirs.
             shot_name = opsdata.get_shot_name_from_dir(shot_folder)
@@ -762,7 +762,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
             width = 200 + len(mp4_path.as_posix()) * 5
         return context.window_manager.invoke_props_dialog(self, width=width)
 
-    def get_edit_filepath(self, strip: bpy.types.ImageSequence) -> Path:
+    def get_edit_filepath(self, strip: bpy.types.Sequence) -> Path:
         render_dir = Path(bpy.path.abspath(strip.directory))
         shot_previews_dir = Path(opsdata.get_shot_previews_path(strip))
 

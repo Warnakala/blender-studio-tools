@@ -132,7 +132,7 @@ def get_shot_dot_task_type(path: Path):
     return path.parent.name
 
 
-def get_farm_output_mp4_path(strip: bpy.types.ImageSequence) -> Path:
+def get_farm_output_mp4_path(strip: bpy.types.Sequence) -> Path:
     render_dir = bpy.path.abspath(strip.directory)
     return get_farm_output_mp4_path_from_folder(render_dir)
 
@@ -178,12 +178,12 @@ def get_best_preview_sequence(dir: Path) -> List[Path]:
     return preview_seq
 
 
-def get_shot_frames_backup_path(strip: bpy.types.ImageSequence) -> Path:
+def get_shot_frames_backup_path(strip: bpy.types.Sequence) -> Path:
     fs_dir = get_shot_frames_dir(strip)
     return fs_dir.parent / f"_backup.{fs_dir.name}"
 
 
-def get_shot_frames_metadata_path(strip: bpy.types.ImageSequence) -> Path:
+def get_shot_frames_metadata_path(strip: bpy.types.Sequence) -> Path:
     fs_dir = get_shot_frames_dir(strip)
     return fs_dir.parent / "metadata.json"
 
@@ -201,7 +201,7 @@ def save_to_json(obj: Any, path: Path) -> None:
 
 def update_is_approved(
     context: bpy.types.Context,
-) -> List[bpy.types.ImageSequence]:
+) -> List[bpy.types.Sequence]:
     sequences = [
         s
         for s in context.scene.sequence_editor.sequences_all
