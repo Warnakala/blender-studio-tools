@@ -131,6 +131,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         prev_frame_end: int = 0
 
         for shot_folder in shot_folders:
+            context.scene.timeline_markers.new(shot_folder.name, frame=prev_frame_end)
             logger.info("Processing %s", shot_folder.name)
 
             imported_sequences: bpy.types.Sequence = []
@@ -165,7 +166,6 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                         frame_start = prev_frame_end,
                         fit_method = 'ORIGINAL'
                     )
-                    # bpy.ops.wm.save_mainfile()
                 else:
                     strip = self.load_strip_from_img_seq(context, output_dir, idx, prev_frame_end)
     
