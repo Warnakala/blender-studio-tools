@@ -36,6 +36,15 @@ class RR_property_group_scene(bpy.types.PropertyGroup):
     """"""
 
     render_dir: bpy.props.StringProperty(name="Render Directory", subtype="DIR_PATH")
+    use_video: bpy.props.BoolProperty(
+        name="Use Video", 
+        description="Load video versions of renders rather than image sequences for faster playback"
+    )
+    use_video_latest_only: bpy.props.BoolProperty(
+        default=True, 
+        name="Latest Only", 
+        description="Only load video files for the latest versions by default, to avoid running out of memory and crashing"
+    )
     isolate_view: bpy.props.CollectionProperty(type=RR_isolate_collection_prop)
 
     @property

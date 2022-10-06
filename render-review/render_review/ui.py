@@ -75,6 +75,10 @@ class RR_PT_render_review(bpy.types.Panel):
 
         row = box.row(align=True)
         row.operator(RR_OT_sqe_create_review_session.bl_idname, text=text, icon="PLAY")
+        row = box.row(align=True)
+        row.prop(context.scene.rr, 'use_video')
+        if context.scene.rr.use_video:
+            row.prop(context.scene.rr, 'use_video_latest_only')
 
         # Warning if kitsu on but not logged in.
         if addon_prefs.enable_blender_kitsu and prefs.is_blender_kitsu_enabled():
@@ -98,10 +102,11 @@ class RR_PT_render_review(bpy.types.Panel):
 
             # Render dir name label and open file op.
             row = box.row(align=True)
-            row.label(text=f"Folder: {Path(active_strip.directory).name}")
+            directory = Path(active_strip.filepath).parent
+            row.label(text=f"Folder: {directory.name}")
             row.operator(
                 RR_OT_open_path.bl_idname, icon="FILEBROWSER", text="", emboss=False
-            ).filepath = bpy.path.abspath(active_strip.directory)
+            ).filepath = bpy.path.abspath(directory.as_posix())
 
             # Nr of frames.
             box.row(align=True).label(

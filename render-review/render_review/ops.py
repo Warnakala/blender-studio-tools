@@ -64,6 +64,53 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
             or opsdata.is_sequence_dir(render_dir)
         )
 
+    def load_strip_from_img_seq(self, context, directory, idx: int, frame_start: int = 0):
+        try:
+            # Get best preview files sequence.
+            image_sequence = opsdata.get_best_preview_sequence(directory)
+
+        except NoImageSequenceAvailableException:
+            # if no preview files available create an empty image strip
+            # this assumes that when a folder is there exr sequences are available to inspect
+            logger.warning("%s found no preview sequence", directory.name)
+            exr_files = opsdata.gather_files_by_suffix(
+                directory, output=list, search_suffixes=[".exr"]
+            )
+
+            if not exr_files:
+                logger.error("%s found no exr or preview sequence", directory.name)
+                return
+
+            image_sequence = exr_files[0]
+            logger.info("%s found %i exr frames", directory.name, len(image_sequence))
+
+        else:
+            logger.info(
+                "%s found %i preview frames", directory.name, len(image_sequence)
+            )
+
+        finally:
+            # Get frame start.
+            frame_start = frame_start or int(image_sequence[0].stem)
+
+            # Create new image strip.
+            strip = context.scene.sequence_editor.sequences.new_image(
+                name = directory.name,
+                filepath = image_sequence[0].as_posix(),
+                channel = idx + 1,
+                frame_start = frame_start,
+                fit_method = 'ORIGINAL'
+            )
+
+            # Extend strip elements with all the available frames.
+            for f in image_sequence[1:]:
+                strip.elements.append(f.name)
+
+            # Set strip properties.
+            strip.mute = True if image_sequence[0].suffix == ".exr" else False
+
+            return strip
+
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
         render_dir = Path(context.scene.rr.render_dir_path)
@@ -83,7 +130,6 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         prev_frame_end: int = 0
 
         for shot_folder in shot_folders:
-            print("\n\nSETTING UP ", shot_folder)
             logger.info("Processing %s", shot_folder.name)
 
             imported_sequences: bpy.types.ImageSequence = []
@@ -102,62 +148,36 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 context.scene.sequence_editor_create()
 
             # Load preview sequences in vse.
-            for idx, dir in enumerate(output_dirs):
+            for idx, directory in enumerate(output_dirs):
                 # Compose frames found text.
-                frames_found_text = opsdata.gen_frames_found_text(dir)
+                frames_found_text = opsdata.gen_frames_found_text(directory)
 
-                try:
-                    # Get best preview files sequence.
-                    image_sequence = opsdata.get_best_preview_sequence(dir)
-
-                except NoImageSequenceAvailableException:
-                    # if no preview files available create an empty image strip
-                    # this assumes that when a folder is there exr sequences are available to inspect
-                    logger.warning("%s found no preview sequence", dir.name)
-                    exr_files = opsdata.gather_files_by_suffix(
-                        dir, output=list, search_suffixes=[".exr"]
+                if context.scene.rr.use_video and directory == output_dirs[-1]:
+                    video_path = opsdata.get_farm_output_mp4_path_from_folder(directory)
+                    if not video_path:
+                        logger.warning("%s found no .mp4 preview sequence", directory.name)
+                        video_path = Path(directory)
+                    strip = context.scene.sequence_editor.sequences.new_movie(
+                        name = directory.name,
+                        filepath = video_path.as_posix(),
+                        channel = idx + 1,
+                        frame_start = prev_frame_end,
+                        fit_method = 'ORIGINAL'
                     )
-
-                    if not exr_files:
-                        logger.error("%s found no exr or preview sequence", dir.name)
-                        continue
-
-                    image_sequence = exr_files[0]
-                    logger.info("%s found %i exr frames", dir.name, len(image_sequence))
-
+                    # bpy.ops.wm.save_mainfile()
                 else:
-                    logger.info(
-                        "%s found %i preview frames", dir.name, len(image_sequence)
-                    )
+                    strip = self.load_strip_from_img_seq(context, directory, idx, prev_frame_end)
+    
+                strip.rr.shot_name = shot_folder.name
+                strip.rr.is_render = True
+                strip.rr.frames_found_text = frames_found_text
 
-                finally:
-
-                    # Get frame start.
-                    frame_start = prev_frame_end or int(image_sequence[0].stem)
-
-                    # Create new image strip.
-                    strip = context.scene.sequence_editor.sequences.new_image(
-                        dir.name,
-                        image_sequence[0].as_posix(),
-                        idx + 1,
-                        frame_start,
-                    )
-
-                    # Extend strip elements with all the available frames.
-                    for f in image_sequence[1:]:
-                        strip.elements.append(f.name)
-
-                    # Set strip properties.
-                    strip.mute = True if image_sequence[0].suffix == ".exr" else False
-                    strip.rr.shot_name = shot_folder.name
-                    strip.rr.is_render = True
-                    strip.rr.frames_found_text = frames_found_text
-
-                    imported_sequences.append(strip)
+                imported_sequences.append(strip)
 
             # Query the strip that is the longest for metastrip and prev_frame_end.
             imported_sequences.sort(key=lambda s: s.frame_final_duration)
             strip_longest = imported_sequences[-1]
+            prev_frame_end = strip_longest.frame_final_end
 
             # Perform kitsu operations if enabled.
             if (
@@ -184,7 +204,6 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                         "Unable to perform kitsu operations. No active project or no authorized"
                     )
 
-            prev_frame_end = strip_longest.frame_final_end
 
         # Set default scene resolution to resolution of loaded image.
         render_resolution_x = vars.RESOLUTION[0]

@@ -112,7 +112,7 @@ def get_shot_frames_dir(strip: bpy.types.ImageSequence) -> Path:
 def get_shot_previews_path(strip: bpy.types.ImageSequence) -> Path:
     # Fo > farm_output.
     addon_prefs = prefs.addon_prefs_get(bpy.context)
-    fo_dir = Path(bpy.path.abspath(strip.directory))
+    fo_dir = Path(bpy.path.abspath(strip.filepath)).parent
     shot_previews_dir = (
         addon_prefs.shot_previews_path
         / fo_dir.parent.relative_to(fo_dir.parents[3])
@@ -126,7 +126,12 @@ def get_shot_dot_task_type(path: Path):
 
 
 def get_farm_output_mp4_path(strip: bpy.types.ImageSequence) -> Path:
-    render_dir = Path(bpy.path.abspath(strip.directory))
+    render_dir = bpy.path.abspath(strip.directory)
+    return get_farm_output_mp4_path_from_folder(render_dir)
+
+
+def get_farm_output_mp4_path_from_folder(render_dir: str) -> Path:
+    render_dir = Path(render_dir)
     shot_name = render_dir.parent.name
 
     # 070_0040_A.lighting-101-136.mp4 #farm always does .lighting not .comp
