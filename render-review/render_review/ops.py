@@ -257,6 +257,28 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
+    @staticmethod
+    def delayed_setup_review_workspace():
+        """This function can be used as a bpy.app.timer.
+        It is necessary to delay certain UI changing operations that rely 
+        on previous UI changing operations, because Blender."""
+
+        context = bpy.context
+
+        for window in context.window_manager.windows:
+            screen = window.screen
+
+            for area in screen.areas:
+                # Change video editing workspace media browser to image editor.
+                if area.type == "FILE_BROWSER":
+                    area.type = "IMAGE_EDITOR"
+
+                # Disable filepath overlay on the strips in the VSE.
+                if area.spaces.active.type == 'SEQUENCE_EDITOR':
+                    area.spaces.active.timeline_overlay.show_strip_source = False
+                    area.spaces.active.timeline_overlay.show_strip_duration = False
+
+
     def execute(self, context: bpy.types.Context) -> Set[str]:
 
         # Remove non video editing workspaces.
@@ -276,13 +298,12 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
         else:
             context.window.workspace = bpy.data.workspaces["Video Editing"]
 
-        # Change video editing workspace media browser to image editor.
-        for window in context.window_manager.windows:
-            screen = window.screen
+        # Switch File Browser to Image Editor (needs to be done with a delay).
+        bpy.app.timers.register(self.delayed_setup_review_workspace, first_interval=0.1)
 
-            for area in screen.areas:
-                if area.type == "FILE_BROWSER":
-                    area.type = "IMAGE_EDITOR"
+        # Pre-fill render directory with farm output shots directory.
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
+        context.scene.rr.render_dir = addon_prefs.farm_output_dir + "/shots"
 
         # Init sqe.
         if not context.scene.sequence_editor:
