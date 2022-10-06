@@ -22,6 +22,7 @@ import sys
 import subprocess
 import shutil
 from pathlib import Path
+from datetime import datetime
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
 
 import bpy
@@ -148,17 +149,17 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 context.scene.sequence_editor_create()
 
             # Load preview sequences in vse.
-            for idx, directory in enumerate(output_dirs):
+            for idx, output_dir in enumerate(output_dirs):
                 # Compose frames found text.
-                frames_found_text = opsdata.gen_frames_found_text(directory)
+                frames_found_text = opsdata.gen_frames_found_text(output_dir)
 
-                if context.scene.rr.use_video and directory == output_dirs[-1]:
-                    video_path = opsdata.get_farm_output_mp4_path_from_folder(directory)
+                if context.scene.rr.use_video and output_dir == output_dirs[-1]:
+                    video_path = opsdata.get_farm_output_mp4_path_from_folder(output_dir)
                     if not video_path:
-                        logger.warning("%s found no .mp4 preview sequence", directory.name)
-                        video_path = Path(directory)
+                        logger.warning("%s found no .mp4 preview sequence", output_dir.name)
+                        video_path = Path(output_dir)
                     strip = context.scene.sequence_editor.sequences.new_movie(
-                        name = directory.name,
+                        name = output_dir.name,
                         filepath = video_path.as_posix(),
                         channel = idx + 1,
                         frame_start = prev_frame_end,
@@ -166,8 +167,11 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                     )
                     # bpy.ops.wm.save_mainfile()
                 else:
-                    strip = self.load_strip_from_img_seq(context, directory, idx, prev_frame_end)
+                    strip = self.load_strip_from_img_seq(context, output_dir, idx, prev_frame_end)
     
+                shot_datetime = datetime.fromtimestamp(output_dir.stat().st_mtime)
+                time_str = shot_datetime.strftime("%B %d, %I:%M")
+                strip.name = f"{shot_folder.name} ({time_str})"
                 strip.rr.shot_name = shot_folder.name
                 strip.rr.is_render = True
                 strip.rr.frames_found_text = frames_found_text
@@ -201,7 +205,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
                 else:
                     logger.error(
-                        "Unable to perform kitsu operations. No active project or no authorized"
+                        "Unable to perform kitsu operations. No active project or not authorized"
                     )
 
 
