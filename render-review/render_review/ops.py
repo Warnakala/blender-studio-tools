@@ -336,7 +336,6 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         image_editor = opsdata.get_image_editor(context)
         return bool(
             active_strip
-            and active_strip.type == "IMAGE"
             and active_strip.rr.is_render
             and image_editor
         )
@@ -426,7 +425,6 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
         return bool(
             addon_prefs.is_shot_frames_valid
             and active_strip
-            and active_strip.type == "IMAGE"
             and active_strip.rr.is_render
         )
 
@@ -675,7 +673,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
 
         active_strip = context.scene.sequence_editor.active_strip
         return bool(
-            active_strip and active_strip.type == "IMAGE" and active_strip.rr.is_render
+            active_strip and active_strip.rr.is_render
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
