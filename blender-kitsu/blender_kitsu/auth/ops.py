@@ -117,6 +117,12 @@ class KITSU_OT_session_end(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def auto_login_on_file_open():
+    context = bpy.context
+    session = prefs.session_get(context)
+    if not session.is_auth():
+        bpy.ops.kitsu.session_start()
+
 # ---------REGISTER ----------.
 
 classes = [
@@ -128,6 +134,10 @@ classes = [
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    # Note: Since this timer function does not repeat 
+    # (because it doesn't return a value)
+    # it automatically un-registers after it runs.
+    bpy.app.timers.register(auto_login_on_file_open, first_interval=0.2)
 
 
 def unregister():
