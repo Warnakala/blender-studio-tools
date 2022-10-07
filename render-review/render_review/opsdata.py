@@ -133,7 +133,7 @@ def get_shot_dot_task_type(path: Path):
 
 
 def get_farm_output_mp4_path(strip: bpy.types.Sequence) -> Path:
-    render_dir = bpy.path.abspath(strip.directory)
+    render_dir = get_strip_folder(strip)
     return get_farm_output_mp4_path_from_folder(render_dir)
 
 

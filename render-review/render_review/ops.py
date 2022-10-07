@@ -233,7 +233,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         context.scene.frame_current = context.scene.frame_start
 
         # Setup color management.
-        opsdata.setup_color_management(bpy.context)
+        opsdata.setup_color_management(context)
 
         # scan for approved renders, will modify strip.rr.is_approved prop
         # which controls the custom gpu overlay
@@ -344,7 +344,7 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         active_strip = context.scene.sequence_editor.active_strip
         image_editor = opsdata.get_image_editor(context)
-        output_dir = Path(bpy.path.abspath(active_strip.directory))
+        output_dir = opsdata.get_strip_folder(active_strip)
 
         # Find exr sequence.
         exr_seq = [
@@ -431,9 +431,8 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         active_strip = context.scene.sequence_editor.active_strip
-        strip_dir = Path(bpy.path.abspath(active_strip.directory))
+        strip_dir = opsdata.get_strip_folder(active_strip)
         shot_frames_dir = opsdata.get_shot_frames_dir(active_strip)
         shot_frames_backup_path = opsdata.get_shot_frames_backup_path(active_strip)
         metadata_path = opsdata.get_shot_frames_metadata_path(active_strip)
@@ -502,7 +501,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         active_strip = context.scene.sequence_editor.active_strip
-        strip_dir = Path(bpy.path.abspath(active_strip.directory))
+        strip_dir = opsdata.get_strip_folder(active_strip)
         shot_frames_dir = opsdata.get_shot_frames_dir(active_strip)
 
         layout.separator()
@@ -682,8 +681,8 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         active_strip = context.scene.sequence_editor.active_strip
 
-        render_dir = Path(bpy.path.abspath(active_strip.directory))
-        shot_previews_dir = Path(opsdata.get_shot_previews_path(active_strip))
+        render_dir = opsdata.get_strip_folder(active_strip)
+        shot_previews_dir = opsdata.get_shot_previews_path(active_strip)
         shot_name = shot_previews_dir.parent.name
         metadata_path = shot_previews_dir / "metadata.json"
 
@@ -790,8 +789,8 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=width)
 
     def get_edit_filepath(self, strip: bpy.types.Sequence) -> Path:
-        render_dir = Path(bpy.path.abspath(strip.directory))
-        shot_previews_dir = Path(opsdata.get_shot_previews_path(strip))
+        render_dir = opsdata.get_strip_folder(strip)
+        shot_previews_dir = opsdata.get_shot_previews_path(strip)
 
         # Find latest edit version.
         existing_files: List[Path] = []
