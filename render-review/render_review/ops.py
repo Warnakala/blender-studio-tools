@@ -746,6 +746,9 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         )
         logger.info("Updated metadata in: %s", metadata_path.as_posix())
 
+        # Scan for approved renders.
+        opsdata.update_sequence_statuses(context)
+
         # Log.
         self.report(
             {"INFO"},
