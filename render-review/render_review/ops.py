@@ -435,7 +435,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         active_strip = context.scene.sequence_editor.active_strip
 
-        if not active_strip.is_pushed_to_edit:
+        if not active_strip.rr.is_pushed_to_edit:
             bpy.ops.rr.sqe_push_to_edit()
 
         strip_dir = opsdata.get_strip_folder(active_strip)
