@@ -326,7 +326,7 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
     bl_idname = "rr.sqe_inspect_exr_sequence"
     bl_label = "Inspect EXR"
     bl_description = (
-        "If available loads EXR sequence for selected sequence strip in image editor"
+        "Loads EXR sequence for selected sequence strip in image editor, if it exists"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -334,11 +334,17 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
     def poll(cls, context: bpy.types.Context) -> bool:
         active_strip = context.scene.sequence_editor.active_strip
         image_editor = opsdata.get_image_editor(context)
-        return bool(
-            active_strip
-            and active_strip.rr.is_render
-            and image_editor
-        )
+        
+        if not (active_strip
+                and active_strip.rr.is_render
+                and image_editor):
+            return False
+
+        output_dir = opsdata.get_strip_folder(active_strip)
+        # Find exr sequence.
+        for f in output_dir.iterdir():
+            if f.is_file() and f.suffix == ".exr":
+                return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         active_strip = context.scene.sequence_editor.active_strip
@@ -349,9 +355,6 @@ class RR_OT_sqe_inspect_exr_sequence(bpy.types.Operator):
         exr_seq = [
             f for f in output_dir.iterdir() if f.is_file() and f.suffix == ".exr"
         ]
-        if not exr_seq:
-            self.report({"ERROR"}, f"Found no exr sequence in: {output_dir.as_posix()}")
-            return {"CANCELLED"}
 
         exr_seq.sort(key=lambda p: p.name)
         exr_seq_frame_start = int(exr_seq[0].stem)
@@ -426,6 +429,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
             addon_prefs.is_shot_frames_valid
             and active_strip
             and active_strip.rr.is_render
+            and not active_strip.rr.is_approved
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -673,7 +677,9 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
 
         active_strip = context.scene.sequence_editor.active_strip
         return bool(
-            active_strip and active_strip.rr.is_render
+            active_strip
+            and active_strip.rr.is_render
+            and not active_strip.rr.is_pushed_to_edit
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
