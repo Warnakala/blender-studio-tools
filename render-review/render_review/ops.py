@@ -413,7 +413,7 @@ class RR_OT_sqe_clear_exr_inspect(bpy.types.Operator):
 
 class RR_OT_sqe_approve_render(bpy.types.Operator):
     bl_idname = "rr.sqe_approve_render"
-    bl_label = "Approve Render"
+    bl_label = "Push To Edit & Approve Render"
     bl_description = (
         "Copies the selected strip render from the farm_output to the shot_frames directory. "
         "Existing render in shot_frames will be renamed for extra backup"
@@ -434,6 +434,10 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         active_strip = context.scene.sequence_editor.active_strip
+
+        if not active_strip.is_pushed_to_edit:
+            bpy.ops.rr.sqe_push_to_edit()
+
         strip_dir = opsdata.get_strip_folder(active_strip)
         shot_frames_dir = opsdata.get_shot_frames_dir(active_strip)
         shot_frames_backup_path = opsdata.get_shot_frames_backup_path(active_strip)
@@ -662,7 +666,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
     """
 
     bl_idname = "rr.sqe_push_to_edit"
-    bl_label = "Push to edit"
+    bl_label = "Push To Edit"
     bl_description = (
         "Copies .mp4 file of current sequence strip to the shot preview directory with "
         "auto version incrementation. "

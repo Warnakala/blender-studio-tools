@@ -126,7 +126,11 @@ class RR_PT_render_review(bpy.types.Panel):
 
             # Approve render & udpate approved.
             row = box.row(align=True)
-            row.operator(RR_OT_sqe_approve_render.bl_idname, icon="CHECKMARK")
+
+            text = "Push To Edit & Approve Render"
+            if active_strip.rr.is_pushed_to_edit:
+                text = "Approve Render"
+            row.operator(RR_OT_sqe_approve_render.bl_idname, icon="CHECKMARK", text=text)
             row.operator(
                 RR_OT_sqe_update_sequence_statuses.bl_idname, text="", icon="FILE_REFRESH"
             )
