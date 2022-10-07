@@ -257,7 +257,7 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
     bl_idname = "rr.setup_review_workspace"
     bl_label = "Setup Review Workspace"
     bl_description = (
-        "Makes Video Editing Workspace active and deletes all other workspaces."
+        "Makes Video Editing Workspace active and deletes all other workspaces. "
         "Replaces File Browser area with Image Editor"
     )
     bl_options = {"REGISTER", "UNDO"}
@@ -413,7 +413,7 @@ class RR_OT_sqe_approve_render(bpy.types.Operator):
     bl_idname = "rr.sqe_approve_render"
     bl_label = "Approve Render"
     bl_description = (
-        "Copies the selected strip render from the farm_output to the shot_frames directory."
+        "Copies the selected strip render from the farm_output to the shot_frames directory. "
         "Existing render in shot_frames will be renamed for extra backup"
     )
     bl_options = {"REGISTER", "UNDO"}
@@ -662,8 +662,8 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
     bl_idname = "rr.sqe_push_to_edit"
     bl_label = "Push to edit"
     bl_description = (
-        "Copies .mp4 file of current sequence strip to the shot preview directory with"
-        "auto version incrementation."
+        "Copies .mp4 file of current sequence strip to the shot preview directory with "
+        "auto version incrementation. "
         "Creates .mp4 with ffmpeg if not existent yet"
     )
 
@@ -687,7 +687,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
         metadata_path = shot_previews_dir / "metadata.json"
 
         # -------------GET MP4 OR CREATE WITH FFMPEG ---------------
-        # try to get render_mp4_path will throw error if no jpg files are available
+        # Trying to get render_mp4_path will throw error if no jpg files are available.
         try:
             mp4_path = Path(opsdata.get_farm_output_mp4_path(active_strip))
         except NoImageSequenceAvailableException:
@@ -697,7 +697,7 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
-        # If mp4 path does not exists use ffmpeg to create preview file.
+        # If mp4 path does not exist, use ffmpeg to create preview file.
         if not mp4_path.exists():
             preview_files = opsdata.get_best_preview_sequence(render_dir)
             fffmpeg_command = f"ffmpeg -start_number {int(preview_files[0].stem)} -framerate {vars.FPS} -i {render_dir.as_posix()}/%06d{preview_files[0].suffix} -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p {mp4_path.as_posix()}"
