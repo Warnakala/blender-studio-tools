@@ -193,11 +193,12 @@ class TaskLayer:
                 # Allow task layers to add objects that didn't previously exist in target coll.
                 tgt_ob = src_ob
                 ref_map = get_id_reference_map()
-                for dependency in ref_map[src_ob]:
-                    if type(dependency) == bpy.types.Object:
-                        tgt_dependency = transfer_mapping.object_map.get(dependency)
-                        if tgt_dependency:
-                            dependency.user_remap(tgt_dependency)
+                if src_ob in ref_map:
+                    for dependency in ref_map[src_ob]:
+                        if type(dependency) == bpy.types.Object:
+                            tgt_dependency = transfer_mapping.object_map.get(dependency)
+                            if tgt_dependency:
+                                dependency.user_remap(tgt_dependency)
             tgt_coll.objects.link(tgt_ob)
 
         # Do the same recursively for child collections.
