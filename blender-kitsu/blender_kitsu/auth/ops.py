@@ -137,6 +137,8 @@ def register():
     # Note: Since this timer function does not repeat 
     # (because it doesn't return a value)
     # it automatically un-registers after it runs.
+    # FIXME: XXX This makes Blender hang if there is no Internet connectivity
+    # TODO: Rewrite this, so the 'auto' login happens out of the main thread
     bpy.app.timers.register(auto_login_on_file_open, first_interval=0.2)
 
 
