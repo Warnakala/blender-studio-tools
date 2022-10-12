@@ -85,7 +85,7 @@ class Session:
     def _login(self) -> None:
         session_dict = gazu.log_in(self._email, self._passwd)
         self._data.update(session_dict)
-        logger.info("Login was succesfull. Session started with user %s", self.email)
+        logger.info("Login was successful. Session started with user %s", self.email)
 
     def is_auth(self) -> bool:
         return self._data.login
