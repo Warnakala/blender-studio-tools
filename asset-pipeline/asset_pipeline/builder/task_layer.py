@@ -144,13 +144,7 @@ class TaskLayer:
         # Empty target collections that end in ".FULLY_OWNED".
         fully_owned_colls = {c for c in transfer_mapping.target_coll.children_recursive if FULLY_OWNED_SUFFIX in c.name}
         for fully_owned_coll in fully_owned_colls:
-            if cls.task_suffix and cls.task_suffix in fully_owned_coll.name:
-                for ob in fully_owned_coll.objects[:]:
-                    fully_owned_coll.objects.unlink(ob)
-                    # The object mapping also needs to be removed (this should be more effective than purging, I think)
-                    for key in list(transfer_mapping.object_map.keys()):
-                        if transfer_mapping.object_map[key] == ob:
-                            del transfer_mapping.object_map[key]
+            cls.recursive_clear_fully_owned_target_coll(fully_owned_coll, transfer_mapping)
 
         for src_coll in cls.get_task_collections(source_root_coll):
             cls.transfer_collection_objects(transfer_mapping, src_coll, source_root_coll)
@@ -159,6 +153,28 @@ class TaskLayer:
         for target_coll in transfer_mapping.target_coll.children:
             if cls.task_suffix and cls.task_suffix in target_coll.name:
                 unlink_collections_recursive(target_coll, transfer_mapping.no_match_target_colls)
+
+    @classmethod
+    def recursive_clear_fully_owned_target_coll(cls, coll, transfer_mapping):
+        if not cls.task_suffix or cls.task_suffix not in coll.name:
+            return
+        
+        for ob in coll.objects[:]:
+            coll.objects.unlink(ob)
+            # The object mapping also needs to be removed (this should be more effective than purging, I think)
+            for key in list(transfer_mapping.object_map.keys()):
+                if transfer_mapping.object_map[key] == ob:
+                    del transfer_mapping._object_map[key]
+
+        for subcoll in coll.children[:]:
+            coll.children.unlink(subcoll)
+            # # The collection mapping also needs to be removed.
+            for key in list(transfer_mapping.collection_map.keys()):
+                if transfer_mapping.collection_map[key] == subcoll:
+                    del transfer_mapping._collection_map[key]
+            cls.recursive_clear_fully_owned_target_coll(subcoll, transfer_mapping)
+            bpy.data.collections.remove(subcoll)    # Just to free up the name, so we avoid a .001 suffix when the target collection is (re-)created later.
+
 
     @classmethod
     def transfer_collection_objects(cls, 
@@ -177,6 +193,8 @@ class TaskLayer:
             src_suffix = transfer_mapping.source_coll.bsp_asset.transfer_suffix
             tgt_suffix = transfer_mapping.target_coll.bsp_asset.transfer_suffix
             tgt_coll = bpy.data.collections.new(src_coll.name.replace(src_suffix, tgt_suffix))
+            tgt_coll.hide_viewport = src_coll.hide_viewport
+            tgt_coll.hide_render = src_coll.hide_render
             transfer_mapping._collection_map[src_coll] = tgt_coll
             tgt_parent = transfer_mapping.collection_map.get(src_parent_coll)
             assert tgt_parent, "The corresponding target parent collection should've been created in the previous recursion: " + src_coll.name
