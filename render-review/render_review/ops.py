@@ -131,6 +131,9 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         prev_frame_end: int = 1
 
         for shot_folder in shot_folders:
+            if addon_prefs.shot_name_filter and addon_prefs.shot_name_filter not in shot_folder.name:
+                # If there is a filter specified, and the shot doesn't match, skip it.
+                continue
             context.scene.timeline_markers.new(shot_folder.name, frame=prev_frame_end)
             logger.info("Processing %s", shot_folder.name)
 

@@ -93,6 +93,12 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         subtype="DIR_PATH",
     )
 
+    shot_name_filter: bpy.props.StringProperty(  # type: ignore
+        name="Shot Name Filter",
+        description="Shot name must include this string, otherwise it will be ignored",
+        default="",
+    )
+
     enable_blender_kitsu: bpy.props.BoolProperty(
         name="Enable Blender Kitsu",
         description="This checkbox controls if render_review should try to use the blender_kitsu addon to extend its feature sets",
@@ -146,6 +152,9 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
                 text="In order to use a relative path the current file needs to be saved.",
                 icon="ERROR",
             )
+
+        box.separator()
+        box.row().prop(self, "shot_name_filter")
 
         # Enable blender kitsu.
         icon = "CHECKBOX_DEHLT"
