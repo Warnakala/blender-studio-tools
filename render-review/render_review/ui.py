@@ -49,7 +49,6 @@ class RR_PT_render_review(bpy.types.Panel):
     def draw(self, context: bpy.types.Context) -> None:
 
         addon_prefs = prefs.addon_prefs_get(context)
-        active_strip = context.scene.sequence_editor.active_strip
 
         # Create box.
         layout = self.layout
@@ -91,6 +90,10 @@ class RR_PT_render_review(bpy.types.Panel):
                 row = box.row(align=True)
                 row.label(text="Kitsu enabled but no active project", icon="ERROR")
 
+        sqe = context.scene.sequence_editor
+        if not sqe:
+            return
+        active_strip = sqe.active_strip
         if active_strip and active_strip.rr.is_render:
             # Create box.
             layout = self.layout

@@ -96,8 +96,9 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
+        sqe = context.scene.sequence_editor
         return bool(
-            prefs.session_auth(context) or context.scene.sequence_editor.sequences_all
+            prefs.session_auth(context) or (sqe and sqe.sequences_all)
         )
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -684,6 +685,11 @@ class KITSU_PT_sqe_general_tools(bpy.types.Panel):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         selshots = context.selected_sequences
+
+        sqe = context.scene.sequence_editor
+        if not sqe:
+            return False
+
         if not selshots:
             selshots = context.scene.sequence_editor.sequences_all
         movie_strips = [s for s in selshots if s.type == "MOVIE"]

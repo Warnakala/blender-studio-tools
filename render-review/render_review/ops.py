@@ -113,6 +113,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
             return strip
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        # Clear existing strips and markers
+        context.scene.sequence_editor_clear()
+        context.scene.timeline_markers.clear()
+
         addon_prefs = prefs.addon_prefs_get(context)
         render_dir = Path(context.scene.rr.render_dir_path)
         shot_folders: List[Path] = []

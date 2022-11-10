@@ -94,7 +94,10 @@ def draw_line_in_strip(strip_coords: Float4, height_factor: float, color: Float4
 def draw_callback_px():
 
     context = bpy.context
-    strips = context.scene.sequence_editor.sequences_all
+    sqe = context.scene.sequence_editor
+    if not sqe:
+        return
+    strips = sqe.sequences_all
 
     for strip in strips:
         # Get corners of the strip rectangle in terms of the grid's frames and channels (virtual, not px).
