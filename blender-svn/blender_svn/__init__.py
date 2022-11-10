@@ -67,6 +67,8 @@ if _need_reload:
 
 
 def register() -> None:
+    if bpy.app.background:
+        return
     for m in modules:
         if hasattr(m, 'registry'):
             for c in m.registry:
@@ -75,6 +77,8 @@ def register() -> None:
             m.register()
 
 def unregister() -> None:
+    if bpy.app.background:
+        return
     for m in modules:
         if hasattr(m, 'registry'):
             for c in m.registry:
