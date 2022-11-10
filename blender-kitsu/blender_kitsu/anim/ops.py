@@ -40,7 +40,6 @@ from blender_kitsu.types import (
     TaskType,
 )
 from blender_kitsu.anim import opsdata
-from bpy.types import Scene
 
 logger = LoggerFactory.getLogger()
 
@@ -49,10 +48,10 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
     bl_idname = "kitsu.anim_create_playblast"
     bl_label = "Create Playblast"
     bl_description = (
-        "Creates a openGl render of the window in which the operator was triggered. "
+        "Creates an openGl render of the window in which the operator was triggered. "
         "Saves the set version to disk and uploads it to kitsu with the specified "
         "comment and task type. Overrides some render settings during export. "
-        "Opens webbrowser or vse after playblast if set in addon preferences"
+        "Opens web browser or VSE after playblast if set in addon preferences"
     )
 
     comment: bpy.props.StringProperty(
@@ -78,7 +77,7 @@ class KITSU_OT_anim_create_playblast(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
 
         if not self.task_status:
-            self.report({"ERROR"}, "Failed to crate playblast. Missing task status")
+            self.report({"ERROR"}, "Failed to create playblast. Missing task status")
             return {"CANCELLED"}
 
         shot_active = cache.shot_active_get()
@@ -474,8 +473,8 @@ class KITSU_OT_anim_pull_frame_range(bpy.types.Operator):
     bl_label = "Update Frame Range"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
-        "Pulls frame range of active shot from server "
-        "and sets the one of current scene to it"
+        "Pulls frame range of active shot from the server "
+        "and set the current scene's frame range to it"
     )
 
     @classmethod
@@ -544,7 +543,7 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
     bl_label = "Quick Duplicate"
     bl_description = (
         "Duplicate the active collection and add it to the "
-        "output collection of the current scene "
+        "output collection of the current scene"
     )
 
     @classmethod
@@ -611,7 +610,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
     bl_label = "Check Action Names "
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
-        "Inspects all action names of .blend file and checks "
+        "Inspect all action names of .blend file and check "
         "if they follow the Blender Studio naming convention"
     )
     wrong: List[Tuple[bpy.types.Action, str]] = []
@@ -745,7 +744,7 @@ class KITSU_OT_anim_update_output_coll(bpy.types.Operator):
     bl_label = "Update Output Collection"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
-        "Scans scene for any collections that are not in output collection yet"
+        "Scans scene for any collections that are not yet in the output collection"
     )
 
     @classmethod
@@ -803,9 +802,9 @@ def load_post_handler_init_version_model(dummy: Any) -> None:
 @persistent
 def load_post_handler_check_frame_range(dummy: Any) -> None:
     """
-    Compares current scenes frame range with the active shot one on kitsu.
-    If mismatch sets kitsu_error.frame_range -> True. This will enable
-    a warning in the Animation Tools Tab UI
+    Compare the current scene's frame range with that of the active shot on kitsu.
+    If there's a mismatch, set kitsu_error.frame_range -> True. This will enable
+    a warning in the Animation Tools Tab UI.
     """
     active_shot = cache.shot_active_get()
     if not active_shot:
@@ -839,7 +838,7 @@ def load_post_handler_check_frame_range(dummy: Any) -> None:
 def save_pre_handler_clean_overrides(dummy: Any) -> None:
     """
     Removes some Library Override properties that could be accidentally
-    created and could cause problems.
+    created and cause problems.
     """
     for o in bpy.data.objects:
         if not o.override_library:
