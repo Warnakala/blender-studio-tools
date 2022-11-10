@@ -28,10 +28,12 @@ from typing import Set, Union, Optional, List, Dict, Any, Tuple
 import bpy
 
 from render_review import vars, prefs, opsdata, util, kitsu
+if prefs.is_blender_kitsu_enabled():
+    from blender_kitsu import types as kitsu_types
+    from blender_kitsu import cache
 
 from render_review.exception import NoImageSequenceAvailableException
 from render_review.log import LoggerFactory
-import render_review.kitsu
 
 logger = LoggerFactory.getLogger(name=__name__)
 
@@ -161,8 +163,8 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 # Compose frames found text.
                 frames_found_text = opsdata.gen_frames_found_text(output_dir)
 
-                if context.scene.rr.use_video and \
-                    not (output_dir != output_dirs[-1] and context.scene.rr.use_video_latest_only):
+                if addon_prefs.use_video and \
+                    not (output_dir != output_dirs[-1] and addon_prefs.use_video_latest_only):
                     video_path = opsdata.get_farm_output_mp4_path_from_folder(output_dir)
                     if not video_path:
                         logger.warning("%s found no .mp4 preview sequence", output_dir.name)
@@ -224,10 +226,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         if (
                 addon_prefs.enable_blender_kitsu
                 and prefs.is_blender_kitsu_enabled()
-        ) and render_review.kitsu.is_active_project():
+        ) and kitsu.is_active_project():
             # TODO: make the resolution fetching a bit more robust
             # Assume resolution is a string '<str:width>x<str:height>'
-            project = render_review.kitsu.get_project()
+            project = kitsu.get_project()
             resolution = project.resolution.split('x')
             render_resolution_x = int(resolution[0])
             render_resolution_y = int(resolution[1])
@@ -272,6 +274,12 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
+    sequence: bpy.props.EnumProperty(
+        name = "Sequence",
+        description = "Select which sequence to review",
+        items = cache.get_sequences_enum_list if prefs.is_blender_kitsu_enabled() else []
+    )
+
     @staticmethod
     def delayed_setup_review_workspace():
         """This function can be used as a bpy.app.timer.
@@ -296,9 +304,29 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
                     if area.spaces.active.view_type == 'PREVIEW':
                         area.spaces.active.show_overlays = False
 
+    def invoke(self, context, _event):
+        if not prefs.is_blender_kitsu_enabled() or \
+            not prefs.addon_prefs_get(context).enable_blender_kitsu or \
+            not kitsu.is_auth_and_project():
+            return self.execute(context)
+        
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        addon_prefs = prefs.addon_prefs_get(context)
+
+        layout.prop(self, 'sequence')
+        row = layout.row()
+        row.prop(addon_prefs, 'use_video')
+        if addon_prefs.use_video:
+            row.prop(addon_prefs, 'use_video_latest_only')
+
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         # Remove non video editing workspaces.
         for ws in bpy.data.workspaces:
             if ws.name != "Video Editing":
@@ -331,6 +359,11 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
         opsdata.setup_color_management(bpy.context)
 
         self.report({"INFO"}, "Setup Render Review Workspace")
+
+        if self.sequence:
+            cache.sequence_active_set_by_id(context, self.sequence)
+            context.scene.rr.render_dir += "/" + cache.sequence_active_get().name
+            bpy.ops.rr.sqe_create_review_session()
 
         return {"FINISHED"}
 

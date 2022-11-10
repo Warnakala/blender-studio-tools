@@ -106,6 +106,16 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         default=False,
     )
 
+    use_video: bpy.props.BoolProperty(
+        name="Use Video", 
+        description="Load video versions of renders rather than image sequences for faster playback"
+    )
+    use_video_latest_only: bpy.props.BoolProperty(
+        default=True, 
+        name="Latest Only", 
+        description="Only load video files for the latest versions by default, to avoid running out of memory and crashing"
+    )
+
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         box = layout.box()

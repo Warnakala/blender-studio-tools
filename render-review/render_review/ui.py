@@ -75,9 +75,9 @@ class RR_PT_render_review(bpy.types.Panel):
         row = box.row(align=True)
         row.operator(RR_OT_sqe_create_review_session.bl_idname, text=text, icon="PLAY")
         row = box.row(align=True)
-        row.prop(context.scene.rr, 'use_video')
-        if context.scene.rr.use_video:
-            row.prop(context.scene.rr, 'use_video_latest_only')
+        row.prop(addon_prefs, 'use_video')
+        if addon_prefs.use_video:
+            row.prop(addon_prefs, 'use_video_latest_only')
 
         # Warning if kitsu on but not logged in.
         if addon_prefs.enable_blender_kitsu and prefs.is_blender_kitsu_enabled():
