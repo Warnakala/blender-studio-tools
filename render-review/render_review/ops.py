@@ -245,6 +245,9 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         # scan for approved renders, will modify strip.rr.is_approved prop
         # which controls the custom gpu overlay
         opsdata.update_sequence_statuses(context)
+
+        bpy.ops.sequencer.select_all(action='DESELECT')
+
         util.redraw_ui()
 
         self.report(
@@ -289,6 +292,9 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
                 if area.spaces.active.type == 'SEQUENCE_EDITOR':
                     area.spaces.active.timeline_overlay.show_strip_source = False
                     area.spaces.active.timeline_overlay.show_strip_duration = False
+                
+                    if area.spaces.active.view_type == 'PREVIEW':
+                        area.spaces.active.show_overlays = False
 
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
