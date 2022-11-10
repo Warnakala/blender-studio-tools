@@ -150,6 +150,11 @@ class RR_PT_render_review(bpy.types.Panel):
             ).filepath = shot_previews_dir
 
 
+            if prefs.is_blender_kitsu_enabled():
+                # Push strip to Kitsu.
+                box.row().operator('kitsu.sqe_push_shot', icon='URL')
+
+
 def RR_topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:
     layout = self.layout
     op = layout.operator(RR_OT_setup_review_workspace.bl_idname, text="Render Review")

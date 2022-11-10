@@ -36,6 +36,8 @@ from blender_kitsu.types import (
     Sequence,
     Shot,
     TaskType,
+    TaskStatus,
+    Task,
 )
 
 logger = LoggerFactory.getLogger()
@@ -1466,6 +1468,122 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
             context.scene.use_preview_range = use_preview_range
 
 
+class KITSU_OT_sqe_push_shot(bpy.types.Operator):
+    bl_idname = "kitsu.sqe_push_shot"
+    bl_label = "Push Shot to Kitsu"
+    bl_description = (
+        "Pushes the active strip to Kitsu"
+    )
+
+    comment: bpy.props.StringProperty(
+        name="Comment",
+        description="Comment that will be appended to this video on Kitsu",
+        default="",
+    )
+    task_type: bpy.props.EnumProperty(
+        name = "Task Type",
+        description = "Which task this video should be added to",
+        items = cache.get_task_types_enum_for_current_context
+    )
+    task_status: bpy.props.EnumProperty(
+        name = "Task Status",
+        description = "What to set the task's status to",
+        items = cache.get_all_task_statuses_enum
+    )
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        active_strip = context.scene.sequence_editor.active_strip
+        if not hasattr(active_strip, 'filepath'):
+            return False
+
+        return bool(
+            prefs.session_auth(context)
+        )
+
+    def invoke(self, context, _event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        layout.prop(self, 'task_type')
+        layout.prop(self, 'task_status')
+        layout.prop(self, 'comment')
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        active_strip = context.scene.sequence_editor.active_strip
+
+        # Find the metastrip of this strip that contains Kitsu information
+        # about what sequence and shot this strip belongs to.
+        shot_name = active_strip.name.split(".")[0]
+        metastrip = context.scene.sequence_editor.sequences.get(shot_name)
+        if not metastrip:
+            # The metastrip should've been created by sqe_create_review_session, 
+            # if the Kitsu integration is enabled in the add-on preferences, 
+            # the Kitsu add-on is enabled, and valid Kitsu credentials were entered.
+            self.report({"ERROR"}, f"Could not find Kitsu metastrip: {shot_name}.")
+            return {"CANCELLED"}
+
+        if not self.task_status:
+            self.report({"ERROR"}, "Failed to create playblast. Missing task status")
+            return {"CANCELLED"}
+
+        # Set the Kitsu sequence and shot information in the context
+        cache.sequence_active_set_by_id(context, metastrip.kitsu.sequence_id)
+        cache.shot_active_set_by_id(context, metastrip.kitsu.shot_id)
+
+        # Save playblast task status id for next time.
+        context.scene.kitsu.playblast_task_status_id = self.task_status
+
+        # Upload render
+        self._upload_render(context, Path(bpy.path.abspath(active_strip.filepath)))
+
+        self.report({"INFO"}, f"Uploaded render for {shot_name}")
+        return {'FINISHED'}
+
+    def _upload_render(self, context: bpy.types.Context, filepath: Path) -> None:
+        # Get shot.
+        shot = cache.shot_active_get()
+
+        # Get task status and type.
+        task_status = TaskStatus.by_id(self.task_status)
+        task_type = TaskType.by_id(self.task_type)
+
+        if not task_type:
+            raise RuntimeError(
+                f"Failed to upload playblast. Task type: {self.task_type} was not found"
+            )
+
+        # Find / get latest task
+        task = Task.by_name(shot, task_type)
+        if not task:
+            # An Entity on the server can have 0 tasks even tough task types exist.
+            # We have to create a task first before being able to upload a thumbnail.
+            task = Task.new_task(shot, task_type, task_status=task_status)
+
+        # Create a comment
+        comment_text = self._gen_comment_text(context, shot)
+        comment = task.add_comment(
+            task_status,
+            comment=comment_text,
+        )
+
+        # Add_preview_to_comment
+        task.add_preview_to_comment(comment, filepath.as_posix())
+
+        # Preview.set_main_preview()
+        logger.info(f"Uploaded render for shot: {shot.name} under: {task_type.name}")
+
+    def _gen_comment_text(self, context: bpy.types.Context, shot: Shot) -> str:
+        header = f"Render {shot.name}: {context.scene.kitsu.playblast_version}"
+        if self.comment:
+            return header + f"\n\n{self.comment}"
+        return header
+
+
 class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
     bl_idname = "kitsu.sqe_debug_duplicates"
     bl_label = "Debug Duplicates"
@@ -2304,6 +2422,7 @@ classes = [
     KITSU_OT_sqe_set_sqe_render_task_type,
     KITSU_OT_sqe_push_thumbnail,
     KITSU_OT_sqe_push_render,
+    KITSU_OT_sqe_push_shot,
     KITSU_OT_sqe_push_del_shot,
     KITSU_OT_sqe_pull_shot_meta,
     KITSU_OT_sqe_multi_edit_strip,
