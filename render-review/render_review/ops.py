@@ -196,7 +196,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
                 if kitsu.is_auth_and_project():
 
-                    shot_name = shot_folder.name
+                    shot_name = shot_folder.name.split(".")[0]
                     sequence_name = shot_folder.parent.parent.name
 
                     # Create metastrip.
