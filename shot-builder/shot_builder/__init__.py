@@ -23,8 +23,9 @@ from shot_builder.connectors.kitsu import *
 from shot_builder.operators import *
 from shot_builder.properties import *
 import bpy
-import logging
-logging.basicConfig(level=logging.DEBUG)
+
+# import logging
+# logging.basicConfig(level=logging.DEBUG)
 
 
 bl_info = {
