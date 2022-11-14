@@ -313,15 +313,9 @@ def get_task_types_enum_for_current_context(
 
     items = []
     if context.scene.kitsu.category == "SHOTS":
-        shot_active = shot_active_get()
-        if not shot_active:
-            return []
         items = [(t.id, t.name, "") for t in TaskType.all_shot_task_types()]
 
     if context.scene.kitsu.category == "ASSETS":
-        asset_active = asset_active_get()
-        if not asset_active:
-            return []
         items = [(t.id, t.name, "") for t in TaskType.all_asset_task_types()]
 
     _task_types_enum_list.clear()
