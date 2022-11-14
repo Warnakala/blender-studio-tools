@@ -1565,10 +1565,9 @@ class KITSU_OT_sqe_push_shot(bpy.types.Operator):
             task = Task.new_task(shot, task_type, task_status=task_status)
 
         # Create a comment
-        comment_text = self._gen_comment_text(context, shot)
         comment = task.add_comment(
             task_status,
-            comment=comment_text,
+            comment=self.comment,
         )
 
         # Add_preview_to_comment
@@ -1576,12 +1575,6 @@ class KITSU_OT_sqe_push_shot(bpy.types.Operator):
 
         # Preview.set_main_preview()
         logger.info(f"Uploaded render for shot: {shot.name} under: {task_type.name}")
-
-    def _gen_comment_text(self, context: bpy.types.Context, shot: Shot) -> str:
-        header = f"Render {shot.name}: {context.scene.kitsu.playblast_version}"
-        if self.comment:
-            return header + f"\n\n{self.comment}"
-        return header
 
 
 class KITSU_OT_sqe_debug_duplicates(bpy.types.Operator):
