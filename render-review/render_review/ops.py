@@ -135,6 +135,9 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                 shot_name = shot_name,
             )
 
+            if not imported_strips:
+                continue
+
             # Query the strip that is the longest for metastrip and prev_frame_end.
             imported_strips.sort(key=lambda s: s.frame_final_duration)
             strip_longest = imported_strips[-1]
@@ -235,7 +238,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
     def import_shot_versions_as_strips(
         self, 
         context: bpy.types.Context, 
-        shot_version_folders: List[str], 
+        shot_version_folders: List[Path], 
         frame_start: int, 
         shot_name: str
     ) -> List[bpy.types.Sequence]:
@@ -243,7 +246,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         imported_strips: bpy.types.Sequence = []
 
         for idx, shot_folder in enumerate(shot_version_folders):
-            if addon_prefs.shot_name_filter and addon_prefs.shot_name_filter not in shot_folder.name:
+            if addon_prefs.shot_name_filter and addon_prefs.shot_name_filter not in shot_folder.parent.name:
                 # If there is a filter specified, and the shot doesn't match, skip it.
                 continue
             logger.info("Processing %s", shot_folder.name)
