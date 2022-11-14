@@ -344,9 +344,6 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
         else:
             context.window.workspace = bpy.data.workspaces["Video Editing"]
 
-        # Switch File Browser to Image Editor (needs to be done with a delay).
-        bpy.app.timers.register(self.delayed_setup_review_workspace, first_interval=0.1)
-
         # Pre-fill render directory with farm output shots directory.
         addon_prefs = prefs.addon_prefs_get(bpy.context)
         context.scene.rr.render_dir = addon_prefs.farm_output_dir + "/shots"
@@ -364,6 +361,9 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
             cache.sequence_active_set_by_id(context, self.sequence)
             context.scene.rr.render_dir += "/" + cache.sequence_active_get().name
             bpy.ops.rr.sqe_create_review_session()
+
+        # Switch File Browser to Image Editor (needs to be done with a delay).
+        bpy.app.timers.register(self.delayed_setup_review_workspace, first_interval=1)
 
         return {"FINISHED"}
 
