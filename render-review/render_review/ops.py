@@ -323,10 +323,13 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
+    def sequences_enum_items(self, context):
+        return [("None", "None", "None")] + cache.get_sequences_enum_list(self, context)
+
     sequence: bpy.props.EnumProperty(
         name = "Sequence",
         description = "Select which sequence to review",
-        items = cache.get_sequences_enum_list if prefs.is_blender_kitsu_enabled() else []
+        items = sequences_enum_items if prefs.is_blender_kitsu_enabled() else []
     )
 
     @staticmethod
@@ -369,10 +372,11 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
 
         layout.prop(self, 'sequence')
-        row = layout.row()
-        row.prop(addon_prefs, 'use_video')
-        if addon_prefs.use_video:
-            row.prop(addon_prefs, 'use_video_latest_only')
+        if self.sequence != 'None':
+            row = layout.row()
+            row.prop(addon_prefs, 'use_video')
+            if addon_prefs.use_video:
+                row.prop(addon_prefs, 'use_video_latest_only')
 
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -406,7 +410,7 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
 
         self.report({"INFO"}, "Setup Render Review Workspace")
 
-        if self.sequence:
+        if self.sequence and self.sequence != 'None':
             cache.sequence_active_set_by_id(context, self.sequence)
             context.scene.rr.render_dir += "/" + cache.sequence_active_get().name
             bpy.ops.rr.sqe_create_review_session()
