@@ -115,6 +115,7 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
             return strip
 
+
     def execute(self, context: bpy.types.Context) -> Set[str]:
         # Clear existing strips and markers
         context.scene.sequence_editor_clear()
@@ -122,7 +123,10 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         addon_prefs = prefs.addon_prefs_get(context)
 
         render_dir = Path(context.scene.rr.render_dir_path)
-        shot_version_folders_dict = self.get_shot_folder_dict(render_dir)
+        shot_version_folders_dict = self.get_shot_folder_dict(
+            render_dir = render_dir, 
+            max_versions_per_shot = addon_prefs.versions_max_count, 
+        )
 
         prev_frame_end: int = 1
         for shot_name, shot_version_folders in shot_version_folders_dict.items():
@@ -205,7 +209,12 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def get_shot_folder_dict(self, render_dir: str) -> OrderedDict[str, List[Path]]:
+
+    def get_shot_folder_dict(
+            self, 
+            render_dir: str, 
+            max_versions_per_shot = 32, 
+        ) -> OrderedDict[str, List[Path]]:
         shot_version_folders: List[Path] = []
 
         # If render is sequence folder user wants to review whole sequence.
@@ -229,11 +238,14 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         # Sort versions by date
         for shot_name, shot_folder in shot_version_folders_dict.items():
             shot_version_folders_dict[shot_name] = sorted(shot_folder, key=lambda dir: dir.stat().st_mtime)
+            # Limit list to max number of versions
+            shot_version_folders_dict[shot_name] = shot_version_folders_dict[shot_name][:max_versions_per_shot]
 
         # Sort shots by name
         sorted_dict = OrderedDict(sorted(shot_version_folders_dict.items()))
 
         return sorted_dict
+
 
     def import_shot_versions_as_strips(
         self, 

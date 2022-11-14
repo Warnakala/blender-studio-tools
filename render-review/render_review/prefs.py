@@ -116,6 +116,14 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         description="Only load video files for the latest versions by default, to avoid running out of memory and crashing"
     )
 
+    versions_max_count: bpy.props.IntProperty(
+        name = "Max Versions",
+        description = "Desired number of versions to load for each shot",
+        min = 1,
+        max = 128,
+        default = 32,
+    )
+
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         box = layout.box()
@@ -165,6 +173,7 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
 
         box.separator()
         box.row().prop(self, "shot_name_filter")
+        box.row().prop(self, "versions_max_count", slider=True)
 
         # Enable blender kitsu.
         icon = "CHECKBOX_DEHLT"
