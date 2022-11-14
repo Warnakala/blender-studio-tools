@@ -24,6 +24,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 from typing import Set, Union, Optional, List, Dict, Any, Tuple
+from collections import OrderedDict
 
 import bpy
 
@@ -118,92 +119,35 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
         # Clear existing strips and markers
         context.scene.sequence_editor_clear()
         context.scene.timeline_markers.clear()
-
         addon_prefs = prefs.addon_prefs_get(context)
+
         render_dir = Path(context.scene.rr.render_dir_path)
-        shot_folders: List[Path] = []
-
-        # If render is sequence folder user wants to review whole sequence.
-        if opsdata.is_sequence_dir(render_dir):
-            for shot_dir in render_dir.iterdir():
-                # TODO: Handle case when directory is empty
-                shot_folders.extend(list(shot_dir.iterdir()))
-        else:
-            # TODO: Handle case when directory is empty
-            shot_folders.extend(list(render_dir.iterdir()))
-
-        shot_folders.sort(key=lambda d: d.name)
+        shot_version_folders_dict = self.get_shot_folder_dict(render_dir)
 
         prev_frame_end: int = 1
+        for shot_name, shot_version_folders in shot_version_folders_dict.items():
 
-        for shot_folder in shot_folders:
-            if addon_prefs.shot_name_filter and addon_prefs.shot_name_filter not in shot_folder.name:
-                # If there is a filter specified, and the shot doesn't match, skip it.
-                continue
-            context.scene.timeline_markers.new(shot_folder.name, frame=prev_frame_end)
-            logger.info("Processing %s", shot_folder.name)
-
-            imported_sequences: bpy.types.Sequence = []
-
-            # Find existing output dirs.
-            shot_name = opsdata.get_shot_name_from_dir(shot_folder)
-            output_dirs = [
-                d
-                for d in shot_folder.iterdir()
-                if d.is_dir() and "__intermediate" not in d.name
-            ]
-            output_dirs = sorted(output_dirs, key=lambda d: d.name)
-
-            # Init sequencer
-            if not context.scene.sequence_editor:
-                context.scene.sequence_editor_create()
-
-            # Load preview sequences in vse.
-            for idx, output_dir in enumerate(output_dirs):
-                # Compose frames found text.
-                frames_found_text = opsdata.gen_frames_found_text(output_dir)
-
-                if addon_prefs.use_video and \
-                    not (output_dir != output_dirs[-1] and addon_prefs.use_video_latest_only):
-                    video_path = opsdata.get_farm_output_mp4_path_from_folder(output_dir)
-                    if not video_path:
-                        logger.warning("%s found no .mp4 preview sequence", output_dir.name)
-                        video_path = Path(output_dir)
-                    strip = context.scene.sequence_editor.sequences.new_movie(
-                        name = output_dir.name,
-                        filepath = video_path.as_posix(),
-                        channel = idx + 1,
-                        frame_start = prev_frame_end,
-                        fit_method = 'ORIGINAL'
-                    )
-                else:
-                    strip = self.load_strip_from_img_seq(context, output_dir, idx, prev_frame_end)
-    
-                shot_datetime = datetime.fromtimestamp(output_dir.stat().st_mtime)
-                time_str = shot_datetime.strftime("%B %d, %I:%M")
-                strip.name = f"{shot_folder.name} ({time_str})"
-                strip.rr.shot_name = shot_folder.name
-                strip.rr.is_render = True
-                strip.rr.frames_found_text = frames_found_text
-
-                imported_sequences.append(strip)
+            logger.info("Loading versions of shot %s", shot_name)
+            imported_strips = self.import_shot_versions_as_strips(
+                context,
+                shot_version_folders,
+                frame_start = prev_frame_end,
+                shot_name = shot_name,
+            )
 
             # Query the strip that is the longest for metastrip and prev_frame_end.
-            imported_sequences.sort(key=lambda s: s.frame_final_duration)
-            strip_longest = imported_sequences[-1]
+            imported_strips.sort(key=lambda s: s.frame_final_duration)
+            strip_longest = imported_strips[-1]
             prev_frame_end = strip_longest.frame_final_end
 
             # Perform kitsu operations if enabled.
             if (
                 addon_prefs.enable_blender_kitsu
                 and prefs.is_blender_kitsu_enabled()
-                and imported_sequences
+                and imported_strips
             ):
-
                 if kitsu.is_auth_and_project():
-
-                    shot_name = shot_folder.name.split(".")[0]
-                    sequence_name = shot_folder.parent.parent.name
+                    sequence_name = shot_version_folders[0].parent.parent.parent.name
 
                     # Create metastrip.
                     metastrip = kitsu.create_meta_strip(context, strip_longest)
@@ -217,7 +161,6 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
                     logger.error(
                         "Unable to perform kitsu operations. No active project or not authorized"
                     )
-
 
         # Set default scene resolution to resolution of loaded image.
         render_resolution_x = vars.RESOLUTION[0]
@@ -254,10 +197,116 @@ class RR_OT_sqe_create_review_session(bpy.types.Operator):
 
         self.report(
             {"INFO"},
-            f"Imported {len(imported_sequences)} Render Sequences",
+            f"Imported {len(imported_strips)} Render Sequences",
         )
 
         return {"FINISHED"}
+
+    def get_shot_folder_dict(self, render_dir: str) -> OrderedDict[str, List[Path]]:
+        shot_version_folders: List[Path] = []
+
+        # If render is sequence folder user wants to review whole sequence.
+        if opsdata.is_sequence_dir(render_dir):
+            for shot_dir in render_dir.iterdir():
+                # TODO: Handle case when directory is empty
+                shot_version_folders.extend(list(shot_dir.iterdir()))
+        else:
+            # TODO: Handle case when directory is empty
+            shot_version_folders.extend(list(render_dir.iterdir()))
+
+        shot_version_folders_dict = dict()
+        for shot_main_folder in shot_version_folders:
+            shot_name = opsdata.get_shot_name_from_dir(shot_main_folder)
+            for shot_folder in shot_main_folder.iterdir():
+                if shot_name not in shot_version_folders_dict:
+                    shot_version_folders_dict[shot_name] = [shot_folder]
+                else:
+                    shot_version_folders_dict[shot_name].append(shot_folder)
+
+        # Sort versions by date
+        for shot_name, shot_folder in shot_version_folders_dict.items():
+            shot_version_folders_dict[shot_name] = sorted(shot_folder, key=lambda dir: dir.stat().st_mtime)
+
+        # Sort shots by name
+        sorted_dict = OrderedDict(sorted(shot_version_folders_dict.items()))
+
+        return sorted_dict
+
+    def import_shot_versions_as_strips(
+        self, 
+        context: bpy.types.Context, 
+        shot_version_folders: List[str], 
+        frame_start: int, 
+        shot_name: str
+    ) -> List[bpy.types.Sequence]:
+        addon_prefs = prefs.addon_prefs_get(context)
+        imported_strips: bpy.types.Sequence = []
+
+        for idx, shot_folder in enumerate(shot_version_folders):
+            if addon_prefs.shot_name_filter and addon_prefs.shot_name_filter not in shot_folder.name:
+                # If there is a filter specified, and the shot doesn't match, skip it.
+                continue
+            logger.info("Processing %s", shot_folder.name)
+
+            use_video = addon_prefs.use_video and \
+                not (shot_folder != shot_version_folders[-1] and addon_prefs.use_video_latest_only)
+
+            shot_strip = self.import_shot_as_strip(
+                context, 
+                frame_start = frame_start, 
+                channel_idx = idx, 
+                shot_folder = shot_folder, 
+                shot_name = shot_name,
+                use_video = use_video
+            )
+            imported_strips.append(shot_strip)
+
+        return imported_strips
+
+
+    def import_shot_as_strip(
+        self,
+        context: bpy.types.Context,
+        frame_start: int,
+        channel_idx: int,
+        shot_folder: Path,
+        shot_name: str,
+        use_video = False,
+    ) -> bpy.types.Sequence:
+        context.scene.timeline_markers.new(shot_name, frame=frame_start)
+
+        # Init sequencer
+        if not context.scene.sequence_editor:
+            context.scene.sequence_editor_create()
+
+        ### Load preview sequences in vse.
+
+        # Compose frames found text.
+        frames_found_text = opsdata.gen_frames_found_text(shot_folder)
+
+        if use_video:
+            video_path = opsdata.get_farm_output_mp4_path_from_folder(shot_folder)
+            if not video_path:
+                logger.warning("%s found no .mp4 preview sequence", shot_folder.name)
+                video_path = shot_folder
+            strip = context.scene.sequence_editor.sequences.new_movie(
+                name = shot_folder.name,
+                filepath = video_path.as_posix(),
+                channel = channel_idx + 1,
+                frame_start = frame_start,
+                fit_method = 'ORIGINAL'
+            )
+        else:
+            strip = self.load_strip_from_img_seq(context, shot_folder, channel_idx, frame_start)
+
+        shot_datetime = datetime.fromtimestamp(shot_folder.stat().st_mtime)
+        time_str = shot_datetime.strftime("%B %d, %I:%M")
+        strip.name = f"{shot_folder.parent.name} ({time_str})"
+        strip.rr.shot_name = shot_name
+        strip.rr.is_render = True
+        strip.rr.frames_found_text = frames_found_text
+
+        return strip
 
 
 class RR_OT_setup_review_workspace(bpy.types.Operator):
@@ -737,7 +786,6 @@ class RR_OT_sqe_push_to_edit(bpy.types.Operator):
 
         render_dir = opsdata.get_strip_folder(active_strip)
         shot_previews_dir = opsdata.get_shot_previews_path(active_strip)
-        shot_name = shot_previews_dir.parent.name
         metadata_path = shot_previews_dir / "metadata.json"
 
         # -------------GET MP4 OR CREATE WITH FFMPEG ---------------
