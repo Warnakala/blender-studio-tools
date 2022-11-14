@@ -24,7 +24,6 @@ from pathlib import Path
 from typing import Optional, Dict, List, Set, Any
 
 import bpy
-import logging
 
 
 def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
@@ -117,38 +116,6 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         description="Only load video files for the latest versions by default, to avoid running out of memory and crashing"
     )
 
-    def update_log_level(self, context):
-        root_logger = logging.getLogger(__package__)
-        levels = {
-            'None' : 1,
-            'Critical' : 50,
-            'Error' : 40,
-            'Warning' : 30,
-            'Info' : 20,
-            'Debug' : 10,
-        }
-        root_logger.basicConfig(level=levels[self.debug_log_level])
-        root_logger.debug("Debug")
-        root_logger.info("Info")
-        root_logger.warning("Warning")
-        root_logger.error("Error")
-        root_logger.critical("Critical")
-
-    debug_log_level: bpy.props.EnumProperty(  # type: ignore
-        name="Log Level",
-        description="Log level, for development purposes",
-        items = [
-            ('None', "None", "No Logging"),
-            ('Critical', "Critical", "Show critical issues; These should be fixed immediately"),
-            ('Error', "Error", "Show errors; Issues that could easily break stuff"),
-            ('Warning', "Warning", "Show warnings; Might be un-ideal but not a big deal"),
-            ('Info', "Info", "Show info logs; Things working as intended"),
-            ('Debug', "Debug", "Show debug messages; Temporary messages that should be removed after sufficient testing"),
-        ],
-        default="Warning",
-        update=update_log_level
-    )
-
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
         box = layout.box()
@@ -212,7 +179,6 @@ class RR_AddonPreferences(bpy.types.AddonPreferences):
         )
         row.label(text=label_text)
 
-        layout.prop(self, 'debug_log_level')
 
     @property
     def shot_frames_dir(self) -> Optional[Path]:
