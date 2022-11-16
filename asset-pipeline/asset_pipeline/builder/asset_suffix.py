@@ -40,6 +40,9 @@ def remove_suffix_from_hierarchy(
     datablocks = get_all_referenced_ids(collection, ref_map)
     datablocks.add(collection)
     for db in datablocks:
+        if db.library:
+            # Don't rename linked datablocks.
+            continue
         try:
             db.name = delimiter.join(db.name.split(delimiter)[:-1])
         except:
@@ -54,6 +57,9 @@ def add_suffix_to_hierarchy(collection: bpy.types.Collection, suffix: str):
     datablocks = get_all_referenced_ids(collection, ref_map)
     datablocks.add(collection)
     for db in datablocks:
+        if db.library:
+            # Don't rename linked datablocks.
+            continue
         collision_db = get_storage_of_id(db).get(db.name+suffix)
         if collision_db:
             collision_db.name += '.OLD'

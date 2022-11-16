@@ -162,7 +162,7 @@ ID_INFO = {
     (types.PointCloud, 'POINT_CLOUD', 'pointclouds'),
     (types.Curves, 'HAIR_CURVES', 'hair_curves'),
     (types.Text, 'TEXT', 'texts'),
-    (types.Simulation, 'SIMULATION', 'simulations'),
+    # (types.Simulation, 'SIMULATION', 'simulations'),
     (types.ParticleSettings, 'PARTICLE', 'particles'),
     (types.Palette, 'PALETTE', 'palettes'),
     (types.PaintCurve, 'PAINT_CURVE', 'paint_curves'),
