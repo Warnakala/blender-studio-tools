@@ -22,6 +22,11 @@ def mb_ensure_gizmos_on_active_armature(gizmo_group):
 		try:
 			if pose_bone.enable_bone_gizmo and pose_bone.name not in gizmo_group.widgets:
 				gizmo = gizmo_group.create_gizmo(context, pose_bone)
+			elif not pose_bone.bone_gizmo.shape_object:
+				for bone_name, gizmo in gizmo_group.widgets.items():
+					if bone_name == pose_bone.name:
+						gizmo.custom_shape = None
+
 		except ReferenceError:
 			# StructRNA of type BoneGizmoGroup has been removed.
 			# TODO: Not sure when this happens.
@@ -69,6 +74,7 @@ def mb_refresh_single_gizmo_shape(gizmo_group, bone_name):
 	"""Re-calculate a gizmo's vertex indicies. This is expensive, so it should
 	be called sparingly."""
 	context = bpy.context
+	print("refresh single gizmo shape")
 	if not context.object or context.object.type != 'ARMATURE' or context.object.mode != 'POSE':
 		return
 	try:
