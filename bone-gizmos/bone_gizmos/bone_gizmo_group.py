@@ -37,8 +37,13 @@ def mb_refresh_all_gizmo_colors(gizmo_group):
 	context = bpy.context
 	addon_prefs = context.preferences.addons[__package__].preferences
 
-	for bone_name, gizmo in gizmo_group.widgets.items():
-		gizmo.refresh_colors(context)
+	try:
+		for bone_name, gizmo in gizmo_group.widgets.items():
+			gizmo.refresh_colors(context)
+	except ReferenceError:
+		# StructRNA of type BoneGizmoGroup has been removed.
+		# TODO: Not sure when this happens.
+		pass
 
 def mb_refresh_single_gizmo(gizmo_group, bone_name):
 	"""Refresh Gizmo behaviour settings. This should be called when the user changes

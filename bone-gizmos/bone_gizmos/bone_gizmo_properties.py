@@ -55,14 +55,17 @@ class BoneGizmoProperties(PropertyGroup):
 		,description = "Toggle between using Face Maps or Vertex Groups as the mesh masking data"	# Currently it seems face maps are just worse vertex groups, but maybe they are faster, or maybe it's good to have them separated.
 	)
 
-	use_bone_group_color: BoolProperty(
-		name		 = "Use Bone Group Color"
-		,description = "Use the bone group color for this Gizmo, rather than the unique colors"
-		,default	 = True
+	gizmo_color_source: EnumProperty(
+		name		 = "Color Source"
+		,description = "Where to take Gizmo Color information from"
+		,items		 = [
+			('GROUP', 'Bone Group', 'Color this Gizmo based on the bone group colors'),
+			('UNIQUE', 'Unique', 'Give this gizmo its own individual color')
+		]
 	)
 	color: FloatVectorProperty(
 		name		 = "Color"
-		,description = "Color of the gizmo"
+		,description = "Color of the gizmo when not mouse hovered"
 		,subtype	 = 'COLOR'
 		,size		 = 3
 		,min		 = 0.0
@@ -72,7 +75,7 @@ class BoneGizmoProperties(PropertyGroup):
 
 	color_highlight: FloatVectorProperty(
 		name		 = "Highlight Color"
-		,description = "Color of the gizmo when mouse hovered"
+		,description = "Color of the gizmo when mouse hovered or selected"
 		,subtype	 = 'COLOR'
 		,size		 = 3
 		,min		 = 0.0

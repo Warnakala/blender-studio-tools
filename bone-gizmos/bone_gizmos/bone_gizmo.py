@@ -255,7 +255,7 @@ class MoveBoneGizmo(Gizmo):
 	def is_using_bone_group_colors(self, context):
 		pb = self.get_pose_bone(context)
 		props = self.get_props(context)
-		return pb and pb.bone_group and pb.bone_group.color_set != 'DEFAULT' and props.use_bone_group_color
+		return pb and pb.bone_group and pb.bone_group.color_set != 'DEFAULT' and props.gizmo_color_source == 'GROUP'
 
 	def get_pose_bone(self, context):
 		arm_ob = context.object

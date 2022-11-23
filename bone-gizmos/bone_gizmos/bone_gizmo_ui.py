@@ -36,23 +36,18 @@ class BONEGIZMO_PT_bone_gizmo_settings(Panel):
 
 		bg = pb.bone_group
 		usable_bg_col = bg and bg.color_set != 'DEFAULT'
-		color_split = layout.split(factor=0.4)
-		label_row = color_split.row()
-		label_row.alignment = 'RIGHT'
-		label_row.label(text="Color")
-		color_row = color_split.row(align=True)
-		color_col = color_row.column()
-		sub_row = color_col.row(align=True)
-		if usable_bg_col and props.use_bone_group_color:
-			sub_row.prop(bg.colors, 'normal', text="")
-			sub_row.prop(bg.colors, 'select', text="")
-		else:
-			sub_row.prop(props, 'color', text="")
-			sub_row.prop(props, 'color_highlight', text="")
-			sub_row.enabled = not props.use_bone_group_color
 		if usable_bg_col:
-			toggle_col = color_row.column()
-			toggle_col.prop(props, 'use_bone_group_color', text="", icon='GROUP_BONE')
+			layout.row().prop(props, 'gizmo_color_source', icon='GROUP_BONE', expand=True)
+		color_col = layout.column()
+		# sub_row = color_col.row(align=True)
+		if usable_bg_col and props.gizmo_color_source == 'GROUP':
+			color_col.row().prop(bg.colors, 'normal', text="Group Color")
+			color_col.row().prop(bg.colors, 'select', text="Group Highlight Color")
+		else:
+			color_col.row().prop(props, 'color', text="Gizmo Color")
+			color_col.row().prop(props, 'color_highlight', text="Gizmo Highlight Color")
+
+		layout.separator()
 
 		layout.row().prop(props, 'operator', expand=True)
 		if props.operator == 'transform.rotate':
@@ -62,6 +57,8 @@ class BONEGIZMO_PT_bone_gizmo_settings(Panel):
 			row.prop(props, 'transform_axes', index=0, toggle=True, text="X")
 			row.prop(props, 'transform_axes', index=1, toggle=True, text="Y")
 			row.prop(props, 'transform_axes', index=2, toggle=True, text="Z")
+
+		layout.separator()
 
 		layout.prop(props, 'shape_object')
 		if props.shape_object:
