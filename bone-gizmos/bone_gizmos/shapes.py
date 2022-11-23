@@ -235,24 +235,25 @@ class Sphere(BasicShape):
 
 class MeshShape3D(BasicShape):
 
-	def __init__(self, mesh, scale=1.0, vertex_groups=None, weight_threshold=0.2):
+	def __init__(self, mesh, fix_zfighting=True, vertex_groups=None, weight_threshold=0.2):
 		self._indices = []
-		self.scale_factor = scale
+		self.fix_zfighting = fix_zfighting
 		self.tris_from_mesh(mesh, vertex_groups=vertex_groups, weight_threshold=weight_threshold)
 
 	def get_vertices(self, eval_mesh):
 		"""Return positions of the vertices of the already stored indicies."""
 
-		return [eval_mesh.vertices[i].co for i in self._indices]
+		if not self.fix_zfighting:
+			return [eval_mesh.vertices[i].co for i in self._indices]
 
 		verts = [eval_mesh.vertices[i].co for i in self._indices]
-		# verts = np.array([eval_mesh.vertices[i].co for i in self._indices], 'f')
+		verts = np.array([eval_mesh.vertices[i].co for i in self._indices], 'f')
 
 		# Unfortunately this scaling has a massive performance impact.
-		# average = np.average(verts, axis=0)
-		# verts -= average
-		# verts *= self.scale_factor
-		# verts += average
+		average = np.average(verts, axis=0)
+		verts -= average
+		verts *= 1.001
+		verts += average
 
 		return verts
 
