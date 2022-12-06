@@ -2,32 +2,23 @@ import importlib
 from bpy.utils import register_class, unregister_class
 from typing import List
 
-
-from .operators import select_similar_curves
-from .operators import lock_curves
-from .operators import bake_anim_across_armatures
-from . import easy_constraints
-from . import warn_about_broken_libraries
+from . import operators, ui, props
 
 bl_info = {
-    'name' : "Animation Cupboard"
+    'name' : "GeoNode Shape Keys"
     ,'author': "Demeter Dzadik"
     ,'version' : (0, 0, 1)
-    ,'blender' : (3, 2, 0)
-    ,'description' : "Tools to improve animation workflows"
+    ,'blender' : (3, 5, 0)
+    ,'description' : "Shape keys in the modifier stack"
     ,'location': "Various"
     ,'category': 'Animation'
-    # ,'doc_url' : "https://gitlab.com/blender/CloudRig/"
 }
 
 modules = (
-    select_similar_curves,
-    lock_curves,
-    bake_anim_across_armatures,
-    easy_constraints,
-    warn_about_broken_libraries
+    operators,
+	props,
+	ui,
 )
-
 
 def register_unregister_modules(modules: List, register: bool):
 	"""Recursively register or unregister modules by looking for either
@@ -61,3 +52,4 @@ def register():
 
 def unregister():
     register_unregister_modules(modules, False)
+
