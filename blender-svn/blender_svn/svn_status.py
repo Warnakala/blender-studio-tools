@@ -212,7 +212,7 @@ class BGP_SVN_Status(BackgroundProcess):
         if self.is_new_file:
             update_file_is_referenced_flags()
             self.is_new_file = False
-
+        
     def process_output(self, context, prefs):
         update_file_list(context, self.output)
 
@@ -250,7 +250,9 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
         entry_existed = True
         if not file_entry:
             file_entry = svn.external_files.add()
-            file_entry['svn_path'] = svn_path.as_posix()
+            # NOTE: For some reason, if this posix is not explicitly converted to
+            # str, accessing svn_path can cause a segfault.
+            file_entry['svn_path'] = str(svn_path.as_posix())
             file_entry['name'] = svn_path.name
             entry_existed = False
             if not file_entry.exists:
