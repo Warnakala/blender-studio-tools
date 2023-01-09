@@ -2,14 +2,11 @@ import bpy
 from rigify.operators.generic_ui_list import draw_ui_list
 from .operators import geomod_get_identifier
 
-# So, how should this UI look...
-# I think it should only appear on overridden meshes.
-
-# Maybe let it display as a sub-panel of the Shape Keys panel.
-
-# Not sure if we can store any data on an overridden object and expect it to stick around after file reload. 
+# Not sure if we can store any data on an overridden object and expect it to 
+# stick around after file reload. 
 # I think as long as it's a Python property, yes?
-# So, the shape key name would be such a thing, and changing it would change the name of the corresponding modifier, and object.
+# So, the shape key name would be such a thing, and changing it would change the 
+# name of the corresponding modifier, and object?
 
 class GNSK_UL_main(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, _icon, _active_data, _active_propname):
@@ -84,9 +81,3 @@ registry = [
     GNSK_UL_main,
     GNSK_PT_GeoNodeShapeKeys,
 ]
-
-def register():
-    import addon_utils
-    if not addon_utils.check("rigify")[1]:
-        import rigify
-        rigify.operators.generic_ui_list.register()
