@@ -101,7 +101,10 @@ class GNSK_add_shape(bpy.types.Operator):
         gnsk.name = mod.name # In case the modifier got a .001 suffix.
         mod.node_group = link_shape_key_node_tree()
         geomod_set_param_value(mod, 'Sculpt', sk_ob)
-        geomod_set_param_attribute(mod, 'UVMap', sk_ob.data.uv_layers[0].name)
+        uv_map = sk_ob.data.uv_layers.get("GNSK")
+        if not uv_map:
+            uv_map = sk_ob.data.uv_layers[0]
+        geomod_set_param_attribute(mod, 'UVMap', uv_map.name)
 
         # Swap to Sculpt Mode
         orig_ui = context.area.ui_type
