@@ -289,6 +289,10 @@ class GNSK_toggle_object(bpy.types.Operator):
 
         if targets:
             for target in targets:
+                # Make sure to leave sculpt/edit mode, otherwise, sometimes
+                # Blender can end up in a weird state, where the LINKED object
+                # is in Sculpt mode (WTF?!) and you can't leave or do anything.
+                bpy.ops.object.mode_set(mode='OBJECT')
                 ob.select_set(False)
                 ob.hide_set(True)
 
