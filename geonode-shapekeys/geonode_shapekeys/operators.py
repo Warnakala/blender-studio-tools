@@ -346,6 +346,11 @@ class GNSK_toggle_object(bpy.types.Operator):
                 target_ob.select_set(True)
                 context.view_layer.objects.active = target_ob
 
+                # Trigger an update... otherwise, since we insert the modifier 
+                # somewhere other than the bottom of the stack, it sometimes 
+                # doesn't update live.
+                target_ob.name = target_ob.name
+
         elif len(ob.geonode_shapekeys) > 0:
             storage = ob.geonode_shapekeys[ob.geonode_shapekey_index].storage_object
             if not storage:
