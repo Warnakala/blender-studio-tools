@@ -117,12 +117,19 @@ class GNSK_add_shape(bpy.types.Operator):
             # Add GeoNode modifiers.
             gnsk = obj.geonode_shapekeys.add()
             gnsk.name = self.shape_name
+
             mod = obj.modifiers.new(gnsk.name, type='NODES')
+            mod.node_group = link_shape_key_node_tree()
+
+            # Find desired modifier index: After any other GNSK modifier, or if 
+            # none, before the SubSurf modifier.
+            mod_index = self.get_desired_modifier_index(obj, mod)
+            bpy.ops.object.modifier_move_to_index(
+                {'object': obj}, modifier=mod.name, index=mod_index)
             gnsk.name = mod.name  # In case the modifier got a .001 suffix.
 
             gnsk.storage_object = sk_ob
 
-            mod.node_group = link_shape_key_node_tree()
             geomod_set_param_value(mod, 'Sculpt', sk_ob)
             uv_map = sk_ob.data.uv_layers.get(self.uv_name)
             if not uv_map:
@@ -135,7 +142,7 @@ class GNSK_add_shape(bpy.types.Operator):
             tgt.name = obj.name
             tgt.obj = obj
 
-        # Swap to Sculpt Mode
+        # Change to Sculpt Mode.
         orig_ui = context.area.ui_type
         context.area.ui_type = 'VIEW_3D'
         bpy.ops.object.mode_set(mode='SCULPT')
@@ -143,12 +150,45 @@ class GNSK_add_shape(bpy.types.Operator):
 
         return {'FINISHED'}
 
+    def get_desired_modifier_index(self,
+                                   obj: bpy.types.Object,
+                                   mod: bpy.types.Modifier
+                                   ) -> int:
+        """Figure out the desired index to insert the next GeoNodes ShapeKey modifier at.
+        If there are any other GNSK modifiers, we should insert after the last one.
+        Otherwise, insert before any SubSurf modifiers, if any.
+        Otherwise, insert at bottom of stack.
+        """
+
+        for i, m in reversed(list(enumerate(obj.modifiers))):
+            if m == mod:
+                continue
+            if m.type == 'NODES' and m.node_group == mod.node_group:
+                return i+1
+
+        for i, m in enumerate(obj.modifiers):
+            if m.type == 'SUBSURF':
+                return i
+
+        return -1
+
     def make_evaluated_object(self,
                               context: bpy.types.Context,
                               eval_depsgraph: bpy.types.Depsgraph,
                               obj: bpy.types.Object
                               ) -> bpy.types.Object:
         obj.override_library.is_system_override = False
+
+        # Disable any SubSurf modifiers. NOTE: Other generative modifiers may have to be disabled too.
+        modifier_states = {}
+        for m in obj.modifiers:
+            if m.type == 'SUBSURF':
+                modifier_states[m.name] = {
+                    'show_viewport': m.show_viewport,
+                    'levels': m.levels
+                }
+                m.show_viewport = True
+                m.levels = 0
 
         rigged_mesh_eval = obj.evaluated_get(eval_depsgraph).to_mesh()
 
@@ -171,6 +211,11 @@ class GNSK_add_shape(bpy.types.Operator):
         sk_ob.add_rest_position_attribute = True
 
         sk_ob.matrix_world = obj.matrix_world
+
+        # Reset SubSurf modifiers. NOTE: Other generative modifiers may have to be handled too.
+        for mod_name, prop_dict in modifier_states.items():
+            for key, value in prop_dict.items():
+                setattr(obj.modifiers[mod_name], key, value)
 
         obj.hide_set(True)
         sk_ob.select_set(True)
