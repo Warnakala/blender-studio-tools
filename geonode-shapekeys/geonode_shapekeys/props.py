@@ -32,7 +32,7 @@ class GeoNodeShapeKey(bpy.types.PropertyGroup):
                     continue
                 if sculpt_ob == self.storage_object:
                     return m
-    
+
     @property
     def other_affected_objects(self) -> List[bpy.types.Object]:
         if not self.storage_object:
@@ -45,6 +45,14 @@ class GeoNodeShapeKey(bpy.types.PropertyGroup):
             ret.append(target.obj)
 
         return ret
+
+    @property
+    def index(self):
+        obj = self.id_data
+        for i, gnsk in enumerate(obj.geonode_shapekeys):
+            if gnsk == self:
+                return i
+
 
 class GNSK_TargetObject(bpy.types.PropertyGroup):
     obj: PointerProperty(name="Target Object", type=bpy.types.Object)

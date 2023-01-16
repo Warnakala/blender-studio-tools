@@ -40,7 +40,8 @@ class GNSK_UL_main(bpy.types.UIList):
             if other_ob in context.selected_objects:
                 addon_prefs = context.preferences.addons[__package__].preferences
                 if addon_prefs.pablico_mode and len(gnsk.storage_object.geonode_shapekey_targets) > 1:
-                    row.operator('object.geonode_shapekey_influence_slider', text="", icon='ARROW_LEFTRIGHT')
+                    op = row.operator('object.geonode_shapekey_influence_slider', text="", icon='ARROW_LEFTRIGHT')
+                    op.gnsk_index = gnsk.index
                     break
 
         for i, elem in enumerate(gnsk.id_data.geonode_shapekeys):

@@ -343,14 +343,14 @@ class GNSK_toggle_object(bpy.types.Operator):
     bl_label = "GeoNode Shape Keys: Switch Focus"
     bl_options = {'REGISTER', 'UNDO'}
 
-    index: IntProperty(default=-1)
+    gnsk_index: IntProperty(default=-1)
 
     def execute(self, context):
         ob = context.object
         targets = ob.geonode_shapekey_targets
 
-        if self.index > -1:
-            ob.geonode_shapekey_index = self.index
+        if self.gnsk_index > -1:
+            ob.geonode_shapekey_index = self.gnsk_index
 
         if targets:
             for target in targets:
