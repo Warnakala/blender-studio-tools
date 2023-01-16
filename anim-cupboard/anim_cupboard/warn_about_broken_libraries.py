@@ -2,11 +2,13 @@
 # so this adds a pre- and post-save handler to warn about invalid library paths.
 
 from typing import Set
-import bpy, os
+import bpy
+import os
 from bpy.types import Library
 from bpy.app.handlers import persistent
 
 lib_paths_before_save = set()
+
 
 def get_invalid_libraries() -> Set[Library]:
     """Return a set of library datablocks whose filepath does not exist."""
@@ -16,6 +18,7 @@ def get_invalid_libraries() -> Set[Library]:
             invalid_libs.add(l)
     return invalid_libs
 
+
 def get_absolute_libraries() -> Set[Library]:
     """Return a set of library datablocks whose filepaths are not relative."""
     abs_libs: Set[Library] = set()
@@ -24,16 +27,19 @@ def get_absolute_libraries() -> Set[Library]:
             abs_libs.add(lib)
     return abs_libs
 
+
 def get_library_paths() -> Set[str]:
     """Simply return a set of all library paths."""
     return {l.filepath for l in bpy.data.libraries}
 
+
 def throw_popup_dialog(context):
     context.window_manager.invoke_popup(self, width=300)
 
+
 def draw_absolute_library_warning(self, context):
     layout = self.layout
-    layout.alert=True
+    layout.alert = True
     print("Saved with absolute library paths:")
     for lib in get_absolute_libraries():
         print(lib.filepath)
@@ -41,9 +47,10 @@ def draw_absolute_library_warning(self, context):
     layout.operator('file.make_paths_relative')
     layout.label(text="Then report this to Demeter!")
 
+
 def draw_invalid_library_warning(self, context):
     layout = self.layout
-    layout.alert=True
+    layout.alert = True
 
     print("Saved with invalid library paths!")
     lib_paths_after_save = get_library_paths()
@@ -65,13 +72,14 @@ def draw_invalid_library_warning(self, context):
             text = f'     "{new_path}"'
             layout.label(text=text, icon='ADD')
             print(text)
-    
+
     layout.label(text="Invalid libraries:")
     print("Invalid libraries:")
     for invalid_lib in get_invalid_libraries():
         text = f'     "{invalid_lib.filepath}"'
         layout.label(text=text, icon='LIBRARY_DATA_BROKEN')
         print(text)
+
 
 @persistent
 def warn_about_incorrect_lib_paths(dummy=None):
@@ -85,8 +93,9 @@ def warn_about_incorrect_lib_paths(dummy=None):
         bpy.context.window_manager.popup_menu(
             draw_absolute_library_warning, title="Warning: Saved with absolute library paths.", icon='ERROR'
         )
-    
+
     store_lib_paths()
+
 
 @persistent
 def store_lib_paths(dummy1=None, dummy2=None):
@@ -95,11 +104,13 @@ def store_lib_paths(dummy1=None, dummy2=None):
     global lib_paths_before_save
     lib_paths_before_save = get_library_paths()
 
+
 def register():
     return
     if not bpy.app.background:
         bpy.app.handlers.load_post.append(store_lib_paths)
         bpy.app.handlers.save_post.append(warn_about_incorrect_lib_paths)
+
 
 def unregister():
     return

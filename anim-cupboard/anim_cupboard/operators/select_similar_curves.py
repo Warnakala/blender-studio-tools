@@ -1,6 +1,7 @@
 import bpy
 from bpy.types import Operator
-from ..curve_utils import get_fcurves_of_bones
+from ..fcurve_utils import get_fcurves_of_bones
+
 
 class POSE_OT_select_matching_curves(Operator):
     """Set selection of all curves based on whether they match the transformation axis of the active curve"""
@@ -16,7 +17,8 @@ class POSE_OT_select_matching_curves(Operator):
     def execute(self, context):
         action = context.object.animation_data.action
 
-        fcurves_of_selected_bones = get_fcurves_of_bones(action, context.selected_pose_bones)
+        fcurves_of_selected_bones = get_fcurves_of_bones(
+            action, context.selected_pose_bones)
 
         property_name = context.active_editable_fcurve.data_path.split(".")[-1]
 
@@ -26,16 +28,20 @@ class POSE_OT_select_matching_curves(Operator):
 
         return {'FINISHED'}
 
+
 def draw_select_matching_curves(self, context):
     layout = self.layout
     layout.operator(POSE_OT_select_matching_curves.bl_idname)
+
 
 registry = [
     POSE_OT_select_matching_curves
 ]
 
+
 def register():
     bpy.types.GRAPH_MT_select.append(draw_select_matching_curves)
+
 
 def unregister():
     bpy.types.GRAPH_MT_select.remove(draw_select_matching_curves)

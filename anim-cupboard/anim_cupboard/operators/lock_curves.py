@@ -2,7 +2,7 @@ import bpy
 from bpy.types import Operator, Menu
 
 from bpy.props import EnumProperty, StringProperty, BoolProperty
-from ..curve_utils import get_fcurves_of_bones, get_fcurves
+from ..fcurve_utils import get_fcurves
 
 
 class POSE_OT_curves_set_boolean(Operator):
@@ -19,7 +19,7 @@ class POSE_OT_curves_set_boolean(Operator):
             ('UNSELECTED', 'Unselected Curves', 'Unselected Curves'),
             ('ALL', 'All Curves', 'All Curves'),
         ],
-        default = 'SELECTED'
+        default='SELECTED'
     )
     prop_name: StringProperty(
         name="Property Name",
@@ -46,30 +46,35 @@ class POSE_OT_curves_set_boolean(Operator):
 
         return {'FINISHED'}
 
+
 class GRAPH_MT_channel_lock(Menu):
     bl_label = "Lock"
 
     def draw(self, context):
         layout = self.layout
 
-        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Lock Selected", icon='LOCKED')
+        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname,
+                             text="Lock Selected", icon='LOCKED')
         op.prop_name = "lock"
         op.prop_value = True
         op.curve_set = 'SELECTED'
 
-        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Lock Unselected", icon='LOCKED')
+        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname,
+                             text="Lock Unselected", icon='LOCKED')
         op.prop_name = "lock"
         op.prop_value = True
         op.curve_set = 'UNSELECTED'
 
         layout.separator()
 
-        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Unlock Selected", icon='UNLOCKED')
+        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname,
+                             text="Unlock Selected", icon='UNLOCKED')
         op.prop_name = "lock"
         op.prop_value = False
         op.curve_set = 'SELECTED'
 
-        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname, text="Unlock All", icon='UNLOCKED')
+        op = layout.operator(POSE_OT_curves_set_boolean.bl_idname,
+                             text="Unlock All", icon='UNLOCKED')
         op.prop_name = "lock"
         op.prop_value = False
         op.curve_set = 'ALL'
@@ -79,13 +84,16 @@ def draw_curves_lock_menu(self, context):
     layout = self.layout
     layout.menu("GRAPH_MT_channel_lock", icon='LOCKED')
 
+
 registry = [
     POSE_OT_curves_set_boolean,
     GRAPH_MT_channel_lock
 ]
 
+
 def register():
     bpy.types.GRAPH_MT_channel.append(draw_curves_lock_menu)
+
 
 def unregister():
     bpy.types.GRAPH_MT_channel.remove(draw_curves_lock_menu)
