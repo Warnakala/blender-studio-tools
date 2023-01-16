@@ -25,15 +25,23 @@ class GNSK_UL_main(bpy.types.UIList):
                      emboss=False, icon='OBJECT_DATA')
         modifier = gnsk.modifier
         if not modifier:
-            # TOOD: Draw an error, the modifier was renamed or removed.
+            # TODO: Draw an error, the modifier was renamed or removed.
             return
         identifier = geomod_get_identifier(modifier, "Factor")
         row = split.row(align=True)
         row.prop(modifier, f'["{identifier}"]', text="", emboss=True)
-        row = row.row()
+        row = row.row(align=True)
         row.alignment = 'RIGHT'
         op = row.operator('object.geonode_shapekey_switch_focus',
                           text="", icon='SCULPTMODE_HLT')
+
+        other_target_objs = gnsk.other_affected_objects
+        for other_ob in other_target_objs:
+            if other_ob in context.selected_objects:
+                addon_prefs = context.preferences.addons[__package__].preferences
+                if addon_prefs.pablico_mode and len(gnsk.storage_object.geonode_shapekey_targets) > 1:
+                    row.operator('object.geonode_shapekey_influence_slider', text="", icon='ARROW_LEFTRIGHT')
+                    break
 
         for i, elem in enumerate(gnsk.id_data.geonode_shapekeys):
             if elem == gnsk:

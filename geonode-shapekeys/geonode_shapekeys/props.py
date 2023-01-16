@@ -1,5 +1,6 @@
 import bpy
 from bpy.props import StringProperty, CollectionProperty, IntProperty, PointerProperty
+from typing import List
 from .operators import geomod_get_identifier
 
 
@@ -31,7 +32,19 @@ class GeoNodeShapeKey(bpy.types.PropertyGroup):
                     continue
                 if sculpt_ob == self.storage_object:
                     return m
+    
+    @property
+    def other_affected_objects(self) -> List[bpy.types.Object]:
+        if not self.storage_object:
+            return []
+        
+        ret = []
+        for target in self.storage_object.geonode_shapekey_targets:
+            if target.obj in [None, self.id_data]:
+                continue
+            ret.append(target.obj)
 
+        return ret
 
 class GNSK_TargetObject(bpy.types.PropertyGroup):
     obj: PointerProperty(name="Target Object", type=bpy.types.Object)

@@ -1,7 +1,7 @@
 import bpy
 import os
 from typing import Any
-from bpy.props import IntProperty, StringProperty, BoolProperty
+from bpy.props import IntProperty, StringProperty, BoolProperty, FloatProperty
 
 NODETREE_NAME = "GN-shape_key"
 COLLECTION_NAME = "GeoNode Shape Keys"
@@ -15,8 +15,12 @@ def geomod_get_identifier(modifier: bpy.types.Modifier, param_name: str) -> str:
 
 def geomod_set_param_value(modifier: bpy.types.Modifier, param_name: str, param_value: Any):
     input_id = geomod_get_identifier(modifier, param_name)
-    modifier[input_id] = param_value
+    # Note: Must use setattr, see T103865.
+    setattr(modifier, f'["{input_id}"]', param_value)
 
+def geomod_get_param_value(modifier: bpy.types.Modifier, param_name: str):
+    input_id = geomod_get_identifier(modifier, param_name)
+    return modifier[input_id]
 
 def geomod_set_param_use_attribute(modifier: bpy.types.Modifier, param_name: str, use_attrib: bool):
     input_id = geomod_get_identifier(modifier, param_name)
@@ -56,6 +60,13 @@ def ensure_shapekey_collection(scene: bpy.types.Scene) -> bpy.types.Collection:
 
     return coll
 
+
+def get_gnsk_targets(gnsk):
+    return gnsk.storage_object.geonode_shapekey_targets
+
+def get_active_gnsk_targets(obj):
+    active_gnsk = obj.geonode_shapekeys[obj.geonode_shapekey_index]
+    return get_gnsk_targets(active_gnsk)
 
 class GNSK_add_shape(bpy.types.Operator):
     """Create a GeoNode modifier set-up and a duplicate object"""
@@ -233,14 +244,8 @@ class GNSK_remove_shape(bpy.types.Operator):
     remove_from_all: BoolProperty(
         name="Remove From All?", description="Remove this shape from all affected objects, and delete the local object", default=False)
 
-    @staticmethod
-    def get_gnsk_targets(context):
-        ob = context.object
-        active_gnsk = ob.geonode_shapekeys[ob.geonode_shapekey_index]
-        return active_gnsk.storage_object.geonode_shapekey_targets
-
     def invoke(self, context, _event):
-        if len(self.get_gnsk_targets(context)) > 1:
+        if len(get_active_gnsk_targets(context.object)) > 1:
             wm = context.window_manager
             return wm.invoke_props_dialog(self)
         return self.execute(context)
@@ -249,7 +254,7 @@ class GNSK_remove_shape(bpy.types.Operator):
         layout = self.layout
         layout.prop(self, 'remove_from_all')
 
-        targets = self.get_gnsk_targets(context)
+        targets = get_active_gnsk_targets(context.object)
         if len(targets) > 1 and self.remove_from_all:
             layout.label(text="Shape will be removed from:")
             for target in targets:
@@ -376,8 +381,57 @@ class GNSK_toggle_object(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GNSK_influence_slider(bpy.types.Operator):
+    """Change the influence on all affected meshes"""
+    bl_idname = "object.geonode_shapekey_influence_slider"
+    bl_label = "Change Influence of All Selected"
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    gnsk_index: IntProperty(default=0)
+
+    def update_slider(self, context):
+        ob = context.object
+        gnsk = ob.geonode_shapekeys[self.gnsk_index]
+        for target in get_gnsk_targets(gnsk):
+            obj = target.obj
+            for obj_gnsk in obj.geonode_shapekeys:
+                if obj_gnsk.storage_object == gnsk.storage_object:
+                    geomod_set_param_value(obj_gnsk.modifier, 'Factor', self.slider_value)
+                    break
+
+    slider_value: FloatProperty(
+        name="Influence", 
+        description="Influence to set on all affected objects", 
+        update=update_slider,
+        min=0, max=1
+    )
+
+    def invoke(self, context, _event):
+        wm = context.window_manager
+        self.slider_value = geomod_get_param_value(context.object.geonode_shapekeys[self.gnsk_index].modifier, 'Factor')
+        return wm.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        layout.prop(self, 'slider_value', slider=True)
+
+        ob = context.object
+        gnsk = ob.geonode_shapekeys[self.gnsk_index]
+        targets = get_gnsk_targets(gnsk)
+        layout.label(text="Affected objects:")
+        for target in targets:
+            row = layout.row()
+            row.enabled = False
+            row.prop(target, 'obj', text="")
+    
+    def execute(self, context):
+        return {'FINISHED'}
+
 registry = [
     GNSK_add_shape,
     GNSK_remove_shape,
-    GNSK_toggle_object
+    GNSK_toggle_object,
+    GNSK_influence_slider
 ]
