@@ -361,8 +361,13 @@ class GNSK_toggle_object(bpy.types.Operator):
                 # Blender can end up in a weird state, where the LINKED object
                 # is in Sculpt mode (WTF?!) and you can't leave or do anything.
                 bpy.ops.object.mode_set(mode='OBJECT')
-                ob.select_set(False)
-                ob.hide_set(True)
+                obs = [ob]
+                collection = bpy.data.collections.get(COLLECTION_NAME)
+                if collection:
+                    obs = collection.all_objects
+                for ob in obs:
+                    ob.select_set(False)
+                    ob.hide_set(True)
 
                 target_ob = target.obj
                 target_ob.hide_set(False)
