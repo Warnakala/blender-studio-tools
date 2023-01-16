@@ -13,6 +13,9 @@ def geomod_get_identifier(modifier: bpy.types.Modifier, param_name: str) -> str:
         return input.identifier
 
 
+def geomod_get_data_path(modifier: bpy.types.Modifier, param_name: str) -> str:
+    return f'modifiers["{modifier.name}"]["{geomod_get_identifier(modifier, param_name)}"]'
+
 def geomod_set_param_value(modifier: bpy.types.Modifier, param_name: str, param_value: Any):
     input_id = geomod_get_identifier(modifier, param_name)
     # Note: Must use setattr, see T103865.
@@ -403,6 +406,14 @@ class GNSK_influence_slider(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     gnsk_index: IntProperty(default=0)
+    # TODO: If one day, Library Overrides support adding drivers (and saving and reloading the file),
+    # this should be changed to instead allow assigning the active object's influence as the 
+    # driver for all others.
+    insert_keyframe: BoolProperty(
+        name="Insert Keyframe", 
+        description="Insert a keyframe on all affected values", 
+        default=False
+    )
 
     def update_slider(self, context):
         ob = context.object
@@ -412,6 +423,8 @@ class GNSK_influence_slider(bpy.types.Operator):
             for obj_gnsk in obj.geonode_shapekeys:
                 if obj_gnsk.storage_object == gnsk.storage_object:
                     geomod_set_param_value(obj_gnsk.modifier, 'Factor', self.slider_value)
+                    if self.insert_keyframe:
+                        obj.keyframe_insert(geomod_get_data_path(obj_gnsk.modifier, 'Factor'))
                     break
 
     slider_value: FloatProperty(
@@ -431,6 +444,7 @@ class GNSK_influence_slider(bpy.types.Operator):
         layout.use_property_split = True
         layout.use_property_decorate = False
         layout.prop(self, 'slider_value', slider=True)
+        layout.prop(self, 'insert_keyframe')
 
         ob = context.object
         gnsk = ob.geonode_shapekeys[self.gnsk_index]

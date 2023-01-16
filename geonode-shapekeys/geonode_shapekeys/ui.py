@@ -34,6 +34,7 @@ class GNSK_UL_main(bpy.types.UIList):
         row.alignment = 'RIGHT'
         op = row.operator('object.geonode_shapekey_switch_focus',
                           text="", icon='SCULPTMODE_HLT')
+        op.gnsk_index = gnsk.index
 
         other_target_objs = gnsk.other_affected_objects
         for other_ob in other_target_objs:
@@ -43,10 +44,6 @@ class GNSK_UL_main(bpy.types.UIList):
                     op = row.operator('object.geonode_shapekey_influence_slider', text="", icon='ARROW_LEFTRIGHT')
                     op.gnsk_index = gnsk.index
                     break
-
-        for i, elem in enumerate(gnsk.id_data.geonode_shapekeys):
-            if elem == gnsk:
-                op.index = i
 
 
 class GNSK_PT_GeoNodeShapeKeys(bpy.types.Panel):
