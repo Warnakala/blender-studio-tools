@@ -1,6 +1,6 @@
 import bpy
 import os
-from typing import Any
+from typing import Any, Dict, List
 from bpy.props import IntProperty, StringProperty, BoolProperty, FloatProperty
 
 NODETREE_NAME = "GN-shape_key"
@@ -113,16 +113,7 @@ class GNSK_add_shape(bpy.types.Operator):
                     {'ERROR'}, f'Object "{obj.name}" has no UV Map named "{self.uv_name}"!')
                 return {'CANCELLED'}
 
-        # Save evaluated objects into a new, combined object.
-        eval_dg = context.evaluated_depsgraph_get()
-
-        for obj in mesh_objs:
-            self.make_evaluated_object(context, eval_dg, obj)
-
-        # Join all the shape key objects into one object...
-        bpy.ops.object.join()
-        sk_ob = context.active_object
-        sk_ob.name = self.shape_name
+        sk_ob = self.make_combined_sculpt_mesh(context, mesh_objs)
 
         for obj in mesh_objs:
             # Add GeoNode modifiers.
@@ -161,6 +152,17 @@ class GNSK_add_shape(bpy.types.Operator):
 
         return {'FINISHED'}
 
+    def make_combined_sculpt_mesh(self, context, mesh_objs: List[bpy.types.Object]) -> bpy.types.Object:
+        # Save evaluated objects into a new, combined object.
+        for obj in mesh_objs:
+            self.make_evaluated_object(context, obj)
+
+        # Join all the shape key objects into one object...
+        bpy.ops.object.join()
+        sk_ob = context.active_object
+        sk_ob.name = self.shape_name
+        return sk_ob
+
     def get_desired_modifier_index(self,
                                    obj: bpy.types.Object,
                                    mod: bpy.types.Modifier
@@ -183,25 +185,41 @@ class GNSK_add_shape(bpy.types.Operator):
 
         return -1
 
-    def make_evaluated_object(self,
-                              context: bpy.types.Context,
-                              eval_depsgraph: bpy.types.Depsgraph,
-                              obj: bpy.types.Object
-                              ) -> bpy.types.Object:
-        obj.override_library.is_system_override = False
-
-        # Disable any SubSurf modifiers. NOTE: Other generative modifiers may have to be disabled too.
+    @staticmethod
+    def disable_modifiers_after_subsurf(obj: bpy.types.Object) -> Dict[str, Dict[str, Any]]:
         modifier_states = {}
+        found_subsurf = False
         for m in obj.modifiers:
             if m.type == 'SUBSURF':
-                modifier_states[m.name] = {
-                    'show_viewport': m.show_viewport,
-                    'levels': m.levels
-                }
-                m.show_viewport = True
-                m.levels = 0
+                found_subsurf = True
 
-        rigged_mesh_eval = obj.evaluated_get(eval_depsgraph).to_mesh()
+            if found_subsurf:
+                modifier_states[m.name] = {
+                    'show_viewport': m.show_viewport,   # TODO: Need to handle when this has a driver...
+                }
+                m.show_viewport = False
+        
+        return modifier_states
+
+    @staticmethod
+    def restore_modifiers(obj: bpy.types.Object, modifier_states: Dict[str, Dict[str, Any]]):
+        """Reset SubSurf and subsequent modifiers."""
+        for mod_name, prop_dict in modifier_states.items():
+            for key, value in prop_dict.items():
+                setattr(obj.modifiers[mod_name], key, value)
+
+    def make_evaluated_object(self,
+                              context: bpy.types.Context,
+                              obj: bpy.types.Object
+                              ) -> bpy.types.Object:
+        
+        obj.override_library.is_system_override = False
+
+        # Disable the first SubSurf and all subsequent modifiers.
+        # NOTE: Other generative modifiers beside SubSurf may have to trigger this too.
+        modifier_states = self.disable_modifiers_after_subsurf(obj)
+        eval_dg = context.evaluated_depsgraph_get()
+        rigged_mesh_eval = obj.evaluated_get(eval_dg).to_mesh()
 
         sk_mesh = bpy.data.meshes.new_from_object(obj)
         sk_ob = bpy.data.objects.new(obj.name+"."+self.shape_name, sk_mesh)
@@ -223,10 +241,7 @@ class GNSK_add_shape(bpy.types.Operator):
 
         sk_ob.matrix_world = obj.matrix_world
 
-        # Reset SubSurf modifiers. NOTE: Other generative modifiers may have to be handled too.
-        for mod_name, prop_dict in modifier_states.items():
-            for key, value in prop_dict.items():
-                setattr(obj.modifiers[mod_name], key, value)
+        self.restore_modifiers(obj, modifier_states)
 
         obj.hide_set(True)
         sk_ob.select_set(True)
