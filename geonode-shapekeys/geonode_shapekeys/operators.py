@@ -435,6 +435,7 @@ class GNSK_influence_slider(bpy.types.Operator):
     )
 
     def invoke(self, context, _event):
+        self.insert_keyframe = context.scene.tool_settings.use_keyframe_insert_auto
         wm = context.window_manager
         self.slider_value = geomod_get_param_value(context.object.geonode_shapekeys[self.gnsk_index].modifier, 'Factor')
         return wm.invoke_props_dialog(self)
