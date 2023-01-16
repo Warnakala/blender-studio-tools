@@ -459,9 +459,40 @@ class GNSK_influence_slider(bpy.types.Operator):
     def execute(self, context):
         return {'FINISHED'}
 
+
+class GNSK_select_objects(bpy.types.Operator):
+    """Select objects that share a sculpt object with this GeoNode ShapeKey"""
+    bl_idname = "object.geonode_shapekey_select_objects"
+    bl_label = "Select Objects"
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    gnsk_index: IntProperty(default=0)
+
+    def execute(self, context):
+        obj = context.object
+        gnsk = obj.geonode_shapekeys[self.gnsk_index]
+        
+        count_hidden = 0
+        count_selected = 0
+        for target in gnsk.storage_object.geonode_shapekey_targets:
+            target_ob = target.obj
+            if target_ob.visible_get():
+                target_ob.select_set(True)
+                count_selected += 1
+            else:
+                count_hidden += 1
+        
+        if count_hidden > 0:
+            self.report({'WARNING'}, f"{count_hidden} hidden objects were not selected.")
+        else:
+            self.report({'INFO'}, f"All {count_selected} objects were selected.")
+        
+        return {'FINISHED'}
+
 registry = [
     GNSK_add_shape,
     GNSK_remove_shape,
     GNSK_toggle_object,
-    GNSK_influence_slider
+    GNSK_influence_slider,
+    GNSK_select_objects
 ]
