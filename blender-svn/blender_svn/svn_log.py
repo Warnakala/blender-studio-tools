@@ -1,35 +1,16 @@
-# ***** BEGIN GPL LICENSE BLOCK *****
-#
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software Foundation,
-# Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#
-# ***** END GPL LICENCE BLOCK *****
-#
+# SPDX-License-Identifier: GPL-2.0-or-later
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
-from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
-import threading, subprocess
+import subprocess
 
 import bpy
 from bpy.props import IntProperty, BoolProperty
 
-from .util import get_addon_prefs, svn_date_simple, redraw_viewport
+from .util import svn_date_simple, redraw_viewport
 from . import constants
 from .execute_subprocess import execute_svn_command
 from .background_process import BackgroundProcess, process_in_background, processes
-from .ui import dots
 
 ################################################################################
 ################################ UI / UX #######################################
@@ -417,7 +398,7 @@ class BGP_SVN_Log(BackgroundProcess):
     debug = False
 
     def tick(self, context, prefs):
-            redraw_viewport()
+        redraw_viewport()
 
     def acquire_output(self, context, prefs):
         """This function should be executed from a separate thread to avoid freezing 
@@ -437,7 +418,7 @@ class BGP_SVN_Log(BackgroundProcess):
         try:
             self.output = execute_svn_command(
                 context,
-                f"svn log {svn.svn_url} --verbose -r{latest_log_rev+1}:HEAD --limit 10", 
+                f"svn log --verbose -r{latest_log_rev+1}:HEAD --limit 10", 
                 print_errors = False,
                 use_cred = True
             )

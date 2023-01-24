@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# (c) 2022, Blender Foundation - Demeter Dzadik
+
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 
 import subprocess

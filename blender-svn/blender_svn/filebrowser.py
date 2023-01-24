@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# (c) 2022, Blender Foundation - Demeter Dzadik
+
 import bpy
 from pathlib import Path
 from bl_ui.space_filebrowser import FileBrowserPanel

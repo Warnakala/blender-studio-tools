@@ -1,7 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# (c) 2022, Blender Foundation - Demeter Dzadik
+
 import bpy
 import threading
 from bpy.app.handlers import persistent
-from time import time
 import random
 
 from .util import get_addon_prefs, redraw_viewport
