@@ -35,6 +35,7 @@ modules = [
     filebrowser
 ]
 
+
 def reload() -> None:
     global modules
 
@@ -58,6 +59,7 @@ def register() -> None:
                 bpy.utils.register_class(c)
         if hasattr(m, 'register'):
             m.register()
+
 
 def unregister() -> None:
     if bpy.app.background:

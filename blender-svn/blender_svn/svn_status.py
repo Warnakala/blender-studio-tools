@@ -1,6 +1,15 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
+import subprocess
+import bpy
+from .background_process import BackgroundProcess, process_in_background, processes
+from . import constants
+from .util import get_addon_prefs, redraw_viewport
+from .execute_subprocess import execute_svn_command, execute_command
+from bpy.props import StringProperty
+import xmltodict
+
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 from datetime import datetime
@@ -9,28 +18,18 @@ from . import wheels
 # This will load the dateutil and svn wheel file.
 wheels.preload_dependencies()
 
-import xmltodict
-
-import bpy, subprocess
-from bpy.props import StringProperty
-
-from .execute_subprocess import execute_svn_command, execute_command
-from .util import get_addon_prefs, redraw_viewport
-from . import constants
-
-from .background_process import BackgroundProcess, process_in_background, processes
 
 class SVN_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
-    bl_label = "" # Don't want the first line of the tooltip on mouse hover.
+    bl_label = ""  # Don't want the first line of the tooltip on mouse hover.
     bl_description = "Show an explanation of this status, using a dynamic tooltip"
     bl_options = {'INTERNAL'}
 
     status: StringProperty(
-        description = "Identifier of the status to show an explanation for"
+        description="Identifier of the status to show an explanation for"
     )
     file_rel_path: StringProperty(
-        description = "Path of the file to select in the list when clicking this explanation, to act as if it was click-through-able"
+        description="Path of the file to select in the list when clicking this explanation, to act as if it was click-through-able"
     )
 
     @staticmethod
@@ -49,7 +48,8 @@ class SVN_explain_status(bpy.types.Operator):
         click-through in the UIList."""
         if not self.file_rel_path:
             return {'FINISHED'}
-        file_entry_idx = context.scene.svn.get_file_by_svn_path(self.file_rel_path, get_index=True)
+        file_entry_idx = context.scene.svn.get_file_by_svn_path(
+            self.file_rel_path, get_index=True)
         context.scene.svn.external_files_active_index = file_entry_idx
         return {'FINISHED'}
 
@@ -90,7 +90,7 @@ def set_svn_info(context) -> bool:
     # Populate the addon prefs with svn info.
     svn.is_in_repo = True
     dir_path = lines[1].split("Working Copy Root Path: ")[1]
-    # On Windows, for some reason the path has a \r character at the end, 
+    # On Windows, for some reason the path has a \r character at the end,
     # which breaks absolutely everything.
     dir_path = dir_path.replace("\r", "")
     svn.svn_directory = dir_path
@@ -185,7 +185,11 @@ class BGP_SVN_Status(BackgroundProcess):
 
     def acquire_output(self, context, prefs):
         try:
-            svn_status_str = execute_svn_command(context, 'svn status --show-updates --verbose --xml', use_cred=True)
+            svn_status_str = execute_svn_command(
+                context, 
+                'svn status --show-updates --verbose --xml', 
+                use_cred=True
+            )
             self.output = get_repo_file_statuses(svn_status_str)
         except subprocess.CalledProcessError as error:
             # TODO: If this is an authentication error, we should set cred.authenticated=False.
@@ -195,7 +199,7 @@ class BGP_SVN_Status(BackgroundProcess):
         if self.is_new_file:
             update_file_is_referenced_flags()
             self.is_new_file = False
-        
+
     def process_output(self, context, prefs):
         update_file_list(context, self.output)
 
@@ -210,7 +214,8 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     """Update the file list based on data from get_svn_file_statuses().
     (See timer_update_svn_status)"""
     svn = context.scene.svn
-    svn.timestamp_last_status_update = datetime.strftime(datetime.now(), "%Y/%m/%d %H:%M:%S")
+    svn.timestamp_last_status_update = datetime.strftime(
+        datetime.now(), "%Y/%m/%d %H:%M:%S")
 
     posix_paths = []
     new_files_on_repo = set()
@@ -242,7 +247,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
                 new_files_on_repo.add((file_entry, repos_status))
 
         if file_entry.status_predicted_flag == 'SINGLE':
-            # File status was predicted by a local svn file operation, 
+            # File status was predicted by a local svn file operation,
             # so we should ignore this status update and reset the flag.
             # The file status will be updated on the next status update.
             # This is because this status update was initiated before the file's
@@ -252,7 +257,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             continue
         elif file_entry.status_predicted_flag != 'NONE':
             # We wait for `svn up/commit` background processes to finish and
-            # set the predicted flag to SINGLE. Until then, we ignore status 
+            # set the predicted flag to SINGLE. Until then, we ignore status
             # updates on files that are being updated or committed.
             continue
 
@@ -268,18 +273,19 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
         file_strings = []
         for file_entry, repos_status in new_files_on_repo:
             try:
-                file_string = constants.SVN_STATUS_NAME_TO_CHAR[repos_status] + "    " + file_entry.svn_path
+                file_string = constants.SVN_STATUS_NAME_TO_CHAR[repos_status] + \
+                    "    " + file_entry.svn_path
             except KeyError:
-                print(f"No status character for this status: {file_entry.svn_path} - {repos_status}")
+                print(
+                    f"No status character for this status: {file_entry.svn_path} - {repos_status}")
                 continue
             file_strings.append(file_string)
         print(
-            "SVN: Detected file changes on remote:\n", 
-            "\n".join(file_strings), 
+            "SVN: Detected file changes on remote:\n",
+            "\n".join(file_strings),
             "\nUpdating log...\n"
         )
         processes['Log'].start()
-
 
     # Remove file entries who no longer seem to have an SVN status.
     # This can happen if an unversioned file was removed from the filesystem,
@@ -306,7 +312,7 @@ def update_file_is_referenced_flags(_dummy1=None, _dummy2=None):
         # TODO: Apparently, calling BAT's trace.deps() on Windows on the
         # current .blend file makes us unable to save the file from that point on...
         return
-    
+
     context = bpy.context
     svn = context.scene.svn
     referenced_files: Set[Path] = svn.get_referenced_filepaths()
@@ -343,8 +349,8 @@ def get_repo_file_statuses(svn_status_str: str) -> Dict[str, Tuple[str, str, int
             repos_status = repos_status_block['@item']
             _repo_props = repos_status_block['@props']
         # else:
-                # TODO: I commented this out for now, but it may be a necessary optimization
-                # if Blender starts stuttering due to the SVN status updates.
+            # TODO: I commented this out for now, but it may be a necessary optimization
+            # if Blender starts stuttering due to the SVN status updates.
             # continue
 
         wc_status_block = file_info.get('wc-status')

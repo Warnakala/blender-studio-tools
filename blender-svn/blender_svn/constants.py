@@ -97,23 +97,25 @@ SVN_STATUS_DATA = OrderedDict(
 
 # Based on PySVN/svn/constants.py/STATUS_TYPE_LOOKUP.
 ENUM_SVN_STATUS = [
-    (status, status.title(), SVN_STATUS_DATA[status][1], SVN_STATUS_DATA[status][0], i)
+    (status, status.title(),
+     SVN_STATUS_DATA[status][1], SVN_STATUS_DATA[status][0], i)
     for i, status in enumerate(SVN_STATUS_DATA.keys())
 ]
 
 
 SVN_STATUS_CHAR_TO_NAME = {
-    '' : 'normal',
-    'A' : 'added',
-    'D' : 'deleted',
-    'M' : 'modified',
-    'R' : 'replaced',
-    'C' : 'conflicted',
-    'X' : 'external',
-    'I' : 'ignored',
-    '?' : 'unversioned',
-    '!' : 'missing',
-    '~' : 'replaced'
+    '': 'normal',
+    'A': 'added',
+    'D': 'deleted',
+    'M': 'modified',
+    'R': 'replaced',
+    'C': 'conflicted',
+    'X': 'external',
+    'I': 'ignored',
+    '?': 'unversioned',
+    '!': 'missing',
+    '~': 'replaced'
 }
 
-SVN_STATUS_NAME_TO_CHAR = {value: key for key, value in SVN_STATUS_CHAR_TO_NAME.items()}
+SVN_STATUS_NAME_TO_CHAR = {value: key for key,
+                           value in SVN_STATUS_CHAR_TO_NAME.items()}

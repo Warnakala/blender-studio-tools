@@ -43,7 +43,11 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
         self.set_predicted_file_statuses(context)
         processes['Status'].stop()
         if self.reload_file:
-            self.execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
+            self.execute_svn_command(
+                context, 
+                'svn up --accept "postpone"', 
+                use_cred=True
+            )
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
             processes['Log'].start()
         else:
@@ -65,6 +69,7 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
                     f.status = 'conflicted'
                 f.status_predicted_flag = "UPDATE"
 
+
 class BGP_SVN_Update(BackgroundProcess):
     name = "Update"
     needs_authentication = True
@@ -77,7 +82,11 @@ class BGP_SVN_Update(BackgroundProcess):
 
     def acquire_output(self, context, prefs):
         try:
-            self.output = execute_svn_command(context, 'svn up --accept "postpone"', use_cred=True)
+            self.output = execute_svn_command(
+                context, 
+                'svn up --accept "postpone"', 
+                use_cred=True
+            )
         except subprocess.CalledProcessError as error:
             self.error = error.stderr.decode()
             context.scene.svn.is_busy = False

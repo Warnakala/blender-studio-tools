@@ -10,6 +10,7 @@ from .util import get_addon_prefs, redraw_viewport
 
 processes = {}
 
+
 def process_in_background(bgp_class: type, **kwargs):
     """This should be used to instantiate BackgroundProcess classes."""
     global processes
@@ -32,12 +33,12 @@ class BackgroundProcess:
 
     name = "Unnamed Process"
 
-    # If the acquire_output() function doesn't write anything into 
-    # self.output/self.error after this long, we will write a timeout 
+    # If the acquire_output() function doesn't write anything into
+    # self.output/self.error after this long, we will write a timeout
     # error into self.error.
     timeout = 10
 
-    # After a successful execution of process_output(), wait this many seconds 
+    # After a successful execution of process_output(), wait this many seconds
     # before trying to acquire_output() again.
     # If 0, repeated execution will stop.
     repeat_delay = 15
@@ -111,8 +112,8 @@ class BackgroundProcess:
 
         self.tick(context, prefs)
         if not self.is_running:
-            # Since unregistering timers seems to be broken, let's allow setting is_running 
-            # to False in order to shut down this process.
+            # Since unregistering timers seems to be broken, let's allow setting
+            # is_running to False in order to shut down this process.
             self.debug_print("Shutdown: is_running was set to False.")
             return
 
@@ -124,7 +125,8 @@ class BackgroundProcess:
                 return
 
         if not self.thread or not self.thread.is_alive() and not self.output and not self.error:
-            self.thread = threading.Thread(target=self.acquire_output, args=(context, prefs))
+            self.thread = threading.Thread(
+                target=self.acquire_output, args=(context, prefs))
             self.thread.start()
             self.debug_print("Started thread")
             return self.tick_delay
@@ -138,7 +140,8 @@ class BackgroundProcess:
             self.output = ""
             redraw_viewport()
             if self.repeat_delay == 0:
-                self.debug_print("Shutdown: Output was processed, repeat_delay==0.")
+                self.debug_print(
+                    "Shutdown: Output was processed, repeat_delay==0.")
                 self.is_running = False
                 return
             self.debug_print(f"Processed output. Waiting {self.repeat_delay}")
@@ -174,7 +177,11 @@ class BackgroundProcess:
         self.is_running = True
         if not bpy.app.timers.is_registered(self.timer_function):
             self.debug_print("Register timer")
-            bpy.app.timers.register(self.timer_function, first_interval = self.first_interval, persistent=persistent)
+            bpy.app.timers.register(
+                self.timer_function, 
+                first_interval=self.first_interval, 
+                persistent=persistent
+            )
 
     def stop(self):
         self.is_running = False

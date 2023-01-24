@@ -11,6 +11,7 @@ from . import svn_status
 from .background_process import process_in_background
 from .util import redraw_viewport, get_addon_prefs
 
+
 class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
     name = "Authenticate"
     needs_authentication = False
@@ -53,8 +54,8 @@ class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
 class SVN_credential(bpy.types.PropertyGroup):
     """Authentication information of a single SVN repository."""
     url: StringProperty(
-        name = "SVN URL",
-        description = "URL of the remote repository"
+        name="SVN URL",
+        description="URL of the remote repository"
     )
 
     def update_cred(self, context):
@@ -67,39 +68,38 @@ class SVN_credential(bpy.types.PropertyGroup):
         process_in_background(BGP_SVN_Authenticate)
         svn_status.init_svn(context, None)
 
-        # For some ungodly reason, ONLY with this addon, 
+        # For some ungodly reason, ONLY with this addon,
         # CollectionProperties stored in the AddonPrefs do not get
         # auto-saved, only manually saved! So... we get it done.
         if context.preferences.use_preferences_save:
             bpy.ops.wm.save_userpref()
 
-
     username: StringProperty(
-        name = "SVN Username",
-        description = "User name used for authentication with this SVN repository",
-        update = update_cred
+        name="SVN Username",
+        description="User name used for authentication with this SVN repository",
+        update=update_cred
     )
     password: StringProperty(
-        name = "SVN Password",
-        description = "Password used for authentication with this SVN repository. This password is stored in your Blender user preferences as plain text. Somebody with access to your user preferences will be able to read your password",
+        name="SVN Password",
+        description="Password used for authentication with this SVN repository. This password is stored in your Blender user preferences as plain text. Somebody with access to your user preferences will be able to read your password",
         subtype='PASSWORD',
-        update = update_cred
+        update=update_cred
     )
 
     authenticated: BoolProperty(
-        name = "Authenticated",
-        description = "Internal flag to mark whether the last entered credentials were confirmed by the repo as correct credentials",
-        default = False
+        name="Authenticated",
+        description="Internal flag to mark whether the last entered credentials were confirmed by the repo as correct credentials",
+        default=False
     )
     auth_failed: BoolProperty(
-        name = "Authentication Failed",
-        description = "Internal flag to mark whether the last entered credentials were denied by the repo",
-        default = False
+        name="Authentication Failed",
+        description="Internal flag to mark whether the last entered credentials were denied by the repo",
+        default=False
     )
 
 
 class SVN_UL_credentials(bpy.types.UIList):
-    
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         thing = item
         row = layout.row()
@@ -114,8 +114,8 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 
     svn_credentials: CollectionProperty(type=SVN_credential)
     svn_cred_active_idx: IntProperty(
-        name = "SVN Credentials",
-        options = set()
+        name="SVN Credentials",
+        options=set()
     )
 
     def get_credentials(self) -> Optional[SVN_credential]:
@@ -131,7 +131,7 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 
         layout.label(text="Saved credentials:")
         col = layout.column()
-        col.enabled=False
+        col.enabled = False
         col.template_list(
             "SVN_UL_credentials",
             "svn_cred_list",
@@ -163,8 +163,10 @@ registry = [
     SVN_addon_preferences
 ]
 
+
 def register():
     bpy.app.handlers.load_post.append(try_authenticating_on_file_load)
+
 
 def unregister():
     bpy.app.handlers.load_post.remove(try_authenticating_on_file_load)

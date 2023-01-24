@@ -14,6 +14,7 @@ from .execute_subprocess import execute_svn_command
 
 # TODO: Maybe add an operator to revert all local changes to the working copy?
 
+
 class SVN_Operator:
     def execute_svn_command(self, context, command: str, use_cred=False) -> str:
         # Since a status update might already be being requested when an SVN operator is run,
@@ -90,9 +91,9 @@ class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
         return context.scene.svn.current_blend_file.svn_path == self.file_rel_path
 
     reload_file: BoolProperty(
-        name = "Reload File",
-        description = "Reload the file after the operation is completed. The UI layout will be preserved",
-        default = False,
+        name="Reload File",
+        description="Reload the file after the operation is completed. The UI layout will be preserved",
+        default=False,
     )
 
     def invoke(self, context, event):
@@ -111,7 +112,7 @@ class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
         super().draw(context)
         if self.file_is_current_blend(context):
             self.layout.prop(self, 'reload_file')
-    
+
     def execute(self, context):
         super().execute(context)
         if self.reload_file:
@@ -136,12 +137,17 @@ class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
         if file_entry.status != 'normal':
             self.will_conflict = True
 
-        self.execute_svn_command(context, f'svn up "{self.file_rel_path}" --accept "postpone"', use_cred=True)
+        self.execute_svn_command(
+            context,
+            f'svn up "{self.file_rel_path}" --accept "postpone"',
+            use_cred=True
+        )
 
-        self.report({'INFO'}, f"Updated {self.file_rel_path} to the latest version.")
+        self.report({'INFO'},
+                    f"Updated {self.file_rel_path} to the latest version.")
 
     def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
-        if self.will_conflict: 
+        if self.will_conflict:
             file_entry.status = 'conflicted'
         else:
             file_entry.status = 'normal'
@@ -163,7 +169,8 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
     def invoke(self, context, event):
         file_entry = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
         if self.file_is_current_blend(context) and file_entry.status != 'normal':
-            self.report({'ERROR'}, 'You must first revert or commit the changes to this file.')
+            self.report({'ERROR'},
+                        'You must first revert or commit the changes to this file.')
             return {'CANCELLED'}
         return super().invoke(context, event)
 
@@ -172,12 +179,15 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
         if file_entry.status == 'modified':
             # If file has local modifications, let's avoid a conflict by cancelling
             # and telling the user to resolve it in advance.
-            self.report({'ERROR'}, "Cancelled: You have local modifications to this file. You must revert or commit it first!")
+            self.report({'ERROR'},
+                        "Cancelled: You have local modifications to this file. You must revert or commit it first!")
             return {'CANCELLED'}
 
-        self.execute_svn_command(context, f'svn up -r{self.revision} "{self.file_rel_path}" --accept "postpone"', use_cred=True)
+        self.execute_svn_command(
+            context, f'svn up -r{self.revision} "{self.file_rel_path}" --accept "postpone"', use_cred=True)
 
-        self.report({'INFO'}, f"Checked out revision {self.revision} of {self.file_rel_path}")
+        self.report({'INFO'},
+                    f"Checked out revision {self.revision} of {self.file_rel_path}")
 
         return {"FINISHED"}
 
@@ -202,11 +212,15 @@ class SVN_download_repo_revision(SVN_Operator, bpy.types.Operator):
     revision: IntProperty()
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # TODO: 
-        # This will probably fail if any files that would be affected are already locally modified. 
+        # TODO:
+        # This will probably fail if any files that would be affected are already locally modified.
         # Figure out how that should be handled.
         # Also, this could take a long time potentially, we should either figure out a way to provide a progress bar (impossible) or do it in the background (may be dangerous, since current file could end up getting modified and not reloaded)
-        self.execute_svn_command(context, f'svn up -r{self.revision} --accept "postpone"', use_cred=True)
+        self.execute_svn_command(
+            context,
+            f'svn up -r{self.revision} --accept "postpone"',
+            use_cred=True
+        )
         return {"FINISHED"}
 
     def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
@@ -255,7 +269,10 @@ class SVN_add_file(SVN_Operator_Single_File, bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        result = self.execute_svn_command(context, f'svn add "{self.file_rel_path}"')
+        result = self.execute_svn_command(
+            context,
+            f'svn add "{self.file_rel_path}"'
+        )
 
         if result:
             f = self.get_file(context)
@@ -272,12 +289,15 @@ class SVN_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        self.execute_svn_command(context, f'svn rm --keep-local "{self.file_rel_path}"')
+        self.execute_svn_command(
+            context,
+            f'svn rm --keep-local "{self.file_rel_path}"'
+        )
 
         return {"FINISHED"}
 
     def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
-            file_entry.status = 'unversioned'
+        file_entry.status = 'unversioned'
 
 
 class SVN_trash_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Operator):
@@ -328,11 +348,13 @@ class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     resolve_method: EnumProperty(
-        name = "Resolve Method",
-        description = "Method to use to resolve the conflict",
-        items = [
-            ('mine-full', 'Keep Mine', 'Overwrite the new changes downloaded from the remote, and keep the local changes instead'),
-            ('theirs-full', 'Keep Theirs', 'Overwrite the local changes with those downloaded from the remote'),
+        name="Resolve Method",
+        description="Method to use to resolve the conflict",
+        items=[
+            ('mine-full', 'Keep Mine',
+             'Overwrite the new changes downloaded from the remote, and keep the local changes instead'),
+            ('theirs-full', 'Keep Theirs',
+             'Overwrite the local changes with those downloaded from the remote'),
         ]
     )
 
@@ -343,18 +365,22 @@ class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         col = layout.column(align=True)
-        col.alert=True
+        col.alert = True
         col.label(text="Choose which version of the file to keep.")
         col.row().prop(self, 'resolve_method', expand=True)
         if self.resolve_method == 'mine-full':
             col.label(text="Local changes will be kept.")
-            col.label(text="When committing, the changes someone else made will be overwritten.")
+            col.label(
+                text="When committing, the changes someone else made will be overwritten.")
         else:
             col.label(text="Local changes will be permanently lost.")
             super().draw(context)
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        self.execute_svn_command(context, f'svn resolve "{self.file_rel_path}" --accept "{self.resolve_method}"')
+        self.execute_svn_command(
+            context,
+            f'svn resolve "{self.file_rel_path}" --accept "{self.resolve_method}"'
+        )
 
         return {"FINISHED"}
 
@@ -382,7 +408,6 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
         self.report({'INFO'}, "SVN Cleanup complete.")
 
         return {"FINISHED"}
-
 
 
 registry = [

@@ -39,7 +39,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
     first_line: StringProperty(
         name="First Line",
-        description = "First line of the commit message",
+        description="First line of the commit message",
         update=update_first_line
     )
 
@@ -48,7 +48,8 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         """Return the list of file entries whose status allows committing"""
         svn_file_list = context.scene.svn.external_files
         committable_statuses = ['modified', 'added', 'deleted']
-        files_to_commit = [f for f in svn_file_list if f.status in committable_statuses]
+        files_to_commit = [
+            f for f in svn_file_list if f.status in committable_statuses]
         return files_to_commit
 
     @classmethod
@@ -77,7 +78,8 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         """Draws the boolean toggle list with a list of strings for the button texts."""
         layout = self.layout
         files = self.get_committable_files(context)
-        layout.label(text="These files will be pushed to the remote repository:")
+        layout.label(
+            text="These files will be pushed to the remote repository:")
         svn = context.scene.svn
         row = layout.row()
         row.label(text="Filename")
@@ -95,7 +97,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         row = layout.row()
         row.label(text="Commit message:")
-        # Draw input box for first line, which is special because we want it to 
+        # Draw input box for first line, which is special because we want it to
         # get focused automatically for smooth UX. (see `bl_property` above)
         row = layout.row()
         row.prop(self, 'first_line', text="")
@@ -105,7 +107,8 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             # Why two after the last line? Because then you can use Tab to go to the next line.
             # Why at least 3 lines? Because then you can write a one-liner without
             # the OK button jumping away.
-            layout.prop(context.scene.svn.commit_lines[i], 'line', index=i, text="")
+            layout.prop(
+                context.scene.svn.commit_lines[i], 'line', index=i, text="")
             continue
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -113,24 +116,31 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         files_to_commit = [f for f in committable_files if f.include_in_commit]
 
         if not files_to_commit:
-            self.report({'ERROR'}, "No files were selected, nothing to commit.")
+            self.report({'ERROR'},
+                        "No files were selected, nothing to commit.")
             return {'CANCELLED'}
 
         if len(context.scene.svn.commit_message) < 2:
-            self.report({'ERROR'}, "Please describe your changes in the commit message.")
+            self.report({'ERROR'},
+                        "Please describe your changes in the commit message.")
             return {'CANCELLED'}
 
         filepaths = [f.svn_path for f in files_to_commit]
 
         self.set_predicted_file_statuses(files_to_commit)
-        process_in_background(BGP_SVN_Commit, commit_msg=context.scene.svn.commit_message, file_list = filepaths)
+        process_in_background(
+            BGP_SVN_Commit,
+            commit_msg=context.scene.svn.commit_message,
+            file_list=filepaths
+        )
         processes['Status'].stop()
         context.scene.svn.is_busy = True
 
         report = f"{(len(files_to_commit))} files"
         if len(files_to_commit) == 1:
             report = files_to_commit[0].svn_path
-        self.report({'INFO'}, f"Started committing {report}. See console for when it's finished.")
+        self.report({'INFO'},
+                    f"Started committing {report}. See console for when it's finished.")
 
         return {"FINISHED"}
 
@@ -168,7 +178,11 @@ class BGP_SVN_Commit(BackgroundProcess):
 
         try:
             sanitized_commit_msg = self.commit_msg.replace('"', "'")
-            self.output = execute_svn_command(context, f'svn commit -m "{sanitized_commit_msg}" {filepaths}', use_cred=True)
+            self.output = execute_svn_command(
+                context,
+                f'svn commit -m "{sanitized_commit_msg}" {filepaths}',
+                use_cred=True
+            )
         except subprocess.CalledProcessError as error:
             print("Commit failed.")
             self.error = error.stderr.decode()
@@ -187,6 +201,7 @@ class BGP_SVN_Commit(BackgroundProcess):
         context.scene.svn.commit_message = ""
         context.scene.svn.is_busy = False
         self.file_list = []
+
 
 registry = [
     SVN_commit_msg_clear,

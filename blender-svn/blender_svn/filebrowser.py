@@ -9,6 +9,7 @@ from .svn_log import draw_svn_log
 from .ui import draw_svn_file_list
 from .background_process import BackgroundProcess, process_in_background
 
+
 class FILEBROWSER_PT_SVN_files(FileBrowserPanel, bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_region_type = 'TOOLS'
@@ -44,7 +45,7 @@ class FILEBROWSER_PT_SVN_log(FileBrowserPanel, bpy.types.Panel):
     def poll(cls, context):
         if not super().poll(context):
             return False
-        
+
         svn = context.scene.svn
         if not svn.is_in_repo:
             return False
@@ -74,7 +75,7 @@ class BGP_SVN_Activate_File(BackgroundProcess):
 
     def acquire_output(self, context, prefs):
         self.output = "dummy"
-    
+
     def process_output(self, context, prefs):
         if not hasattr(context.scene, 'svn'):
             return
@@ -82,17 +83,20 @@ class BGP_SVN_Activate_File(BackgroundProcess):
         svn = context.scene.svn
         for area in context.screen.areas:
             if area.type == 'FILE_BROWSER':
-                area.spaces.active.activate_file_by_relative_path(relative_path=svn.active_file.name)
-        
+                area.spaces.active.activate_file_by_relative_path(
+                    relative_path=svn.active_file.name)
+
         self.stop()
 
     def get_ui_message(self, context):
         return ""
 
+
 registry = [
     FILEBROWSER_PT_SVN_files,
     FILEBROWSER_PT_SVN_log
 ]
+
 
 def register():
     process_in_background(BGP_SVN_Activate_File)

@@ -2,29 +2,32 @@
 # (c) 2021, Blender Foundation - Paul Golter
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
+from .background_process import processes
+from . import constants
+from .svn_log import reload_svn_log
+from .util import make_getter_func, make_setter_func_readonly
+from blender_asset_tracer import trace
+
 from typing import Optional, Dict, Any, List, Tuple, Set
 
 from pathlib import Path
 from datetime import datetime
 
-import bpy, logging
+import bpy
+import logging
 from bpy.props import IntProperty, StringProperty, CollectionProperty, BoolProperty, EnumProperty
 
 from . import wheels
 # This will load the dateutil and svn wheel file.
 wheels.preload_dependencies()
-from blender_asset_tracer import trace
 
-from .util import make_getter_func, make_setter_func_readonly
-from .svn_log import reload_svn_log
-from . import constants
-from .background_process import processes
 
 logger = logging.getLogger("SVN")
 
 ################################################################################
 ############################# DATA TYPES #######################################
 ################################################################################
+
 
 class SVN_file(bpy.types.PropertyGroup):
     """Property Group that can represent a version of a File in an SVN repository."""
@@ -33,45 +36,45 @@ class SVN_file(bpy.types.PropertyGroup):
         name="File Name",
         get=make_getter_func("name", ""),
         set=make_setter_func_readonly("name"),
-        options = set()
+        options=set()
     )
     svn_path: StringProperty(
-        name = "SVN Path",
+        name="SVN Path",
         description="Filepath relative to the SVN root",
         get=make_getter_func("svn_path", ""),
         set=make_setter_func_readonly("svn_path"),
-        options = set()
+        options=set()
     )
     status: EnumProperty(
         name="Status",
-        description = "SVN Status of the file in the local repository (aka working copy)",
+        description="SVN Status of the file in the local repository (aka working copy)",
         items=constants.ENUM_SVN_STATUS,
         default="normal",
-        options = set()
+        options=set()
     )
     repos_status: EnumProperty(
         name="Remote's Status",
-        description = "SVN Status of the file in the remote repository (periodically updated)",
+        description="SVN Status of the file in the remote repository (periodically updated)",
         items=constants.ENUM_SVN_STATUS,
         default="none",
-        options = set()
+        options=set()
     )
     status_predicted_flag: EnumProperty(
-        name = "Status Predicted By Process",
-        items = [
+        name="Status Predicted By Process",
+        items=[
             ("NONE", "None", "File status is not predicted, but actual"),
             ("UPDATE", "Update", "File status is predicted by `svn up`. Status is protected until process is finished"),
             ("COMMIT", "Commit", "File status is predicted by `svn commit`. Status is protected until process is finished"),
             ("SINGLE", "Single", "File status is predicted by a local svn file operation. Next status update is ignored, and this enum is set back to NONE"),
         ],
-        description = "Internal flag that notes what process set a predicted status on this file. Should be empty string when the status is not predicted but confirmed. When svn commit/update predicts a status, that status should not be overwritten until the process is finished. With instantaneous processes, a single status update should be ignored since it may be outdated",
-        options = set()
+        description="Internal flag that notes what process set a predicted status on this file. Should be empty string when the status is not predicted but confirmed. When svn commit/update predicts a status, that status should not be overwritten until the process is finished. With instantaneous processes, a single status update should be ignored since it may be outdated",
+        options=set()
     )
     include_in_commit: BoolProperty(
-        name = "Commit",
-        description = "Whether this file should be included in the commit or not",
-        default = False,
-        options = set()
+        name="Commit",
+        description="Whether this file should be included in the commit or not",
+        default=False,
+        options=set()
     )
 
     @property
@@ -91,15 +94,15 @@ class SVN_file(bpy.types.PropertyGroup):
         return self.repos_status == 'modified' and self.status == 'normal'
 
     revision: IntProperty(
-        name = "Revision",
-        description = "Revision number",
-        options = set()
+        name="Revision",
+        description="Revision number",
+        options=set()
     )
     is_referenced: BoolProperty(
-        name = "Is Referenced",
-        description = "True when this file is referenced by this .blend file either directly or indirectly. Flag used for list filtering",
-        default = False,
-        options = set()
+        name="Is Referenced",
+        description="True when this file is referenced by this .blend file either directly or indirectly. Flag used for list filtering",
+        default=False,
+        options=set()
     )
 
     @property
@@ -118,7 +121,7 @@ class SVN_file(bpy.types.PropertyGroup):
         if self.status == 'none':
             return 'Outdated'
         return self.status.title()
-    
+
     @property
     def file_icon(self) -> str:
         if '.' not in self.name:
@@ -137,7 +140,7 @@ class SVN_file(bpy.types.PropertyGroup):
             return 'SEQUENCE'
         elif extension in ['mp3', 'ogg', 'wav']:
             return 'SPEAKER'
-        
+
         return 'QUESTION'
 
 
@@ -157,14 +160,14 @@ class SVN_log(bpy.types.PropertyGroup):
         description="SVN username of the revision author",
     )
     commit_message: StringProperty(
-        name = "Commit Message",
+        name="Commit Message",
         description="Commit message written by the commit author to describe the changes in this revision",
     )
 
     changed_files: CollectionProperty(
-        type = SVN_file,
-        name = "Changed Files",
-        description = "List of file paths relative to the SVN root that were affected by this revision"
+        type=SVN_file,
+        name="Changed Files",
+        description="List of file paths relative to the SVN root that were affected by this revision"
     )
 
     def changed_file(self, svn_path: str) -> bool:
@@ -218,9 +221,9 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         description="If SVN throws an error other than authentication error, store it here",
     )
     is_busy: BoolProperty(
-        name = "Is Busy",
-        description = "Indicates whether there is an ongoing SVN Update or Commit. For internal use only, to prevent both processes from trying to run at the same time, which is not allowed by SVN",
-        default = False
+        name="Is Busy",
+        description="Indicates whether there is an ongoing SVN Update or Commit. For internal use only, to prevent both processes from trying to run at the same time, which is not allowed by SVN",
+        default=False
     )
 
     def reset_info(self):
@@ -228,7 +231,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         self.svn_directory = ""
         self.svn_url = ""
         self.is_in_repo = False
-
 
     ### Blender Asset Tracer  Integration ######################################
 
@@ -273,7 +275,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         bat_logger.setLevel(0)
         return reported_assets
 
-
     ### SVN File List ##########################################################
 
     def remove_file_entry(self, file_entry: SVN_file):
@@ -293,7 +294,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
 
     def get_file_by_svn_path(self, svn_path: str or Path, get_index=False) -> Optional[Tuple[int, SVN_file]]:
         if isinstance(svn_path, Path):
-            # We must use isinstance() instead of type() because apparently 
+            # We must use isinstance() instead of type() because apparently
             # the Path() constructor returns a WindowsPath object on Windows.
             svn_path = svn_path.as_posix()
 
@@ -309,10 +310,11 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         """When user clicks on a different file, the latest log entry of that file
         should become the active log entry."""
 
-        latest_idx = self.get_latest_revision_of_file(self.active_file.svn_path)
+        latest_idx = self.get_latest_revision_of_file(
+            self.active_file.svn_path)
         # SVN Revisions are not 0-indexed, so we need to subtract 1.
         self.log_active_index = latest_idx-1
-        
+
         space = context.space_data
         if space and space.type == 'FILE_BROWSER':
             # Set the active file in the file browser to whatever was selected in the SVN Files panel.
@@ -322,14 +324,15 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
             space.params.filename = self.active_file.name.encode()
 
             space.deselect_all()
-            space.activate_file_by_relative_path(relative_path=self.active_file.name)
+            space.activate_file_by_relative_path(
+                relative_path=self.active_file.name)
             processes['Activate File'].start()
 
     external_files_active_index: bpy.props.IntProperty(
-        name = "File List",
-        description = "Files tracked by SVN",
-        update = update_active_file,
-        options = set()
+        name="File List",
+        description="Files tracked by SVN",
+        update=update_active_file,
+        options=set()
     )
 
     @property
@@ -368,16 +371,16 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     def current_blend_file(self) -> SVN_file:
         return self.get_file_by_svn_path(self.absolute_to_svn_path(Path(bpy.data.filepath)))
 
-
     ### SVN File List UIList filter properties #################################
     # These are normally stored on the UIList, but then they cannot be accessed
     # from anywhere else, since template_list() does not return the UIList instance.
-    # We need to be able to access them outside of drawing code, to be able to 
-    # know which entries are visible and ensure that a filtered out entry can never 
+    # We need to be able to access them outside of drawing code, to be able to
+    # know which entries are visible and ensure that a filtered out entry can never
     # be the active one.
 
     def get_visible_indicies(self, context) -> List[int]:
-        flt_flags, _flt_neworder = bpy.types.SVN_UL_file_list.cls_filter_items(context, self, 'external_files')
+        flt_flags, _flt_neworder = bpy.types.SVN_UL_file_list.cls_filter_items(
+            context, self, 'external_files')
 
         visible_indicies = [i for i, flag in enumerate(flt_flags) if flag != 0]
         return visible_indicies
@@ -399,23 +402,22 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         context.scene.svn.force_good_active_index(context)
 
     include_normal: BoolProperty(
-        name = "Show Normal Files",
-        description = "Include files whose SVN status is Normal",
-        default = False,
-        update = update_filters
+        name="Show Normal Files",
+        description="Include files whose SVN status is Normal",
+        default=False,
+        update=update_filters
     )
     only_referenced_files: BoolProperty(
-        name = "Only Referenced Files",
-        description = "Only show modified files referenced by this .blend file, rather than the entire repository",
-        default = False,
-        update = update_filters
+        name="Only Referenced Files",
+        description="Only show modified files referenced by this .blend file, rather than the entire repository",
+        default=False,
+        update=update_filters
     )
     search_filter: StringProperty(
-        name = "Search Filter",
-        description = "Only show entries that contain this string",
-        update = update_filters
+        name="Search Filter",
+        description="Only show entries that contain this string",
+        update=update_filters
     )
-
 
     ### SVN File List Status Updating ##########################################
 
@@ -428,22 +430,22 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
     def seconds_since_last_update(self):
         if not self.timestamp_last_status_update:
             return 1000
-        last_update_time = datetime.strptime(self.timestamp_last_status_update, "%Y/%m/%d %H:%M:%S")
+        last_update_time = datetime.strptime(
+            self.timestamp_last_status_update, "%Y/%m/%d %H:%M:%S")
         current_time = datetime.now()
         delta = current_time - last_update_time
         return delta.seconds
-
 
     ### SVN Log / Revision History #############################################
 
     log: bpy.props.CollectionProperty(type=SVN_log)
     log_active_index: bpy.props.IntProperty(
-        name = "SVN Log",
-        options = set()
+        name="SVN Log",
+        options=set()
     )
     log_active_index_filebrowser: bpy.props.IntProperty(
-        name = "SVN Log",
-        options = set()
+        name="SVN Log",
+        options=set()
     )
 
     reload_svn_log = reload_svn_log
@@ -484,14 +486,13 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         current = file.revision
         return latest > current
 
-
     ### SVN Commit Message #####################################################
     commit_lines: CollectionProperty(type=SVN_commit_line)
 
     @property
     def commit_message(self):
         return "\n".join([l.line for l in self.commit_lines]).strip()
-    
+
     @commit_message.setter
     def commit_message(self, msg: str):
         self.commit_lines.clear()
@@ -510,6 +511,7 @@ registry = [
     SVN_commit_line,
     SVN_scene_properties,
 ]
+
 
 def register() -> None:
     # Scene Properties.

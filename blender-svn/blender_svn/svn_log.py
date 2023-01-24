@@ -16,11 +16,12 @@ from .background_process import BackgroundProcess, process_in_background, proces
 ################################ UI / UX #######################################
 ################################################################################
 
+
 def layout_log_split(layout):
     main = layout.split(factor=0.4)
     num_and_auth = main.row()
     date_and_msg = main.row()
-    
+
     num_and_auth_split = num_and_auth.split(factor=0.3)
     num = num_and_auth_split.row()
     auth = num_and_auth_split.row()
@@ -34,9 +35,9 @@ def layout_log_split(layout):
 
 class SVN_UL_log(bpy.types.UIList):
     show_all_logs: BoolProperty(
-        name = 'Show All Logs',
-        description = 'Show the complete SVN Log, instead of only entries that affected the currently selected file',
-        default = False
+        name='Show All Logs',
+        description='Show the complete SVN Log, instead of only entries that affected the currently selected file',
+        default=False
     )
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -49,22 +50,28 @@ class SVN_UL_log(bpy.types.UIList):
         num, auth, date, msg = layout_log_split(layout.row())
 
         is_filebrowser = context.space_data.type == 'FILE_BROWSER'
-        active_file = svn.get_filebrowser_active_file(context) if is_filebrowser else svn.active_file
+        active_file = svn.get_filebrowser_active_file(
+            context) if is_filebrowser else svn.active_file
         num.label(text=str(log_entry.revision_number))
         if item.revision_number == active_file.revision:
-            num.operator('svn.tooltip_log', text="", icon='LAYER_ACTIVE', emboss=False).log_rev=log_entry.revision_number
+            num.operator('svn.tooltip_log', text="", icon='LAYER_ACTIVE',
+                         emboss=False).log_rev = log_entry.revision_number
         elif log_entry.changed_file(active_file.svn_path):
-            get_older = num.operator('svn.download_file_revision', text="", icon='IMPORT', emboss=False)
+            get_older = num.operator(
+                'svn.download_file_revision', text="", icon='IMPORT', emboss=False)
             get_older.revision = log_entry.revision_number
             get_older.file_rel_path = active_file.svn_path
         auth.label(text=log_entry.revision_author)
         date.label(text=log_entry.revision_date.split(" ")[0][5:])
 
         commit_msg = log_entry.commit_message
-        commit_msg = commit_msg.split("\n")[0] if "\n" in commit_msg else commit_msg
-        commit_msg = commit_msg[:50]+"..." if len(commit_msg) > 52 else commit_msg
+        commit_msg = commit_msg.split(
+            "\n")[0] if "\n" in commit_msg else commit_msg
+        commit_msg = commit_msg[:50] + \
+            "..." if len(commit_msg) > 52 else commit_msg
         msg.alignment = 'LEFT'
-        msg.operator("svn.display_commit_message", text=commit_msg, emboss=False).log_rev=log_entry.revision_number
+        msg.operator("svn.display_commit_message", text=commit_msg,
+                     emboss=False).log_rev = log_entry.revision_number
 
     def filter_items(self, context, data, propname):
         """Custom filtering functionality:
@@ -77,11 +84,13 @@ class SVN_UL_log(bpy.types.UIList):
         # Start off with all entries flagged as visible.
         flt_flags = [self.bitflag_filter_item] * len(log_entries)
         # Always sort by descending revision number
-        flt_neworder = sorted(range(len(log_entries)), key=lambda i: log_entries[i].revision_number)
+        flt_neworder = sorted(range(len(log_entries)),
+                              key=lambda i: log_entries[i].revision_number)
         flt_neworder.reverse()
 
         is_filebrowser = context.space_data.type == 'FILE_BROWSER'
-        active_file = svn.get_filebrowser_active_file(context) if is_filebrowser else svn.active_file
+        active_file = svn.get_filebrowser_active_file(
+            context) if is_filebrowser else svn.active_file
 
         if not self.show_all_logs:
             # Filter out log entries that did not affect the selected file.
@@ -102,7 +111,8 @@ class SVN_UL_log(bpy.types.UIList):
                     [
                         "r"+str(log_entry.revision_number),
                         log_entry.revision_author,
-                        " ".join([f.svn_path for f in log_entry.changed_files]),
+                        " ".join(
+                            [f.svn_path for f in log_entry.changed_files]),
                         log_entry.commit_message,
                     ]
                 ):
@@ -115,7 +125,8 @@ class SVN_UL_log(bpy.types.UIList):
         """
         main_row = layout.row()
         main_row.prop(self, 'filter_name', text="")
-        main_row.prop(self, 'show_all_logs', text="", toggle=True, icon='ALIGN_JUSTIFY')
+        main_row.prop(self, 'show_all_logs', text="",
+                      toggle=True, icon='ALIGN_JUSTIFY')
 
 
 class VIEW3D_PT_svn_log(bpy.types.Panel):
@@ -138,7 +149,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         active_file = context.scene.svn.active_file
         if active_file.status in ['unversioned', 'added']:
             return False
-        
+
         if svn.seconds_since_last_update > 30:
             return False
 
@@ -150,6 +161,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         layout.use_property_decorate = False
 
         draw_svn_log(context, layout, file_browser=False)
+
 
 def draw_svn_log(context, layout, file_browser: bool):
     num, auth, date, msg = layout_log_split(layout.row())
@@ -169,22 +181,24 @@ def draw_svn_log(context, layout, file_browser: bool):
     active_log = context.scene.svn.active_log_filebrowser if file_browser else context.scene.svn.active_log
     if not active_log:
         return
-    layout.label(text=f"Files changed in revision `r{active_log.revision_number}`:")
+    layout.label(
+        text=f"Files changed in revision `r{active_log.revision_number}`:")
 
     col = layout.column(align=True)
     row = col.row()
     split = row.split(factor=0.80)
     split.label(text="          Filepath")
     row = split.row()
-    row.alignment='RIGHT'
+    row.alignment = 'RIGHT'
     row.label(text="Action")
     for f in active_log.changed_files:
         row = col.row()
         split = row.split(factor=0.90)
         split.prop(f, 'svn_path', emboss=False, text="", icon=f.file_icon)
         row = split.row()
-        row.alignment='RIGHT'
-        row.operator('svn.explain_status', text="", icon=f.status_icon, emboss=False).status = f.status
+        row.alignment = 'RIGHT'
+        row.operator('svn.explain_status', text="",
+                     icon=f.status_icon, emboss=False).status = f.status
 
 
 def execute_tooltip_log(self, context):
@@ -201,12 +215,12 @@ def execute_tooltip_log(self, context):
 
 class SVN_tooltip_log(bpy.types.Operator):
     bl_idname = "svn.tooltip_log"
-    bl_label = "" # Don't want the first line of the tooltip on mouse hover.
+    bl_label = ""  # Don't want the first line of the tooltip on mouse hover.
     # bl_description = "An operator to be drawn in the log list, that can display a dynamic tooltip"
     bl_options = {'INTERNAL'}
 
     log_rev: IntProperty(
-        description = "Revision number of the log entry to show in the tooltip"
+        description="Revision number of the log entry to show in the tooltip"
     )
 
     @classmethod
@@ -218,17 +232,18 @@ class SVN_tooltip_log(bpy.types.Operator):
 
 class SVN_show_commit_message(bpy.types.Operator):
     bl_idname = "svn.display_commit_message"
-    bl_label = "" # Don't want the first line of the tooltip on mouse hover.
+    bl_label = ""  # Don't want the first line of the tooltip on mouse hover.
     # bl_description = "Show the currently active commit, using a dynamic tooltip"
     bl_options = {'INTERNAL'}
 
     log_rev: IntProperty(
-        description = "Revision number of the log entry to show in the tooltip"
+        description="Revision number of the log entry to show in the tooltip"
     )
 
     @classmethod
     def description(cls, context, properties):
-        log_entry = context.scene.svn.get_log_by_revision(properties.log_rev)[1]
+        log_entry = context.scene.svn.get_log_by_revision(properties.log_rev)[
+            1]
         commit_msg = log_entry.commit_message
 
         # Prettify the tooltips.
@@ -246,7 +261,7 @@ class SVN_show_commit_message(bpy.types.Operator):
             if len(line) > limit:
                 words = line.split(" ")
                 sub_lines = []
-                
+
                 new_line = ""
                 for word in words:
                     if len(new_line) + len(word) < limit:
@@ -267,7 +282,6 @@ class SVN_show_commit_message(bpy.types.Operator):
         return pretty_msg
 
     execute = execute_tooltip_log
-
 
 
 ################################################################################
@@ -292,7 +306,7 @@ def reload_svn_log(self, context):
 
     chunks = []
     with open(filepath, 'r') as f:
-        next(f) # Skip the first line of dashes.
+        next(f)  # Skip the first line of dashes.
         chunk = []
         for line in f:
             line = line.replace("\n", "")
@@ -374,8 +388,8 @@ def write_to_svn_log_file_and_storage(context, data_str: str) -> int:
             # We want to skip the first line of the svn log when continuing,
             # to avoid duplicate dashed lines, which would also mess up our
             # parsing logic.
-            data_str = data_str[73:] # 72 dashes and a newline
-            data_str = "\n" + data_str # TODO: This is untested on windows.
+            data_str = data_str[73:]  # 72 dashes and a newline
+            data_str = "\n" + data_str  # TODO: This is untested on windows.
 
         # On Windows, the `svn log` command outputs lines with all sorts of \r and \n shennanigans.
         # TODO: For this reason, this should be implemented with the --xml arg.
@@ -409,18 +423,18 @@ class BGP_SVN_Log(BackgroundProcess):
         latest_log_rev = 0
         if len(svn.log) > 0:
             latest_log_rev = svn.log[-1].revision_number
-        
+
         self.debug_print("Acquire output...")
 
-        # We have no way to know if latest_log_rev+1 will exist or not, but we 
-        # must check, and there is no safe way to check it, so let's just 
+        # We have no way to know if latest_log_rev+1 will exist or not, but we
+        # must check, and there is no safe way to check it, so let's just
         # catch and handle the potential error.
         try:
             self.output = execute_svn_command(
                 context,
-                f"svn log --verbose -r{latest_log_rev+1}:HEAD --limit 10", 
-                print_errors = False,
-                use_cred = True
+                f"svn log --verbose -r{latest_log_rev+1}:HEAD --limit 10",
+                print_errors=False,
+                use_cred=True
             )
             self.debug_print("Output: \n" + self.output)
         except subprocess.CalledProcessError as error:
@@ -446,12 +460,14 @@ class BGP_SVN_Log(BackgroundProcess):
 ############################### REGISTER #######################################
 ################################################################################
 
+
 registry = [
-    VIEW3D_PT_svn_log, 
-    SVN_UL_log, 
-    SVN_tooltip_log, 
+    VIEW3D_PT_svn_log,
+    SVN_UL_log,
+    SVN_tooltip_log,
     SVN_show_commit_message
 ]
+
 
 def register():
     process_in_background(BGP_SVN_Log)

@@ -16,7 +16,7 @@ def redraw_viewport() -> None:
             area.tag_redraw()
 
 
-def get_addon_prefs(context: bpy.types.Context=None) -> bpy.types.AddonPreferences:
+def get_addon_prefs(context: bpy.types.Context = None) -> bpy.types.AddonPreferences:
     return context.preferences.addons[__package__].preferences
 
 
@@ -25,6 +25,7 @@ def make_setter_func_readonly(prop: str) -> Callable:
     We can use a 'lock' toggle to prevent changing properties in the UI.
     This way we can avoid graying out read-only properties in the UI.
     """
+
     def set_readonly(self, value: Any):
         if hasattr(self, 'lock'):
             if self.lock:
