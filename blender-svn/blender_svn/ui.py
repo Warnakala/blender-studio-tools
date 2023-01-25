@@ -132,14 +132,18 @@ class SVN_UL_file_list(bpy.types.UIList):
         def has_default_status(file):
             return file.status == 'normal' and file.repos_status == 'none'
 
-        if svn.search_filter:
-            flt_flags = helper_funcs.filter_items_by_name(svn.search_filter, cls.UILST_FLT_ITEM, list_items, "name",
+        if svn.file_search_filter:
+            flt_flags = helper_funcs.filter_items_by_name(svn.file_search_filter, cls.UILST_FLT_ITEM, list_items, "name",
                                                           reverse=False)
         else:
             # Start with all files visible.
             flt_flags = [cls.UILST_FLT_ITEM] * len(list_items)
 
             for i, item in enumerate(list_items):
+                if item == svn.current_blend_file:
+                    # ALWAYS display the current .blend file.
+                    continue
+
                 if has_default_status(item) and not item.is_referenced:
                     # ALWAYS filter out files that have default statuses and aren't referenced.
                     flt_flags[i] = 0
@@ -180,7 +184,7 @@ class SVN_UL_file_list(bpy.types.UIList):
         svn = context.scene.svn
         row.prop(self, 'show_file_paths', text="",
                  toggle=True, icon="FILE_FOLDER")
-        row.prop(svn, 'search_filter', text="")
+        row.prop(svn, 'file_search_filter', text="")
 
         row = main_row.row(align=True)
         row.use_property_split = True

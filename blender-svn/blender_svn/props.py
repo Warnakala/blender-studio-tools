@@ -10,7 +10,7 @@ from blender_asset_tracer import trace
 from .background_process import processes
 from . import constants
 from .svn_log import reload_svn_log
-from .util import make_getter_func, make_setter_func_readonly
+from .util import make_getter_func, make_setter_func_readonly, svn_date_simple
 
 from typing import Optional, Dict, Any, List, Tuple, Set
 
@@ -156,6 +156,11 @@ class SVN_log(bpy.types.PropertyGroup):
         name="Revision Date",
         description="Date when the current revision was committed",
     )
+
+    @property
+    def revision_date_simple(self):
+        return svn_date_simple(self.revision_date)
+
     revision_author: StringProperty(
         name="Revision Author",
         description="SVN username of the revision author",
@@ -168,7 +173,13 @@ class SVN_log(bpy.types.PropertyGroup):
     changed_files: CollectionProperty(
         type=SVN_file,
         name="Changed Files",
-        description="List of file paths relative to the SVN root that were affected by this revision"
+        description="List of file entries that were affected by this revision"
+    )
+
+    matches_filter: BoolProperty(
+        name="Matches Filter",
+        description="Whether the log entry matches the currently typed in search filter",
+        default=True
     )
 
     def changed_file(self, svn_path: str) -> bool:
@@ -176,6 +187,18 @@ class SVN_log(bpy.types.PropertyGroup):
             if f.svn_path == "/"+svn_path:
                 return True
         return False
+
+    @property
+    def text_to_search(self) -> str:
+        """Return a string containing all searchable information about this log entry."""
+        # TODO: For optimization's sake, this shouldn't be a @property, but instead
+        # saved as a proper variable when the log entry is created.
+        rev = "r"+str(self.revision_number)
+        auth = self.revision_author
+        files = " ".join([f.svn_path for f in self.changed_files])
+        msg =  self.commit_message
+        date = self.revision_date_simple
+        return " ".join([rev, auth, files, msg, date]).lower()
 
 
 class SVN_commit_line(bpy.types.PropertyGroup):
@@ -398,7 +421,7 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         elif self.external_files_active_index not in visible_indicies:
             self.external_files_active_index = visible_indicies[0]
 
-    def update_filters(dummy, context):
+    def update_file_filter(dummy, context):
         """Should run when any of the SVN file list search filters are changed."""
         context.scene.svn.force_good_active_index(context)
 
@@ -406,18 +429,18 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         name="Show Normal Files",
         description="Include files whose SVN status is Normal",
         default=False,
-        update=update_filters
+        update=update_file_filter
     )
     only_referenced_files: BoolProperty(
         name="Only Referenced Files",
         description="Only show modified files referenced by this .blend file, rather than the entire repository",
         default=False,
-        update=update_filters
+        update=update_file_filter
     )
-    search_filter: StringProperty(
+    file_search_filter: StringProperty(
         name="Search Filter",
         description="Only show entries that contain this string",
-        update=update_filters
+        update=update_file_filter
     )
 
     ### SVN File List Status Updating ##########################################

@@ -7,7 +7,7 @@ import subprocess
 import bpy
 from bpy.props import IntProperty, BoolProperty
 
-from .util import svn_date_simple, redraw_viewport
+from .util import redraw_viewport
 from . import constants
 from .execute_subprocess import execute_svn_command
 from .background_process import BackgroundProcess, process_in_background, processes
@@ -62,7 +62,7 @@ class SVN_UL_log(bpy.types.UIList):
             get_older.revision = log_entry.revision_number
             get_older.file_rel_path = active_file.svn_path
         auth.label(text=log_entry.revision_author)
-        date.label(text=log_entry.revision_date.split(" ")[0][5:])
+        date.label(text=log_entry.revision_date_simple.split(" ")[0][5:])
 
         commit_msg = log_entry.commit_message
         commit_msg = commit_msg.split(
@@ -103,20 +103,14 @@ class SVN_UL_log(bpy.types.UIList):
                 else:
                     flt_flags[idx] = 0
 
-        if self.filter_name:
-            # Simple search:
-            # Filter out log entries that don't match anything in the string search.
-            for idx, log_entry in enumerate(log_entries):
-                if self.filter_name not in " ".join(
-                    [
-                        "r"+str(log_entry.revision_number),
-                        log_entry.revision_author,
-                        " ".join(
-                            [f.svn_path for f in log_entry.changed_files]),
-                        log_entry.commit_message,
-                    ]
-                ):
+        # Filtering: Allow comma-separated keywords.
+        # ALL keywords must be found somewhere in the log entry for it to show up.
+        filter_words = [word.strip().lower() for word in self.filter_name.split(",")]
+        for idx, log_entry in enumerate(log_entries):
+            for filter_word in filter_words:
+                if filter_word not in log_entry.text_to_search:
                     flt_flags[idx] = 0
+                    break
 
         return flt_flags, flt_neworder
 
@@ -181,6 +175,8 @@ def draw_svn_log(context, layout, file_browser: bool):
     active_log = context.scene.svn.active_log_filebrowser if file_browser else context.scene.svn.active_log
     if not active_log:
         return
+    layout.label(text="Revision Date: " + active_log.revision_date)
+
     layout.label(
         text=f"Files changed in revision `r{active_log.revision_number}`:")
 
@@ -339,7 +335,7 @@ def reload_svn_log(self, context):
         log_entry.revision_number = r_number
         log_entry.revision_author = r_author
 
-        log_entry.revision_date = svn_date_simple(r_date)
+        log_entry.revision_date = r_date
 
         # File change set is on line 3 until the commit message begins...
         file_change_lines = chunk[2:-(r_msg_length)]
