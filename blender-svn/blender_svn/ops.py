@@ -16,7 +16,7 @@ from .execute_subprocess import execute_svn_command
 
 
 class SVN_Operator:
-    def execute_svn_command(self, context, command: str, use_cred=False) -> str:
+    def execute_svn_command(self, context, command: List[str], use_cred=False) -> str:
         # Since a status update might already be being requested when an SVN operator is run,
         # we want to ignore the first update after any SVN operator.
         # Otherwise it can result in a predicted state being overwritten by an outdated state.
@@ -139,12 +139,12 @@ class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
 
         self.execute_svn_command(
             context,
-            f'svn up "{self.file_rel_path}" --accept "postpone"',
+            ["svn", "up", f"{self.file_rel_path}", "--accept", "postpone"],
             use_cred=True
         )
 
         self.report({'INFO'},
-                    f"Updated {self.file_rel_path} to the latest version.")
+                    f'Updated "{self.file_rel_path}" to the latest version.')
 
     def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
         if self.will_conflict:
@@ -184,8 +184,8 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
             return {'CANCELLED'}
 
         self.execute_svn_command(
-            context, 
-            f'svn up -r{self.revision} "{self.file_rel_path}" --accept "postpone"', 
+            context,
+            ["svn", "up" ,f"-r{self.revision}", f"{self.file_rel_path}", "--accept", "postpone"],
             use_cred=True
         )
 
@@ -221,7 +221,7 @@ class SVN_download_repo_revision(SVN_Operator, bpy.types.Operator):
         # TODO: Doing it in the background may be an option, just a hassle.
         self.execute_svn_command(
             context,
-            f'svn up -r{self.revision} --accept "postpone"',
+            ["svn", "up", f"-r{self.revision}", "--accept", "postpone"],
             use_cred=True
         )
         self.report({"INFO"}, )
@@ -242,7 +242,7 @@ class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(
             context, 
-            f'svn revert "{self.file_rel_path}"'
+            ["svn", "revert", f"{self.file_rel_path}"]
         )
 
         f = self.get_file(context)
@@ -278,7 +278,7 @@ class SVN_add_file(SVN_Operator_Single_File, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         result = self.execute_svn_command(
             context,
-            f'svn add "{self.file_rel_path}"'
+            ["svn", "add", f"{self.file_rel_path}"]
         )
 
         if result:
@@ -298,7 +298,7 @@ class SVN_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(
             context,
-            f'svn rm --keep-local "{self.file_rel_path}"'
+            ["svn", "rm", "--keep-local", f"{self.file_rel_path}"]
         )
 
         return {"FINISHED"}
@@ -342,7 +342,7 @@ class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Oper
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(
             context, 
-            f'svn remove "{self.file_rel_path}"'
+            ["svn", "remove", f"{self.file_rel_path}"]
         )
 
         return {"FINISHED"}
@@ -389,7 +389,7 @@ class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.execute_svn_command(
             context,
-            f'svn resolve "{self.file_rel_path}" --accept "{self.resolve_method}"'
+            ["svn", "resolve", f"{self.file_rel_path}", "--accept", f"{self.resolve_method}"]
         )
 
         return {"FINISHED"}
@@ -414,7 +414,7 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         context.scene.svn.external_files.clear()
-        self.execute_svn_command(context, 'svn cleanup')
+        self.execute_svn_command(context, ["svn", "cleanup"])
         self.report({'INFO'}, "SVN Cleanup complete.")
 
         return {"FINISHED"}

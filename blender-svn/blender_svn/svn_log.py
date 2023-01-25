@@ -432,7 +432,7 @@ class BGP_SVN_Log(BackgroundProcess):
         try:
             self.output = execute_svn_command(
                 context,
-                f"svn log --verbose -r{latest_log_rev+1}:HEAD --limit 10",
+                ["svn", "log", "--verbose", f"-r{latest_log_rev+1}:HEAD", "--limit", "10"],
                 print_errors=False,
                 use_cred=True
             )

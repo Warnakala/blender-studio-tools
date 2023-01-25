@@ -57,7 +57,7 @@ class SVN_explain_status(bpy.types.Operator):
 def get_svn_info(context, dirpath: Path) -> Optional[str]:
     try:
         path = dirpath.as_posix()
-        return execute_command(path, 'svn info')
+        return execute_command(path, ["svn", "info"])
     except subprocess.CalledProcessError as e:
         error_msg = e.stderr.decode()
         if "is not a working copy" in error_msg:
@@ -187,7 +187,7 @@ class BGP_SVN_Status(BackgroundProcess):
         try:
             svn_status_str = execute_svn_command(
                 context, 
-                'svn status --show-updates --verbose --xml', 
+                ["svn", "status", "--show-updates", "--verbose", "--xml"],
                 use_cred=True
             )
             self.output = get_repo_file_statuses(svn_status_str)

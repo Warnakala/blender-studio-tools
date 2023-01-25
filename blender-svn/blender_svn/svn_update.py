@@ -45,7 +45,7 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
         if self.reload_file:
             self.execute_svn_command(
                 context, 
-                'svn up --accept "postpone"', 
+                ["svn", "up", "--accept", "postpone"],
                 use_cred=True
             )
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
@@ -84,7 +84,7 @@ class BGP_SVN_Update(BackgroundProcess):
         try:
             self.output = execute_svn_command(
                 context, 
-                'svn up --accept "postpone"', 
+                ["svn", "up", "--accept", "postpone"],
                 use_cred=True
             )
         except subprocess.CalledProcessError as error:

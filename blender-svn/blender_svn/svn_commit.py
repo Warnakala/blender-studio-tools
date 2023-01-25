@@ -170,7 +170,7 @@ class BGP_SVN_Commit(BackgroundProcess):
         """This function should be executed from a separate thread to avoid freezing 
         Blender's UI during execute_svn_command().
         """
-        filepaths = " ".join(self.file_list)
+        filepaths_str = " ".join(self.file_list)
 
         if not self.commit_msg:
             self.stop()
@@ -180,7 +180,7 @@ class BGP_SVN_Commit(BackgroundProcess):
             sanitized_commit_msg = self.commit_msg.replace('"', "'")
             self.output = execute_svn_command(
                 context,
-                f'svn commit -m "{sanitized_commit_msg}" {filepaths}',
+                ["svn", "commit", "-m", f"{sanitized_commit_msg}", filepaths_str],
                 use_cred=True
             )
         except subprocess.CalledProcessError as error:
