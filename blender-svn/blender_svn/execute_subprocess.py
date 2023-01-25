@@ -20,7 +20,7 @@ def execute_command(path: str, command: str) -> str:
     return output_bytes.decode(encoding='utf-8', errors='replace')
 
 
-def execute_svn_command(context, command: str, suppress_errors=False, print_errors=True, use_cred=False) -> str:
+def execute_svn_command(context, command: str, *, suppress_errors=False, print_errors=True, use_cred=False) -> str:
     """Execute an svn command in the root of the current svn repository.
     So any file paths that are part of the command should be relative to the
     SVN root.

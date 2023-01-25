@@ -22,7 +22,7 @@ class SVN_Operator:
         # Otherwise it can result in a predicted state being overwritten by an outdated state.
         # For example, the Commit operator sets a file to "Normal" state, then the old svn status
         # arrives and sets it back to "Modified" state, which it isn't anymore.
-        return execute_svn_command(context, command, use_cred)
+        return execute_svn_command(context, command, use_cred=use_cred)
 
 
 class SVN_Operator_Single_File(SVN_Operator):
@@ -184,7 +184,10 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
             return {'CANCELLED'}
 
         self.execute_svn_command(
-            context, f'svn up -r{self.revision} "{self.file_rel_path}" --accept "postpone"', use_cred=True)
+            context, 
+            f'svn up -r{self.revision} "{self.file_rel_path}" --accept "postpone"', 
+            use_cred=True
+        )
 
         self.report({'INFO'},
                     f"Checked out revision {self.revision} of {self.file_rel_path}")
@@ -212,15 +215,16 @@ class SVN_download_repo_revision(SVN_Operator, bpy.types.Operator):
     revision: IntProperty()
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # TODO:
-        # This will probably fail if any files that would be affected are already locally modified.
-        # Figure out how that should be handled.
-        # Also, this could take a long time potentially, we should either figure out a way to provide a progress bar (impossible) or do it in the background (may be dangerous, since current file could end up getting modified and not reloaded)
+        # NOTE: This can take a long time, but providing a progress bar is 
+        # fundamentally impossible because SVN itself doesn't provide the command 
+        # line with any progress info.
+        # TODO: Doing it in the background may be an option, just a hassle.
         self.execute_svn_command(
             context,
             f'svn up -r{self.revision} --accept "postpone"',
             use_cred=True
         )
+        self.report({"INFO"}, )
         return {"FINISHED"}
 
     def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
@@ -236,7 +240,10 @@ class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
     missing_file_allowed = True
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        self.execute_svn_command(context, f'svn revert "{self.file_rel_path}"')
+        self.execute_svn_command(
+            context, 
+            f'svn revert "{self.file_rel_path}"'
+        )
 
         f = self.get_file(context)
         return {"FINISHED"}
@@ -333,7 +340,10 @@ class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Oper
         return "This file will be deleted for everyone:\n    " + self.file_rel_path + "\nAre you sure?"
 
     def _execute(self, context: bpy.types.Context) -> Set[str]:
-        self.execute_svn_command(context, f'svn remove "{self.file_rel_path}"')
+        self.execute_svn_command(
+            context, 
+            f'svn remove "{self.file_rel_path}"'
+        )
 
         return {"FINISHED"}
 
