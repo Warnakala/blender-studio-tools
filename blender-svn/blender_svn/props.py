@@ -2,11 +2,15 @@
 # (c) 2021, Blender Foundation - Paul Golter
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
+from . import wheels
+# This will load the dateutil and BAT wheel files.
+wheels.preload_dependencies()
+
+from blender_asset_tracer import trace
 from .background_process import processes
 from . import constants
 from .svn_log import reload_svn_log
 from .util import make_getter_func, make_setter_func_readonly
-from blender_asset_tracer import trace
 
 from typing import Optional, Dict, Any, List, Tuple, Set
 
@@ -16,10 +20,6 @@ from datetime import datetime
 import bpy
 import logging
 from bpy.props import IntProperty, StringProperty, CollectionProperty, BoolProperty, EnumProperty
-
-from . import wheels
-# This will load the dateutil and svn wheel file.
-wheels.preload_dependencies()
 
 
 logger = logging.getLogger("SVN")

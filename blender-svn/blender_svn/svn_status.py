@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
+from . import wheels
+# This will load the xmltodict wheel file.
+wheels.preload_dependencies()
+
 import subprocess
 import bpy
 from .background_process import BackgroundProcess, process_in_background, processes
@@ -8,15 +12,11 @@ from . import constants
 from .util import get_addon_prefs, redraw_viewport
 from .execute_subprocess import execute_svn_command, execute_command
 from bpy.props import StringProperty
-import xmltodict
-
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
 from datetime import datetime
+import xmltodict
 
-from . import wheels
-# This will load the dateutil and svn wheel file.
-wheels.preload_dependencies()
 
 
 class SVN_explain_status(bpy.types.Operator):
