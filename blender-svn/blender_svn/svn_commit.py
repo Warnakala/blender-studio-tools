@@ -148,9 +148,14 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         for f in file_entries:
             if f.status != 'deleted':
                 if f.repos_status == 'none':
+                    # We modified the file, and it was not modified on the repo,
+                    # predict the status to be "normal".
                     f.status = 'normal'
                 else:
+                    # If we modified the file, but it was modified on the repo:
                     f.status = 'conflicted'
+            # TODO: What happens if we DID delete the file, AND it was modified on the repo?
+            # Should probably also predict a conflict.
             f.status_predicted_flag = "COMMIT"
 
 

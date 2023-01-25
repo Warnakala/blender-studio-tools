@@ -58,15 +58,22 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     def set_predicted_file_statuses(self, context):
         for f in context.scene.svn.external_files:
-            if f.repos_status in ['modified', 'added']:
-                # This case seemed to be triggering on false-positives
-                # if f.repos_status == 'added' and f.exists:
-                #     f.status = 'conflicted'
-                if f.status == 'normal':
-                    f.status = 'normal'
-                    f.repos_status = 'none'
-                elif f.exists:
-                    f.status = 'conflicted'
+            if f.repos_status == 'modified' and f.status == 'normal':
+                # Modified on remote, exists on local.
+                f.repos_status = 'none'
+            elif f.repos_status == 'added' and f.status == 'none':
+                # Added on remote, doesn't exist on local.
+                f.status = 'normal'
+            elif f.repos_status == 'deleted' and f.status == 'normal':
+                # Deleted on remote, exists on local.
+                # NOTE: File entry should just be deleted.
+                f.status = 'none'
+                f.repos_status = 'none'
+            elif f.repos_status == 'none':
+                pass
+            else:
+                f.status = 'conflicted'
+
                 f.status_predicted_flag = "UPDATE"
 
 

@@ -134,7 +134,7 @@ class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
     def _execute(self, context: bpy.types.Context) -> Set[str]:
         self.will_conflict = False
         file_entry = context.scene.svn.get_file_by_svn_path(self.file_rel_path)
-        if file_entry.status != 'normal':
+        if file_entry.status not in ['normal', 'none']:
             self.will_conflict = True
 
         self.execute_svn_command(
@@ -219,12 +219,12 @@ class SVN_download_repo_revision(SVN_Operator, bpy.types.Operator):
         # fundamentally impossible because SVN itself doesn't provide the command 
         # line with any progress info.
         # TODO: Doing it in the background may be an option, just a hassle.
-        self.execute_svn_command(
+        output = self.execute_svn_command(
             context,
             ["svn", "up", f"-r{self.revision}", "--accept", "postpone"],
             use_cred=True
         )
-        self.report({"INFO"}, )
+        self.report({"INFO"}, output.split("\n")[-2])
         return {"FINISHED"}
 
     def set_predicted_file_status(self, svn, file_entry: "SVN_file"):
