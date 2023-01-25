@@ -253,7 +253,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             # This is because this status update was initiated before the file's
             # status was predicted, so the prediction is likely to be correct,
             # and the status we have here is likely to be outdated.
-            file_entry.status_predicted_flag = 'NONE'
+            file_entry.status_predicted_flag = 'WAITING'
             continue
         elif file_entry.status_predicted_flag != 'NONE':
             # We wait for `svn up/commit` background processes to finish and
@@ -267,6 +267,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
         file_entry.revision = revision
         file_entry.status = wc_status
         file_entry.repos_status = repos_status
+        file_entry.status_predicted_flag = 'NONE'
 
     if new_files_on_repo:
         # File entry status has changed between local and repo.
