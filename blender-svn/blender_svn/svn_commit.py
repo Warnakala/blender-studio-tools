@@ -183,9 +183,10 @@ class BGP_SVN_Commit(BackgroundProcess):
 
         try:
             sanitized_commit_msg = self.commit_msg.replace('"', "'")
+            command = ["svn", "commit", "-m", f"{sanitized_commit_msg}"] + self.file_list
             self.output = execute_svn_command(
                 context,
-                ["svn", "commit", "-m", f"{sanitized_commit_msg}", filepaths_str],
+                command,
                 use_cred=True
             )
         except subprocess.CalledProcessError as error:
