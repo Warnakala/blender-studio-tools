@@ -24,14 +24,14 @@ class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
 
     def acquire_output(self, context, prefs):
         cred = prefs.get_credentials()
-        if not cred:
+        if not cred or not cred.username or not cred.password:
             return
 
         super().acquire_output(context, prefs)
 
     def process_output(self, context, prefs):
         cred = prefs.get_credentials()
-        if not cred:
+        if not cred or not cred.username or not cred.password:
             return
 
         if self.output:
@@ -121,7 +121,7 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
     def get_credentials(self) -> Optional[SVN_credential]:
         svn_url = bpy.context.scene.svn.svn_url
         for cred in self.svn_credentials:
-            if cred.url == svn_url:
+            if cred.url == svn_url and cred.username and cred.password:
                 return cred
 
         return None
