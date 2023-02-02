@@ -24,14 +24,14 @@ class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
 
     def acquire_output(self, context, prefs):
         cred = prefs.get_credentials()
-        if not cred or not cred.username or not cred.password:
+        if not cred or not cred.is_filled:
             return
 
         super().acquire_output(context, prefs)
 
     def process_output(self, context, prefs):
         cred = prefs.get_credentials()
-        if not cred or not cred.username or not cred.password:
+        if not cred or not cred.is_filled:
             return
 
         if self.output:
@@ -86,6 +86,11 @@ class SVN_credential(bpy.types.PropertyGroup):
         update=update_cred
     )
 
+    @property
+    def is_filled(self):
+        """Check if there's a username and password entered at all."""
+        return self.username and self.password
+
     authenticated: BoolProperty(
         name="Authenticated",
         description="Internal flag to mark whether the last entered credentials were confirmed by the repo as correct credentials",
@@ -121,7 +126,7 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
     def get_credentials(self) -> Optional[SVN_credential]:
         svn_url = bpy.context.scene.svn.svn_url
         for cred in self.svn_credentials:
-            if cred.url == svn_url and cred.username and cred.password:
+            if cred.url == svn_url:
                 return cred
 
         return None
@@ -147,7 +152,7 @@ def try_authenticating_on_file_load(_dummy1, _dummy2):
     context = bpy.context
     prefs = get_addon_prefs(context)
     cred = prefs.get_credentials()
-    if cred:
+    if cred and cred.is_filled:
         print("SVN: Credentials found. Try authenticating on file load...")
         # Don't assume that a previously saved password is still correct.
         cred.authenticated = False

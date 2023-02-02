@@ -9,7 +9,7 @@ from typing import List
 def get_credential_commands(context) -> List[str]:
     prefs = get_addon_prefs(context)
     cred = prefs.get_credentials()
-    assert (cred.username and cred.password), "No username and password entered for this repository. The UI shouldn't have allowed you to get into a state where you can press an SVN operation button without having your credentials entered, so this is a bug!"
+    assert (cred.is_filled), "No username or password entered for this repository. The UI shouldn't have allowed you to get into a state where you can press an SVN operation button without having your credentials entered, so this is a bug!"
     return ["--username", f"{cred.username}", "--password", f"{cred.password}"]
 
 
