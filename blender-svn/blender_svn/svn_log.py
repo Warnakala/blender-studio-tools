@@ -311,9 +311,6 @@ def reload_svn_log(self, context):
                 chunks.append(chunk)
                 chunk = []
                 continue
-            if not line:
-                # Ignore empty lines.
-                continue
             chunk.append(line)
 
     previous_rev_number = 0
@@ -338,10 +335,8 @@ def reload_svn_log(self, context):
         log_entry.revision_date = r_date
 
         # File change set is on line 3 until the commit message begins...
-        file_change_lines = chunk[2:-(r_msg_length)]
+        file_change_lines = chunk[2:-(r_msg_length+1)]
         for line in file_change_lines:
-            if not line:
-                print(chunk)
             line = line.strip()
             status_char = line[0]
             file_path = line[2:]
