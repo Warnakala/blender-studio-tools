@@ -415,6 +415,7 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         context.scene.svn.external_files.clear()
         self.execute_svn_command(context, ["svn", "cleanup"])
+        context.scene.svn.reload_svn_log(context)
         self.report({'INFO'}, "SVN Cleanup complete.")
 
         return {"FINISHED"}
