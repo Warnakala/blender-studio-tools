@@ -99,10 +99,9 @@ class SVN_UL_file_list(bpy.types.UIList):
             print("Unknown file status: ", file_entry.svn_path,
                   file_entry.status, file_entry.repos_status)
 
-        if ops:
-            for op in ops:
-                if hasattr(op, 'file_rel_path'):
-                    op.file_rel_path = file_entry.svn_path
+        for op in ops:
+            if hasattr(op, 'file_rel_path'):
+                op.file_rel_path = file_entry.svn_path
 
         # Populate the status icons.
         for status in statuses:

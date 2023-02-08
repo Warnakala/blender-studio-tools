@@ -255,7 +255,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             # and the status we have here is likely to be outdated.
             file_entry.status_predicted_flag = 'WAITING'
             continue
-        elif file_entry.status_predicted_flag != 'NONE':
+        elif file_entry.status_predicted_flag not in {'NONE', 'WAITING'}:
             # We wait for `svn up/commit` background processes to finish and
             # set the predicted flag to SINGLE. Until then, we ignore status
             # updates on files that are being updated or committed.
