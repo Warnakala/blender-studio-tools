@@ -85,7 +85,7 @@ class GNSK_PT_GeoNodeShapeKeys(bpy.types.Panel):
             return
 
         list_ops = draw_ui_list(
-            layout, context, class_name='GNSK_UL_main', list_context_path='object.geonode_shapekeys', active_idx_context_path='object.geonode_shapekey_index', insertion_operators=False, move_operators=False
+            layout, context, class_name='GNSK_UL_main', list_context_path='object.geonode_shapekeys', active_index_context_path='object.geonode_shapekey_index', insertion_operators=False, move_operators=False
         )
 
         list_ops.operator('object.add_geonode_shape_key', text="", icon='ADD')
