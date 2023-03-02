@@ -494,10 +494,44 @@ class GNSK_select_objects(bpy.types.Operator):
         
         return {'FINISHED'}
 
+
+class GNSK_setup_uvs(bpy.types.Operator):
+    """Ensure a set of non-overlapping UVs in a UVMap across all selected meshes"""
+    bl_idname = "object.geonode_shapekey_ensure_uvmap"
+    bl_label = "Ensure GNSK UVMap"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        # TODO: Find a place for this in the UI.
+
+        active_layers_bkp = {}
+
+        for o in bpy.context.selected_objects:
+            if o.type != 'MESH':
+                continue
+            active_layers_bkp[o] = o.data.uv_layers.active.name
+            if "GNSK" not in o.data.uv_layers:
+                o.data.uv_layers.new(name="GNSK")
+            o.data.uv_layers.active = o.data.uv_layers['GNSK']
+
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.reveal()
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.uv.smart_project(island_margin=0.001)
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Restore active UV Layer
+        for ob, layer in active_layers_bkp.items():
+            ob.data.uv_layers.active = ob.data.uv_layers.get(layer)
+            print(ob.name, layer)
+        
+        return {'FINISHED'}
+
 registry = [
     GNSK_add_shape,
     GNSK_remove_shape,
     GNSK_toggle_object,
     GNSK_influence_slider,
-    GNSK_select_objects
+    GNSK_select_objects,
+    GNSK_setup_uvs
 ]
