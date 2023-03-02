@@ -190,6 +190,10 @@ class GNSK_add_shape(bpy.types.Operator):
 
     @staticmethod
     def disable_modifiers_after_subsurf(obj: bpy.types.Object) -> Dict[str, Dict[str, Any]]:
+        """Disable modifiers that might cause the propagation of the sculpted shape to fail.
+        This includes the Subsurf modifier and any subsequent modifiers.
+        Possibly more in future.
+        """
         modifier_states = {}
         found_subsurf = False
         for m in obj.modifiers:
@@ -198,10 +202,15 @@ class GNSK_add_shape(bpy.types.Operator):
 
             if found_subsurf:
                 modifier_states[m.name] = {
-                    'show_viewport': m.show_viewport,   # TODO: Need to handle when this has a driver...
+                    'show_viewport': m.show_viewport,
                 }
+
+                # Mute driver, if any.
+                fc = obj.animation_data.drivers.get(f'modifiers["{m.name}"].show_viewport')
+                if fc:
+                    fc.driver.mute = True
                 m.show_viewport = False
-        
+
         return modifier_states
 
     @staticmethod
@@ -210,6 +219,11 @@ class GNSK_add_shape(bpy.types.Operator):
         for mod_name, prop_dict in modifier_states.items():
             for key, value in prop_dict.items():
                 setattr(obj.modifiers[mod_name], key, value)
+
+                # Unmute driver, if any.
+                fc = obj.animation_data.drivers.get(f'modifiers["{mod_name}"].{key}')
+                if fc:
+                    fc.driver.mute = False
 
     def make_evaluated_object(self,
                               context: bpy.types.Context,
