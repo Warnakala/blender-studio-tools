@@ -222,16 +222,11 @@ class GNSK_add_shape(bpy.types.Operator):
         # NOTE: Other generative modifiers beside SubSurf may have to trigger this too.
         modifier_states = self.disable_modifiers_after_subsurf(obj)
         eval_dg = context.evaluated_depsgraph_get()
-        rigged_mesh_eval = obj.evaluated_get(eval_dg).to_mesh()
 
-        sk_mesh = bpy.data.meshes.new_from_object(obj)
+        sk_mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(eval_dg))
         sk_ob = bpy.data.objects.new(obj.name+"."+self.shape_name, sk_mesh)
         sk_ob.data.name = sk_ob.name
         ensure_shapekey_collection(context.scene).objects.link(sk_ob)
-
-        # Set the target shape to be the evaluated mesh.
-        for target_v, eval_v in zip(sk_ob.data.vertices, rigged_mesh_eval.vertices):
-            target_v.co = eval_v.co
 
         # Add shape keys
         sk_ob.use_shape_key_edit_mode = True
