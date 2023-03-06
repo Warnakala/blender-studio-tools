@@ -24,9 +24,9 @@ import bpy
 
 from blender_kitsu import cache, prefs, gazu
 
-# TODO: restructure this to not access ops_anim_data.
-from blender_kitsu.anim import opsdata as ops_anim_data
-from blender_kitsu.anim import ops as ops_anim
+# TODO: restructure this to not access ops_playblast_data.
+from blender_kitsu.playblast import opsdata as ops_playblast_data
+from blender_kitsu.playblast import ops as ops_playblast
 from blender_kitsu.logger import LoggerFactory
 
 logger = LoggerFactory.getLogger()
@@ -71,10 +71,10 @@ class KITSU_OT_session_start(bpy.types.Operator):
         cache.init_startup_variables(context)
 
         # Init playblast version dir model.
-        ops_anim_data.init_playblast_file_model(context)
+        ops_playblast_data.init_playblast_file_model(context)
 
         # Check frame range.
-        ops_anim.load_post_handler_check_frame_range(None)
+        ops_playblast.load_post_handler_check_frame_range(None)
 
         self.report({"INFO"}, f"Logged in as {session_data.user['full_name']}")
         return {"FINISHED"}
@@ -134,7 +134,7 @@ classes = [
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    # Note: Since this timer function does not repeat 
+    # Note: Since this timer function does not repeat
     # (because it doesn't return a value)
     # it automatically un-registers after it runs.
     # FIXME: XXX This makes Blender hang if there is no Internet connectivity

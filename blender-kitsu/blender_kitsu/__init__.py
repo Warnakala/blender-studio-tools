@@ -25,6 +25,7 @@ from blender_kitsu import (
     types,
     cache,
     models,
+    playblast,
     propsdata,
     props,
     prefs,
@@ -65,6 +66,7 @@ if _need_reload:
     cache = importlib.reload(cache)
     types = importlib.reload(types)
     models = importlib.reload(models)
+    playblast = importlib.reload(playblast)
     propsdata = importlib.reload(propsdata)
     props = importlib.reload(props)
     prefs = importlib.reload(prefs)
@@ -77,6 +79,7 @@ if _need_reload:
     tasks.reload()
     anim.reload()
 
+
 def register():
     lookdev.register()
     prefs.register()
@@ -87,6 +90,7 @@ def register():
     auth.register()
     context.register()
     # tasks.register()
+    playblast.register()
     anim.register()
 
     LoggerLevelManager.configure_levels()
@@ -104,6 +108,7 @@ def unregister():
     cache.unregister()
     prefs.unregister()
     lookdev.unregister()
+    playblast.unregister()
 
     LoggerLevelManager.restore_levels()
 

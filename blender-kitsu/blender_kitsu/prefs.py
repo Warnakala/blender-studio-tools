@@ -29,8 +29,8 @@ import bpy
 
 from blender_kitsu import cache, bkglobals
 
-# TODO: restructure this to not access ops_anim_data.
-from blender_kitsu.anim import opsdata as ops_anim_data
+# TODO: restructure this to not access ops_playblast_data.
+from blender_kitsu.playblast import opsdata as ops_playblast_data
 from blender_kitsu.types import Session
 from blender_kitsu.logger import LoggerFactory
 from blender_kitsu.auth.ops import (
@@ -156,7 +156,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         return res_dir.joinpath("metastrip.mp4").as_posix()
 
     def init_playblast_file_model(self, context: bpy.types.Context) -> None:
-        ops_anim_data.init_playblast_file_model(context)
+        ops_playblast_data.init_playblast_file_model(context)
 
     bl_idname = __package__
 

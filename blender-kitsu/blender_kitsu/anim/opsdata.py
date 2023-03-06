@@ -20,106 +20,14 @@
 
 import re
 from typing import Any, Dict, List, Optional, Tuple, Union, Generator
-from pathlib import Path
 
 import bpy
 
 from blender_kitsu import bkglobals, util
-from blender_kitsu.models import FileListModel
 from blender_kitsu.types import Shot
 from blender_kitsu.logger import LoggerFactory
 
 logger = LoggerFactory.getLogger()
-
-PLAYBLAST_FILE_MODEL = FileListModel()
-_playblast_enum_list: List[Tuple[str, str, str]] = []
-_playblast_file_model_init: bool = False
-
-
-def addon_prefs_get(context: bpy.types.Context) -> bpy.types.AddonPreferences:
-    """
-    shortcut to get blender_kitsu addon preferences
-    """
-    return context.preferences.addons["blender_kitsu"].preferences
-
-
-def init_playblast_file_model(
-    context: bpy.types.Context,
-) -> None:
-
-    global PLAYBLAST_FILE_MODEL
-    global _playblast_file_model_init
-    addon_prefs = addon_prefs_get(context)
-
-    # Is None if invalid.
-    if not context.scene.kitsu.playblast_dir:
-        logger.error(
-            "Failed to initialize playblast file model. Invalid path. Check addon preferences"
-        )
-        return
-
-    playblast_dir = Path(context.scene.kitsu.playblast_dir)
-
-    PLAYBLAST_FILE_MODEL.reset()
-    PLAYBLAST_FILE_MODEL.root_path = playblast_dir
-
-    if not PLAYBLAST_FILE_MODEL.versions:
-        PLAYBLAST_FILE_MODEL.append_item("v001")
-        # Update playblast_version prop.
-        context.scene.kitsu.playblast_version = "v001"
-
-    else:
-        # Update playblast_version prop.
-        context.scene.kitsu.playblast_version = PLAYBLAST_FILE_MODEL.versions[0]
-
-    _playblast_file_model_init = True
-
-
-def add_playblast_version_increment(context: bpy.types.Context) -> str:
-
-    # Init model if it did not happen.
-    if not _playblast_file_model_init:
-        init_playblast_file_model(context)
-
-    # Should be already sorted.
-    versions = PLAYBLAST_FILE_MODEL.versions
-
-    if len(versions) > 0:
-        latest_version = versions[0]
-        increment = "v{:03}".format(int(latest_version.replace("v", "")) + 1)
-    else:
-        increment = "v001"
-
-    PLAYBLAST_FILE_MODEL.append_item(increment)
-    return increment
-
-
-def get_playblast_versions_enum_list(
-    self: Any,
-    context: bpy.types.Context,
-) -> List[Tuple[str, str, str]]:
-
-    global _playblast_enum_list
-    global PLAYBLAST_FILE_MODEL
-    global init_playblast_file_model
-    global _playblast_file_model_init
-
-    # Init model if it did not happen.
-    if not _playblast_file_model_init:
-        init_playblast_file_model(context)
-
-    # Clear all versions in enum list.
-    _playblast_enum_list.clear()
-    _playblast_enum_list.extend(PLAYBLAST_FILE_MODEL.versions_as_enum_list)
-
-    return _playblast_enum_list
-
-
-def add_version_custom(custom_version: str) -> None:
-    global _playblast_enum_list
-    global PLAYBLAST_FILE_MODEL
-
-    PLAYBLAST_FILE_MODEL.append_item(custom_version)
 
 
 def is_item_local(
@@ -299,7 +207,7 @@ action_names_cache: List[str] = []
 # We need this in order to increment prefixes of duplications of the same asset correctly
 # gets cleared populated during call of KITSU_OT_anim_check_action_names.
 _current_asset: str = ""
-_curret_asset_idx: int = 0
+_current_asset_idx: int = 0
 # We need these two variables to track if we are on the first asset that is currently processed
 # (if there are multiple ones) because the first one CAN get keep it postfix.
 
@@ -310,7 +218,7 @@ def gen_action_name(
 
     global action_names_cache
     global _current_asset
-    global _curret_asset_idx
+    global _current_asset_idx
     action_names_cache.sort()
 
     def _find_postfix(action_name: str) -> Optional[str]:
@@ -332,9 +240,9 @@ def gen_action_name(
 
     # Track on which repition we are of the same asset.
     if asset_name == _current_asset:
-        _curret_asset_idx += 1
+        _current_asset_idx += 1
     else:
-        _curret_asset_idx = 0
+        _current_asset_idx = 0
     _current_asset = asset_name
 
     version = "v001"
@@ -371,7 +279,7 @@ def gen_action_name(
 
         # print(f"EXISTING: {existing_postfixes}")
         if existing_postfixes:
-            if _curret_asset_idx == 0:
+            if _current_asset_idx == 0:
                 # print(f"{asset_name} is first asset can keep postfix")
                 final_postfix = multi_postfix
             else:

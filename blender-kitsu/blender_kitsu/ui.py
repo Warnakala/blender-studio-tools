@@ -21,8 +21,6 @@
 import bpy
 
 from blender_kitsu import prefs
-from blender_kitsu.anim.ops import KITSU_OT_anim_pull_frame_range
-from bpy.types import Context
 
 
 def draw_error_box(layout: bpy.types.UILayout) -> bpy.types.UILayout:
@@ -55,7 +53,7 @@ def draw_error_frame_range_outdated(
 
     row = box.row(align=True)
     row.label(text="Frame Range Outdated")
-    row.operator(KITSU_OT_anim_pull_frame_range.bl_idname, icon="FILE_REFRESH")
+    row.operator("kitsu.pull_frame_range", icon="FILE_REFRESH")
 
 
 def draw_error_invalid_render_preset_dir(

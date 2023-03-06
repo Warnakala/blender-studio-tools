@@ -28,11 +28,12 @@ import bpy
 from blender_kitsu import cache, prefs
 
 # TODO: restructure that to not import from anim.
-from blender_kitsu.anim import ops as ops_anim
-from blender_kitsu.anim import opsdata as ops_anim_data
+from blender_kitsu.anim import ops as ops_playblast
+from blender_kitsu.anim import opsdata as ops_playblast_data
 from blender_kitsu.logger import LoggerFactory
 
 logger = LoggerFactory.getLogger()
+
 
 # Get functions for window manager properties.
 def _get_project_active(self):
@@ -96,6 +97,13 @@ def _gen_shot_preview(self: Any) -> str:
     return " | ".join(examples) + "..."
 
 
+def get_task_type_name_file_suffix() -> str:
+    name = cache.task_type_active_get().name.lower()
+    if name == 'animation':
+        return 'anim'
+    return name
+
+
 def get_playblast_dir(self: Any) -> str:
     # .../110_rextoria/110_0030_A/110_0030_A.anim.
 
@@ -109,8 +117,10 @@ def get_playblast_dir(self: Any) -> str:
     if not seq or not shot:
         return ""
 
+    task_type_name_suffix = get_task_type_name_file_suffix()
+
     playblast_dir = (
-        addon_prefs.playblast_root_path / seq.name / shot.name / f"{shot.name}.anim"
+        addon_prefs.playblast_root_path / seq.name / shot.name / f"{shot.name}.{task_type_name_suffix}"
     )
     return playblast_dir.as_posix()
 
@@ -119,10 +129,11 @@ def get_playblast_file(self: Any) -> str:
     if not self.playblast_dir:
         return ""
 
+    task_type_name_suffix = get_task_type_name_file_suffix()
     version = self.playblast_version
-    shot_ative = cache.shot_active_get()
+    shot_active = cache.shot_active_get()
     # 070_0010_A.anim.v001.mp4.
-    file_name = f"{shot_ative.name}.anim.{version}.mp4"
+    file_name = f"{shot_active.name}.{task_type_name_suffix}.{version}.mp4"
 
     return Path(self.playblast_dir).joinpath(file_name).as_posix()
 
@@ -150,7 +161,7 @@ def reset_task_type(self: Any, context: bpy.types.Context) -> None:
 
 def on_shot_change(self: Any, context: bpy.types.Context) -> None:
     # Reset versions.
-    ops_anim_data.init_playblast_file_model(context)
+    ops_playblast_data.init_playblast_file_model(context)
 
     # Check frame range.
-    ops_anim.load_post_handler_check_frame_range(context)
+    ops_playblast.load_post_handler_check_frame_range(context)
