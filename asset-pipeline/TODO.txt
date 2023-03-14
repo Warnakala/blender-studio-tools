@@ -1,5 +1,38 @@
 Here are some ideas, bugs, and TODOs for the Asset Pipeline.
 
+High prio bugs:
+	- Crashes when pulling in dog.modeling.blend
+	- Seems to nukes face sets when pulling into modeling.
+	- Pulling into rigging, SurfaceDeform modifiers fall asleep.
+	- Pulling into rigging, GeoNodes modifiers lose some of their inputs until the same nodetree is re-assigned.
+	- Pulling into rigging and I think also on pushing, the Copy Location constraint targetting the zipper helper mesh ends up targetting the rig instead. I tried investigating this already but I just don't get it.
+	- Pulling into rigging after a mesh update, material assignments seem to break until pulling a 2nd time.
+
+
+Low Prio:
+    Bugs:
+    - "Create production Context" (Refresh icon under Publish Manager panel) segfaults.
+    - If reloading the file mid-publish, Apply Changes button throws "StructRNA has been removed".
+    - If trying to push from an unsaved file, the changes since the last save won't be pushed. This is fine, but there should be an indication of it.
+
+    I think all of these would be fixed by the "Sync" button idea.
+
+    TODOs:
+    - Setting an asset to Deprecated should set all task layers to Locked.
+    - Asset status list seems to not show all versions until refresh button is pressed?
+    - We should update asset statuses as an early stage of the Publish process, to avoid potentially pushing into deprecated versions (if somebody else deprecates a version, we SVN update, but don't manually refresh or reload).
+
+    Asset Updater:
+        - Don't fully ignore versions when their status is Review. Allow them to be manually selected at least.
+		- Also display the asset status(Review/Deprecated/Approved) in the version number enum drop-down.
+		- Is there a missing Purge at the end of update_asset()?
+		- Make the UI prettier and less confusing.
+
+    Code quality:
+        - Looks like the generate_mapping() call could be moved out of task layers and into generic.
+        - De-duplicating pull_from_task and pull_from_publish would probably be pretty great.
+
+
 ## Idea: "Sync" instead of "Push/Pull":
     Instead of the "push/pull" mental model that we currently have, I propose a "Sync" mental model. The "Sync" button would:
     - Save a backup of the current file in the user's Autosave folder.
@@ -49,25 +82,3 @@ Here are some ideas, bugs, and TODOs for the Asset Pipeline.
         - Draw the User Remap operator or a masked version of it (since Objects might need to be removed from the View Layer before being user remapped)
     
     This would be quite similar to CloudRig's "Generation Log" list, that gets filled with warnings by the Generate button, with information about potential issues with a generated rig.
-
-Bugs encountered:
-    - "Create production Context" (Refresh icon under Publish Manager panel) segfaults.
-    - If reloading the file mid-publish, Apply Changes button throws "StructRNA has been removed".
-    - If trying to push from an unsaved file, the changes since the last save won't be pushed. This is fine, but there should be an indication of it.
-
-    I think all of these would be fixed by the "Sync" button idea.
-
-Low Prio:
-    - Setting an asset to Deprecated should set all task layers to Locked.
-    - Asset status list seems to not show all versions until refresh button is pressed?
-    - We should update asset statuses as an early stage of the Publish process, to avoid potentially pushing into deprecated versions (if somebody else deprecates a version, we SVN update, but don't manually refresh or reload).
-
-    Asset Updater:
-        - Don't fully ignore versions when their status is Review. Allow them to be manually selected at least.
-		- Also display the asset status(Review/Deprecated/Approved) in the version number enum drop-down.
-		- Is there a missing Purge at the end of update_asset()?
-		- Make the UI prettier and less confusing.
-
-    Code quality:
-        - Looks like the generate_mapping() call could be moved out of task layers and into generic.
-        - De-duplicating pull_from_task and pull_from_publish would probably be pretty great.
