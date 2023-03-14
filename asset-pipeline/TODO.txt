@@ -1,0 +1,73 @@
+Here are some ideas, bugs, and TODOs for the Asset Pipeline.
+
+## Idea: "Sync" instead of "Push/Pull":
+    Instead of the "push/pull" mental model that we currently have, I propose a "Sync" mental model. The "Sync" button would:
+    - Save a backup of the current file in the user's Autosave folder.
+    - Pull from Publish.
+    - Save the current file.
+    - Delete all collections and objects beside the asset collection.
+    - "Save As" to overwrite the publish.
+    - Open the original file.
+
+    Benefits:
+    - No more opening a Blender subprocess in the background, which makes issues hard to troubleshoot.
+    - Files are always forced to stay in sync, because you can't push without pulling.
+    - Half the time spent on pushing and pulling, since it's only done once for two files.
+    - What you see is what you get: You can be confident that whatever lands in your asset collection is exactly what's in the publish as well.
+
+    Downsides:
+    - Any "cleanup" operations done on the asset will now be done on the working file, such as un-assigning actions from rigs. (This could probably be accounted for at the cost of sacrificing the "Shat you see is what you get" benefit.)
+    - If the Asset Pipeline is broken, now your working file will be broken as well, instead of just the publish. (Hence the back-up as the first step)
+
+    Hopefully this idea is still compatible with syncing multiple versions and accounting for locked task layers.
+
+
+## Idea: Object ownership by Task Layer
+    A feature that was added after Paul left, was the ability for Task Layers to affect collection assingments. Relevant code is `transfer_collection_objects()`. The current behaviour and code are both crazy confusing; Any Task Layer can add objects to its collection (eg. Rigging can add objects to einar.rigging), but they can't remove them unless there's a special suffix in the colleciton name, ".FULLY_OWNED". This was obviously implemented in a rush, we needed it working on the day of, or we couldn't get the job done.
+
+    All this code and behaviour can be thrown away in favor of something better.
+
+    My proposal:
+    - Approach the whole system with an "override" mental model.
+    - An object is "owned" by the lowest-index task layer that it's assigned to. (rigging==0)
+    - If the object is assigned to other task layers, those task layers are "overriding" the aspects of the object that correspond to that task layer.
+    - This means that most objects will be assigned to most sub-collections, and that's okay!
+
+    - A task layer can add and remove objects from its influence, but not add or remove objects from other task layers' influence.
+    - If an object is only assigned to a single task layer, don't transfer any data to it.
+    - If an object is in two task layer collections, determine which one is source and target, and transfer data accordingly.
+    - For example, if an object is assigned to two task layers(eg. rigging+shading), take the object from the task layer with lower index (rigging==0) and transfer the data of the higher index task layer to it.
+        - Although, I'm not sure how this will work if a task layer is locked.
+
+## Idea: Sanity Check panel
+    Would be cool (even as a separate addon) to add a "sanity check" button & panel that can warn about:
+        - Datablock in file but not referenced by current view layer
+        - Mesh/Armature datablock not named same as container object
+        - Datablock has .00x name ending
+        - Datablock has .TASK/.TARGET/etc ending 
+        - Display a list of all datablocks per type, and show what other datablocks are referencing that one. Clicking on those sets the list filter to their datablock type and makes their entry the active one.
+        - Draw the User Remap operator or a masked version of it (since Objects might need to be removed from the View Layer before being user remapped)
+    
+    This would be quite similar to CloudRig's "Generation Log" list, that gets filled with warnings by the Generate button, with information about potential issues with a generated rig.
+
+Bugs encountered:
+    - "Create production Context" (Refresh icon under Publish Manager panel) segfaults.
+    - If reloading the file mid-publish, Apply Changes button throws "StructRNA has been removed".
+    - If trying to push from an unsaved file, the changes since the last save won't be pushed. This is fine, but there should be an indication of it.
+
+    I think all of these would be fixed by the "Sync" button idea.
+
+Low Prio:
+    - Setting an asset to Deprecated should set all task layers to Locked.
+    - Asset status list seems to not show all versions until refresh button is pressed?
+    - We should update asset statuses as an early stage of the Publish process, to avoid potentially pushing into deprecated versions (if somebody else deprecates a version, we SVN update, but don't manually refresh or reload).
+
+    Asset Updater:
+        - Don't fully ignore versions when their status is Review. Allow them to be manually selected at least.
+		- Also display the asset status(Review/Deprecated/Approved) in the version number enum drop-down.
+		- Is there a missing Purge at the end of update_asset()?
+		- Make the UI prettier and less confusing.
+
+    Code quality:
+        - Looks like the generate_mapping() call could be moved out of task layers and into generic.
+        - De-duplicating pull_from_task and pull_from_publish would probably be pretty great.
