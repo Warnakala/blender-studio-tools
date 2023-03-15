@@ -33,10 +33,6 @@ def get_library_paths() -> Set[str]:
     return {l.filepath for l in bpy.data.libraries}
 
 
-def throw_popup_dialog(context):
-    context.window_manager.invoke_popup(self, width=300)
-
-
 def draw_absolute_library_warning(self, context):
     layout = self.layout
     layout.alert = True
@@ -106,14 +102,12 @@ def store_lib_paths(dummy1=None, dummy2=None):
 
 
 def register():
-    return
     if not bpy.app.background:
         bpy.app.handlers.load_post.append(store_lib_paths)
         bpy.app.handlers.save_post.append(warn_about_incorrect_lib_paths)
 
 
 def unregister():
-    return
     if not bpy.app.background:
         bpy.app.handlers.load_post.remove(store_lib_paths)
         bpy.app.handlers.save_post.remove(warn_about_incorrect_lib_paths)
