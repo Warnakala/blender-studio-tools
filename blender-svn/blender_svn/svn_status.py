@@ -109,11 +109,10 @@ def set_svn_info(context) -> bool:
 
 
 @bpy.app.handlers.persistent
-def init_svn(context, dummy):
+def init_svn(_context, _dummy):
     """Initialize SVN info when opening a .blend file that is in a repo."""
 
-    if not context:
-        context = bpy.context
+    context = bpy.context   # Without this, context is sometimes a string containing the current filepath??
 
     svn = context.scene.svn
     if not bpy.data.filepath:
