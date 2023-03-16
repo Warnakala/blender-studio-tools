@@ -97,5 +97,12 @@ class GNSK_PT_GeoNodeShapeKeys(bpy.types.Panel):
 
 registry = [
     GNSK_UL_main,
-    GNSK_PT_GeoNodeShapeKeys,
 ]
+
+def register():
+    if hasattr(bpy.types.DATA_PT_shape_keys, 'replacement'):
+        GNSK_PT_GeoNodeShapeKeys.bl_parent_id = bpy.types.DATA_PT_shape_keys.replacement
+    bpy.utils.register_class(GNSK_PT_GeoNodeShapeKeys)
+
+def unregister():
+    bpy.utils.unregister_class(GNSK_PT_GeoNodeShapeKeys)

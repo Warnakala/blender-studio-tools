@@ -1,6 +1,6 @@
 import bpy
-import os
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 from bpy.props import IntProperty, StringProperty, BoolProperty, FloatProperty
 
 NODETREE_NAME = "GN-shape_key"
@@ -36,18 +36,39 @@ def geomod_set_param_attribute(modifier: bpy.types.Modifier, param_name: str, at
     modifier[input_id+"_attribute_name"] = attrib_name
 
 
-def get_resource_blend_path() -> str:
-    filedir = os.path.dirname(os.path.realpath(__file__))
-    blend_path = os.sep.join(filedir.split(os.sep) + ['geonodes.blend'])
-    return blend_path
+def get_resource_blend_path(context) -> Tuple[str, bool]:
+    """Return the desired filepath to the .blend file containing the node set-up.
+    Also return a boolean which indicates whether it should be linked or not. (Appended instead)"""
+    addon_prefs = context.preferences.addons[__package__].preferences
+
+    # Hardcoding for Pet Projects. Relies on the SVN add-on being installed.
+    if 'svn' in context.scene and context.scene['svn']['svn_url'] == 'https://svn.blender.studio/repo/pets':
+        svn_dir = context.scene['svn']['svn_directory']
+        filepath = Path(svn_dir + "/pro/lib/nodes/GeoNodeShapeKey.blend")
+        if not filepath.exists():
+            raise FileNotFoundError(f"Node tree file not found: '{filepath.as_posix()}'. Browse it in the add-on preferences.")
+        return filepath.as_posix(), True
+
+    if addon_prefs.node_import_type == 'APPEND':
+        filepath = Path(addon_prefs.blend_path)
+        if not filepath.exists():
+            raise FileNotFoundError(f"Node tree file not found: '{filepath.as_posix()}'")
+    elif addon_prefs.node_import_type == 'LINK':
+        filepath = Path(addon_prefs.blend_path)
+        if not filepath.exists():
+            raise FileNotFoundError(f"Node tree file not found: '{filepath.as_posix()}'. Browse it in the add-on preferences.")
+
+    return filepath.as_posix(), addon_prefs.node_import_type == 'LINK'
 
 
-def link_shape_key_node_tree() -> bpy.types.NodeTree:
+def link_shape_key_node_tree(context) -> bpy.types.NodeTree:
     # Load shape key node tree from a file.
     if NODETREE_NAME in bpy.data.node_groups:
         return bpy.data.node_groups[NODETREE_NAME]
 
-    with bpy.data.libraries.load(get_resource_blend_path(), link=True) as (data_from, data_to):
+    blend_path, do_link = get_resource_blend_path(context)
+
+    with bpy.data.libraries.load(blend_path, link=do_link) as (data_from, data_to):
         data_to.node_groups.append(NODETREE_NAME)
 
     return bpy.data.node_groups[NODETREE_NAME]
@@ -124,7 +145,7 @@ class GNSK_add_shape(bpy.types.Operator):
             gnsk.name = self.shape_name
 
             mod = obj.modifiers.new(gnsk.name, type='NODES')
-            mod.node_group = link_shape_key_node_tree()
+            mod.node_group = link_shape_key_node_tree(context)
 
             # Find desired modifier index: After any other GNSK modifier, or if 
             # none, before the SubSurf modifier.

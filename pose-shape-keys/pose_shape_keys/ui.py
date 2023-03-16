@@ -243,6 +243,7 @@ def register():
 				# Class was already unregistered, leave it unregistered.
 				pass
 
+	DATA_PT_shape_keys.replacement = 'MESH_PT_pose_keys'	# This is used by GeoNodeShapeKeys add-on to register to the correct parent panel. Could be used by any other add-on I guess.
 	DATA_PT_shape_keys.old_poll = DATA_PT_shape_keys.poll
 	DATA_PT_shape_keys.poll = shape_key_panel_new_poll
 
