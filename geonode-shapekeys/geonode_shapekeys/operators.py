@@ -68,7 +68,7 @@ def link_shape_key_node_tree(context) -> bpy.types.NodeTree:
 
     blend_path, do_link = get_resource_blend_path(context)
 
-    with bpy.data.libraries.load(blend_path, link=do_link) as (data_from, data_to):
+    with bpy.data.libraries.load(blend_path, link=do_link, relative=True) as (data_from, data_to):
         data_to.node_groups.append(NODETREE_NAME)
 
     return bpy.data.node_groups[NODETREE_NAME]
