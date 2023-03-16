@@ -232,9 +232,30 @@ def register():
 			,('POSE_KEYS', 'Pose Keys', "Organize shape keys into a higher-level concept called Pose Keys. These can store vertex positions and push one shape to multiple shape keys at once, relative to existing deformation")
 		]
 	)
+
+	for panel in bpy.types.Panel.__subclasses__():
+		if hasattr(panel, 'bl_parent_id') and panel.bl_parent_id == 'DATA_PT_shape_keys':
+			panel.bl_parent_id = 'MESH_PT_pose_keys'
+			try:
+				bpy.utils.unregister_class(panel)
+				bpy.utils.register_class(panel)
+			except RuntimeError:
+				# Class was already unregistered, leave it unregistered.
+				pass
+
 	DATA_PT_shape_keys.old_poll = DATA_PT_shape_keys.poll
 	DATA_PT_shape_keys.poll = shape_key_panel_new_poll
 
 def unregister():
+	for panel in bpy.types.Panel.__subclasses__():
+		if hasattr(panel, 'bl_parent_id') and panel.bl_parent_id == 'MESH_PT_pose_keys':
+			panel.bl_parent_id = 'DATA_PT_shape_keys'
+			try:
+				bpy.utils.unregister_class(panel)
+				bpy.utils.register_class(panel)
+			except RuntimeError:
+				# Class was already unregistered, leave it unregistered.
+				pass
+
 	del bpy.types.Mesh.shape_key_ui_type
 	DATA_PT_shape_keys.poll = DATA_PT_shape_keys.old_poll
