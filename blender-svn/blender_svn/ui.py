@@ -411,7 +411,11 @@ def draw_outdated_file_warning(self, context):
     svn = context.scene.svn
     if not svn.is_in_repo:
         return
-    current_file = svn.current_blend_file
+    try:
+        current_file = svn.current_blend_file
+    except ValueError:
+        # This can happen if the svn_directory property wasn't update yet (not enough time has passed since opening the file)
+        pass
     if not current_file:
         # If the current file is not in an SVN repository.
         return
