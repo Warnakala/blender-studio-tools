@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "asset-pipeline"
+version = "0.1.0"
+description = ""
+authors = ["Paul Golter <paul@blender.org>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+mypy = "^0.931"
+black = "^22.1.0"
+pylint = "^2.12.2"
+fake-bpy-module-latest = "^20220302"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
