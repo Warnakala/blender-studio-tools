@@ -77,6 +77,7 @@ class TaskLayer:
         cls.transfer_collections(transfer_mapping)
         cls.transfer_data(context, build_context, transfer_mapping, transfer_settings)
         cls.assign_objects(transfer_mapping)
+        cls.fix_geonode_modifiers()
 
     @classmethod
     def transfer_data(
@@ -255,6 +256,16 @@ class TaskLayer:
                 coll.objects.unlink(ob)
                 coll.objects.link(tgt_ob)
                 ob.user_remap(tgt_ob)
+
+    @classmethod
+    def fix_geonode_modifiers(cls):
+        """Workaround to a weird issue where some GeoNode modifier inputs disappear..."""
+        for o in bpy.data.objects:
+            if o.type != 'MESH':
+                continue
+            for m in o.modifiers:
+                if m.type == 'NODES':
+                    m.node_group = m.node_group
 
     def __repr__(self) -> str:
         return f"TaskLayer{self.name}"
