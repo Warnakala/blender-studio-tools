@@ -1,7 +1,7 @@
-from shot_builder.builder.build_step import BuildStep, BuildContext
-from shot_builder.asset import *
-from shot_builder.project import *
-from shot_builder.shot import *
+from blender_kitsu.shot_builder.builder.build_step import BuildStep, BuildContext
+from blender_kitsu.shot_builder.asset import *
+from blender_kitsu.shot_builder.project import *
+from blender_kitsu.shot_builder.shot import *
 
 import bpy
 

@@ -18,13 +18,16 @@
 
 # <pep8 compliant>
 import bpy
-from shot_builder import vars
-from shot_builder.shot import Shot, ShotRef
-from shot_builder.asset import Asset, AssetRef
-from shot_builder.task_type import TaskType
-from shot_builder.render_settings import RenderSettings
-from shot_builder.connectors.connector import Connector
+from blender_kitsu.shot_builder import vars
+from blender_kitsu.shot_builder.shot import Shot, ShotRef
+from blender_kitsu.shot_builder.asset import Asset, AssetRef
+from blender_kitsu.shot_builder.task_type import TaskType
+from blender_kitsu.shot_builder.render_settings import RenderSettings
+from blender_kitsu.shot_builder.connectors.connector import Connector
 import requests
+from blender_kitsu import  cache 
+from blender_kitsu.gazu.asset import  all_assets_for_shot
+from blender_kitsu.gazu.shot import all_shots_for_project, all_sequences_for_project
 
 import typing
 import logging
@@ -131,47 +134,9 @@ class KitsuConnector(Connector):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.__jwt_access_token = ""
-        self.__validate()
-        self.__authorize()
-
-    def __validate(self) -> None:
-        self._preferences.kitsu._validate()
-        if not self._production.config.get('KITSU_PROJECT_ID'):
-            raise KitsuException(
-                "KITSU_PROJECT_ID is not configured in config.py")
-
-    def __authorize(self) -> None:
-        kitsu_pref = self._preferences.kitsu
-        backend = kitsu_pref.backend
-        username = kitsu_pref.username
-        password = kitsu_pref.password
-
-        logger.info(f"authorize {username} against {backend}")
-        response = requests.post(
-            url=f"{backend}/auth/login", data={'email': username, 'password': password})
-        if response.status_code != 200:
-            self.__jwt_access_token = ""
-            raise KitsuException(
-                f"unable to authorize (status code={response.status_code})")
-        json_response = response.json()
-        self.__jwt_access_token = json_response['access_token']
-
-    def __api_get(self, api: str) -> typing.Any:
-        kitsu_pref = self._preferences.kitsu
-        backend = kitsu_pref.backend
-
-        response = requests.get(url=f"{backend}{api}", headers={
-            "Authorization": f"Bearer {self.__jwt_access_token}"
-        })
-        if response.status_code != 200:
-            raise KitsuException(
-                f"unable to call kitsu (api={api}, status code={response.status_code})")
-        return response.json()
 
     def __get_production_data(self) -> KitsuProject:
-        project_id = self._production.config['KITSU_PROJECT_ID']
-        production = self.__api_get(f"data/projects/{project_id}")
+        production = cache.project_active_get()
         project = KitsuProject(typing.cast(
             typing.Dict[str, typing.Any], production))
         return project
@@ -181,22 +146,23 @@ class KitsuConnector(Connector):
         return production.get_name()
 
     def get_task_types(self) -> typing.List[TaskType]:
-        task_types = self.__api_get(f"data/task_types/")
+        project = cache.project_active_get()
+        task_types = project.task_types 
         import pprint
         pprint.pprint(task_types)
         return []
 
     def get_shots(self) -> typing.List[ShotRef]:
-        project_id = self._production.config['KITSU_PROJECT_ID']
-        kitsu_sequences = self.__api_get(f"data/projects/{project_id}/sequences")
+        project = cache.project_active_get()
+        kitsu_sequences = all_sequences_for_project(project.id)
+
         sequence_lookup = {sequence_data['id']: KitsuSequenceRef(
             kitsu_id=sequence_data['id'],
             name=sequence_data['name'],
             code=sequence_data['code'],
         ) for sequence_data in kitsu_sequences}
 
-        kitsu_shots = self.__api_get(f"data/projects/{project_id}/shots")
-
+        kitsu_shots = all_shots_for_project(project.id)
         shots: typing.List[ShotRef] = []
 
         for shot_data in kitsu_shots:
@@ -232,8 +198,8 @@ class KitsuConnector(Connector):
         return shots
 
     def get_assets_for_shot(self, shot: Shot) -> typing.List[AssetRef]:
-        kitsu_assets = self.__api_get(
-            f"data/shots/{shot.kitsu_id}/assets")
+        kitsu_assets = all_assets_for_shot(shot.kitsu_id) 
+        
         return [AssetRef(name=asset_data['name'], code=asset_data['code'])
                 for asset_data in kitsu_assets]
 
@@ -241,7 +207,5 @@ class KitsuConnector(Connector):
         """
         Retrieve the render settings for the given shot.
         """
-        kitsu_project = self.__get_production_data()
-        resolution = kitsu_project.get_resolution()
-        frames_per_second = shot.frames_per_second
-        return RenderSettings(width=resolution[0], height=resolution[1], frames_per_second=frames_per_second)
+        project = cache.project_active_get()
+        return RenderSettings(width=int(project.resolution.split('x')[0]), height=int(project.resolution.split('x')[1]), frames_per_second=project.fps)

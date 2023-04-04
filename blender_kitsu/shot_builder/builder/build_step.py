@@ -1,11 +1,11 @@
 import bpy
 import typing
 
-from shot_builder.project import Production
-from shot_builder.shot import Shot
-from shot_builder.task_type import TaskType
-from shot_builder.render_settings import RenderSettings
-from shot_builder.asset import Asset
+from blender_kitsu.shot_builder.project import Production
+from blender_kitsu.shot_builder.shot import Shot
+from blender_kitsu.shot_builder.task_type import TaskType
+from blender_kitsu.shot_builder.render_settings import RenderSettings
+from blender_kitsu.shot_builder.asset import Asset
 
 
 class BuildContext:

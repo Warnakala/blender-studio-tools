@@ -285,6 +285,15 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         type=KITSU_media_update_search_paths
     )
 
+    production_path: bpy.props.StringProperty(  # type: ignore
+        name="Production Root",
+        description="The location to load configuration files from when "
+        "they couldn't be found in any parent folder of the current "
+        "file. Folder must contain a sub-folder named `shot-builder` "
+        "that holds the configuration files",
+        subtype='DIR_PATH',
+    )
+
     session: Session = Session()
 
     tasks: bpy.props.CollectionProperty(type=KITSU_task)

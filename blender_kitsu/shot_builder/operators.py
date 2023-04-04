@@ -19,10 +19,11 @@
 # <pep8 compliant>
 from typing import *
 import bpy
-from shot_builder.shot import ShotRef
-from shot_builder.project import *
-from shot_builder.builder import ShotBuilder
-from shot_builder.task_type import TaskType
+from blender_kitsu.shot_builder.shot import ShotRef
+from blender_kitsu.shot_builder.project import ensure_loaded_production, get_active_production
+from blender_kitsu.shot_builder.builder import ShotBuilder
+from blender_kitsu.shot_builder.task_type import TaskType
+from blender_kitsu import prefs, cache
 
 _production_task_type_items: List[Tuple[str, str, str]] = []
 
@@ -103,18 +104,34 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
     )
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
+        project = cache.project_active_get()
 
-        production_root = get_production_root(context)
-        if production_root is None:
+        if addon_prefs.session.is_auth() is False:
             self.report(
-                {'WARNING'}, "Operator is cancelled due to inability to determine the production path. Make sure the a default path in configured in the preferences.")
+                {'ERROR'}, "Must be logged into Kitsu to continue. Check login status in 'Blender Kitsu' addon preferences.") 
             return {'CANCELLED'}
+        
+        if project.id == "":
+            self.report(
+                {'ERROR'}, "Operator is not able to determine the Kitsu production's name. Check project is selected in 'Blender Kitsu' addon preferences.") 
+            return {'CANCELLED'}
+        
+        if not addon_prefs.is_project_root_valid:
+            self.report(
+                {'ERROR'}, "Operator is not able to determine the project root directory. Check project root directiory is configured in 'Blender Kitsu' addon preferences.")
+            return {'CANCELLED'}
+        
+        self.production_root = addon_prefs.project_root_dir
+        self.production_name = project.name
+
 
         ensure_loaded_production(context)
         production = get_active_production()
 
-        self.production_root = str(production.path)
-        self.production_name = production.get_name(context=context)
+        
+        self.production_root = addon_prefs.project_root_dir
+        self.production_name = project.name
 
         global _production_task_type_items
         _production_task_type_items = production.get_task_type_items(

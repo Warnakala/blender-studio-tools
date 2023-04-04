@@ -1,13 +1,13 @@
-from shot_builder.project import Production
-from shot_builder.task_type import TaskType
-from shot_builder.asset import Asset, AssetRef
-from shot_builder.builder.build_step import BuildStep, BuildContext
-from shot_builder.builder.init_asset import InitAssetStep
-from shot_builder.builder.init_shot import InitShotStep
-from shot_builder.builder.set_render_settings import SetRenderSettingsStep
-from shot_builder.builder.new_scene import NewSceneStep
-from shot_builder.builder.invoke_hook import InvokeHookStep
-from shot_builder.builder.save_file import SaveFileStep
+from blender_kitsu.shot_builder.project import Production
+from blender_kitsu.shot_builder.task_type import TaskType
+from blender_kitsu.shot_builder.asset import Asset, AssetRef
+from blender_kitsu.shot_builder.builder.build_step import BuildStep, BuildContext
+from blender_kitsu.shot_builder.builder.init_asset import InitAssetStep
+from blender_kitsu.shot_builder.builder.init_shot import InitShotStep
+from blender_kitsu.shot_builder.builder.set_render_settings import SetRenderSettingsStep
+from blender_kitsu.shot_builder.builder.new_scene import NewSceneStep
+from blender_kitsu.shot_builder.builder.invoke_hook import InvokeHookStep
+from blender_kitsu.shot_builder.builder.save_file import SaveFileStep
 
 import bpy
 

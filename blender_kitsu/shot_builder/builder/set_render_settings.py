@@ -1,4 +1,4 @@
-from shot_builder.builder.build_step import BuildStep, BuildContext
+from blender_kitsu.shot_builder.builder.build_step import BuildStep, BuildContext
 import bpy
 
 import typing

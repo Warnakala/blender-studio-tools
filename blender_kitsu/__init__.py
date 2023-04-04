@@ -20,6 +20,7 @@
 
 import bpy
 from blender_kitsu import (
+    shot_builder,
     lookdev,
     bkglobals,
     types,
@@ -92,6 +93,7 @@ def register():
     # tasks.register()
     playblast.register()
     anim.register()
+    shot_builder.register()
 
     LoggerLevelManager.configure_levels()
     logger.info("Registered blender-kitsu")
@@ -109,6 +111,7 @@ def unregister():
     prefs.unregister()
     lookdev.unregister()
     playblast.unregister()
+    shot_builder.unregister()
 
     LoggerLevelManager.restore_levels()
 

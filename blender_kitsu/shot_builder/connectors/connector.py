@@ -21,16 +21,16 @@
 This module contains the Connector class. It is an abstract base class for concrete connectors.
 """
 
-from shot_builder.shot import Shot, ShotRef
-from shot_builder.asset import Asset, AssetRef
-from shot_builder.task_type import TaskType
-from shot_builder.render_settings import RenderSettings
+from blender_kitsu.shot_builder.shot import Shot, ShotRef
+from blender_kitsu.shot_builder.asset import Asset, AssetRef
+from blender_kitsu.shot_builder.task_type import TaskType
+from blender_kitsu.shot_builder.render_settings import RenderSettings
 from typing import *
 
 
 if TYPE_CHECKING:
-    from shot_builder.project import Production
-    from shot_builder.properties import ShotBuilderPreferences
+    from blender_kitsu.shot_builder.project import Production
+    from blender_kitsu.shot_builder.properties import ShotBuilderPreferences
 
 
 class Connector:
@@ -58,8 +58,8 @@ class Connector:
 
     Example of using predefined connectors in a production config file:
         ```shot-builder/config.py
-        from shot_builder.connectors.default import DefaultConnector
-        from shot_builder.connectors.kitsu import KitsuConnector
+        from blender_kitsu.shot_builder.connectors.default import DefaultConnector
+        from blender_kitsu.shot_builder.connectors.kitsu import KitsuConnector
 
         PRODUCTION_NAME = DefaultConnector
         TASK_TYPES = KitsuConnector

@@ -78,7 +78,7 @@ class Hooks:
 
 
 def _register_hook(func: types.FunctionType) -> None:
-    from shot_builder.project import get_active_production
+    from blender_kitsu.shot_builder.project import get_active_production
     production = get_active_production()
     production.hooks.register(func)
 

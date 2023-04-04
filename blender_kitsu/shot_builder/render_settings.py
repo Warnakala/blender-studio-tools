@@ -17,12 +17,13 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
-import bpy
+
+from blender_kitsu.shot_builder.asset import Asset
 from typing import *
-from shot_builder.operators import *
 
 
-def topbar_file_new_draw_handler(self: Any, context: bpy.types.Context) -> None:
-    layout = self.layout
-    op = layout.operator(
-        SHOTBUILDER_OT_NewShotFile.bl_idname, text="Shot File")
+class RenderSettings:
+    def __init__(self, width: int, height: int, frames_per_second: float):
+        self.width = width
+        self.height = height
+        self.frames_per_second = frames_per_second

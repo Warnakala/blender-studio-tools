@@ -1,5 +1,5 @@
-from shot_builder.builder.build_step import BuildStep, BuildContext
-from shot_builder.hooks import HookFunction
+from blender_kitsu.shot_builder.builder.build_step import BuildStep, BuildContext
+from blender_kitsu.shot_builder.hooks import HookFunction
 import bpy
 
 import typing

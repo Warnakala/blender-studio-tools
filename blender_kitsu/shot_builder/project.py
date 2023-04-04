@@ -23,15 +23,18 @@ from collections import defaultdict
 
 import bpy
 
-from shot_builder.task_type import *
-from shot_builder.shot import Shot, ShotRef
-from shot_builder.render_settings import RenderSettings
-from shot_builder.asset import Asset, AssetRef
-from shot_builder.sys_utils import *
-from shot_builder.hooks import Hooks, register_hooks
+from blender_kitsu.shot_builder.task_type import *
+from blender_kitsu.shot_builder.shot import Shot, ShotRef
+from blender_kitsu.shot_builder.render_settings import RenderSettings
+from blender_kitsu.shot_builder.asset import Asset, AssetRef
+from blender_kitsu.shot_builder.sys_utils import *
+from blender_kitsu.shot_builder.hooks import Hooks, register_hooks
 
-from shot_builder.connectors.default import DefaultConnector
-from shot_builder.connectors.connector import Connector
+from blender_kitsu.shot_builder.connectors.default import DefaultConnector
+from blender_kitsu.shot_builder.connectors.connector import Connector
+
+from blender_kitsu import prefs
+from pathlib import Path
 
 from typing import *
 import types
@@ -77,7 +80,7 @@ class Production:
                            connector_cls: Type[Connector],
                            context: bpy.types.Context) -> Connector:
         # TODO: Cache connector
-        preferences = context.preferences.addons[__package__].preferences
+        preferences = context.preferences.addons["blender_kitsu"].preferences
         return connector_cls(production=self, preferences=preferences)
 
     def __format_shot_name(self, shot: Shot) -> str:
@@ -382,8 +385,9 @@ def get_production_root(context: bpy.types.Context) -> Optional[pathlib.Path]:
     production_root = _find_production_root(current_file)
     if production_root:
         return production_root
-    production_root = pathlib.Path(
-        context.preferences.addons[__package__].preferences.production_path)
+    
+    addon_prefs = prefs.addon_prefs_get(bpy.context)
+    production_root = Path(addon_prefs.project_root_dir)
     if is_valid_production_root(production_root):
         return production_root
     return None
