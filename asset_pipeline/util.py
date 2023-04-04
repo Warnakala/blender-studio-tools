@@ -79,52 +79,39 @@ def is_addon_active(module_name, context=None):
 
 def reset_armature_pose(
     rig: bpy.types.Object,
-    only_selected=False,
     reset_transforms=True,
     reset_properties=True,
 ):
     bones = rig.pose.bones
-    if only_selected:
-        bones = [pb for pb in rig.pose.bones if pb.bone.select]
-
     for pb in bones:
         if reset_transforms:
-            pb.location = (0, 0, 0)
-            pb.rotation_euler = (0, 0, 0)
-            pb.rotation_quaternion = (1, 0, 0, 0)
-            pb.scale = (1, 1, 1)
+            pb.location = ((0, 0, 0))
+            pb.rotation_euler = ((0, 0, 0))
+            pb.rotation_quaternion = ((1, 0, 0, 0))
+            pb.scale = ((1, 1, 1))
 
         if reset_properties and len(pb.keys()) > 0:
-            rna_properties = [
-                prop.identifier for prop in pb.bl_rna.properties if prop.is_runtime
-            ]
+            rna_properties = [prop.identifier for prop in pb.bl_rna.properties if prop.is_runtime]
 
             # Reset custom property values to their default value
             for key in pb.keys():
-                if key.startswith("$"):
-                    continue
-                if key in rna_properties:
-                    continue  # Addon defined property.
+                if key.startswith("$"): continue
+                if key in rna_properties: continue	# Addon defined property.
 
                 ui_data = None
                 try:
                     ui_data = pb.id_properties_ui(key)
-                    if not ui_data:
-                        continue
+                    if not ui_data: continue
                     ui_data = ui_data.as_dict()
-                    if not "default" in ui_data:
-                        continue
+                    if not 'default' in ui_data: continue
                 except TypeError:
-                    # Some properties don't support UI data, and so don't have a
-                    # default value. (like addon PropertyGroups)
+                    # Some properties don't support UI data, and so don't have a default value. (like addon PropertyGroups)
                     pass
 
-                if not ui_data:
-                    continue
+                if not ui_data: continue
 
-                if type(pb[key]) not in (float, int):
-                    continue
-                pb[key] = ui_data["default"]
+                if type(pb[key]) not in (float, int, bool): continue
+                pb[key] = ui_data['default']
 
 
 ID_INFO = {

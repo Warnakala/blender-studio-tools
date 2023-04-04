@@ -64,7 +64,6 @@ class TransferCollectionTriplet:
                     continue
                 util.reset_armature_pose(
                     ob,
-                    only_selected=False,
                     reset_properties=True,
                     reset_transforms=True,
                 )
