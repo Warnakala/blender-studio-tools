@@ -22,6 +22,8 @@ from blender_kitsu.shot_builder.ui import *
 from blender_kitsu.shot_builder.connectors.kitsu import *
 from blender_kitsu.shot_builder.operators import *
 import bpy
+from blender_kitsu.shot_builder.anim_setup import ops as  anim_setup_ops #TODO Fix Registraion 
+from blender_kitsu.shot_builder.editorial import ops as editorial_ops #TODO Fix Registraion 
 
 # import logging
 # logging.basicConfig(level=logging.DEBUG)
@@ -45,12 +47,18 @@ classes = (
 
 
 def register():
+    anim_setup_ops.register()
+    editorial_ops.register()
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.TOPBAR_MT_file_new.append(topbar_file_new_draw_handler)
+    
 
 
 def unregister():
+    anim_setup_ops.unregister()   
+    editorial_ops.unregister()
     bpy.types.TOPBAR_MT_file_new.remove(topbar_file_new_draw_handler)
     for cls in classes:
         bpy.utils.unregister_class(cls)
+    

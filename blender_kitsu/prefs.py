@@ -21,6 +21,7 @@
 import hashlib
 import sys
 import os
+import re
 
 from typing import Optional, Any, Set, Tuple, List
 from pathlib import Path
@@ -39,6 +40,8 @@ from blender_kitsu.auth.ops import (
 )
 from blender_kitsu.context.ops import KITSU_OT_con_productions_load
 from blender_kitsu.lookdev.prefs import LOOKDEV_preferences
+from blender_kitsu.shot_builder.editorial.core import editorial_export_check_latest
+
 
 logger = LoggerFactory.getLogger()
 
@@ -249,6 +252,10 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         name="Show Advanced Settings",
         description="Show advanced settings that should already have good defaults",
     )
+    shot_builder_show_advanced : bpy.props.BoolProperty(  # type: ignore
+        name="Show Advanced Settings",
+        description="Show advanced settings that should already have good defaults",
+    )
 
     shot_pattern: bpy.props.StringProperty(  # type: ignore
         name="Shot Pattern",
@@ -292,6 +299,51 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         "file. Folder must contain a sub-folder named `shot-builder` "
         "that holds the configuration files",
         subtype='DIR_PATH',
+    )
+
+    edit_export_dir: bpy.props.StringProperty(  # type: ignore
+        name="Editorial Export Directory",
+        options={"HIDDEN", "SKIP_SAVE"},
+        description="Directory path to editorial's export folder containing storyboard/animatic exports. Path should be similar to '~/shared-{proj_name}/editorial/export/'",
+        subtype="DIR_PATH",
+    )
+
+    edit_export_file_pattern: bpy.props.StringProperty(  # type: ignore
+        name="Editorial Export File Pattern",
+        options={"HIDDEN", "SKIP_SAVE"},
+        description="File pattern to search for latest editorial export. Typically '{proj_name}_v\d\d\d.mp4'",
+        default="petprojects_v\d\d\d.mp4",
+       
+    )
+
+    edit_export_frame_offset: bpy.props.IntProperty(  # type: ignore
+        name="Editorial Export Offset",
+        description="Shift Editorial Export by this frame-range after set-up.",
+        default=-102, #HARD CODED FOR PET PROJECTS BLENDER FILM
+    )
+
+    shot_builder_frame_offset: bpy.props.IntProperty(  # type: ignore
+        name="Start Frame Offset",
+        description="All Shots built by 'Shot_builder' should begin at this frame",
+        default=101,
+    )
+
+    shot_builder_armature_prefix: bpy.props.StringProperty(  # type: ignore
+        name="Armature Prefix",
+        description="Naming convention prefix that exists on published assets containing armatures. Used to create/name actions during 'Shot_Build'. Armature name example:'{prefix}{base_name}'",
+        default="RIG-",
+    )
+
+    shot_builder_action_prefix: bpy.props.StringProperty(  # type: ignore
+        name="Action Prefix",
+        description="Naming convention prefix to add to new actions. Actions will be named '{prefix}{base_name}.{shot_name}.v001' and set to fake user during 'Shot_Build'",
+        default="ANI-",
+    )
+
+    user_exec_code: bpy.props.StringProperty(# type: ignore
+        name="Post Execution Command",
+        description="Run this command after shot_builder is complete, but before the file is saved.",
+        default="",
     )
 
     session: Session = Session()
@@ -372,6 +424,21 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             icon="ADD",
             emboss=False,
         )
+        
+        # Shot_Builder settings.
+        box = layout.box()
+        box.label(text="Shot Builder", icon="MOD_BUILD")
+        box.row().prop(self, "edit_export_dir")
+        box.row().prop(self, "edit_export_file_pattern")
+        box.row().prop(self, "edit_export_frame_offset")
+        box.row().prop(self, "shot_builder_show_advanced")
+        if self.shot_builder_show_advanced:
+            start_frame_row = box.row()
+            start_frame_row.label(text="Start Frame Offset")
+            start_frame_row.prop(self, "shot_builder_frame_offset", text="")
+            box.row().prop(self, "shot_builder_armature_prefix")
+            box.row().prop(self, "shot_builder_action_prefix") 
+            box.row().prop(self, "user_exec_code")
 
         # Misc settings.
         box = layout.box()
@@ -385,6 +452,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             box.row().prop(self, "shot_pattern")
             box.row().prop(self, "shot_counter_digits")
             box.row().prop(self, "shot_counter_increment")
+
 
     @property
     def playblast_root_path(self) -> Optional[Path]:
@@ -427,7 +495,15 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             return False
 
         return True
-
+    
+    @property
+    def is_editorial_dir_valid(self) -> bool:
+        if editorial_export_check_latest(bpy.context) is None:
+            logger.error(
+                    "Failed to initialize editorial export file model. Invalid path/pattern. Check addon preferences"
+                )
+            return False
+        return True
 
 def session_get(context: bpy.types.Context) -> Session:
     """

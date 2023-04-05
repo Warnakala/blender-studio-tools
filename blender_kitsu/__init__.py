@@ -40,6 +40,8 @@ from blender_kitsu import (
     ui,
 )
 
+
+
 from blender_kitsu.logger import LoggerFactory, LoggerLevelManager
 
 logger = LoggerFactory.getLogger(__name__)
@@ -94,6 +96,7 @@ def register():
     playblast.register()
     anim.register()
     shot_builder.register()
+    
 
     LoggerLevelManager.configure_levels()
     logger.info("Registered blender-kitsu")
