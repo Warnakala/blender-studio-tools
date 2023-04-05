@@ -315,6 +315,8 @@ def reload_svn_log(self, context):
 
     previous_rev_number = 0
     for chunk in chunks:
+        if not chunk[0]:
+            chunk.pop(0)
         # Read the first line of the svn log containing revision number, author,
         # date and commit message length.
         r_number, r_author, r_date, r_msg_length = chunk[0].split(" | ")
