@@ -1,0 +1,33 @@
+UI
+
+- show alerts for items that are not found
+- automatically select type based on match
+
+FEATURES
+
+custom properties
+    - allow rna overriding of custom properties (see geonodes modifiers)
+
+remove drivers/animation data
+    - properly remove drivers/animation data when creating an rna override
+
+animated overrides
+    - store animation data in the blend file and write
+    their rna path to json to allow animated/driven overrides
+
+execution script
+    - auto-generate script from modules
+
+text data-block
+    - auto-load on file-load if on disk
+    - jump to file in text editor
+
+settings interaction
+    - show dirty per category
+
+FIXES
+
+- library flags for RNA overrides
+- settings ordering (template)
+- search invert (template)
+- auto-mute drivers/fcurves whenever necessary !!
