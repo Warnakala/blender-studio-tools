@@ -70,7 +70,7 @@ class LOR_OT_override_picker(bpy.types.Operator):
         layout = self.layout
         property = self.property
 
-        if not property:
+        if property is None:
             return
 
         col = layout.column()
@@ -99,8 +99,6 @@ class LOR_OT_override_picker(bpy.types.Operator):
         bpy.ops.ui.copy_data_path_button(full_path=True)
         rna_path = context.window_manager.clipboard
         context.window_manager.clipboard = clip
-
-        print(utils.parse_rna_path_to_elements(rna_path))
 
         if rna_path.endswith('name'):
             print("Warning: Don't override datablock names.")
@@ -173,7 +171,6 @@ class LOR_OT_override_picker(bpy.types.Operator):
                 bpy.types.Scene.override = bpy.props.FloatProperty(name = self.name_string, **vars)
             elif type(self.property) is idprop.types.IDPropertyArray:
                 bpy.types.Scene.override = bpy.props.FloatVectorProperty(name = self.name_string, size=len(self.property), **vars)
-                print(len(self.property))
                 if vars['subtype'] in ['COLOR', 'COLOR_GAMMA']:
                     self.type = 'COLOR'
                 else:
@@ -215,7 +212,6 @@ class LOR_OT_override_picker(bpy.types.Operator):
         exec(self.rna_path+f' = context.scene.override')
 
         add_info=[self.name_string, self.rna_path, context.scene.override, self.type]
-        print(self.type)
         rna_overrides.add_rna_override(context, add_info)
 
         if not self.batch_override:
