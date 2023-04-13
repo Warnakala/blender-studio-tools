@@ -50,6 +50,12 @@ Add-on with miscellaneous tools for animators.
 
 Author & Maintainer: Demeter Dzadik
 
+## lighting-overrider
+
+Add-on to create, manage and apply python overrides in a flexible and reliable way as they are used in the lighting process of the Blender Studio pipeline on a shot and sequence level.
+
+Author & Maintainer: Simon Thommes
+
 ## blender-svn
 
 Add-on that is intended as a UI for the SVN (Subversion) file versioning system which we use at the studio. Currently doesn't support check-out, but once a check-out is done, it supports all common SVN operations, including resolving conflicts. The currently opened .blend file must be in an SVN repository for the UI to appear.
