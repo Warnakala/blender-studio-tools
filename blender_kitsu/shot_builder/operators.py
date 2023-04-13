@@ -149,34 +149,34 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
 
         if addon_prefs.session.is_auth() is False:
             self.report(
-                {'ERROR'}, "Must be logged into Kitsu to continue. Check login status in 'Blender Kitsu' addon preferences.") 
+                {'ERROR'}, "Must be logged into Kitsu to continue. \nCheck login status in 'Blender Kitsu' addon preferences.") 
             return {'CANCELLED'}
         
         if project.id == "":
             self.report(
-                {'ERROR'}, "Operator is not able to determine the Kitsu production's name. Check project is selected in 'Blender Kitsu' addon preferences.") 
+                {'ERROR'}, "Operator is not able to determine the Kitsu production's name. \nCheck project is selected in 'Blender Kitsu' addon preferences.") 
             return {'CANCELLED'}
         
         if not addon_prefs.is_project_root_valid:
             self.report(
-                {'ERROR'}, "Operator is not able to determine the project root directory. Check project root directiory is configured in 'Blender Kitsu' addon preferences.")
+                {'ERROR'}, "Operator is not able to determine the project root directory. \nCheck project root directiory is configured in 'Blender Kitsu' addon preferences.")
             return {'CANCELLED'}
         
         if not addon_prefs.is_editorial_dir_valid:
             self.report(
-                {'ERROR'}, "Shot builder is dependant on a valid editorial export path and file pattern. Check Preferences, errors appear in console")
+                {'ERROR'}, "Shot builder is dependant on a valid editorial export path and file pattern.  \nCheck Preferences, errors appear in console")
             return {'CANCELLED'}
         
         self.production_root = addon_prefs.project_root_dir
         self.production_name = project.name
 
 
-        ensure_loaded_production(context)
-        production = get_active_production()
+        if not ensure_loaded_production(context):
+            self.report(
+                {'ERROR'}, "Shot builder configuration files not found in current project directory. \nCheck addon preferences to ensure project root contains shot_builder config.")
+            return {'CANCELLED'}
 
-        
-        self.production_root = addon_prefs.project_root_dir
-        self.production_name = project.name
+        production = get_active_production()
 
         global _production_task_type_items
         _production_task_type_items = production.get_task_type_items(

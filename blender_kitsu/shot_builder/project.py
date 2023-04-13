@@ -32,6 +32,7 @@ from blender_kitsu.shot_builder.hooks import Hooks, register_hooks
 
 from blender_kitsu.shot_builder.connectors.default import DefaultConnector
 from blender_kitsu.shot_builder.connectors.connector import Connector
+import os
 
 from blender_kitsu import prefs
 from pathlib import Path
@@ -400,16 +401,16 @@ def ensure_loaded_production(context: bpy.types.Context) -> bool:
     Returns if the production of for the given context is loaded.
     """
     global _PRODUCTION
-    production_root = get_production_root(context)
-    if production_root is None:
-        _PRODUCTION = None
-        return False
-    if _PRODUCTION and (_PRODUCTION.path == production_root):
-        return True
-
-    logger.debug(
+    addon_prefs = prefs.addon_prefs_get(bpy.context)
+    base_path = Path(addon_prefs.project_root_dir)
+    production_root = os.path.join(base_path, "pro") #TODO Fix during refactor should use base_path
+    if is_valid_production_root(Path(production_root)):
+        logger.debug(
         f"loading new production configuration from '{production_root}'.")
-    return __load_production_configuration(context, production_root)
+        __load_production_configuration(context, Path(production_root))
+        return True
+    return False
+
 
 
 def __load_production_configuration(context: bpy.types.Context,
