@@ -125,7 +125,10 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
             """Running as Modal Event because functions within execute() function like
             animation_workspace_delete_others() changed UI context that needs to be refreshed.
             https://docs.blender.org/api/current/info_gotcha.html#no-updates-after-changing-ui-context"""
-            animation_workspace_vse_area_add(context) 
+            #TODO this is a hack, should be inherient to above builder
+            #TODO fix during refactor
+            if self.task_type == 'anim':
+                animation_workspace_vse_area_add(context) 
             self._add_vse_area = True
 
         if self._built_shot and self._add_vse_area:
@@ -162,10 +165,7 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
                 {'ERROR'}, "Operator is not able to determine the project root directory. \nCheck project root directiory is configured in 'Blender Kitsu' addon preferences.")
             return {'CANCELLED'}
         
-        if not addon_prefs.is_editorial_dir_valid:
-            self.report(
-                {'ERROR'}, "Shot builder is dependant on a valid editorial export path and file pattern.  \nCheck Preferences, errors appear in console")
-            return {'CANCELLED'}
+
         
         self.production_root = addon_prefs.project_root_dir
         self.production_name = project.name
@@ -191,6 +191,11 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
         return cast(Set[str], context.window_manager.invoke_props_dialog(self, width=400))
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        addon_prefs = bpy.context.preferences.addons["blender_kitsu"].preferences
+        if self.task_type == 'anim' and not addon_prefs.is_editorial_dir_valid:
+            self.report(
+                {'ERROR'}, "Shot builder is dependant on a valid editorial export path and file pattern.  \nCheck Preferences, errors appear in console")
+            return {'CANCELLED'}
         wm = context.window_manager
         self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
@@ -198,9 +203,9 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
             self.report(
                 {'ERROR'}, "Shot builder can only be started from the File menu. Shortcuts like CTRL-N don't work")
             return {'CANCELLED'}
+        
         if self._built_shot:
             return {'RUNNING_MODAL'}
-        addon_prefs = bpy.context.preferences.addons["blender_kitsu"].preferences
         ensure_loaded_production(context)
         production = get_active_production()
         shot_builder = ShotBuilder(
@@ -212,10 +217,13 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
         sequence = gazu.shot.get_sequence_by_name(production.config['KITSU_PROJECT_ID'], self.seq_id)
         shot = gazu.shot.get_shot_by_name(sequence, self.shot_id)
 
-        #Load EDIT
-        editorial_export_get_latest(context, shot)      
-        # Load Anim Workspace
-        animation_workspace_delete_others()
+        #TODO this is a hack, should be inherient to above builder
+        #TODO fix during refactor
+        if self.task_type == 'anim':
+            #Load EDIT
+            editorial_export_get_latest(context, shot)      
+            # Load Anim Workspace
+            animation_workspace_delete_others()
 
         # Initilize armatures
         for obj in [obj for obj in bpy.data.objects if obj.type == "ARMATURE"]:
