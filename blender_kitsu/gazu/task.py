@@ -148,6 +148,20 @@ def all_tasks_for_episode(episode, relations=False, client=default):
 
 
 @cache
+def all_tasks_for_edit(edit, relations=False, client=default):
+    """
+    Retrieve all tasks directly linked to given edit.
+    """
+    edit = normalize_model_parameter(edit)
+    params = {}
+    if relations:
+        params = {"relations": "true"} 
+    path = "edits/%s/tasks" % edit["id"]
+    tasks = raw.fetch_all(path, params, client=client)
+    return sort_by_name(tasks)
+
+
+@cache
 def all_shot_tasks_for_sequence(sequence, relations=False, client=default):
     """
     Retrieve all tasks directly linked to all shots of given sequence.

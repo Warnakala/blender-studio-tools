@@ -24,7 +24,7 @@ import colorsys
 import random
 from pathlib import Path
 from typing import Dict, List, Set, Optional, Tuple, Any
-
+import datetime
 import bpy
 
 from blender_kitsu import gazu, cache, util, prefs, bkglobals
@@ -39,6 +39,8 @@ from blender_kitsu.types import (
     TaskStatus,
     Task,
 )
+
+from blender_kitsu.playblast.core import override_render_path, override_render_format
 
 logger = LoggerFactory.getLogger()
 
@@ -306,7 +308,6 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
             text="Submit %s to server. Will skip shots if they already exist"
             % (noun.lower()),
         )
-
 
 class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
     bl_idname = "kitsu.sqe_push_new_sequence"
@@ -1404,11 +1405,7 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
         logger.info("-END- Pushing Sequence Editor Render")
         return {"FINISHED"}
 
-    def _gen_output_path(self, strip: bpy.types.Sequence, task_type: TaskType) -> Path:
-        addon_prefs = prefs.addon_prefs_get(bpy.context)
-        folder_name = addon_prefs.sqe_render_dir
-        file_name = f"{strip.kitsu.shot_id}_{strip.kitsu.shot_name}.{(task_type.name).lower()}.mp4"
-        return Path(folder_name).absolute().joinpath(file_name)
+
 
     @contextlib.contextmanager
     def override_render_settings(self, context, thumbnail_width=256):
@@ -2398,7 +2395,132 @@ class KITSU_OT_sqe_change_strip_source(bpy.types.Operator):
 
         util.ui_redraw()
         return {"FINISHED"}
+    
+def set_entity_data(entity, key: str, value: int):
+    if get_entity_data(entity, key) is not None:
+        entity['data'][key] = value
+        return entity
 
+def get_entity_data(entity, key: str):
+    if entity.get("data").get(key) is not None:
+        return entity.get("data").get(key)
+
+def get_dict_len(items:dict):
+    try:
+        return len(items)
+    except TypeError:
+        return None
+
+def set_revision_int(prev_rev=None):
+    if prev_rev is None:
+        return 1
+    return prev_rev+1
+class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
+    bl_idname = "kitsu.vse_publish_edit_revision"
+    bl_label = "Render and 'Publish as Revision'"
+    bl_description = "Renders current VSE Edit as .mp4 and publishes as revision on 'Edit Task'"
+    
+    def get_edit_entry_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+        sorted_edits = []
+        active_project = cache.project_active_get()
+
+        for edit in gazu.edit.get_all_edits_with_tasks():
+            if (edit["project_id"] == active_project.id) and not edit['canceled']:
+                sorted_edits.append(edit)
+
+        return [(item.get("id"), item.get("name"), f'Created at: "{item.get("created_at")}" {item.get("description")}') for item in sorted_edits]
+
+    def get_edit_task_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+        tasks = gazu.task.all_tasks_for_edit(self.edit_entry)
+        return [(item.get("id"), item.get("name"), f'Created at: "{item.get("created_at")}" {item.get("description")}') for item in tasks]
+    
+    comment: bpy.props.StringProperty(name="Comment")
+    edit_entry: bpy.props.EnumProperty(name="Edit", items=get_edit_entry_items)
+    task: bpy.props.EnumProperty(name="Edit", items=get_edit_task_items)
+    render_dir: bpy.props.StringProperty( 
+        name="Folder",
+        subtype="DIR_PATH",
+    )
+    use_frame_start: bpy.props.BoolProperty(name="Submit update to 'frame_start'.", default=False)
+    frame_start: bpy.props.IntProperty(name="Frame Start", description="Send an integerfor the 'frame_start' value of the current Kitsu Edit. \nThis is used by Watchtower to pad the edit in the timeline.", default=0)
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(
+            prefs.session_auth(context)
+            and cache.project_active_get()
+        )
+
+    def invoke(self, context, event):
+        # Remove file name if set in render.filepath
+        dir_path = bpy.path.abspath(context.scene.render.filepath)
+        if not os.path.isdir(Path(dir_path)):
+            dir_path = Path(dir_path).parent
+        self.render_dir =   str(dir_path)
+        
+        #'frame_start' is optionally property appearring on all edit_entries for a project if it exists
+        server_frame_start = get_entity_data(gazu.edit.get_edit(self.edit_entry), 'frame_start')
+        self.frame_start = server_frame_start
+        self.use_frame_start = bool(server_frame_start is not None)
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout = self.layout
+        layout.prop(self, "edit_entry")
+        if len(self.get_edit_task_items(context)) >= 2:
+            layout.prop(self, "task")
+        layout.prop(self, "comment")
+        layout.prop(self, "render_dir")
+
+        # Only set `frame_start` if exists on current project
+        if self.use_frame_start:
+            layout.prop(self, "frame_start")
+        
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        if self.task == "":
+            self.report({"ERROR"}, "Selected edit doesn't have any task associated with it  .")
+            return {"CANCELLED"}
+
+        active_project = cache.project_active_get()
+
+        existing_previews = gazu.edit.get_all_previews_for_edit(self.edit_entry)
+        len_previews = get_dict_len(existing_previews)
+        revision = set_revision_int(len_previews)
+
+        # Build render_path
+        render_dir = bpy.path.abspath(self.render_dir)
+        if not os.path.isdir(Path(render_dir)):
+            self.report(
+            {"ERROR"},
+            f"Render path is not set to a directory. '{self.render_dir}'"
+        )
+            return {"CANCELLED"}
+        edit_entry = gazu.edit.get_edit(self.edit_entry)
+        render_name = f"{active_project.name}_{edit_entry.get('name')}_v{revision}.mp4"
+        render_path = Path(render_dir).joinpath(render_name)
+        
+        # Render Sequence to .mp4
+        with override_render_path(self, context, render_path.as_posix()):
+            with override_render_format(self, context):
+                bpy.ops.render.opengl(animation=True, sequencer=True)  
+
+        # Create comment with video
+        task_entity = gazu.task.get_task(self.task)
+        new_comment = gazu.task.add_comment(task_entity, task_entity["task_status"], self.comment)
+        new_preview = gazu.task.add_preview(task_entity, new_comment, render_path)
+
+        # Update edit_entry's frame_start if 'frame_start' is found on server
+        if self.use_frame_start:
+            edit_entity_update = set_entity_data(edit_entry, 'frame_start', self.frame_start)
+            updated_edit_entity = gazu.entity.update_entity(edit_entity_update) #TODO add a generic function to update entites
+
+
+        self.report(
+            {"INFO"},
+            f"Submitted new comment 'Revision {revision}'"
+        )
+        return {"FINISHED"}
 
 # ---------REGISTER ----------.
 
@@ -2429,6 +2551,8 @@ classes = [
     KITSU_OT_sqe_scan_for_media_updates,
     KITSU_OT_sqe_change_strip_source,
     KITSU_OT_sqe_clear_update_indicators,
+    KITSU_OT_vse_publish_edit_revision,
+
 ]
 
 

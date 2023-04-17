@@ -735,6 +735,14 @@ class KITSU_PT_sqe_general_tools(bpy.types.Panel):
                 KITSU_OT_sqe_change_strip_source.bl_idname, text="", icon="FILE_PARENT"
             ).go_latest = True
 
+        # Create box.
+        layout = self.layout
+        box = layout.box()
+        box.label(text="Edit Tasks", icon="SEQ_SEQUENCER")
+        
+        # Scan for outdated media and reset operator.
+        row = box.row(align=True)
+        row.operator("kitsu.vse_publish_edit_revision")
 
 # ---------REGISTER ----------.
 

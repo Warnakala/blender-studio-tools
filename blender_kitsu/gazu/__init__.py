@@ -6,6 +6,7 @@ from . import asset
 from . import casting
 from . import context
 from . import entity
+from . import edit
 from . import files
 from . import project
 from . import person

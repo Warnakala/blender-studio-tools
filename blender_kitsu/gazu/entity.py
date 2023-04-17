@@ -104,3 +104,16 @@ def remove_entity(entity, force=False, client=default):
     if force:
         params = {"force": "true"}
     return raw.delete(path, params, client=client)
+
+def update_entity(entity, client=default):
+    """
+    Save given shot data into the API. Metadata are fully replaced by the ones
+    set on given shot.
+
+    Args:
+        Entity (dict): The shot dict to update.
+
+    Returns:
+        dict: Updated entity.
+    """
+    return raw.put(f"data/entities/{entity['id']}", entity, client=client)
