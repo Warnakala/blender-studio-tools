@@ -6,8 +6,18 @@ This project contains add-ons and standalone tools that are used by the Blender 
 
 Add-on used by animation, layout, and editorial department to push video files of shot versions to Kitsu. It also has features that are not directly related to Kitsu but support certain aspects of the Blender Studio Pipeline.
 
+**shot-builder** : Add-on used by animators or TDs to build .blend files by pulling in shot data from a production's Kitsu database, by linking characters, sets, and props that are used by a given shot. Author: Jeroen Bakker
+
+**anim-setup** : Sub-module that automates the setup of animation within shot_builder. Author: Paul Golter
+
+
 Author: Paul Golter  
-Maintainers: Francesco Siddi, Demeter Dzadik
+Maintainers: Nick Alberelli, Francesco Siddi, Demeter Dzadik
+
+
+
+
+---
 
 ## asset-pipeline
 
@@ -18,11 +28,6 @@ Most of the actual data transferring code is in a file that is NOT part of the a
 Author: Paul Golter  
 Maintainers: Demeter Dzadik, Simon Thommes
 
-## shot-builder
-
-Add-on used by animators or TDs to build .blend files by pulling in shot data from a production's Kitsu database, by linking characters, sets, and props that are used by a given shot.
-
-Author & Maintainer: Jeroen Bakker
 
 ## blender-media-viewer
 
@@ -88,12 +93,6 @@ Author & Maintainer: Francesco Siddi
 ## grease-converter
 
 Add-on that can convert annotations to grease pencil objects and vise versa.
-
-Author: Paul Golter
-
-## anim-setup
-
-Add-on that automates the setup of animation scenes for the Sprite-Fright project.
 
 Author: Paul Golter
 
