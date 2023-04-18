@@ -2418,7 +2418,7 @@ def set_revision_int(prev_rev=None):
 class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
     bl_idname = "kitsu.vse_publish_edit_revision"
     bl_label = "Render and 'Publish as Revision'"
-    bl_description = "Renders current VSE Edit as .mp4 and publishes as revision on 'Edit Task'"
+    bl_description = "Renders current VSE Edit as .mp4 and publishes as revision on 'Edit Task'.\nWill not overwrite existing files"
     
     def get_edit_entry_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
         sorted_edits = []
@@ -2487,7 +2487,7 @@ class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
 
         existing_previews = gazu.edit.get_all_previews_for_edit(self.edit_entry)
         len_previews = get_dict_len(existing_previews)
-        revision = set_revision_int(len_previews)
+        revision = str(set_revision_int(len_previews)).zfill(3)
 
         # Build render_path
         render_dir = bpy.path.abspath(self.render_dir)
@@ -2498,8 +2498,16 @@ class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
         )
             return {"CANCELLED"}
         edit_entry = gazu.edit.get_edit(self.edit_entry)
-        render_name = f"{active_project.name}_{edit_entry.get('name')}_v{revision}.mp4"
+        prod_name = active_project.name.lower().replace(' ', '')
+        render_name = f"{prod_name}_v{revision}.mp4"
         render_path = Path(render_dir).joinpath(render_name)
+        # check path exists
+        if render_path.is_file():
+            self.report(
+            {"ERROR"},
+            f"File '{render_name}' already exists at '{self.render_dir}'"
+        )
+            return {"CANCELLED"}
         
         # Render Sequence to .mp4
         with override_render_path(self, context, render_path.as_posix()):
