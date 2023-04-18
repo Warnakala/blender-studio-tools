@@ -1,10 +1,11 @@
+import bpy
+from pathlib import Path
+
 import contextlib
 
 from blender_kitsu import (
     prefs,
 )
-
-# TODO refactor so these are nest-able and re-use code
 
 @contextlib.contextmanager
 def override_render_format(self, context):
@@ -53,30 +54,29 @@ def override_render_path(self, context, render_file_path):
             # Filepath.
             rd.filepath = filepath
 
+@contextlib.contextmanager
+def override_hide_viewport_gizmos(self, context,):
+        sp = context.space_data
+        show_gizmo = sp.show_gizmo
+        show_overlays = sp.overlay.show_overlays
+
+        try:
+            sp.show_gizmo = False
+            sp.overlay.show_overlays = False
+
+            yield
+        finally:
+            sp.show_gizmo = show_gizmo
+            sp.overlay.show_overlays = show_overlays
 
 @contextlib.contextmanager
-def override_render_settings(self, context, render_file_path):
-        """Overrides the render settings for playblast creation"""
-        addon_prefs = prefs.addon_prefs_get(context)
+def override_metadata_stamp_settings(self, context,):
         rd = context.scene.render
-        sps = context.space_data.shading
-        sp = context.space_data
         # Get first last name for stamp note text.
         session = prefs.session_get(context)
         first_name = session.data.user["first_name"]
         last_name = session.data.user["last_name"]
         # Remember current render settings in order to restore them later.
-
-        # Filepath.
-        filepath = rd.filepath
-
-        # Format render settings.
-        percentage = rd.resolution_percentage
-        file_format = rd.image_settings.file_format
-        ffmpeg_constant_rate = rd.ffmpeg.constant_rate_factor
-        ffmpeg_codec = rd.ffmpeg.codec
-        ffmpeg_format = rd.ffmpeg.format
-        ffmpeg_audio_codec = rd.ffmpeg.audio_codec
 
         # Stamp metadata settings.
         metadata_input = rd.metadata_input
@@ -99,34 +99,7 @@ def override_render_settings(self, context, render_file_path):
         stamp_foreground = rd.stamp_foreground
         stamp_background = rd.stamp_background
         use_stamp_labels = rd.use_stamp_labels
-
-        # Space data settings.
-        shading_type = sps.type
-        shading_light = sps.light
-        studio_light = sps.studio_light
-        color_type = sps.color_type
-        background_type = sps.background_type
-
-        show_backface_culling = sps.show_backface_culling
-        show_xray = sps.show_xray
-        show_shadows = sps.show_shadows
-        show_cavity = sps.show_cavity
-        show_object_outline = sps.show_object_outline
-        show_specular_highlight = sps.show_specular_highlight
-
-        show_gizmo = sp.show_gizmo
-
         try:
-            # Filepath.
-            rd.filepath = render_file_path
-
-            # Format render settings.
-            rd.resolution_percentage = 100
-            rd.image_settings.file_format = "FFMPEG"
-            rd.ffmpeg.constant_rate_factor = "HIGH"
-            rd.ffmpeg.codec = "H264"
-            rd.ffmpeg.format = "MPEG4"
-            rd.ffmpeg.audio_codec = "AAC"
 
             # Stamp metadata settings.
             rd.metadata_input = "SCENE"
@@ -150,36 +123,9 @@ def override_render_settings(self, context, render_file_path):
             rd.stamp_background = (0, 0, 0, 0.25)
             rd.use_stamp_labels = True
 
-            # Space data settings.
-            sps.type = "SOLID"
-            sps.light = "STUDIO"
-            sps.studio_light = "Default"
-            sps.color_type = "MATERIAL"
-            sps.background_type = "THEME"
-
-            sps.show_backface_culling = False
-            sps.show_xray = False
-            sps.show_shadows = False
-            sps.show_cavity = False
-            sps.show_object_outline = False
-            sps.show_specular_highlight = True
-
-            sp.show_gizmo = False
-
             yield
 
         finally:
-            # Filepath.
-            rd.filepath = filepath
-
-            # Return the render settings to normal.
-            rd.resolution_percentage = percentage
-            rd.image_settings.file_format = file_format
-            rd.ffmpeg.codec = ffmpeg_codec
-            rd.ffmpeg.constant_rate_factor = ffmpeg_constant_rate
-            rd.ffmpeg.format = ffmpeg_format
-            rd.ffmpeg.audio_codec = ffmpeg_audio_codec
-
             # Stamp metadata settings.
             rd.metadata_input = metadata_input
             rd.use_stamp_date = use_stamp_date
@@ -201,7 +147,46 @@ def override_render_settings(self, context, render_file_path):
             rd.stamp_foreground = stamp_foreground
             rd.stamp_background = stamp_background
             rd.use_stamp_labels = use_stamp_labels
+         
+@contextlib.contextmanager
+def override_viewport_shading(self, context):
+        """Overrides the render settings for playblast creation"""
+        rd = context.scene.render
+        sps = context.space_data.shading
+        sp = context.space_data
 
+        # Space data settings.
+        shading_type = sps.type
+        shading_light = sps.light
+        studio_light = sps.studio_light
+        color_type = sps.color_type
+        background_type = sps.background_type
+
+        show_backface_culling = sps.show_backface_culling
+        show_xray = sps.show_xray
+        show_shadows = sps.show_shadows
+        show_cavity = sps.show_cavity
+        show_object_outline = sps.show_object_outline
+        show_specular_highlight = sps.show_specular_highlight
+
+        try:
+            # Space data settings.
+            sps.type = "SOLID"
+            sps.light = "STUDIO"
+            sps.studio_light = "Default"
+            sps.color_type = "MATERIAL"
+            sps.background_type = "THEME"
+
+            sps.show_backface_culling = False
+            sps.show_xray = False
+            sps.show_shadows = False
+            sps.show_cavity = False
+            sps.show_object_outline = False
+            sps.show_specular_highlight = True
+
+            yield
+
+        finally:
             # Space data settings.
             sps.type = shading_type
             sps.light = shading_light
@@ -216,4 +201,40 @@ def override_render_settings(self, context, render_file_path):
             sps.show_object_outline = show_object_outline
             sps.show_specular_highlight = show_specular_highlight
 
-            sp.show_gizmo = show_gizmo
+
+def playblast_with_shading_settings(self, context, file_path):
+    # Render and save playblast
+    with override_render_path(self, context, file_path):
+        with override_render_format(self, context,):
+            with override_metadata_stamp_settings(self, context):
+                with override_hide_viewport_gizmos(self, context):
+                    with override_viewport_shading(self, context):
+
+                        # Get output path.
+                        output_path = Path(file_path)
+
+                        # Ensure folder exists.
+                        Path(context.scene.kitsu.playblast_dir).mkdir(
+                            parents=True, exist_ok=True)
+
+                        # Make opengl render.
+                        bpy.ops.render.opengl(animation=True)
+                        return output_path
+
+
+def playblast_user_shading_settings(self, context, file_path):
+    # Render and save playblast
+    with override_render_path(self, context, file_path):
+        with override_render_format(self, context,):
+            with override_metadata_stamp_settings(self, context):
+                with override_hide_viewport_gizmos(self, context):
+                    # Get output path.
+                    output_path = Path(file_path)
+
+                    # Ensure folder exists.
+                    Path(context.scene.kitsu.playblast_dir).mkdir(
+                        parents=True, exist_ok=True)
+
+                    # Make opengl render.
+                    bpy.ops.render.opengl(animation=True)
+                    return output_path

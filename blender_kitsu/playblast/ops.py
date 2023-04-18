@@ -38,7 +38,7 @@ from blender_kitsu.types import (
     TaskStatus,
     TaskType,
 )
-from blender_kitsu.playblast.core import override_render_settings
+from blender_kitsu.playblast.core import playblast_with_shading_settings, playblast_user_shading_settings
 from blender_kitsu.playblast import opsdata
 
 logger = LoggerFactory.getLogger()
@@ -62,6 +62,9 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
     confirm: bpy.props.BoolProperty(name="Confirm", default=False)
 
     task_status: bpy.props.EnumProperty(items=cache.get_all_task_statuses_enum)  # type: ignore
+
+    use_user_shading: bpy.props.BoolProperty(
+        name="Use Current Viewport Shading", default=True)
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -91,16 +94,14 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
         context.window_manager.progress_update(0)
 
         # Render and save playblast
-        with override_render_settings(self, context, context.scene.kitsu.playblast_file):
+        if self.use_user_shading:
+            output_path = playblast_user_shading_settings(
+                self, context, context.scene.kitsu.playblast_file)
 
+        else:
             # Get output path.
-            output_path = Path(context.scene.kitsu.playblast_file)
-
-            # Ensure folder exists.
-            Path(context.scene.kitsu.playblast_dir).mkdir(parents=True, exist_ok=True)
-
-            # Make opengl render.
-            bpy.ops.render.opengl(animation=True)
+            output_path = playblast_with_shading_settings(
+                self, context, context.scene.kitsu.playblast_file)
 
         context.window_manager.progress_update(1)
 
@@ -208,6 +209,8 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
         row.prop(self, "task_status", text="Status")
         row = layout.row(align=True)
         row.prop(self, "comment")
+        row = layout.row(align=True)
+        row.prop(self, "use_user_shading")
 
     def _upload_playblast(self, context: bpy.types.Context, filepath: Path) -> None:
         # Get shot.
