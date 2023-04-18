@@ -2460,7 +2460,8 @@ class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
         
         #'frame_start' is optionally property appearring on all edit_entries for a project if it exists
         server_frame_start = get_entity_data(gazu.edit.get_edit(self.edit_entry), 'frame_start')
-        self.frame_start = server_frame_start
+        if server_frame_start is int:
+            self.frame_start = server_frame_start
         self.use_frame_start = bool(server_frame_start is not None)
         return context.window_manager.invoke_props_dialog(self)
 
