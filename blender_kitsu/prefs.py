@@ -154,9 +154,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             return ""
         return self.project_root_path.joinpath("pipeline/blender_kitsu").as_posix()
 
-    def get_metastrip_file(self) -> str:
-        res_dir = bkglobals.RES_DIR_PATH
-        return res_dir.joinpath("metastrip.mp4").as_posix()
 
     def init_playblast_file_model(self, context: bpy.types.Context) -> None:
         ops_playblast_data.init_playblast_file_model(context)
@@ -226,16 +223,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         default="",
         subtype="DIR_PATH",
         get=get_config_dir,
-    )
-
-    metastrip_file: bpy.props.StringProperty(  # type: ignore
-        name="Meta Strip File",
-        description=(
-            "Filepath to black .mp4 file that will be used as metastrip for shots in the sequence editor"
-        ),
-        default="",
-        subtype="FILE_PATH",
-        get=get_metastrip_file,
     )
 
     project_active_id: bpy.props.StringProperty(  # type: ignore
