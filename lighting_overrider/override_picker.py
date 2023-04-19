@@ -205,6 +205,8 @@ class LOR_OT_override_picker(bpy.types.Operator):
         meta_settings = context.scene.LOR_Settings
         settings = utils.get_settings(meta_settings)
 
+        path_elements = utils.parse_rna_path_to_elements(self.rna_path)
+
         if context.scene.override==self.init_val:
             del context.scene['override']
             return {'CANCELLED'}
@@ -214,16 +216,19 @@ class LOR_OT_override_picker(bpy.types.Operator):
         add_info=[self.name_string, self.rna_path, context.scene.override, self.type]
         rna_overrides.add_rna_override(context, add_info)
 
+        if path_elements[2].startswith('objects'):
+            exec('.'.join(path_elements[:3])+'.update_tag()')
+
         if not self.batch_override:
             del context.scene['override']
             return {'FINISHED'}
 
         for ob in context.selected_objects:
-            path = ']'.join(self.rna_path.split(']')[1:])
+            subpath = '.'.join(path_elements[3:])
             if ob.library:
-                rna_path = f'bpy.data.objects["{ob.name}", "{ob.library.filepath}"]{path}'
+                rna_path = f'bpy.data.objects["{ob.name}", "{ob.library.filepath}"].{subpath}'
             else:
-                rna_path = f'bpy.data.objects["{ob.name}"]{path}'
+                rna_path = f'bpy.data.objects["{ob.name}"].{subpath}'
 
             try:
                 eval(rna_path)
@@ -234,8 +239,10 @@ class LOR_OT_override_picker(bpy.types.Operator):
             name_string = stylize_name(rna_path)
             add_info = [name_string, rna_path, context.scene.override, self.type]
             rna_overrides.add_rna_override(context, add_info)
+        utils.kick_evaluation(list(context.selected_objects))
 
         del context.scene['override']
+        utils.kick_evaluation()
         return {'FINISHED'}
 
     def cancel(self, context):
