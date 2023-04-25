@@ -225,12 +225,14 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
             # Load Anim Workspace
             animation_workspace_delete_others()
 
-        # Initilize armatures
-        for obj in [obj for obj in bpy.data.objects if obj.type == "ARMATURE"]:
-            base_name = obj.name.split(addon_prefs.shot_builder_armature_prefix)[-1] 
-            new_action = bpy.data.actions.new(f"{addon_prefs.shot_builder_action_prefix}{base_name}.{self.shot_id}.v001")
-            new_action.use_fake_user = True
-            obj.animation_data.action = new_action
+            # Initilize armatures
+            for obj in [obj for obj in bpy.data.objects if obj.type == "ARMATURE"]:
+                base_name = obj.name.split(
+                    addon_prefs.shot_builder_armature_prefix)[-1]
+                new_action = bpy.data.actions.new(
+                    f"{addon_prefs.shot_builder_action_prefix}{base_name}.{self.shot_id}.v001")
+                new_action.use_fake_user = True
+                obj.animation_data.action = new_action
         
         # Set Shot Frame Range  
         frame_length = shot.get('nb_frames')
