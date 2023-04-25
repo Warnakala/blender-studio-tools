@@ -2440,8 +2440,15 @@ class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
             prefs.session_auth(context)
             and cache.project_active_get()
         )
-
+    
     def invoke(self, context, event):
+        # Ensure user has permissions to access edit data
+        try:
+            edits = gazu.edit.get_all_edits_with_tasks()
+        except gazu.exception.NotAllowedException:
+            self.report({"ERROR"}, "Kitsu User doesn't have permissions to access edit data.")
+            return {"CANCELLED"} 
+
         # Remove file name if set in render.filepath
         dir_path = bpy.path.abspath(context.scene.render.filepath)
         if not os.path.isdir(Path(dir_path)):
