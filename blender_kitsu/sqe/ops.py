@@ -1705,6 +1705,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
         return bool(
             prefs.session_auth(context)
             and cache.project_active_get()
+            and addon_prefs.metastrip_file
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -1785,12 +1786,12 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                             frame_end,
                         )
                         continue
-                # TODO Refactor as this reuses code from KITSU_OT_sqe_create_meta_strip
+
                 if not strip:
                     # Create new strip.
                     strip = context.scene.sequence_editor.sequences.new_movie(
                         shot.name,
-                        "",
+                        addon_prefs.metastrip_file,
                         channel,
                         frame_start,
                     )
@@ -1974,7 +1975,8 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(context.selected_sequences)
+        addon_prefs = prefs.addon_prefs_get(context)
+        return bool(context.selected_sequences and addon_prefs.metastrip_file)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
@@ -1984,6 +1986,14 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
         logger.info("-START- Creating Meta Strips")
 
         selected_sequences = context.selected_sequences
+
+        # Check if metastrip file actually exists.
+        if not Path(addon_prefs.metastrip_file).exists():
+            self.report(
+                {"ERROR"},
+                f"Failed to load metastrip file: {addon_prefs.metastrip_file}. Path does not exist",
+            )
+            return {"CANCELLED"}
 
         for strip in selected_sequences:
 
@@ -2011,7 +2021,7 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
             # on the first try, EDIT: seems to work maybe per python overlaps of sequences possible?
             meta_strip = context.scene.sequence_editor.sequences.new_movie(
                 f"{strip.name}_metastrip",
-                "",
+                addon_prefs.metastrip_file,
                 strip.channel + 1,
                 strip.frame_final_start,
             )
