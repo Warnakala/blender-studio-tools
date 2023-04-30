@@ -9,6 +9,8 @@ export default defineConfig({
   lastUpdated: true,
   cleanUrls: true,
   themeConfig: {
+    logo: '/media/blender-studio-logo.svg',
+    siteTitle: false,
     footer: {
       copyright: '(CC) Blender Foundation | studio.blender.org'
     },
