@@ -12,7 +12,7 @@ export default defineConfig({
   cleanUrls: true,
   srcExclude: ['**/README.md',],
   themeConfig: {
-    logo: '/media/blender-studio-logo.svg',
+    logo: '/blender-studio-logo.svg',
     siteTitle: false,
     footer: {
       copyright: '(CC) Blender Foundation | studio.blender.org'
