@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitepress'
 import { html5Media } from 'markdown-it-html5-media'
 
+const studioURL = 'https://studio.blender.org'
+
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   base: '/pipeline-and-tools/',
@@ -8,6 +10,7 @@ export default defineConfig({
   description: "Documentation for the Blender Studio pipeline and tools.",
   lastUpdated: true,
   cleanUrls: true,
+  srcExclude: ['**/README.md',],
   themeConfig: {
     logo: '/media/blender-studio-logo.svg',
     siteTitle: false,
@@ -22,11 +25,11 @@ export default defineConfig({
     },
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'Open Projects', link: '../films' },
-      { text: 'Training', link: '../training' },
-      { text: 'Blog', link: '../blog' },
+      { text: 'Open Projects', link: `${studioURL}/films`, target: '_self' },
+      { text: 'Training', link: `${studioURL}/training`, target: '_self' },
+      { text: 'Blog', link: `${studioURL}/blog`, target: '_self' },
       { text: 'Pipeline and Tools', link: '/' },
-      { text: 'Characters', link: '../characters' }
+      { text: 'Characters', link: `${studioURL}/characters`, target: '_self' }
     ],
 
     sidebar: [
