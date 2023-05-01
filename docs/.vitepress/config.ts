@@ -62,7 +62,8 @@ export default defineConfig({
             text: 'Workstation',
             items: [
               { text: 'Introduction', link: '/user-guide/workstations/introduction'},
-              { text: 'Installing Software', link: '/user-guide/workstations/installing-software'},
+              { text: 'Installing Software via Emerge', link: '/user-guide/workstations/installing-software'},
+              { text: 'Installing Software via Discover Store', link: '/user-guide/workstations/installing-software-discover'},
               { text: 'Running Blender', link: '/user-guide/workstations/running-blender'},
               { text: 'Troubleshooting', link: '/user-guide/workstations/troubleshooting'},
 
@@ -81,7 +82,9 @@ export default defineConfig({
           {
             text: 'Workstation',
             items: [
-              { text: 'Introduction', link: '/td-guide/workstations/introduction'},
+              { text: 'Overview', link: '/td-guide/workstations/overview'},
+              { text: 'Installation', link: '/td-guide/workstations/installation'},
+              { text: 'Maintenance', link: '/td-guide/workstations/maintaince'},
 
             ]
           },

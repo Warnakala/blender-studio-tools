@@ -10,8 +10,8 @@ Artists at Blender Studio use Linux workstations, running Gentoo Linux. While th
 
 Artist workstations double as clients for the render farm.
 
-* **Link to reference manual**
-* **Link to setup guide**
+* [**Link to reference manual**](/user-guide/gentoo-workstations/introduction.md)
+* [**Link to setup guide**](/td-guide/gentoo-server/overview.md)
 
 ## Shared storage
 We use two shared drives
