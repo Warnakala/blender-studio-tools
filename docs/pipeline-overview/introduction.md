@@ -4,16 +4,13 @@
 30 Apr. 2023 - The content of this page is currently being edited/updated.
 :::
 
-This section of the Blender Studio site is dedicated to collecting and documenting the studio's pipeline knowledge. It should be considered a 'live' document, and some content might be out of date (not reflecting the current practices) but nevertheless worth sharing for historical reasons.
-
-The goal is to enable creative teams to easily adopt and build a Blender pipeline.
-
+The goal of this documentation is to describe the pipeline and IT setup used at Blender Studio, in a way that can be replicated in another environment from scratch.
 
 ## How to read/write the docs
 
-We should structure this documentation keeping two possible uses in mind:
+The documentation fetatures two types of content:
 
-* **Design docs** (explanations and insight on why things are built in a certain way)
+* **Design docs**: explanations and insight on why things are built in a certain way
 * **Guides**, for two audiences:
   * users/artists learning how to perform certain workflows
   * TDs learning how to deploy and maintain the pipeline in a production environment

@@ -4,7 +4,6 @@
 30 Apr. 2023 - The content of this page is currently being edited/updated.
 :::
 
-The goal of the following pages is to describe the IT setup for Blender Studio, in a way that can be replicated in another environment from scratch.
 
 ## Workstations
 Artists at Blender Studio use Linux workstations, running Gentoo Linux. While the infrastructure is meant to support other Operating Systems, it's primarily designed to work in an eterogeneous enviroment, where every machine is setup in a similar way.
