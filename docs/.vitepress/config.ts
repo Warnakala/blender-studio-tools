@@ -12,7 +12,10 @@ export default defineConfig({
   cleanUrls: true,
   srcExclude: ['**/README.md',],
   themeConfig: {
-    logo: '/blender-studio-logo.svg',
+    logo: {
+      light: '/blender-studio-logo-black.svg',
+      dark: '/blender-studio-logo-white.svg'
+    },
     siteTitle: false,
     footer: {
       copyright: '(CC) Blender Foundation | studio.blender.org'
@@ -64,7 +67,7 @@ export default defineConfig({
               { text: 'Troubleshooting', link: '/user-guide/workstations/troubleshooting'},
 
             ]
-          }, 
+          },
           {text: 'SVN', link: '/user-guide/svn'},
           {text: 'Debugging', link: '/user-guide/debugging'}
 
@@ -92,5 +95,5 @@ export default defineConfig({
       md.use(html5Media)
     }
   }
-  
+
 })
