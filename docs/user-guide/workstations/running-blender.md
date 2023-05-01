@@ -3,7 +3,7 @@
 ## Launch Blender from Taskbar/Start Menu
 1. Search for Blender in your Application Launcher
 2. The application with the exact name `blender` without any suffix is the latest build.
-![Image of Blender Icon in KDE Taskbar/Start Menu](/media/blender-kde-taskbar.png)
+![Image of Blender Icon in KDE Taskbar/Start Menu](/media/user-guide/blender-kde-taskbar.png)
 
 ## Launch Blender from Terminal
 1. Open a new Terminal window
