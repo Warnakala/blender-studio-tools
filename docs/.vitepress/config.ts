@@ -59,13 +59,13 @@ export default defineConfig({
         items: [
           {text: 'Project Setup', link: '/user-guide/project-setup'},
           {
-            text: 'Workstation',
+            text: 'Gentoo Workstation',
             items: [
-              { text: 'Introduction', link: '/user-guide/workstations/introduction'},
-              { text: 'Installing Software via Emerge', link: '/user-guide/workstations/installing-software'},
-              { text: 'Installing Software via Discover Store', link: '/user-guide/workstations/installing-software-discover'},
-              { text: 'Running Blender', link: '/user-guide/workstations/running-blender'},
-              { text: 'Troubleshooting', link: '/user-guide/workstations/troubleshooting'},
+              { text: 'Introduction', link: '/user-guide/gentoo-workstations/introduction'},
+              { text: 'Installing Software via Emerge', link: '/user-guide/gentoo-workstations/installing-software'},
+              { text: 'Installing Software via Discover Store', link: '/user-guide/gentoo-workstations/installing-software-discover'},
+              { text: 'Running Blender', link: '/user-guide/gentoo-workstations/running-blender'},
+              { text: 'Troubleshooting', link: '/user-guide/gentoo-workstations/troubleshooting'},
 
             ]
           },
@@ -80,9 +80,14 @@ export default defineConfig({
         items: [
           {text: 'Project Setup', link: '/td-guide/project-setup'},
           {
-            text: 'Workstation',
+            text: 'Gentoo Server',
             items: [
-              { text: 'Introduction', link: '/td-guide/workstations/introduction'},
+              { text: 'Overview', link: '/td-guide/gentoo-server/overview'},
+              { text: 'Installation', link: '/td-guide/gentoo-server/installation'},
+              { text: 'Update Server', link: '/td-guide/gentoo-server/update'},
+              { text: 'Update Addons', link: '/td-guide/gentoo-server/addons'},
+              { text: 'Push Update', link: '/td-guide/gentoo-server/push-update'},
+              { text: 'Wake on LAN', link: '/td-guide/gentoo-server/wake-on-lan'},
 
             ]
           },
