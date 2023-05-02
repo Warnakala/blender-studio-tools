@@ -80,7 +80,7 @@ export default defineConfig({
         items: [
           {text: 'Project Setup', link: '/td-guide/project-setup'},
           {
-            text: 'WorkStation',
+            text: 'Workstation',
             items: [
               { text: 'Overview', link: '/td-guide/workstations/overview'},
               { text: 'Installation', link: '/td-guide/workstations/installation'},
