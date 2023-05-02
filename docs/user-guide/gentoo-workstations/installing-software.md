@@ -2,9 +2,10 @@
 
 ## Open Terminal and Become Root
 
-<!-- #TODO INSERT VIDEO -->
 
 emerge is the default package manager, use emerge to install, update, and generally maintain software packages on Gentoo. emerge should always be your first option when searching for software. To learn more: https://wiki.gentoo.org/wiki/Emerge
+
+![Open Terminal from Taskbar](/media/user-guide/workstations/gentoo_workstation_open_terminal.mp4)
 
 1.  From the Task Bar select the “KDE Logo” to open the Start Menu, and type “Terminal” in the search bar
 2.  Become root via `su`
@@ -14,7 +15,7 @@ emerge is the default package manager, use emerge to install, update, and genera
 
 **emerge** provides commands to install packages onto your system including any dependencies. You must be **root** to make changes via **emerge**. _In this example package name is **spotify**._
 
-1.  Open Terminal and Become Root
+1.  [Open Terminal and Become Root](/user-guide/gentoo-workstations/installing-software.md#open-terminal-and-become-root)
 2.  Find avaliable packages using the `eix` for example: `eix spotify`
 
 ```bash
@@ -62,7 +63,7 @@ Dependency resolution took 8.40 s.
 
 In this example package name is **spotify**.
 
-1.  Open Terminal and Become Root
+1.  [Open Terminal and Become Root](/user-guide/gentoo-workstations/installing-software.md#open-terminal-and-become-root)
 2.  Remove a package and it’s dependacies safely.
     1.  `emerge --deselect spotify`
     2.  `emerge --depclean`
