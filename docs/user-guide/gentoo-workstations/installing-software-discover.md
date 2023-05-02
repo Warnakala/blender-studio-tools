@@ -6,7 +6,7 @@
 
 _Discover Store provides a GUI to install packages onto your system including any dependancies._
     
-![How to Install via Discover Store](../../media/user-guide/workstations/discover_store_install.mp4)
+![How to Install via Discover Store](/media/user-guide/workstations/discover_store_install.mp4)
 
 1. Open the Discover store via taskbar
 2. Search for the name of the application in the top right corner
@@ -17,7 +17,7 @@ _Discover Store provides a GUI to install packages onto your system including an
 
 _Discover Store provides a GUI to view/remove the installed packages onto your system. Dependancies should be automatically be removed with removing software. You can optionally remove user settings/data._
 
-![How to remove via Discover Store](../../media/user-guide/workstations/discover_store_remove.mp4)
+![How to remove via Discover Store](/media/user-guide/workstations/discover_store_remove.mp4)
         
    1. Find the **Installed** Tab of the store window
    2. This will open a list of installed applications and it's dependancies
