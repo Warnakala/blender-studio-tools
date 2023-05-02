@@ -25,18 +25,15 @@ After this is done, you can start rolling out the system to the client computers
 
     ![Active Drive](../../media/td-guide/gentoo-server/gentoo_server_active_drive.png)
         
-    The “r” symbol denotes which disk will be formatted as the root drive.
+    _The “r” symbol denotes which disk will be formatted as the root drive._
 
-    The “+” symbol denotes which disk(s) will be formatted as storage drives.
+    _The “+” symbol denotes which disk(s) will be formatted as storage drives._
         
 
-When these steps are complete, one simply has to wait for the installer to finish.
+::: info  Installation Duration
+When these steps are complete, one simply has to wait for the installer to finish. It will download and compile all necessary programs and libraries for the standard Blender workstation needs. This will usually take a while. Unless you have a very fast and recent CPU, it is not unusual for it to take 6+ hours to complete When it is done it will ask you to press any key to reboot.
+:::
 
-It will download and compile all necessary programs and libraries for the standard Blender workstation needs.
-
-This will usually take a while. Unless you have a very fast and recent CPU, it is not unusual for it to take 6+ hours to complete.
-
-When it is done it will ask you to press any key to reboot.
 
 
 ## Installing client workstation 

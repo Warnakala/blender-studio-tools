@@ -84,10 +84,7 @@ export default defineConfig({
             items: [
               { text: 'Overview', link: '/td-guide/gentoo-server/overview'},
               { text: 'Installation', link: '/td-guide/gentoo-server/installation'},
-              { text: 'Update Server', link: '/td-guide/gentoo-server/update'},
-              { text: 'Update Addons', link: '/td-guide/gentoo-server/addons'},
-              { text: 'Push Update', link: '/td-guide/gentoo-server/push-update'},
-              { text: 'Wake on LAN', link: '/td-guide/gentoo-server/wake-on-lan'},
+              { text: 'Maintenance', link: '/td-guide/gentoo-server/maintaince'},
 
             ]
           },

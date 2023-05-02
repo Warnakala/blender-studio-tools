@@ -1,4 +1,4 @@
-# Server Overview
+# Overview: Gentoo Server 
 
 ![Gentoo Overview](/media/td-guide/gentoo-server/gentoo_server_overview.png)
 

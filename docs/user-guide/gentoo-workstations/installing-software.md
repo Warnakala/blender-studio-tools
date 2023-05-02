@@ -37,7 +37,7 @@ Found 3 matches
 ```
 
 3.  Install a package via emerge: `emerge spotify`
-4.  (Optionally) install a specific package version via `emerge ={package-name}-{version}` _Example:_ `_emerge =spotify-1.2.8_`
+4.  (Optionally) install a specific package version via `emerge ={package-name}-{version}` _Example:_ `emerge =spotify-1.2.8`
 
 ```bash
 Calculating dependencies... done!
@@ -60,7 +60,7 @@ Dependency resolution took 8.40 s.
 
 **emerge** provides commands to remove packages from your system, as well as to safely clean up any dependencies. **emerge** should not remove important packages that are needed for the system to function, without warning.
 
-_In this example package name is **spotify**._
+In this example package name is **spotify**.
 
 1.  Open Terminal and Become Root
 2.  Remove a package and it’s dependacies safely.
