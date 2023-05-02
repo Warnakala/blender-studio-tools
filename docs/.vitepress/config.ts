@@ -59,13 +59,13 @@ export default defineConfig({
         items: [
           {text: 'Project Setup', link: '/user-guide/project-setup'},
           {
-            text: 'Gentoo Workstation',
+            text: 'Workstation',
             items: [
-              { text: 'Introduction', link: '/user-guide/gentoo-workstations/introduction'},
-              { text: 'Installing Software via Emerge', link: '/user-guide/gentoo-workstations/installing-software'},
-              { text: 'Installing Software via Discover Store', link: '/user-guide/gentoo-workstations/installing-software-discover'},
-              { text: 'Running Blender', link: '/user-guide/gentoo-workstations/running-blender'},
-              { text: 'Troubleshooting', link: '/user-guide/gentoo-workstations/troubleshooting'},
+              { text: 'Introduction', link: '/user-guide/workstations/introduction'},
+              { text: 'Installing Software via Emerge', link: '/user-guide/workstations/installing-software'},
+              { text: 'Installing Software via Discover Store', link: '/user-guide/workstations/installing-software-discover'},
+              { text: 'Running Blender', link: '/user-guide/workstations/running-blender'},
+              { text: 'Troubleshooting', link: '/user-guide/workstations/troubleshooting'},
 
             ]
           },
@@ -80,11 +80,11 @@ export default defineConfig({
         items: [
           {text: 'Project Setup', link: '/td-guide/project-setup'},
           {
-            text: 'Gentoo Server',
+            text: 'WorkStation',
             items: [
-              { text: 'Overview', link: '/td-guide/gentoo-server/overview'},
-              { text: 'Installation', link: '/td-guide/gentoo-server/installation'},
-              { text: 'Maintenance', link: '/td-guide/gentoo-server/maintaince'},
+              { text: 'Overview', link: '/td-guide/workstations/overview'},
+              { text: 'Installation', link: '/td-guide/workstations/installation'},
+              { text: 'Maintenance', link: '/td-guide/workstations/maintaince'},
 
             ]
           },
