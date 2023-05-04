@@ -1,14 +1,14 @@
 # Introduction
 
 ::: warning Work in Progress
-30 Apr. 2023 - The content of this page is currently being edited/updated.
+4 May 2023 - The content of this page is currently being edited/updated.
 :::
 
 The goal of this documentation is to describe the pipeline and IT setup used at Blender Studio, in a way that can be replicated in another environment from scratch.
 
 ## How to read/write the docs
 
-The documentation fetatures two types of content:
+The documentation features two types of content:
 
 * **Design docs**: explanations and insight on why things are built in a certain way
 * **Guides**, for two audiences:
@@ -21,7 +21,7 @@ The documentation fetatures two types of content:
 * Design principles (use Blender as much as possible, use add-ons only when needed, rely on Blender's linking system)
 * Breakdown per department/workflow
   * Editorial/previz
-  * Concept design 
+  * Concept design
   * Caracter creation
     * Modeling
     * Shading
@@ -36,7 +36,7 @@ The documentation fetatures two types of content:
 These topics can be described at a high-level, and *reference* specific tools, add-ons and worfklows in a dedicated section.
 
 
-## References
+## Guides
 
 * Workstation manual
 * Workflows (like Design Docs above, but the practical steps). Depending on the type of production, workflows often need to be changed and tweaked. That part can better be documented on the Blender Studio blog.
