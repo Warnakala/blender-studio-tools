@@ -62,8 +62,7 @@ export default defineConfig({
             text: 'Workstation',
             items: [
               { text: 'Introduction', link: '/user-guide/workstations/introduction'},
-              { text: 'Installing Software via Emerge', link: '/user-guide/workstations/installing-software'},
-              { text: 'Installing Software via Discover Store', link: '/user-guide/workstations/installing-software-discover'},
+              { text: 'Installing Software', link: '/user-guide/workstations/installing-software'},
               { text: 'Running Blender', link: '/user-guide/workstations/running-blender'},
               { text: 'Troubleshooting', link: '/user-guide/workstations/troubleshooting'},
 
