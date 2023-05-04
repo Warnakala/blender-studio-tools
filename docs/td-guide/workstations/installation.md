@@ -11,19 +11,19 @@ After this is done, you can start rolling out the system to the client computers
 ## Installing the build server server
 
 1. Boot from the iPXE payload on the USB stick. If it is has booted correctly you should be greeted by the following screen:
-![IPXE Menu](/media/td-guide/gentoo-server/gentoo_server_ipxe.png)    
+![IPXE Menu](/media/td-guide/server/gentoo_server_ipxe.png)    
     
 2. Select the second option “Boot Gentoo build server installer”
-3. It will ask you to select keyboard layout, press enter if you want to use the default US layout when using the installer. (Or wait a few seconds and it will proceed with the US layout) ![Select Keyboard Layout](/media/td-guide/gentoo-server/gentoo_server_keyboard.png)
+3. It will ask you to select keyboard layout, press enter if you want to use the default US layout when using the installer. (Or wait a few seconds and it will proceed with the US layout) ![Select Keyboard Layout](/media/td-guide/server/gentoo_server_keyboard.png)
     
 4. When it has successfully booted, it will automatically start the installer. You will only need to manually setup two things:
 
-    a. The hostname of the computer (NOTE: This should be unique as some scripts relies on the hostname to provide status reports)![Hostname](/media/td-guide/gentoo-server/gentoo_server_set_hostname.png)
+    a. The hostname of the computer (NOTE: This should be unique as some scripts relies on the hostname to provide status reports)![Hostname](/media/td-guide/server/gentoo_server_set_hostname.png)
     
     
     b. Where you want the system to be installed and if you want to setup any additional storage drives 
 
-    ![Active Drive](/media/td-guide/gentoo-server/gentoo_server_active_drive.png)
+    ![Active Drive](/media/td-guide/server/gentoo_server_active_drive.png)
         
     _The “r” symbol denotes which disk will be formatted as the root drive._
 
