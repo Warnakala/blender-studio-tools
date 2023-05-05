@@ -11,6 +11,16 @@ export default defineConfig({
   lastUpdated: true,
   cleanUrls: true,
   srcExclude: ['**/README.md',],
+  head: [
+    [
+      'script',
+      {
+        defer: '',
+        'data-domain': 'studio.blender.org',
+        src: 'https://analytics.blender.org/js/script.js'
+      }
+    ],
+  ],
   themeConfig: {
     logo: {
       light: '/blender-studio-logo-black.svg',
