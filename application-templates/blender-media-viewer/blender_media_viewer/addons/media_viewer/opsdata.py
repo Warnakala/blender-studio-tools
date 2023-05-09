@@ -109,6 +109,11 @@ def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.
     else:
         screen = context.screen
 
+    # On startup (load-post handler) there's no window/screen set in context.
+    if not screen:
+        win = context.window_manager.windows[0]
+        screen = win.screen
+
     for area in screen.areas:
         if area.type == area_name:
             return area
