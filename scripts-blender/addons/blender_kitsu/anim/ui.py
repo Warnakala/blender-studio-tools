@@ -97,6 +97,9 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
             text="Check Action Names",
         )
 
+        row = box.row(align=True)
+        row.operator("kitsu.anim_enforce_naming_convention", icon="SORTALPHA")
+
 
 # ---------REGISTER ----------.
 

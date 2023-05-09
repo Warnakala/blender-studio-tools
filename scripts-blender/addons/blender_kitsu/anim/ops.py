@@ -52,7 +52,6 @@ class KITSU_OT_anim_quick_duplicate(bpy.types.Operator):
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         act_coll = context.view_layer.active_layer_collection.collection
         shot_active = cache.shot_active_get()
         amount = context.window_manager.kitsu.quick_duplicate_amount
@@ -117,9 +116,24 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
         return bool(cache.shot_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
+        active_shot = cache.shot_active_get()
+        addon_prefs = bpy.context.preferences.addons["blender_kitsu"].preferences
+
         existing_action_names = [a.name for a in bpy.data.actions]
         failed = []
         succeeded = []
+
+        for obj in [obj for obj in bpy.data.objects if obj.type == "ARMATURE"]:
+            # Cerate Action if None Exists
+            if obj.animation_data is None or obj.animation_data.action is None:
+                base_name = obj.name.split(addon_prefs.shot_builder_armature_prefix)[-1]
+                new_action = bpy.data.actions.new(
+                    f"{addon_prefs.shot_builder_action_prefix}{base_name}.{active_shot.name}.v001"
+                )
+                new_action.use_fake_user = True
+                obj.animation_data_create()
+                obj.animation_data.action = new_action
+                obj.animation_data.action.name = f"{addon_prefs.shot_builder_action_prefix}{base_name}.{active_shot.name}.v001"
 
         # Rename actions.
         for action, name in self.wrong:
@@ -234,6 +248,125 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
             row.label(text=name)
 
 
+class KITSU_OT_anim_enforce_naming_convention(bpy.types.Operator):
+    bl_idname = "kitsu.anim_enforce_naming_convention"
+    bl_label = "Set Name Conventions"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Fix Naming of Scene, Output Collection, Actions, and optionally Find and remove a given string"
+
+    remove_str: bpy.props.StringProperty(
+        name="Find and Replace",
+        default="",
+    )
+    rename_scene: bpy.props.BoolProperty(name="Rename Scene", default=True)
+    rename_output_col: bpy.props.BoolProperty(
+        name="Rename Output Collection", default=True
+    )
+    find_replace: bpy.props.BoolProperty(
+        name="Find and Remove",
+        default=False,
+        description="Remove this string from Collection, Object and Object Data names. Used to remove suffixes from file names such as '.001'",
+    )
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "rename_scene")
+        layout.prop(self, "rename_actions")
+        layout.prop(self, "rename_output_col")
+        layout.prop(self, "find_replace")
+        if self.find_replace:
+            layout.prop(self, "remove_str")
+
+    def rename_datablock(self, data_block, replace: str):
+        # Return Early if data_block is linked but not overriden
+        if data_block is None or data_block.library is not None:
+            return
+        if replace in data_block.name:
+            data_block.name = data_block.name.replace(replace, "")
+            return data_block.name
+
+    def execute(self, context: bpy.types.Context):
+        shot_base_name = bpy.path.basename(bpy.data.filepath).replace(".anim.blend", "")
+        scene_col = context.scene.collection
+        anim_suffix = "anim.output"
+
+        if self.find_replace:
+            for col in scene_col.children_recursive:
+                self.rename_datablock(col, self.remove_str)
+                for obj in col.objects:
+                    self.rename_datablock(obj, self.remove_str)
+                    self.rename_datablock(obj.data, self.remove_str)
+
+        if self.rename_output_col:
+            output_cols = [
+                col
+                for col in context.scene.collection.children_recursive
+                if anim_suffix in col.name
+            ]
+            if len(output_cols) != 1:
+                self.report(
+                    {"INFO"},
+                    f"Animation Output Collection could not be found",
+                )
+
+                return {"CANCELLED"}
+            output_col = output_cols[0]
+            output_col.name = f"{shot_base_name}.{anim_suffix}"
+
+        # Rename Scene
+        if self.rename_scene:
+            context.scene.name = f"{shot_base_name}.anim"
+
+        self.report(
+            {"INFO"},
+            f"Naming Conventions Enforced",
+        )
+        return {"FINISHED"}
+
+
+class KITSU_OT_unlink_collection_with_string(bpy.types.Operator):
+    bl_idname = "kitsu.unlink_collection_with_string"
+    bl_label = "Find and Unlink Collections"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Unlink any Collection with a given name. By default name is 'OVERRIDE_HIDDEN'"
+    )
+
+    remove_collection_string: bpy.props.StringProperty(
+        name="Find in Name",
+        default='OVERRIDE_HIDDEN',
+        description="Search for this string withing current scene's collections. Collection will be unlinked if it matches given string'",
+    )
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "remove_collection_string")
+
+    def execute(self, context):
+        scene_cols = context.scene.collection.children
+        cols = [col for col in scene_cols if self.remove_collection_string in col.name]
+        cleaned = False
+        for col in cols:
+            cleaned = True
+            scene_cols.unlink(col)
+            self.report(
+                {"INFO"},
+                f"Removed Collection '{col.name}'",
+            )
+        if not cleaned:
+            self.report(
+                {"INFO"},
+                f"No Collections found containing name '{self.remove_collection_string}'",
+            )
+        return {"FINISHED"}
+
+
 class KITSU_OT_anim_update_output_coll(bpy.types.Operator):
     bl_idname = "kitsu.anim_update_output_coll"
     bl_label = "Update Output Collection"
@@ -257,6 +390,12 @@ class KITSU_OT_anim_update_output_coll(bpy.types.Operator):
         active_shot = cache.shot_active_get()
         output_coll_name = opsdata.get_output_coll_name(active_shot)
         output_coll = bpy.data.collections[output_coll_name]
+
+        # Clear Out Output Collection before Starting
+        for collection in output_coll.children:
+            output_coll.children.unlink(collection)
+        bpy.context.view_layer.update()
+
         asset_colls = opsdata.find_asset_collections_in_scene(context.scene)
         missing: List[bpy.types.Collection] = []
         output_coll_childs = list(opsdata.traverse_collection_tree(output_coll))
@@ -282,6 +421,14 @@ class KITSU_OT_anim_update_output_coll(bpy.types.Operator):
             output_coll.children.link(coll)
             logger.info("%s linked in %s", coll.name, output_coll.name)
 
+        # Ensure Camera Rig is Linked
+        for coll in [col for col in bpy.data.collections]:
+            if coll.override_library:
+                if (
+                    coll.override_library.hierarchy_root.name == "CA-camera_rig"
+                ):  # TODO Fix this hack to be generic
+                    output_coll.children.link(coll)
+
         self.report(
             {"INFO"},
             f"Found Asset Collections: {len(asset_colls)} | Added to output collection: {len(parents)}",
@@ -295,6 +442,8 @@ classes = [
     KITSU_OT_anim_quick_duplicate,
     KITSU_OT_anim_check_action_names,
     KITSU_OT_anim_update_output_coll,
+    KITSU_OT_anim_enforce_naming_convention,
+    KITSU_OT_unlink_collection_with_string,
 ]
 
 
