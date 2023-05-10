@@ -20,7 +20,6 @@
 # (c) 2021, Blender Foundation
 
 
-# PARSE ARUGMENTS
 import argparse
 import sys
 import os
@@ -30,9 +29,6 @@ import json
 import re
 from pathlib import Path
 from typing import Tuple, List, Any
-
-
-from pathlib import Path
 
 # Command line arguments.
 parser = argparse.ArgumentParser()
@@ -69,10 +65,6 @@ parser.add_argument(
 
 
 # MAIN LOGIC
-
-
-CRAWL_AMOUNT = 2
-
 def main():
     args = parser.parse_args()
     run_blender_crawl(args)
@@ -174,21 +166,6 @@ def get_config_path() -> Path:
         return home / ".config/blender-crawl/config.json"
     elif sys.platform == "darwin":
         return home / ".config/blender-crawl/config.json"
-
-
-def create_config_file(config_path: Path) -> None:
-    if config_path.exists():
-        return
-    try:
-        with open(config_path.as_posix(), "w") as file:
-            json.dump({}, file)
-    except:
-        raise Exception(
-            f"# Something went wrong creating config file at: {config_path.as_posix()}"
-        )
-
-    print(f"# Created config file at: {config_path.as_posix()}")
-
 
 def load_json(path: Path) -> Any:
     with open(path.as_posix(), "r") as file:
@@ -336,6 +313,7 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
 
 
     # crawl each file two times.
+    CRAWL_AMOUNT = 2 # TODO Figure out why this is here and remove if not needed
     for blend_file in files:
         for i in range(CRAWL_AMOUNT):
             return_code = blender_crawl_file(blend_file, script)
