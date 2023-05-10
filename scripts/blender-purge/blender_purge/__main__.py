@@ -39,6 +39,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "path", help="Path to a file or folder on which to perform purge", type=str
 )
+
+parser.add_argument(
+    "script", help="Name of default script like 'purge' or path to a valid python script file", type=str
+)
 parser.add_argument(
     "-R",
     "--recursive",
@@ -77,16 +81,7 @@ def exception_handler(func):
                 f"\n# Error: {error}"
                 "\n# Program will be cancelled."
             )
-            cancel_program()
-
-        except Exception as error:
-            print(
-                "# Oops. Something went wrong during the execution of the Program!"
-                f"\n# Error: {error}"
-                "\n# Program will be cancelled."
-            )
-            cancel_program()
-
+            cancel_program
     return func_wrapper
 
 
@@ -101,19 +96,13 @@ def get_blender_path() -> Path:
     return Path(json_obj["blender_path"])
 
 
-def get_project_root_path() -> Path:
-    config_path = get_config_path()
-    json_obj = load_json(config_path)
-    return Path(json_obj["project_root"])
-
-
-def get_cmd_list(path: Path) -> Tuple[str]:
+def get_cmd_list(path: Path, script: Path) -> Tuple[str]:
     cmd_list: Tuple[str] = (
         get_blender_path().as_posix(),
         path.as_posix(),
         "-b",
         "-P",
-        f"{PURGE_PATH}",
+        script,
         "--factory-startup",
     )
     return cmd_list
@@ -144,9 +133,9 @@ def prompt_confirm(path_list: List[Path]):
         continue
 
 
-def purge_file(path: Path) -> int:
+def purge_file(path: Path, script: Path) -> int:
     # Get cmd list.
-    cmd_list = get_cmd_list(path)
+    cmd_list = get_cmd_list(path, script)
     p = subprocess.Popen(cmd_list, shell=False)
     # Stdout, stderr = p.communicate().
     return p.wait()
@@ -245,12 +234,19 @@ def is_config_valid() -> bool:
             return False
     return True
 
+def get_default_scipt(script_input:str):
+    if script_input == "purge":
+        folder = Path(os.path.abspath(__file__)).parent
+        default_scripts = folder.joinpath("default_scripts")
+        return default_scripts.joinpath("purge.py").absolute()
+    return Path(script_input).absolute()
 
 @exception_handler
 def run_blender_purge(args: argparse.Namespace) -> int:
 
     # Parse arguments.
     path = Path(args.path).absolute()
+    script = get_default_scipt(args.script)
     recursive = args.recursive
     config_path = get_config_path()
     regex = args.regex
@@ -270,6 +266,9 @@ def run_blender_purge(args: argparse.Namespace) -> int:
     # Check user input.
     if not path:
         raise Exception("Please provide a path as first argument")
+    
+    if not script.exists():
+        raise Exception("Please provide a valid python script as second argument")
 
     if not path.exists():
         raise Exception(f"Path does not exist: {path.as_posix()}")
@@ -322,7 +321,7 @@ def run_blender_purge(args: argparse.Namespace) -> int:
     # Purge each file two times.
     for blend_file in files:
         for i in range(PURGE_AMOUNT):
-            return_code = purge_file(blend_file)
+            return_code = purge_file(blend_file, script)
             if return_code != 0:
                 raise Exception(
                     f"Blender Crashed on file: {blend_file.as_posix()}",
