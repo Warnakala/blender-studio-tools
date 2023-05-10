@@ -19,37 +19,68 @@
 #
 # (c) 2021, Blender Foundation
 
+
+# PARSE ARUGMENTS
+import argparse
 import sys
+import os
 import subprocess
 import argparse
 import json
 import re
 from pathlib import Path
-from typing import Tuple, List, Dict, Any, Union, Optional
+from typing import Tuple, List, Any
 
-from blender_purge import vars
-from blender_purge.svn import SvnRepo
-from blender_purge.log import LoggerFactory
-from blender_purge.exception import SomethingWentWrongException, WrongInputException
 
-logger = LoggerFactory.getLogger()
+from pathlib import Path
 
+# Command line arguments.
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "path", help="Path to a file or folder on which to perform purge", type=str
+)
+parser.add_argument(
+    "-R",
+    "--recursive",
+    help="If -R is provided in combination with a folder path will perform recursive purge",
+    action="store_true",
+)
+
+parser.add_argument(
+    "--regex",
+    help="Provide any regex pattern that will be performed on each found filepath with re.search()",
+)
+
+parser.add_argument(
+    "--yes",
+    help="If --yes is provided there will be no confirmation prompt.",
+    action="store_true",
+)
+
+# MAIN LOGIC
+PURGE_PATH = Path(os.path.abspath(__file__)).parent.joinpath("purge.py")
+
+PURGE_AMOUNT = 2
+
+def main():
+    args = parser.parse_args()
+    run_blender_purge(args)
 
 def exception_handler(func):
     def func_wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
 
-        except WrongInputException as error:
-            logger.info(
+        except Exception as error:
+            print(
                 "# Oops. Seems like you gave some wrong input!"
                 f"\n# Error: {error}"
                 "\n# Program will be cancelled."
             )
             cancel_program()
 
-        except SomethingWentWrongException as error:
-            logger.info(
+        except Exception as error:
+            print(
                 "# Oops. Something went wrong during the execution of the Program!"
                 f"\n# Error: {error}"
                 "\n# Program will be cancelled."
@@ -60,7 +91,7 @@ def exception_handler(func):
 
 
 def cancel_program() -> None:
-    logger.info("# Exiting blender-purge")
+    print("# Exiting blender-purge")
     sys.exit(0)
 
 
@@ -82,7 +113,7 @@ def get_cmd_list(path: Path) -> Tuple[str]:
         path.as_posix(),
         "-b",
         "-P",
-        f"{vars.PURGE_PATH}",
+        f"{PURGE_PATH}",
         "--factory-startup",
     )
     return cmd_list
@@ -105,23 +136,12 @@ def prompt_confirm(path_list: List[Path]):
         user_input = input(input_str)
         if validate_user_input(user_input, options):
             if user_input in ["no", "n"]:
-                logger.info("\n# Process was canceled.")
+                print("\n# Process was canceled.")
                 return False
             else:
                 return True
-        logger.info("\n# Please enter a valid answer!")
+        print("\n# Please enter a valid answer!")
         continue
-
-
-def run_check():
-    cmd_list: Tuple[str] = (
-        get_blender_path().as_posix(),
-        "-b",
-        "-P",
-        f"{vars.CHECK_PATH}",
-    )
-    p = subprocess.Popen(cmd_list)
-    return p.wait()
 
 
 def purge_file(path: Path) -> int:
@@ -136,11 +156,11 @@ def is_filepath_valid(path: Path) -> None:
 
     # Check if path is file.
     if not path.is_file():
-        raise WrongInputException(f"Not a file: {path.suffix}")
+        raise Exception(f"Not a file: {path.suffix}")
 
     # Check if path is blend file.
     if path.suffix != ".blend":
-        raise WrongInputException(f"Not a blend file: {path.suffix}")
+        raise Exception(f"Not a blend file: {path.suffix}")
 
 
 def get_config_path() -> Path:
@@ -161,11 +181,11 @@ def create_config_file(config_path: Path) -> None:
         with open(config_path.as_posix(), "w") as file:
             json.dump({}, file)
     except:
-        raise SomethingWentWrongException(
+        raise Exception(
             f"# Something went wrong creating config file at: {config_path.as_posix()}"
         )
 
-    logger.info(f"# Created config file at: {config_path.as_posix()}")
+    print(f"# Created config file at: {config_path.as_posix()}")
 
 
 def load_json(path: Path) -> Any:
@@ -185,12 +205,12 @@ def input_path(question: str) -> Path:
         try:
             path = Path(user_input)
         except:
-            logger.error("# Invalid input")
+            print("ERROR:# Invalid input")
             continue
         if path.exists():
             return path.absolute()
         else:
-            logger.info("# Path does not exist")
+            print("# Path does not exist")
 
 
 def input_filepath(question: str) -> Path:
@@ -211,7 +231,7 @@ def setup_config() -> None:
         "project_root": project_root.as_posix(),
     }
     save_to_json(obj, config_path)
-    logger.info("Updatet config at:  %s", config_path.as_posix())
+    print("Updatet config at:  %s", config_path.as_posix())
 
 
 def is_config_valid() -> bool:
@@ -227,33 +247,32 @@ def is_config_valid() -> bool:
 
 
 @exception_handler
-def purge(args: argparse.Namespace) -> int:
+def run_blender_purge(args: argparse.Namespace) -> int:
 
     # Parse arguments.
     path = Path(args.path).absolute()
     recursive = args.recursive
     config_path = get_config_path()
-    no_commit = args.nocommit
     regex = args.regex
     yes = args.yes
 
     # Check config file.
     if not config_path.exists():
-        logger.info("# Seems like you are starting blender-purge for the first time!")
-        logger.info("# Some things needs to be configured")
+        print("# Seems like you are starting blender-purge for the first time!")
+        print("# Some things needs to be configured")
         setup_config()
     else:
         if not is_config_valid():
-            logger.info("# Config file at: %s is not valid", config_path.as_posix())
-            logger.info("# Please set it up again")
+            print("# Config file at: %s is not valid", config_path.as_posix())
+            print("# Please set it up again")
             setup_config()
 
     # Check user input.
     if not path:
-        raise WrongInputException("Please provide a path as first argument")
+        raise Exception("Please provide a path as first argument")
 
     if not path.exists():
-        raise WrongInputException(f"Path does not exist: {path.as_posix()}")
+        raise Exception(f"Path does not exist: {path.as_posix()}")
 
     # Vars.
     files = []
@@ -288,7 +307,7 @@ def purge(args: argparse.Namespace) -> int:
 
     # Can only happen on folder here.
     if not files:
-        logger.info("# Found no .blend files to purge")
+        print("# Found no .blend files to purge")
         cancel_program()
 
     # Sort.
@@ -299,30 +318,21 @@ def purge(args: argparse.Namespace) -> int:
         if not prompt_confirm(files):
             cancel_program()
 
-    """
-    # Perform check of correct preference settings.
-    return_code = run_check()
-    if return_code == 1:
-        raise SomethingWentWrongException(
-            "Override auto resync is turned off. Turn it on in the preferences and try again."
-        )
-    """
 
     # Purge each file two times.
     for blend_file in files:
-        for i in range(vars.PURGE_AMOUNT):
+        for i in range(PURGE_AMOUNT):
             return_code = purge_file(blend_file)
             if return_code != 0:
-                raise SomethingWentWrongException(
+                raise Exception(
                     f"Blender Crashed on file: {blend_file.as_posix()}",
                 )
-
-    # Commit to svn.
-    if no_commit:
-        return 0
-
-    project_root = get_project_root_path()
-    svn_repo = SvnRepo(project_root)
-    file_rel = [p.relative_to(project_root) for p in files]
-    svn_repo.commit(file_rel)
     return 0
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+
