@@ -37,16 +37,16 @@ from pathlib import Path
 # Command line arguments.
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "path", help="Path to a file or folder on which to perform purge", type=str
+    "path", help="Path to a file or folder on which to perform crawl", type=str
 )
 
 parser.add_argument(
-    "script", help="Name of default script like 'purge' or path to a valid python script file", type=str
+    "script", help="Name of default script like 'crawl' or path to a valid python script file", type=str
 )
 parser.add_argument(
     "-R",
     "--recursive",
-    help="If -R is provided in combination with a folder path will perform recursive purge",
+    help="If -R is provided in combination with a folder path will perform recursive crawl",
     action="store_true",
 )
 
@@ -71,11 +71,11 @@ parser.add_argument(
 # MAIN LOGIC
 
 
-PURGE_AMOUNT = 2
+CRAWL_AMOUNT = 2
 
 def main():
     args = parser.parse_args()
-    run_blender_purge(args)
+    run_blender_crawl(args)
 
 def exception_handler(func):
     def func_wrapper(*args, **kwargs):
@@ -93,7 +93,7 @@ def exception_handler(func):
 
 
 def cancel_program() -> None:
-    print("# Exiting blender-purge")
+    print("# Exiting blender-crawl")
     sys.exit(0)
 
 def find_default_blender():
@@ -132,8 +132,8 @@ def prompt_confirm(path_list: List[Path]):
     options = ["yes", "no", "y", "n"]
     list_str = "\n".join([p.as_posix() for p in path_list])
     noun = "files" if len(path_list) > 1 else "file"
-    confirm_str = f"# Do you want to purge {len(path_list)} {noun}? ([y]es/[n]o)"
-    input_str = "# Files to purge:" + "\n" + list_str + "\n\n" + confirm_str
+    confirm_str = f"# Do you want to crawl {len(path_list)} {noun}? ([y]es/[n]o)"
+    input_str = "# Files to crawl:" + "\n" + list_str + "\n\n" + confirm_str
     while True:
         user_input = input(input_str)
         if validate_user_input(user_input, options):
@@ -146,7 +146,7 @@ def prompt_confirm(path_list: List[Path]):
         continue
 
 
-def purge_file(path: Path, script: Path) -> int:
+def blender_crawl_file(path: Path, script: Path) -> int:
     # Get cmd list.
     cmd_list = get_cmd_list(path, script)
     p = subprocess.Popen(cmd_list, shell=False)
@@ -169,11 +169,11 @@ def get_config_path() -> Path:
     home = Path.home()
 
     if sys.platform == "win32":
-        return home / "blender-purge/config.json"
+        return home / "blender-crawl/config.json"
     elif sys.platform == "linux":
-        return home / ".config/blender-purge/config.json"
+        return home / ".config/blender-crawl/config.json"
     elif sys.platform == "darwin":
-        return home / ".config/blender-purge/config.json"
+        return home / ".config/blender-crawl/config.json"
 
 
 def create_config_file(config_path: Path) -> None:
@@ -258,7 +258,7 @@ def get_default_scipt(script_input:str):
     return Path(script_input).absolute()
 
 @exception_handler
-def run_blender_purge(args: argparse.Namespace) -> int:
+def run_blender_crawl(args: argparse.Namespace) -> int:
 
     # Parse arguments.
     path = Path(args.path).absolute()
@@ -271,7 +271,7 @@ def run_blender_purge(args: argparse.Namespace) -> int:
 
     # Check config file.
     if not config_path.exists():
-        print("# Seems like you are starting blender-purge for the first time!")
+        print("# Seems like you are starting blender-crawl for the first time!")
         print("# Some things needs to be configured")
         setup_config(find_blender_exec)
     else:
@@ -293,7 +293,7 @@ def run_blender_purge(args: argparse.Namespace) -> int:
     # Vars.
     files = []
 
-    # Collect files to purge
+    # Collect files to crawl
     # if dir.
     if path.is_dir():
         if recursive:
@@ -323,7 +323,7 @@ def run_blender_purge(args: argparse.Namespace) -> int:
 
     # Can only happen on folder here.
     if not files:
-        print("# Found no .blend files to purge")
+        print("# Found no .blend files to crawl")
         cancel_program()
 
     # Sort.
@@ -335,10 +335,10 @@ def run_blender_purge(args: argparse.Namespace) -> int:
             cancel_program()
 
 
-    # Purge each file two times.
+    # crawl each file two times.
     for blend_file in files:
-        for i in range(PURGE_AMOUNT):
-            return_code = purge_file(blend_file, script)
+        for i in range(CRAWL_AMOUNT):
+            return_code = blender_crawl_file(blend_file, script)
             if return_code != 0:
                 raise Exception(
                     f"Blender Crashed on file: {blend_file.as_posix()}",
