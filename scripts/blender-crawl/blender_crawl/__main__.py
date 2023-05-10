@@ -200,11 +200,11 @@ def input_filepath(question: str) -> Path:
         return path
 
 
-def setup_config() -> None:
+def setup_config(find_blender_exec) -> None:
     config_path = get_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
     default_blender_path = find_default_blender()
-    if default_blender_path:
+    if (not(find_blender_exec) and default_blender_path):
         blender_path = default_blender_path
     else:
         blender_path = input_filepath("# Path to Blender binary: ")   
@@ -247,7 +247,7 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
     yes = args.yes
 
     # Check config file.
-    if not config_path.exists():
+    if not config_path.exists() or find_blender_exec:
         print("# Seems like you are starting blender-crawl for the first time!")
         print("# Some things needs to be configured")
         setup_config(find_blender_exec)
