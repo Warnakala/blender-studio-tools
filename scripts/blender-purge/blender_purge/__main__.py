@@ -61,8 +61,15 @@ parser.add_argument(
     action="store_true",
 )
 
+parser.add_argument(
+    "--exec",
+    help="If --exec user must provide blender executable path, OS default blender will not be used if found.",
+    action="store_true",
+)
+
+
 # MAIN LOGIC
-PURGE_PATH = Path(os.path.abspath(__file__)).parent.joinpath("purge.py")
+
 
 PURGE_AMOUNT = 2
 
@@ -89,6 +96,12 @@ def cancel_program() -> None:
     print("# Exiting blender-purge")
     sys.exit(0)
 
+def find_default_blender():
+    output = subprocess.check_output(['whereis', 'blender'])
+    default_blender_str = f'/{str(output).split(" /")[1]}'
+    default_blender_binary =  Path(default_blender_str)
+    if default_blender_binary.exists():
+        return default_blender_binary
 
 def get_blender_path() -> Path:
     config_path = get_config_path()
@@ -213,18 +226,21 @@ def input_filepath(question: str) -> Path:
 def setup_config() -> None:
     config_path = get_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    blender_path = input_filepath("# Path to Blender binary: ")
-    project_root = input_path("# Path to SVN project root: ")
+    default_blender_path = find_default_blender()
+    if default_blender_path:
+        blender_path = default_blender_path
+    else:
+        blender_path = input_filepath("# Path to Blender binary: ")   
+        
     obj = {
         "blender_path": blender_path.as_posix(),
-        "project_root": project_root.as_posix(),
     }
     save_to_json(obj, config_path)
     print("Updatet config at:  %s", config_path.as_posix())
 
 
 def is_config_valid() -> bool:
-    keys = ["blender_path", "project_root"]
+    keys = ["blender_path",]
     config_path = get_config_path()
     json_obj = load_json(config_path)
     for key in keys:
@@ -248,6 +264,7 @@ def run_blender_purge(args: argparse.Namespace) -> int:
     path = Path(args.path).absolute()
     script = get_default_scipt(args.script)
     recursive = args.recursive
+    find_blender_exec = args.exec
     config_path = get_config_path()
     regex = args.regex
     yes = args.yes
@@ -256,12 +273,12 @@ def run_blender_purge(args: argparse.Namespace) -> int:
     if not config_path.exists():
         print("# Seems like you are starting blender-purge for the first time!")
         print("# Some things needs to be configured")
-        setup_config()
+        setup_config(find_blender_exec)
     else:
         if not is_config_valid():
             print("# Config file at: %s is not valid", config_path.as_posix())
             print("# Please set it up again")
-            setup_config()
+            setup_config(find_blender_exec)
 
     # Check user input.
     if not path:
