@@ -93,6 +93,7 @@ def find_default_blender():
     default_blender_str = f'/{str(output).split(" /")[1]}'
     default_blender_binary =  Path(default_blender_str)
     if default_blender_binary.exists():
+        print("Blender Executable location Automatically Detected!")
         return default_blender_binary
 
 def get_blender_path() -> Path:
@@ -200,15 +201,20 @@ def input_filepath(question: str) -> Path:
         return path
 
 
-def setup_config(find_blender_exec) -> None:
+def setup_config(skip_finding_exec) -> None:
+    user_exec = True
+    
+    if not skip_finding_exec:
+        if find_default_blender() is not None:
+            user_exec = False
+            blender_path = find_default_blender()
+            
+
+    if user_exec:
+        blender_path = input_filepath("# Path to Blender binary: ")   
+
     config_path = get_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    default_blender_path = find_default_blender()
-    if (not(find_blender_exec) and default_blender_path):
-        blender_path = default_blender_path
-    else:
-        blender_path = input_filepath("# Path to Blender binary: ")   
-        
     obj = {
         "blender_path": blender_path.as_posix(),
     }
@@ -241,21 +247,21 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
     path = Path(args.path).absolute()
     script = get_default_scipt(args.script)
     recursive = args.recursive
-    find_blender_exec = args.exec
+    skip_finding_exec = args.exec
     config_path = get_config_path()
     regex = args.regex
     yes = args.yes
 
     # Check config file.
-    if not config_path.exists() or find_blender_exec:
+    if not config_path.exists() or skip_finding_exec:
         print("# Seems like you are starting blender-crawl for the first time!")
         print("# Some things needs to be configured")
-        setup_config(find_blender_exec)
+        setup_config(skip_finding_exec)
     else:
         if not is_config_valid():
             print("# Config file at: %s is not valid", config_path.as_posix())
             print("# Please set it up again")
-            setup_config(find_blender_exec)
+            setup_config(skip_finding_exec)
 
     # Check user input.
     if not path:
