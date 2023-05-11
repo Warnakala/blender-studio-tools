@@ -80,13 +80,8 @@ def exception_handler(func):
                 f"\n# Error: {error}"
                 "\n# Program will be cancelled."
             )
-            cancel_program
+            sys.exit(0)
     return func_wrapper
-
-
-def cancel_program() -> None:
-    print("# Exiting blender-crawl")
-    sys.exit(0)
 
 def find_default_blender():
     output = subprocess.check_output(['whereis', 'blender'])
@@ -307,7 +302,7 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
     # Can only happen on folder here.
     if not files:
         print("# Found no .blend files to crawl")
-        cancel_program()
+        sys.exit(0)
 
     # Sort.
     files.sort(key=lambda f: f.name)
@@ -315,7 +310,7 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
     # Prompt confirm.
     if not yes:
         if not prompt_confirm(files):
-            cancel_program()
+            sys.exit(0)
 
 
     # crawl each file two times.
