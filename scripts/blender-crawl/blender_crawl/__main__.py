@@ -20,7 +20,6 @@
 
 
 #TODO
-
 # Supply Many Script Files
 # Supply Many .blend Files
 
@@ -47,24 +46,27 @@ parser.add_argument(
     type=str,
 )
 parser.add_argument(
-    "-R",
+    "-r",
     "--recursive",
     help="If -R is provided in combination with a folder path will perform recursive crawl",
     action="store_true",
 )
 
 parser.add_argument(
-    "--regex",
-    help="Provide any regex pattern that will be performed on each found filepath with re.search()",
+    "-f",
+    "--filter",
+    help="Provide a string to filter the found .blend files", 
 )
 
 parser.add_argument(
+    "-a",
     "--ask",
     help="If --ask is provided there will be no confirmation prompt before running script on .blend files.",
     action="store_true",
 )
 
 parser.add_argument(
+    "-p",
     "--purge",
     help="Run 'built-in function to purge data-blocks from all .blend files found in crawl.'.",
     action="store_true",
@@ -168,7 +170,7 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
     purge_path = get_purge_path(args.purge)
     recursive = args.recursive
     exec = args.exec
-    regex = args.regex
+    regex = args.filter
     ask_for_confirmation = args.ask
 
     # Collect all possible scripts into list
