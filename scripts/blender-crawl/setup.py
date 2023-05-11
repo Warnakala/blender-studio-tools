@@ -43,4 +43,7 @@ setup(
     version="0.1.0",
     zip_safe=False,
     entry_points={"console_scripts": ["blender_crawl = blender_crawl.__main__:main"]},
+    data_files=[
+        ('default_purge', ['blender_crawl/default_scripts/purge.py'])
+        ]
 )

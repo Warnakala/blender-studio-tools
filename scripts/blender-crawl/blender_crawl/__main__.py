@@ -137,6 +137,14 @@ def get_purge_path(purge: bool):
 
 
 def main() -> int:
+    import sys
+
+    # TODO Safely get 'default_purge' path set by setup.py, Debug why this doesn't work
+    # module = sys.modules['__main__']
+    # https://stackoverflow.com/questions/6028000/how-to-read-a-static-file-from-inside-a-python-package
+    # print(pkg_resources.resource_stream("blender-crawl", 'default_purge')) 
+    # print(module)
+    
     """Crawl blender files in a directory and run a provided scripts"""
     # Parse arguments.
     args = parser.parse_args()    
