@@ -158,7 +158,7 @@ def main() -> int:
                 
     # Purge is optional so it can be none
     if purge_path is not None:
-        script.append()
+        scripts.append(purge_path)
     
     if not exec:
         blender_exec = find_executable()
