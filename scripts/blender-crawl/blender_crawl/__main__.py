@@ -1,4 +1,3 @@
-
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # This program is free software; you can redistribute it and/or
@@ -20,6 +19,11 @@
 # (c) 2021, Blender Foundation
 
 
+#TODO
+
+# Supply Many Script Files
+# Supply Many .blend Files
+
 import argparse
 import sys
 import os
@@ -32,11 +36,15 @@ from typing import List
 # Command line arguments.
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "path", help="Path to a file or folder on which to perform crawl", type=str,
+    "path",
+    help="Path to a file or folder on which to perform crawl",
+    type=str,
 )
 
 parser.add_argument(
-    "--script", help="Path to blender python script to execute inside .blend files during crawl. Execution is skipped if no script is provided", type=str
+    "--script",
+    help="Path to blender python script to execute inside .blend files during crawl. Execution is skipped if no script is provided",
+    type=str,
 )
 parser.add_argument(
     "-R",
@@ -64,9 +72,9 @@ parser.add_argument(
 
 parser.add_argument(
     "--exec",
-    help="If --exec user must provide blender executable path, OS default blender will not be used if found.", type=str
+    help="If --exec user must provide blender executable path, OS default blender will not be used if found.",
+    type=str,
 )
-
 
 
 # MAIN LOGIC
@@ -74,20 +82,22 @@ def main():
     args = parser.parse_args()
     run_blender_crawl(args)
 
-def cancel_program(message:str):
+
+def cancel_program(message: str):
     print(message)
     sys.exit(0)
 
 
 def find_executable() -> Path:
     if os.name != 'nt':
-        output = subprocess.check_output(['whereis', 'blender']) # TODO Replace with command check syntax
-        default_blender_str = f'/{str(output).split(" /")[1]}'
-        default_blender_binary =  Path(default_blender_str)
-        if default_blender_binary.exists():
-            print("Blender Executable location Automatically Detected!")
-            return default_blender_binary
+        output = subprocess.run(
+            ['which', 'blender'], capture_output=True, encoding="utf-8"
+        )
+        if output.returncode == 0:
+            # Returncode includes \n in string to indicate a new line
+            return Path(output.stdout.strip('\n'))
     cancel_program("Blender Executable not found please provide --exec argument")
+
 
 def prompt_confirm(list_length: int):
     file_plural = "files" if list_length > 1 else "file"
@@ -102,8 +112,6 @@ def prompt_confirm(list_length: int):
             return False
         else:
             return True
-        
-    
 
 
 def blender_crawl_file(exec: Path, path: Path, script: Path) -> int:
@@ -121,7 +129,6 @@ def blender_crawl_file(exec: Path, path: Path, script: Path) -> int:
 
 
 def is_filepath_valid(path: Path) -> None:
-
     # Check if path is file.
     if not path.is_file():
         cancel_program(f"Not a file: {path.suffix}")
@@ -131,8 +138,7 @@ def is_filepath_valid(path: Path) -> None:
         cancel_program(f"Not a blend file: {path.suffix}")
 
 
-
-def check_file_exists(file_path_str:str, error_msg:str):
+def check_file_exists(file_path_str: str, error_msg: str):
     if file_path_str is None:
         return
     file_path = Path(file_path_str).absolute()
@@ -141,18 +147,24 @@ def check_file_exists(file_path_str:str, error_msg:str):
     else:
         cancel_program(error_msg)
 
-def get_purge_path(purge:bool):
+
+def get_purge_path(purge: bool):
     # Cancel function if user has not supplied purge arg
     if not purge:
         return
-    purge_script = os.path.join(Path(__file__).parent.resolve(), "default_scripts", "purge.py")
+    purge_script = os.path.join(
+        Path(__file__).parent.resolve(), "default_scripts", "purge.py"
+    )
     return check_file_exists(str(purge_script), "no purge found")
 
-    
+
 def run_blender_crawl(args: argparse.Namespace) -> int:
     # Parse arguments.
     path = Path(args.path).absolute()
-    script = check_file_exists(args.script, "No --script was not provided as argument, printed found .blend files, exiting program.")
+    script = check_file_exists(
+        args.script,
+        "No --script was not provided as argument, printed found .blend files, exiting program.",
+    )
     purge_path = get_purge_path(args.purge)
     recursive = args.recursive
     exec = args.exec
@@ -165,13 +177,11 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
     if not path.exists():
         cancel_program(f"Path does not exist: {path.as_posix()}")
     if not exec:
-        blende_exec = find_executable()
+        blender_exec = find_executable()
     else:
-        blende_exec = Path(exec).absolute()
-    
-    if not blende_exec.exists():
-        cancel_program("Blender Executable Path is not valid")
-        
+        blender_exec = Path(exec).absolute()
+        if not blender_exec.exists():
+            cancel_program("Blender Executable Path is not valid")
 
     # Vars.
     files = []
@@ -214,23 +224,21 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
 
     for file in files:
         print(f"Found: `{file}`")
-    
 
     if ask_for_confirmation:
         if not prompt_confirm(len(files)):
             sys.exit(0)
 
     if not scripts:
-        cancel_program("No --script was not provided as argument, printed found .blend files, exiting program. BIG")
+        cancel_program(
+            "No --script was not provided as argument, printed found .blend files, exiting program. BIG"
+        )
         sys.exit(0)
-
-
-
 
     # crawl each file two times.
     for blend_file in files:
         for script in scripts:
-            return_code = blender_crawl_file(blende_exec, blend_file, script)
+            return_code = blender_crawl_file(blender_exec, blend_file, script)
             if return_code != 0:
                 cancel_program(f"Blender Crashed on file: {blend_file.as_posix()}")
     return 0
@@ -238,7 +246,3 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
 
 if __name__ == "__main__":
     main()
-
-
-
-
