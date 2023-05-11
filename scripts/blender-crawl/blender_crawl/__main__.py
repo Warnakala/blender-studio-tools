@@ -75,12 +75,6 @@ parser.add_argument(
 )
 
 
-# MAIN LOGIC
-def main():
-    args = parser.parse_args()
-    run_blender_crawl(args)
-
-
 def cancel_program(message: str):
     print(message)
     sys.exit(0)
@@ -110,20 +104,6 @@ def prompt_confirm(list_length: int):
             return False
         else:
             return True
-
-
-def blender_crawl_file(exec: Path, path: Path, script: Path) -> int:
-    # Get cmd list.
-    cmd_list = (
-        exec.as_posix(),
-        path.as_posix(),
-        "-b",
-        "-P",
-        script,
-        "--factory-startup",
-    )
-    p = subprocess.Popen(cmd_list, shell=False)
-    return p.wait()
 
 
 def is_filepath_blend(path: Path) -> None:
@@ -156,15 +136,16 @@ def get_purge_path(purge: bool):
     return check_file_exists(str(purge_script), "no purge found")
 
 
-def run_blender_crawl(args: argparse.Namespace) -> int:
-    # Parse arguments.    
+def main() -> int:
+    """Crawl blender files in a directory and run a provided scripts"""
+    # Parse arguments.
+    args = parser.parse_args()    
     purge_path = get_purge_path(args.purge)
     recursive = args.recursive
     exec = args.exec
     regex = args.filter
     script_input = args.script
     ask_for_confirmation = args.ask
-
 
     scripts = []
     if script_input:
@@ -245,11 +226,18 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
     # crawl each file two times.
     for blend_file in files:
         for script in scripts:
-            return_code = blender_crawl_file(blender_exec, blend_file, script)
-            if return_code != 0:
+            cmd_list = (
+            blender_exec.as_posix(),
+            blend_file.as_posix(),
+            "-b",
+            "-P",
+            script,
+            "--factory-startup",
+            )
+            process = subprocess.Popen(cmd_list, shell=False)
+            if process.wait() != 0:
                 cancel_program(f"Blender Crashed on file: {blend_file.as_posix()}")
     return 0
-
 
 if __name__ == "__main__":
     main()
