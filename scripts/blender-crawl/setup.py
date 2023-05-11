@@ -34,16 +34,17 @@ setup(
     install_requires=requirements,
     long_description=readme,
     include_package_data=True,
-    keywords="blender_crawl",
-    name="blender_crawl",
-    packages=find_packages(include=["blender_crawl", "blender_crawl.*"]),
+    keywords="blender-crawl",
+    name="blender-crawl",
+    packages=find_packages(include=["blender-crawl", "blender-crawl.*"]),
     setup_requires=setup_requirements,
     test_suite="tests",
     tests_require=test_requirements,
     version="0.1.0",
     zip_safe=False,
-    entry_points={"console_scripts": ["blender_crawl = blender_crawl.__main__:main"]},
+    # TODO Verify entry point needs to use '_' isntead of '-'
+    entry_points={"console_scripts": ["blender-crawl = blender_crawl.__main__:main"]},
     data_files=[
-        ('default_purge', ['blender_crawl/default_scripts/purge.py'])
+        ('default_purge', ['blender-crawl/default-scripts/purge.py'])
         ]
 )
