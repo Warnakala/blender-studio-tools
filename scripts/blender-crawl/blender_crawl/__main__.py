@@ -19,10 +19,6 @@
 # (c) 2021, Blender Foundation
 
 
-#TODO
-# Supply Many Script Files
-# Supply Many .blend Files
-
 import argparse
 import sys
 import os
@@ -36,14 +32,14 @@ from typing import List
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "path",
-    help="Path to a file or folder on which to perform crawl",
-    type=str,
+    help="Path to a file(s) or folder(s) on which to perform crawl",
+    nargs='+'
 )
 
 parser.add_argument(
     "--script",
-    help="Path to blender python script to execute inside .blend files during crawl. Execution is skipped if no script is provided",
-    type=str,
+    help="Path to blender python script(s) to execute inside .blend files during crawl. Execution is skipped if no script is provided",
+    nargs='+',
 )
 parser.add_argument(
     "-r",
@@ -130,7 +126,7 @@ def blender_crawl_file(exec: Path, path: Path, script: Path) -> int:
     return p.wait()
 
 
-def is_filepath_valid(path: Path) -> None:
+def is_filepath_blend(path: Path) -> None:
     # Check if path is file.
     if not path.is_file():
         cancel_program(f"Not a file: {path.suffix}")
@@ -161,23 +157,28 @@ def get_purge_path(purge: bool):
 
 
 def run_blender_crawl(args: argparse.Namespace) -> int:
-    # Parse arguments.
-    path = Path(args.path).absolute()
-    script = check_file_exists(
-        args.script,
-        "No --script was not provided as argument, printed found .blend files, exiting program.",
-    )
+    # Parse arguments.    
     purge_path = get_purge_path(args.purge)
     recursive = args.recursive
     exec = args.exec
     regex = args.filter
+    script_input = args.script
     ask_for_confirmation = args.ask
 
-    # Collect all possible scripts into list
-    scripts = [script for script in [script, purge_path] if script is not None]
 
-    if not path.exists():
-        cancel_program(f"Path does not exist: {path.as_posix()}")
+    scripts = []
+    if script_input:
+        for script in script_input:
+            script_name = check_file_exists(
+            script,
+            "No --script was not provided as argument, printed found .blend files, exiting program.",
+        )   
+            scripts.append(script_name)
+                
+    # Purge is optional so it can be none
+    if purge_path is not None:
+        script.append()
+    
     if not exec:
         blender_exec = find_executable()
     else:
@@ -187,23 +188,27 @@ def run_blender_crawl(args: argparse.Namespace) -> int:
 
     # Vars.
     files = []
+    for item in args.path:
+        file_path = Path(item).absolute()
+        if not file_path.exists():
+            cancel_program(f"Path does not exist: {file_path.as_posix()}")
 
-    # Collect files to crawl
-    # if dir.
-    if path.is_dir():
-        if recursive:
-            blend_files = [
-                f for f in path.glob("**/*") if f.is_file() and f.suffix == ".blend"
-            ]
+        # Collect files to crawl
+        # if dir.
+        if file_path.is_dir():
+            if recursive:
+                blend_files = [
+                    f for f in file_path.glob("**/*") if f.is_file() and f.suffix == ".blend"
+                ]
+            else:
+                blend_files = [
+                    f for f in file_path.iterdir() if f.is_file() and f.suffix == ".blend"
+                ]
+            files.extend(blend_files)
+        # If just one file.
         else:
-            blend_files = [
-                f for f in path.iterdir() if f.is_file() and f.suffix == ".blend"
-            ]
-        files.extend(blend_files)
-    # If just one file.
-    else:
-        is_filepath_valid(path)
-        files.append(path)
+            is_filepath_blend(file_path)
+            files.append(file_path)
 
     # Apply regex.
     if regex:
