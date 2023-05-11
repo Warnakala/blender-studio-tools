@@ -219,7 +219,7 @@ def main() -> int:
 
     if not scripts:
         cancel_program(
-            "No --script was not provided as argument, printed found .blend files, exiting program. BIG"
+            "No valid script files were found. Exiting program."
         )
         sys.exit(0)
 
