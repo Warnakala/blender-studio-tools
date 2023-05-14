@@ -6,7 +6,6 @@ from . import wheels
 # This will load the dateutil and BAT wheel files.
 wheels.preload_dependencies()
 
-from blender_asset_tracer import trace
 from .background_process import processes
 from . import constants
 from .svn_log import reload_svn_log
@@ -97,12 +96,6 @@ class SVN_file(bpy.types.PropertyGroup):
     revision: IntProperty(
         name="Revision",
         description="Revision number",
-        options=set()
-    )
-    is_referenced: BoolProperty(
-        name="Is Referenced",
-        description="True when this file is referenced by this .blend file either directly or indirectly. Flag used for list filtering",
-        default=False,
         options=set()
     )
 
@@ -256,49 +249,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         self.svn_url = ""
         self.is_in_repo = False
 
-    ### Blender Asset Tracer  Integration ######################################
-
-    @staticmethod
-    def get_referenced_filepaths() -> Set[Path]:
-        """Return a flat list of absolute filepaths of existing files referenced
-        either directly or indirectly by this .blend file, as a flat list.
-
-        This uses the Blender Asset Tracer, so we rely on that to catch everything;
-        Images, video files, mesh sequence caches, blender libraries, etc.
-
-        Deleted files are not handled here; They are grabbed with PySVN instead, 
-        for the entire repository. The returned list also does not include the 
-        currently opened .blend file itself.
-        """
-
-        # We want to suppress BAT's missing file warnings, since from the SVN
-        # addon's perspective, they are not relevant.
-        bat_logger = logging.getLogger('blender_asset_tracer.trace.result')
-        bat_logger.setLevel(50)
-
-        if not bpy.data.filepath:
-            return set()
-
-        bpath = Path(bpy.data.filepath)
-
-        reported_assets: Set[Path] = set()
-        if not bpath.exists():
-            # Rare case: File was deleted from file system, but is still open.
-            return reported_assets
-
-        assert bpath.is_file(), f"{bpy.data.filepath!r} is not a file"
-
-        for usage in trace.deps(bpath):
-            for assetpath in usage.files():
-                if assetpath in reported_assets:
-                    logger.debug("Already reported %s", assetpath)
-                    continue
-
-                reported_assets.add(assetpath)
-
-        bat_logger.setLevel(0)
-        return reported_assets
-
     ### SVN File List ##########################################################
 
     def remove_file_entry(self, file_entry: SVN_file):
@@ -425,18 +375,6 @@ class SVN_scene_properties(bpy.types.PropertyGroup):
         """Should run when any of the SVN file list search filters are changed."""
         context.scene.svn.force_good_active_index(context)
 
-    include_normal: BoolProperty(
-        name="Show Normal Files",
-        description="Include files whose SVN status is Normal",
-        default=False,
-        update=update_file_filter
-    )
-    only_referenced_files: BoolProperty(
-        name="Only Referenced Files",
-        description="Only show modified files referenced by this .blend file, rather than the entire repository",
-        default=False,
-        update=update_file_filter
-    )
     file_search_filter: StringProperty(
         name="Search Filter",
         description="Only show entries that contain this string",

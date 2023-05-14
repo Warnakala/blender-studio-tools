@@ -140,7 +140,6 @@ def init_svn(_context, _dummy):
         f['svn_path'] = str(svn_path)
         f['name'] = svn_path.name
         f.status = 'unversioned'
-        f.is_referenced = True
 
     prefs = get_addon_prefs(context)
     cred = prefs.get_credentials()
@@ -168,16 +167,6 @@ class BGP_SVN_Status(BackgroundProcess):
     repeat_delay = 15
     debug = False
 
-    def __init__(self):
-        super().__init__()
-
-        # Flag to let is_referenced flags be set only once on file open and file save.
-        # We need the flag because this needs to happen not immediately on file open,
-        # but after the first `svn status` call has finished in the background.
-        # Also we want it to run in the background even on file save, otherwise the UI
-        # lock-up from the file saving process is noticably longer.
-        self.is_new_file = True
-
     def tick(self, context, prefs):
         if context.scene.svn.seconds_since_last_update > 30:
             redraw_viewport()
@@ -194,10 +183,6 @@ class BGP_SVN_Status(BackgroundProcess):
             # TODO: If this is an authentication error, we should set cred.authenticated=False.
             # This could happen if the user's password has changed while Blender was running.
             self.error = error.stderr.decode()
-
-        if self.is_new_file:
-            update_file_is_referenced_flags()
-            self.is_new_file = False
 
     def process_output(self, context, prefs):
         update_file_list(context, self.output)
@@ -294,45 +279,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
         if file_entry.svn_path not in posix_paths:
             svn.remove_file_entry(file_entry)
 
-    current_blend = svn.current_blend_file
-    if current_blend:
-        current_blend.is_referenced = True
-
     svn.force_good_active_index(context)
-
-
-@bpy.app.handlers.persistent
-def update_file_is_referenced_flags(_dummy1=None, _dummy2=None):
-    """Update the file list's is_referenced flags. This should only be called on
-    file save, because it relies on BAT, which relies on reading a file from disk,
-    so calling it any more frequently would be pointless."""
-    return
-    import sys
-    if sys.platform == 'win32':
-        # TODO: Apparently, calling BAT's trace.deps() on Windows on the
-        # current .blend file makes us unable to save the file from that point on...
-        return
-
-    context = bpy.context
-    svn = context.scene.svn
-    referenced_files: Set[Path] = svn.get_referenced_filepaths()
-    referenced_files.add(Path(bpy.data.filepath))
-
-    referenced_svn_files = []
-    for f in referenced_files:
-        try:
-            svn_path = str(svn.absolute_to_svn_path(f))
-            referenced_svn_files.append(svn_path)
-        except ValueError:
-            # This happens when a file is referened that is not on the SVN.
-            # Let's not display such files in the SVN file window,
-            # Listing a complete list of dependencies is not the goal of this addon.
-            # referenced_files.remove(f)
-            pass
-
-    for file_entry in svn.external_files:
-        file_entry.is_referenced = file_entry.svn_path in referenced_svn_files
-
 
 def get_repo_file_statuses(svn_status_str: str) -> Dict[str, Tuple[str, str, int]]:
     svn_status_xml = xmltodict.parse(svn_status_str)

@@ -41,7 +41,7 @@ def get_resource_blend_path(context) -> Tuple[str, bool]:
     Also return a boolean which indicates whether it should be linked or not. (Appended instead)"""
     addon_prefs = context.preferences.addons[__package__].preferences
 
-    # Hardcoding for Pet Projects. Relies on the SVN add-on being installed.
+    # Hardcoding for Pet Projects. Relies on the SVN add-on being enabled.
     if 'svn' in context.scene and context.scene['svn']['svn_url'] == 'https://svn.blender.studio/repo/pets':
         svn_dir = context.scene['svn']['svn_directory']
         filepath = Path(svn_dir + "/pro/lib/nodes/GeoNodeShapeKey.blend")

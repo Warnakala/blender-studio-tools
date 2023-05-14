@@ -143,20 +143,9 @@ class SVN_UL_file_list(bpy.types.UIList):
                     # ALWAYS display the current .blend file.
                     continue
 
-                if has_default_status(item) and not item.is_referenced:
-                    # ALWAYS filter out files that have default statuses and aren't referenced.
+                if has_default_status(item):
+                    # Filter out files that have default statuses.
                     flt_flags[i] = 0
-
-                if svn.only_referenced_files:
-                    # Filter out files that are not being referenced, regardless of status.
-                    flt_flags[i] *= int(item.is_referenced)
-                    if has_default_status(item) and not svn.include_normal:
-                        # Filter out files that are being referenced but have default status.
-                        flt_flags[i] = 0
-                else:
-                    # Filter out files that have default status.
-                    if has_default_status(item):
-                        flt_flags[i] = 0
 
         return flt_flags, flt_neworder
 
@@ -184,15 +173,6 @@ class SVN_UL_file_list(bpy.types.UIList):
         row.prop(self, 'show_file_paths', text="",
                  toggle=True, icon="FILE_FOLDER")
         row.prop(svn, 'file_search_filter', text="")
-
-        row = main_row.row(align=True)
-        row.use_property_split = True
-        row.use_property_decorate = False
-        row.prop(svn, 'only_referenced_files',
-                 toggle=True, text="", icon='APPEND_BLEND')
-        col = row.column(align=True)
-        col.enabled = svn.only_referenced_files
-        col.prop(svn, 'include_normal', toggle=True, text="", icon="CHECKMARK")
 
 
 def svn_file_list_context_menu(self: bpy.types.UIList, context: bpy.types.Context) -> None:
