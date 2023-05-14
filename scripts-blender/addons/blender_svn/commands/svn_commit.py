@@ -13,6 +13,8 @@ from .simple_commands import SVN_Operator, Popup_Operator
 from .execute_subprocess import execute_svn_command
 from ..util import get_addon_prefs
 
+# Hacks upon hacks! All for a tiny bit of nice UX...
+active_commit_operator = None
 
 class SVN_commit_msg_clear(bpy.types.Operator):
     bl_idname = "svn.clear_commit_message"
@@ -21,7 +23,9 @@ class SVN_commit_msg_clear(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        get_addon_prefs(context).commit_message = ""
+        context.scene.svn.get_repo(context).commit_message = ""
+        global active_commit_operator
+        active_commit_operator.first_line = ""
         return {'FINISHED'}
 
 
@@ -66,8 +70,11 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     def invoke(self, context, event):
         prefs = get_addon_prefs(context)
         repo = prefs.get_current_repo(context)
-        if prefs.commit_message == "":
-            prefs.commit_message = ""
+        if repo.commit_message == "":
+            repo.commit_message = ""
+
+        global active_commit_operator
+        active_commit_operator = self
 
         self.first_line = repo.commit_lines[0].line
 
@@ -93,10 +100,15 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             row.prop(file, "include_in_commit", text=file.name)
             text = file.status_name
             icon = file.status_icon
-            if file == svn.current_blend_file and bpy.data.is_dirty:
+            if file == repo.current_blend_file and bpy.data.is_dirty:
+                split = row.split(factor=0.7)
+                row = split.row()
+                row.alert = True
                 text += " but not saved!"
                 icon = 'ERROR'
-                row.alert = True
+                op_row = split.row()
+                op_row.alignment = 'LEFT'
+                op_row.operator('wm.save_mainfile', icon='FILE_BLEND', text="Save")
             row.label(text=text, icon=icon)
 
         row = layout.row()
@@ -119,13 +131,14 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         committable_files = self.get_committable_files(context)
         files_to_commit = [f for f in committable_files if f.include_in_commit]
         prefs = get_addon_prefs(context)
+        repo = context.scene.svn.get_repo(context)
 
         if not files_to_commit:
             self.report({'ERROR'},
                         "No files were selected, nothing to commit.")
             return {'CANCELLED'}
 
-        if len(prefs.commit_message) < 2:
+        if len(repo.commit_message) < 2:
             self.report({'ERROR'},
                         "Please describe your changes in the commit message.")
             return {'CANCELLED'}
@@ -135,7 +148,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         self.set_predicted_file_statuses(files_to_commit)
         process_in_background(
             BGP_SVN_Commit,
-            commit_msg=prefs.commit_message,
+            commit_msg=repo.commit_message,
             file_list=filepaths
         )
         processes['Status'].stop()
@@ -209,7 +222,7 @@ class BGP_SVN_Commit(BackgroundProcess):
         processes['Status'].start()
 
         self.commit_msg = ""
-        prefs.commit_message = ""
+        repo.commit_message = ""
         prefs.is_busy = False
         self.file_list = []
 

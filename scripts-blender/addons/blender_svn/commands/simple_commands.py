@@ -11,7 +11,7 @@ from bpy.props import StringProperty, IntProperty, EnumProperty, BoolProperty
 from send2trash import send2trash
 
 from .execute_subprocess import execute_svn_command
-from ..util import get_addon_prefs
+from ..util import get_addon_prefs, redraw_viewport
 
 # TODO: Maybe add an operator to revert all local changes to the working copy?
 
@@ -44,6 +44,7 @@ class SVN_Operator_Single_File(SVN_Operator):
         if file:
             self.set_predicted_file_status(repo, file)
             file.status_predicted_flag = "SINGLE"
+            redraw_viewport()
 
         return ret
 
@@ -62,6 +63,9 @@ class SVN_Operator_Single_File(SVN_Operator):
         if not exists and not type(self).missing_file_allowed:
             self.report({'INFO'}, "File was not found, cancelling.")
         return exists
+
+    def set_predicted_file_status(self, repo, file_entry: "SVN_file"):
+        return
 
 
 class Popup_Operator:
@@ -119,9 +123,6 @@ class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
         if self.reload_file:
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
         return {'FINISHED'}
-
-    def set_predicted_file_status(self, repo, file_entry: "SVN_file"):
-        return
 
 
 class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
@@ -202,7 +203,8 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
             file_entry.status = 'normal'
             file_entry.repos_status = 'none'
         else:
-            file_entry.status = 'none'
+            file_entry.status = 'normal'
+            file_entry.repos_status = 'modified'
 
 
 class SVN_download_repo_revision(SVN_Operator, bpy.types.Operator):
@@ -235,7 +237,7 @@ class SVN_download_repo_revision(SVN_Operator, bpy.types.Operator):
 class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.restore_file"
     bl_label = "Restore File"
-    bl_description = "Restore this deleted file to its previous revision"
+    bl_description = "Restore this deleted file to its previously checked out revision"
     bl_options = {'INTERNAL'}
 
     missing_file_allowed = True

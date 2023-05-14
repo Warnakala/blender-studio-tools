@@ -282,23 +282,30 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
 def draw_svn_file_list(context, layout):
     repo = context.scene.svn.get_repo(context)
 
+    process_message = "File statuses are updated every few seconds."
+    any_error = False
     for process_id in ['Commit', 'Update', 'Log', 'Status']:
         if process_id not in processes:
             continue
         process = processes[process_id]
 
         if process.is_running:
-            progress_message = process.get_ui_message(context)
-            if progress_message:
-                text = progress_message.replace("...", dots())
-                layout.label(text=f"SVN {process_id}: {text}")
+            message = process.get_ui_message(context)
+            if message:
+                message = message.replace("...", dots())
+                process_message = f"SVN {process_id}: {message}"
+                any_process = True
         elif process.error:
+            any_error = True
             row = layout.row()
             row.alert = True
             warning = row.operator(
                 'svn.clear_error', text=f"SVN {process_id}: Error Occurred. Hover to view", icon='ERROR')
             warning.process_id = process_id
             warning.copy_on_click = True
+
+    if not any_error:
+        layout.label(text=process_message)
 
     main_col = layout.column()
     main_col.enabled = repo.seconds_since_last_update < 30
