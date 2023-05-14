@@ -5,145 +5,49 @@
 from typing import Optional, Any, Set, Tuple, List
 
 import bpy
-from bpy.props import StringProperty, IntProperty, BoolProperty, CollectionProperty
+from bpy.props import IntProperty, CollectionProperty, BoolProperty
+from bpy.types import PropertyGroup, AddonPreferences
 
-from . import svn_status
-from .background_process import process_in_background
-from .util import redraw_viewport, get_addon_prefs
+from .util import get_addon_prefs
+from .repository import SVN_repository
 
-
-class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
-    name = "Authenticate"
-    needs_authentication = False
-    timeout = 10
-    repeat_delay = 0
-    debug = False
-
-    def tick(self, context, prefs):
-        redraw_viewport()
-
-    def acquire_output(self, context, prefs):
-        cred = prefs.get_credentials()
-        if not cred or not cred.is_filled:
-            return
-
-        super().acquire_output(context, prefs)
-
-    def process_output(self, context, prefs):
-        cred = prefs.get_credentials()
-        if not cred or not cred.is_filled:
-            return
-
-        if self.output:
-            cred.authenticated = True
-            cred.auth_failed = False
-            self.debug_print("Run init_svn()")
-            svn_status.init_svn(context, None)
-
-            super().process_output(context, prefs)
-            return
-        elif self.error:
-            if "Authentication failed" in self.error:
-                cred.authenticated = False
-                cred.auth_failed = True
-            else:
-                cred.authenticated = False
-                cred.auth_failed = False
-
-
-class SVN_credential(bpy.types.PropertyGroup):
-    """Authentication information of a single SVN repository."""
-    url: StringProperty(
-        name="SVN URL",
-        description="URL of the remote repository"
-    )
-
-    def update_cred(self, context):
-        if not (self.username and self.password):
-            # Only try to authenticate if BOTH username AND pw are entered.
-            return
-
-        self.auth_failed = False
-
-        process_in_background(BGP_SVN_Authenticate)
-        svn_status.init_svn(context, None)
-
-        # For some ungodly reason, ONLY with this addon,
-        # CollectionProperties stored in the AddonPrefs do not get
-        # auto-saved, only manually saved! So... we get it done.
-        if context.preferences.use_preferences_save:
-            bpy.ops.wm.save_userpref()
-
-    username: StringProperty(
-        name="SVN Username",
-        description="User name used for authentication with this SVN repository",
-        update=update_cred
-    )
-    password: StringProperty(
-        name="SVN Password",
-        description="Password used for authentication with this SVN repository. This password is stored in your Blender user preferences as plain text. Somebody with access to your user preferences will be able to read your password",
-        subtype='PASSWORD',
-        update=update_cred
-    )
-
-    @property
-    def is_filled(self):
-        """Check if there's a username and password entered at all."""
-        return self.username and self.password
-
-    authenticated: BoolProperty(
-        name="Authenticated",
-        description="Internal flag to mark whether the last entered credentials were confirmed by the repo as correct credentials",
-        default=False
-    )
-    auth_failed: BoolProperty(
-        name="Authentication Failed",
-        description="Internal flag to mark whether the last entered credentials were denied by the repo",
-        default=False
-    )
-
-
-class SVN_UL_credentials(bpy.types.UIList):
-
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        thing = item
-        row = layout.row()
-        row.prop(thing, 'name', text="", icon='FILE_TEXT')
-        row.prop(thing, 'url', text="", icon='URL')
-        row.prop(thing, 'username', text="", icon='USER')
-        row.prop(thing, 'password', text="", icon='LOCKED')
-
-
-class SVN_addon_preferences(bpy.types.AddonPreferences):
+class SVN_addon_preferences(AddonPreferences):
     bl_idname = __package__
 
-    svn_credentials: CollectionProperty(type=SVN_credential)
-    svn_cred_active_idx: IntProperty(
-        name="SVN Credentials",
+    svn_repositories: CollectionProperty(type=SVN_repository)
+    svn_repo_active_idx: IntProperty(
+        name="SVN Repositories",
         options=set()
     )
 
-    def get_credentials(self) -> Optional[SVN_credential]:
-        svn_url = bpy.context.scene.svn.svn_url
-        for cred in self.svn_credentials:
-            if cred.url == svn_url:
-                return cred
+    def get_current_repo(self, context) -> Optional[SVN_repository]:
+        scene_svn = context.scene.svn
+        if not scene_svn.svn_url or not scene_svn.svn_directory:
+            return
 
-        return None
+        for repo in self.svn_repositories:
+            if repo.url == scene_svn.svn_url and repo.directory == scene_svn.svn_directory:
+                return repo
+
+    is_busy: BoolProperty(
+        name="Is Busy",
+        description="Indicates whether there is an ongoing SVN Update or Commit. For internal use only, to prevent both processes from trying to run at the same time, which is not allowed by SVN",
+        default=False
+    )
 
     def draw(self, context) -> None:
         layout = self.layout
 
-        layout.label(text="Saved credentials:")
+        layout.label(text="SVN Repositories:")
         col = layout.column()
         col.enabled = False
         col.template_list(
-            "SVN_UL_credentials",
-            "svn_cred_list",
+            "SVN_UL_repositories",
+            "svn_repo_list",
             self,
-            "svn_credentials",
+            "svn_repositories",
             self,
-            "svn_cred_active_idx",
+            "svn_repo_active_idx",
         )
 
 
@@ -151,20 +55,18 @@ class SVN_addon_preferences(bpy.types.AddonPreferences):
 def try_authenticating_on_file_load(_dummy1, _dummy2):
     context = bpy.context
     prefs = get_addon_prefs(context)
-    cred = prefs.get_credentials()
-    if cred and cred.is_filled:
+    repo = prefs.get_current_repo(context)
+    if repo and repo.is_cred_entered:
         print("SVN: Credentials found. Try authenticating on file load...")
         # Don't assume that a previously saved password is still correct.
-        cred.authenticated = False
+        repo.authenticated = False
         # Trigger the update callback.
-        cred.password = cred.password
+        repo.password = repo.password
 
 
 # ----------------REGISTER--------------.
 
 registry = [
-    SVN_UL_credentials,
-    SVN_credential,
     SVN_addon_preferences
 ]
 
