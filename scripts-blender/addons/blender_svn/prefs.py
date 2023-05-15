@@ -10,6 +10,8 @@ from bpy.types import PropertyGroup, AddonPreferences
 
 from .util import get_addon_prefs
 from .repository import SVN_repository
+import json
+from pathlib import Path
 
 class SVN_addon_preferences(AddonPreferences):
     bl_idname = __package__
@@ -26,7 +28,7 @@ class SVN_addon_preferences(AddonPreferences):
             return
 
         for repo in self.svn_repositories:
-            if repo.url == scene_svn.svn_url and repo.directory == scene_svn.svn_directory:
+            if (repo.url == scene_svn.svn_url) and (repo.directory == scene_svn.svn_directory):
                 return repo
 
     is_busy: BoolProperty(
@@ -34,6 +36,43 @@ class SVN_addon_preferences(AddonPreferences):
         description="Indicates whether there is an ongoing SVN Update or Commit. For internal use only, to prevent both processes from trying to run at the same time, which is not allowed by SVN",
         default=False
     )
+    loading: BoolProperty(
+        name="Loading",
+        description="Disable the credential update callbacks while loading repo data to avoid infinite loops",
+        default=False
+    )
+
+    def save_repo_info_to_file(self):
+        saved_props = {'url', 'directory', 'name', 'username', 'password', 'display_name'}
+        repo_data = {}
+        for repo in self['svn_repositories']:
+            directory = repo.get('directory', '')
+            
+            repo_data[directory] = {key:value for key, value in repo.to_dict().items() if key in saved_props}
+        
+        filepath = Path(bpy.utils.user_resource('CONFIG')) / Path("blender_svn.txt")
+        with open(filepath, "w") as f:
+            json.dump(repo_data, f, indent=4)
+
+    def load_repo_info_from_file(self):
+        self.loading = True
+        try:
+            filepath = Path(bpy.utils.user_resource('CONFIG')) / Path("blender_svn.txt")
+            if not filepath.exists():
+                return
+
+            with open(filepath, "r") as f:
+                repo_data = json.load(f)
+            
+            for directory, repo_data in repo_data.items():
+                repo = self.svn_repositories.get(directory)
+                if not repo:
+                    repo = self.svn_repositories.add()
+                    repo.directory = directory
+                    for key, value in repo_data.items():
+                        setattr(repo, key, value)
+        finally:
+            self.loading = False
 
     def draw(self, context) -> None:
         layout = self.layout
@@ -64,8 +103,6 @@ def try_authenticating_on_file_load(_dummy1, _dummy2):
         repo.password = repo.password
 
 
-# ----------------REGISTER--------------.
-
 registry = [
     SVN_addon_preferences
 ]
@@ -73,7 +110,6 @@ registry = [
 
 def register():
     bpy.app.handlers.load_post.append(try_authenticating_on_file_load)
-
 
 def unregister():
     bpy.app.handlers.load_post.remove(try_authenticating_on_file_load)

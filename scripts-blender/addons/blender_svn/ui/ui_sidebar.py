@@ -238,7 +238,7 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
         col = layout.column(align=True)
         repo = context.scene.svn.get_repo(context)
         row = col.row()
-        row.prop(repo, 'name', text="Repo Name", icon='FILE_TEXT')
+        row.prop(repo, 'display_name', text="Repo Name", icon='FILE_TEXT')
         url = row.operator('svn.custom_tooltip', text="", icon='URL')
         url.tooltip = repo.url
         url.copy_on_click = True
@@ -302,7 +302,6 @@ def draw_svn_file_list(context, layout):
             warning = row.operator(
                 'svn.clear_error', text=f"SVN {process_id}: Error Occurred. Hover to view", icon='ERROR')
             warning.process_id = process_id
-            warning.copy_on_click = True
 
     if not any_error:
         layout.label(text=process_message)
@@ -346,10 +345,11 @@ def draw_svn_file_list(context, layout):
     col.operator("svn.cleanup", icon='BRUSH_DATA', text="")
 
 
-class SVN_custom_tooltip(bpy.types.Operator):
+class SVN_OT_custom_tooltip(bpy.types.Operator):
+    """Tooltip"""
     bl_idname = "svn.custom_tooltip"
-    bl_label = ""  # Don't want the first line of the tooltip on mouse hover.
-    bl_description = ""
+    bl_label = ""
+    bl_description = " "
     bl_options = {'INTERNAL'}
 
     tooltip: StringProperty(
@@ -364,15 +364,19 @@ class SVN_custom_tooltip(bpy.types.Operator):
 
     @classmethod
     def description(cls, context, properties):
-        return properties.tooltip
+        tooltip = properties.tooltip
+        if properties.copy_on_click:
+            tooltip = "Copy to clipboard: " + properties.tooltip
+        return tooltip
 
     def execute(self, context):
         if self.copy_on_click:
             context.window_manager.clipboard = self.tooltip
+            self.report({'INFO'}, "Copied to Clipboard: " + self.tooltip)
         return {'FINISHED'}
 
 
-class SVN_clear_error(SVN_custom_tooltip):
+class SVN_OT_clear_error(bpy.types.Operator):
     bl_idname = "svn.clear_error"
     bl_label = "Error:"
     bl_description = ""
@@ -383,11 +387,13 @@ class SVN_clear_error(SVN_custom_tooltip):
     @classmethod
     def description(cls, context, properties):
         process = processes[properties.process_id]
-        return process.error + "\n\n" + process.error_description
+        return process.error_description + "\n\n" + process.error + "\n\n Click to clear the error and copy it to your clipboard"
 
     def execute(self, context):
-        super().execute(context)
-        processes[self.process_id].clear_error()
+        process = processes[self.process_id]
+        context.window_manager.clipboard = process.error_description + "\n\n" + process.error
+        process.clear_error()
+        self.report({'INFO'}, "Copied error to Clipboard.")
 
         return {'FINISHED'}
 
@@ -425,8 +431,8 @@ registry = [
     SVN_UL_file_list,
     VIEW3D_PT_svn_credentials,
     VIEW3D_PT_svn_files,
-    SVN_custom_tooltip,
-    SVN_clear_error
+    SVN_OT_custom_tooltip,
+    SVN_OT_clear_error
 ]
 
 

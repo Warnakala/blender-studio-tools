@@ -11,7 +11,7 @@ from bpy.props import StringProperty, BoolProperty, CollectionProperty, IntPrope
 from .commands import svn_status
 from .commands.background_process import processes, process_in_background
 from .commands.svn_log import reload_svn_log
-from .util import redraw_viewport, make_getter_func, make_setter_func_readonly, svn_date_simple
+from .util import redraw_viewport, make_getter_func, make_setter_func_readonly, svn_date_simple, get_addon_prefs
 from . import constants
 
 class SVN_file(bpy.types.PropertyGroup):
@@ -207,25 +207,37 @@ class SVN_commit_line(PropertyGroup):
 
 class SVN_repository(PropertyGroup):
     ### Basic SVN Info. ###
-    name: StringProperty(
+    @property
+    def name(self):
+        return self.directory
+
+    display_name: StringProperty(
         name="SVN Name",
         description="Name of the SVN repository"
     )
+
     url: StringProperty(
         name="SVN URL",
         description="URL of the remote repository"
     )
+
+    def update_directory(self, context):
+        self['name'] = self.directory
+
     directory: StringProperty(
         name="Root Directory",
         default="",
         subtype="DIR_PATH",
         description="Absolute directory path of the SVN repository's root in the file system",
+        update=update_directory
     )
 
     ### Credentials. ###
     def update_cred(self, context):
         if not (self.username and self.password):
             # Only try to authenticate if BOTH username AND pw are entered.
+            return
+        if get_addon_prefs(context).loading:
             return
 
         self.auth_failed = False
@@ -238,6 +250,7 @@ class SVN_repository(PropertyGroup):
         # auto-saved, only manually saved! So... we get it done.
         if context.preferences.use_preferences_save:
             bpy.ops.wm.save_userpref()
+            get_addon_prefs(context).save_repo_info_to_file()
 
     username: StringProperty(
         name="SVN Username",
@@ -456,11 +469,13 @@ class SVN_repository(PropertyGroup):
         delta = current_time - last_update_time
         return delta.seconds
 
+
 class SVN_UL_repositories(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         repo = item
         row = layout.row()
-        row.prop(repo, 'name', text="", icon='FILE_TEXT')
+        row.prop(repo, 'display_name', text="", icon='FILE_TEXT')
+        row.prop(repo, 'directory', text="", icon='FILE_TEXT')
         row.prop(repo, 'url', text="", icon='URL')
         row.prop(repo, 'username', text="", icon='USER')
         row.prop(repo, 'password', text="", icon='LOCKED')

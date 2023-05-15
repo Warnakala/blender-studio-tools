@@ -113,19 +113,21 @@ def init_svn(_context, _dummy):
     context = bpy.context   # Without this, context is sometimes a string containing the current filepath??
     scene_svn = context.scene.svn
 
+    prefs = get_addon_prefs(context)
+    prefs.load_repo_info_from_file()
+
     if not bpy.data.filepath:
         scene_svn.svn_url = ""
         return
 
     in_repo = set_scene_svn_info(context)
 
-    prefs = get_addon_prefs(context)
     repo = prefs.get_current_repo(context)
     if not repo:
         repo = prefs.svn_repositories.add()
-        repo.url = svn.svn_url
-        repo.directory = svn.svn_directory
-        repo.name = Path(svn.svn_directory).name
+        repo.url = scene_svn.svn_url
+        repo.directory = scene_svn.svn_directory
+        repo.display_name = Path(scene_svn.svn_directory).name
         print("SVN: Initialization failed. Try entering credentials.")
         return 1
 

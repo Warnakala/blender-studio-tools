@@ -51,8 +51,8 @@ class BackgroundProcess:
 
     needs_authentication = False
 
-    # Sub-classes should specify if clearing the error will retry the process.
-    error_description = "Click here to clear the error"
+    # Displayed in the tooltip on mouse-hover in the error message when an error occurs.
+    error_description = "SVN Error:"
 
     debug = False
 
