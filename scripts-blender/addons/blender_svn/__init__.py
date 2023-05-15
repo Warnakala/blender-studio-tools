@@ -2,20 +2,12 @@
 # (c) 2021, Blender Foundation - Paul Golter
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
-# TODO:
-# - Updating of local file statuses should be de-coupled from updating of online file statuses, so it can be significantly more responsive.
-
-import bpy
-import importlib
-
-from . import prefs, props, ops, ui, svn_log, svn_status, svn_update, svn_commit, filebrowser
-
 bl_info = {
     "name": "Blender SVN",
     "author": "Demeter Dzadik, Paul Golter",
     "description": "Blender Add-on to interact with Subversion.",
     "blender": (3, 1, 0),
-    "version": (0, 1, 0),
+    "version": (0, 2, 0),
     "location": "View3D",
     "warning": "",
     "doc_url": "",
@@ -23,50 +15,55 @@ bl_info = {
     "category": "Generic",
 }
 
-modules = [
-    prefs,
-    ops,
-    ui,
-    svn_log,
-    svn_status,
+import bpy
+from bpy.utils import register_class, unregister_class
+import importlib
+
+from . import (
     props,
-    svn_update,
-    svn_commit,
-    filebrowser
+    repository,
+    commands,
+    ui,
+    prefs,
+)
+
+modules = [
+    props,
+    repository,
+    commands,
+    ui,
+    prefs,
 ]
 
-
-def reload() -> None:
-    global modules
+def register_unregister_modules(modules: list, register: bool):
+    """Recursively register or unregister modules by looking for either
+    un/register() functions or lists named `registry` which should be a list of 
+    registerable classes.
+    """
+    register_func = register_class if register else unregister_class
 
     for m in modules:
-        importlib.reload(m)
-
-
-_need_reload = "prefs" in locals()
-if _need_reload:
-    reload()
-
-# ----------------REGISTER--------------.
-
-
-def register() -> None:
-    if bpy.app.background:
-        return
-    for m in modules:
+        if register:
+            importlib.reload(m)
         if hasattr(m, 'registry'):
             for c in m.registry:
-                bpy.utils.register_class(c)
-        if hasattr(m, 'register'):
+                try:
+                    register_func(c)
+                except Exception as e:
+                    un = 'un' if not register else ''
+                    print(f"Warning: SVN failed to {un}register class: {c.__name__}")
+                    print(e)
+
+        if hasattr(m, 'modules'):
+            register_unregister_modules(m.modules, register)
+
+        if register and hasattr(m, 'register'):
             m.register()
-
-
-def unregister() -> None:
-    if bpy.app.background:
-        return
-    for m in modules:
-        if hasattr(m, 'registry'):
-            for c in m.registry:
-                bpy.utils.unregister_class(c)
-        if hasattr(m, 'unregister'):
+        elif hasattr(m, 'unregister'):
             m.unregister()
+
+def register():
+    register_unregister_modules(modules, True)
+
+def unregister():
+    register_unregister_modules(modules, False)

@@ -144,8 +144,6 @@ def preload_dependencies() -> None:
     _log.debug("Loaded wheel: %s", module.__name__)
     module= load_wheel_global("dateutil", "python_dateutil")
     _log.debug("Loaded wheel: %s", module.__name__)
-    module = load_wheel_global("blender_asset_tracer", "blender_asset_tracer")
-    _log.debug("Loaded wheel: %s", module.__name__)
     module = load_wheel_global("send2trash", "Send2Trash")
     _log.debug("Loaded wheel: %s", module.__name__)
     module = load_wheel_global("xmltodict", "xmltodict")

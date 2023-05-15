@@ -51,10 +51,6 @@ def make_getter_func(prop: str, default: Any) -> Callable:
     return get
 
 
-def is_file_saved() -> bool:
-    return bool(bpy.data.filepath)
-
-
 def svn_date_to_datetime(datetime_str: str) -> datetime:
     """Convert a string from SVN's datetime format to a datetime object."""
     date, time, _timezone, _day, _n_day, _mo, _y = datetime_str.split(" ")
@@ -69,16 +65,3 @@ def svn_date_simple(datetime_str: str) -> str:
     time_str = f"{str(dt.hour).zfill(2)}:{str(dt.minute).zfill(2)}"
 
     return date_str + " " + time_str
-
-
-def traverse_collection_tree(
-    collection: bpy.types.Collection,
-) -> Generator[bpy.types.Collection, None, None]:
-    yield collection
-    for child in collection.children:
-        yield from traverse_collection_tree(child)
-
-
-def del_collection(collection: bpy.types.Collection) -> None:
-    collection.user_clear()
-    bpy.data.collections.remove(collection)
