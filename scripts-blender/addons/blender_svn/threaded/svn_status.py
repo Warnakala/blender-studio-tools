@@ -14,10 +14,11 @@ from datetime import datetime
 import xmltodict
 import subprocess
 
-from .background_process import BackgroundProcess, process_in_background, processes
+from .background_process import BackgroundProcess, Processes
 from .execute_subprocess import execute_svn_command, execute_command
 from .. import constants
-from ..util import get_addon_prefs
+from ..util import get_addon_prefs, redraw_viewport
+from . import svn_log
 
 
 class SVN_explain_status(bpy.types.Operator):
@@ -188,6 +189,44 @@ class BGP_SVN_Status(BackgroundProcess):
             return "Updating file statuses..."
 
 
+class BGP_SVN_Authenticate(BGP_SVN_Status):
+    name = "Authenticate"
+    needs_authentication = False
+    timeout = 10
+    repeat_delay = 0
+    debug = False
+
+    def tick(self, context, prefs):
+        redraw_viewport()
+
+    def acquire_output(self, context, prefs):
+        repo = prefs.get_current_repo(context)
+        if not repo or not repo.is_cred_entered:
+            return
+
+        super().acquire_output(context, prefs)
+
+    def process_output(self, context, prefs):
+        repo = prefs.get_current_repo(context)
+        if not repo or not repo.is_cred_entered:
+            return
+
+        if self.output:
+            repo.authenticated = True
+            repo.auth_failed = False
+
+            super().process_output(context, prefs)
+            Processes.start('Status')
+            Processes.start('Log')
+            return
+        elif self.error:
+            if "Authentication failed" in self.error:
+                repo.authenticated = False
+                repo.auth_failed = True
+            else:
+                repo.authenticated = False
+                repo.auth_failed = False
+
 def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     """Update the file list based on data from get_svn_file_statuses().
     (See timer_update_svn_status)"""
@@ -262,7 +301,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             "\n".join(file_strings),
             "\nUpdating log...\n"
         )
-        processes['Log'].start()
+        Processes.start('Log')
 
     # Remove file entries who no longer seem to have an SVN status.
     # This can happen if an unversioned file was removed from the filesystem,

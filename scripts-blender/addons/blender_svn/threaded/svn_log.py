@@ -4,10 +4,10 @@
 from pathlib import Path
 import subprocess
 
-from ..util import redraw_viewport, get_addon_prefs
+from ..util import redraw_viewport
 from .. import constants
 from .execute_subprocess import execute_svn_command
-from .background_process import BackgroundProcess, process_in_background
+from .background_process import BackgroundProcess
 
 
 def reload_svn_log(self, context):
@@ -172,6 +172,3 @@ class BGP_SVN_Log(BackgroundProcess):
             return f"Updating. Current: {rev_no}..."
         except IndexError:
             return ""
-
-def register():
-    process_in_background(BGP_SVN_Log)

@@ -4,19 +4,48 @@
 import bpy
 import threading
 import random
+from typing import List
 
 from ..util import get_addon_prefs, redraw_viewport
 from bpy.app.handlers import persistent
 
-processes = {}
 
-def process_in_background(bgp_class: type, **kwargs):
-    """This should be used to instantiate BackgroundProcess classes."""
-    global processes
-    if bgp_class.name in processes:
-        processes[bgp_class.name].stop()
+def get_recursive_subclasses(typ) -> List[type]:
+    ret = []
+    for subcl in typ.__subclasses__():
+        ret.append(subcl)
+        ret.extend(get_recursive_subclasses(subcl))
+    return ret
 
-    processes[bgp_class.name] = bgp_class(**kwargs)
+class Processes:
+    processes = {}
+
+    @classmethod
+    def get(cls, proc_name: str):
+        """Return a process if it exists, or None."""
+        return cls.processes.get(proc_name, None)
+
+    @classmethod
+    def start(cls, proc_name: str, **kwargs):
+        """Start a process if it's stopped, or create it if it hasn't yet been instantiated."""
+        for name, process in cls.processes.items():
+            if name == proc_name:
+                process.start()
+                return
+        else:
+            for subcl in get_recursive_subclasses(BackgroundProcess):
+                if subcl.name == proc_name:
+                    cls.processes[subcl.name] = subcl(**kwargs)
+                    return
+
+        raise Exception("SVN: Process name not found: ", proc_name)
+
+    @classmethod
+    def stop(cls, proc_name: str):
+        """Stop a process if it exists, otherwise do nothing."""
+        for proc_name, proc in cls.processes.items():
+            if proc.name == proc_name:
+                proc.stop()
 
 
 class BackgroundProcess:

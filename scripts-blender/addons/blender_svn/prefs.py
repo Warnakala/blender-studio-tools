@@ -32,6 +32,11 @@ class SVN_addon_preferences(AddonPreferences):
             if (repo.url == scene_svn.svn_url) and (repo.directory == scene_svn.svn_directory):
                 return repo
 
+    debug_mode: BoolProperty(
+        name = "Debug Mode",
+        description = "Enable some debug UI",
+        default = False
+    )
     is_busy: BoolProperty(
         name="Is Busy",
         description="Indicates whether there is an ongoing SVN Update or Commit. For internal use only, to prevent both processes from trying to run at the same time, which is not allowed by SVN",

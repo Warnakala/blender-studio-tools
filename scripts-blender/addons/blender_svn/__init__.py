@@ -21,7 +21,8 @@ import importlib
 from . import (
     props,
     repository,
-    commands,
+    threaded,
+    operators,
     ui,
     prefs,
 )
@@ -29,7 +30,8 @@ from . import (
 modules = [
     props,
     repository,
-    commands,
+    threaded,
+    operators,
     ui,
     prefs,
 ]

@@ -8,7 +8,7 @@ from time import time
 
 from ..util import get_addon_prefs
 from .. import constants
-from ..commands.background_process import processes
+from ..threaded.background_process import Processes
 
 class SVN_UL_file_list(bpy.types.UIList):
     # Value that indicates that this item has passed the filter process successfully. See rna_ui.c.
@@ -176,45 +176,6 @@ class SVN_UL_file_list(bpy.types.UIList):
         row.prop(context.scene.svn, 'file_search_filter', text="")
 
 
-def svn_file_list_context_menu(self: bpy.types.UIList, context: bpy.types.Context) -> None:
-    def is_svn_file_list() -> bool:
-        # Important: Must check context first, or the menu is added for every kind of list.
-        ui_list = getattr(context, "ui_list", None)
-        return ui_list and ui_list.bl_idname == 'SVN_UL_file_list'
-
-    if not is_svn_file_list():
-        return
-
-    layout = self.layout
-    layout.separator()
-    active_file = context.scene.svn.get_repo(context).active_file
-    layout.operator("wm.path_open",
-                    text=f"Open {active_file.name}").filepath = active_file.relative_path
-    layout.operator("wm.path_open",
-                    text=f"Open Containing Folder").filepath = active_file.absolute_path.parent.as_posix()
-    layout.separator()
-
-
-def svn_log_list_context_menu(self: bpy.types.UIList, context: bpy.types.Context) -> None:
-    def is_svn_log_list() -> bool:
-        # Important: Must check context first, or the menu is added for every kind of list.
-        ui_list = getattr(context, "ui_list", None)
-        return ui_list and ui_list.bl_idname == 'SVN_UL_log'
-
-    if not is_svn_log_list():
-        return
-
-    is_filebrowser = context.space_data.type == 'FILE_BROWSER'
-    layout = self.layout
-    layout.separator()
-
-    repo = context.scene.svn.get_repo(context)
-    active_log = repo.active_log_filebrowser if is_filebrowser else repo.active_log
-    layout.operator("svn.download_repo_revision",
-                    text=f"Revert Repository To r{active_log.revision_number}").revision = active_log.revision_number
-    layout.separator()
-
-
 class VIEW3D_PT_svn_credentials(bpy.types.Panel):
     """Prompt the user to enter their username and password for the remote repository of the current .blend file."""
     bl_space_type = 'VIEW_3D'
@@ -245,8 +206,7 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
         url.copy_on_click = True
         col.prop(repo, 'username', icon='USER')
         col.prop(repo, 'password', icon='UNLOCKED')
-        global processes
-        auth_proc = processes.get('Authenticate')
+        auth_proc = Processes.get('Authenticate')
         if auth_proc and auth_proc.is_running:
             col.enabled = False
             layout.label(text="Authenticating" + dots())
@@ -281,31 +241,35 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
 
 
 def draw_svn_file_list(context, layout):
+    prefs = get_addon_prefs(context)
     repo = context.scene.svn.get_repo(context)
 
     process_message = "File statuses are updated every few seconds."
+    running_processes = []
     any_error = False
-    for process_id in ['Commit', 'Update', 'Log', 'Status']:
-        if process_id not in processes:
+    for proc_name, process in Processes.processes.items():
+        if process.name not in {'Commit', 'Update', 'Log', 'Status'}:
             continue
-        process = processes[process_id]
 
         if process.is_running:
+            running_processes.append(process.name)
             message = process.get_ui_message(context)
             if message:
                 message = message.replace("...", dots())
-                process_message = f"SVN {process_id}: {message}"
-                any_process = True
+                process_message = f"SVN {proc_name}: {message}"
         elif process.error:
             any_error = True
             row = layout.row()
             row.alert = True
             warning = row.operator(
-                'svn.clear_error', text=f"SVN {process_id}: Error Occurred. Hover to view", icon='ERROR')
-            warning.process_id = process_id
+                'svn.clear_error', text=f"SVN {proc_name}: Error Occurred. Hover to view", icon='ERROR')
+            warning.process_id = proc_name
 
     if not any_error:
         layout.label(text=process_message)
+        if prefs.debug_mode:
+            layout.label(text="Processes: " + ", ".join(running_processes))
+            layout.label(text="Is busy: " + str(prefs.is_busy))
 
     main_col = layout.column()
     main_col.enabled = repo.seconds_since_last_update < 30
@@ -387,45 +351,21 @@ class SVN_OT_clear_error(bpy.types.Operator):
 
     @classmethod
     def description(cls, context, properties):
-        process = processes[properties.process_id]
+        process = Processes.get(properties.process_id)
+        if not process:
+            return ""
         return process.error_description + "\n\n" + process.error + "\n\n Click to clear the error and copy it to your clipboard"
 
     def execute(self, context):
-        process = processes[self.process_id]
+        process = Processes.get(self.process_id)
+        if not process:
+            return {'FINISHED'}
         context.window_manager.clipboard = process.error_description + "\n\n" + process.error
         process.clear_error()
         self.report({'INFO'}, "Copied error to Clipboard.")
 
         return {'FINISHED'}
 
-
-def draw_outdated_file_warning(self, context):
-    repo = context.scene.svn.get_repo(context)
-    if not repo:
-        return
-    try:
-        current_file = repo.current_blend_file
-    except ValueError:
-        # This can happen if the svn_directory property wasn't update yet (not enough time has passed since opening the file)
-        pass
-    if not current_file:
-        # If the current file is not in an SVN repository.
-        return
-
-    if current_file.status == 'normal' and current_file.repos_status == 'none':
-        return
-
-    layout = self.layout
-    row = layout.row()
-    row.alert = True
-
-    if current_file.status == 'conflicted':
-        row.operator('svn.resolve_conflict',
-                     text="SVN: This .blend file is conflicted.", icon='ERROR')
-    elif current_file.repos_status != 'none':
-        warning = row.operator(
-            'svn.custom_tooltip', text="SVN: This .blend file is outdated.", icon='ERROR')
-        warning.tooltip = "The currently opened .blend file has a newer version available on the remote repository. This means any changes in this file will result in a conflict, and potential loss of data. See the SVN panel for info"
 
 
 registry = [
@@ -436,16 +376,3 @@ registry = [
     SVN_OT_clear_error
 ]
 
-
-def register():
-    bpy.types.VIEW3D_HT_header.prepend(draw_outdated_file_warning)
-
-    bpy.types.UI_MT_list_item_context_menu.append(svn_file_list_context_menu)
-    bpy.types.UI_MT_list_item_context_menu.append(svn_log_list_context_menu)
-
-
-def unregister():
-    bpy.types.VIEW3D_HT_header.remove(draw_outdated_file_warning)
-
-    bpy.types.UI_MT_list_item_context_menu.remove(svn_file_list_context_menu)
-    bpy.types.UI_MT_list_item_context_menu.remove(svn_log_list_context_menu)

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # (c) 2021, Blender Foundation - Paul Golter
-# (c) 2022, Blender Foundation - Demeter Dzadik
+# (c) 2023, Blender Foundation - Demeter Dzadik
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
@@ -10,11 +10,10 @@ from bpy.props import StringProperty, IntProperty, EnumProperty, BoolProperty
 
 from send2trash import send2trash
 
-from .execute_subprocess import execute_svn_command
+from ..threaded.execute_subprocess import execute_svn_command
 from ..util import get_addon_prefs, redraw_viewport
 
-# TODO: Maybe add an operator to revert all local changes to the working copy?
-
+# TODO: Add an operator to revert all local changes to the working copy.
 
 class SVN_Operator:
     def execute_svn_command(self, context, command: List[str], use_cred=False) -> str:

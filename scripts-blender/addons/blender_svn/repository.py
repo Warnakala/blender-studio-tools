@@ -3,14 +3,14 @@
 from typing import Optional, Any, Set, Tuple, List
 from pathlib import Path
 from datetime import datetime
+from .threaded import svn_log
 
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import StringProperty, BoolProperty, CollectionProperty, IntProperty, EnumProperty
 
-from .commands import svn_status, svn_log
-from .commands.background_process import processes, process_in_background
-from .util import redraw_viewport, make_getter_func, make_setter_func_readonly, svn_date_simple, get_addon_prefs
+from .threaded.background_process import Processes
+from .util import make_getter_func, make_setter_func_readonly, svn_date_simple, get_addon_prefs
 from . import constants
 
 class SVN_file(bpy.types.PropertyGroup):
@@ -83,7 +83,7 @@ class SVN_file(bpy.types.PropertyGroup):
     @property
     def relative_path(self) -> str:
         """Return relative path with Blender's path conventions."""
-        return bpy.path.relpath(self.absolute_path.as_posix())
+        return bpy.path.relpath(self.absolute_path)
 
     @property
     def is_outdated(self):
@@ -243,7 +243,7 @@ class SVN_repository(PropertyGroup):
 
     def authenticate(self, context):
         self.auth_failed = False
-        process_in_background(BGP_SVN_Authenticate)
+        Processes.start('Authenticate')
         get_addon_prefs(context).save_repo_info_to_file()
 
     username: StringProperty(
@@ -403,7 +403,7 @@ class SVN_repository(PropertyGroup):
             space.deselect_all()
             space.activate_file_by_relative_path(
                 relative_path=self.active_file.name)
-            processes['Activate File'].start()
+            Processes.start('Activate File')
 
     external_files_active_index: bpy.props.IntProperty(
         name="File List",
@@ -465,45 +465,6 @@ class SVN_repository(PropertyGroup):
         current_time = datetime.now()
         delta = current_time - last_update_time
         return delta.seconds
-
-
-class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
-    name = "Authenticate"
-    needs_authentication = False
-    timeout = 10
-    repeat_delay = 0
-    debug = False
-
-    def tick(self, context, prefs):
-        redraw_viewport()
-
-    def acquire_output(self, context, prefs):
-        repo = prefs.get_current_repo(context)
-        if not repo or not repo.is_cred_entered:
-            return
-
-        super().acquire_output(context, prefs)
-
-    def process_output(self, context, prefs):
-        repo = prefs.get_current_repo(context)
-        if not repo or not repo.is_cred_entered:
-            return
-
-        if self.output:
-            repo.authenticated = True
-            repo.auth_failed = False
-
-            super().process_output(context, prefs)
-            process_in_background(svn_status.BGP_SVN_Status)
-            process_in_background(svn_log.BGP_SVN_Log)
-            return
-        elif self.error:
-            if "Authentication failed" in self.error:
-                repo.authenticated = False
-                repo.auth_failed = True
-            else:
-                repo.authenticated = False
-                repo.auth_failed = False
 
 
 registry = [
