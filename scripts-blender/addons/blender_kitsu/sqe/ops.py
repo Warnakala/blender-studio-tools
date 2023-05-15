@@ -1404,6 +1404,11 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
         # Log.
         logger.info("-END- Pushing Sequence Editor Render")
         return {"FINISHED"}
+    def _gen_output_path(self, strip: bpy.types.Sequence, task_type: TaskType) -> Path:
+            addon_prefs = prefs.addon_prefs_get(bpy.context)
+            folder_name = addon_prefs.sqe_render_dir
+            file_name = f"{strip.kitsu.shot_id}_{strip.kitsu.shot_name}.{(task_type.name).lower()}.mp4"
+            return Path(folder_name).absolute().joinpath(file_name)
 
 
 
