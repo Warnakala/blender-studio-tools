@@ -17,7 +17,7 @@ import subprocess
 from .background_process import BackgroundProcess, process_in_background, processes
 from .execute_subprocess import execute_svn_command, execute_command
 from .. import constants
-from ..util import get_addon_prefs, redraw_viewport
+from ..util import get_addon_prefs
 
 
 class SVN_explain_status(bpy.types.Operator):
@@ -107,10 +107,10 @@ def set_scene_svn_info(context) -> bool:
 
 
 @bpy.app.handlers.persistent
-def init_svn(_context, _dummy):
-    """Initialize SVN info when opening a .blend file that is in a repo."""
+def init_svn_info(_scene=None):
+    """Initialize SVN info and authenticate when opening a .blend file."""
 
-    context = bpy.context   # Without this, context is sometimes a string containing the current filepath??
+    context = bpy.context
     scene_svn = context.scene.svn
 
     prefs = get_addon_prefs(context)
@@ -120,16 +120,21 @@ def init_svn(_context, _dummy):
         scene_svn.svn_url = ""
         return
 
-    in_repo = set_scene_svn_info(context)
-
     repo = prefs.get_current_repo(context)
+    in_repo = set_scene_svn_info(context)
+    if not in_repo:
+        if repo:
+            repo.external_files.clear()
+            repo.log.clear()
+        return
+
     if not repo:
         repo = prefs.svn_repositories.add()
         repo.url = scene_svn.svn_url
         repo.directory = scene_svn.svn_directory
         repo.display_name = Path(scene_svn.svn_directory).name
-        print("SVN: Initialization failed. Try entering credentials.")
-        return 1
+
+    prefs.is_busy = False
 
     current_blend_file = repo.current_blend_file
     if not current_blend_file:
@@ -143,20 +148,11 @@ def init_svn(_context, _dummy):
     if repo.external_files_active_index > len(repo.external_files):
         repo.external_files_active_index = 0
     repo.log_active_index = len(repo.log)-1
-    if not in_repo:
-        repo.external_files.clear()
-        repo.log.clear()
-        print("SVN: Initialization cancelled: This .blend is not in an SVN repository.")
-        return
 
     repo.reload_svn_log(context)
 
-    prefs.is_busy = False
-
-    process_in_background(BGP_SVN_Status)
-    processes['Log'].start()
-
-    print("SVN: Successfully initialized repository: ", repo.url)
+    if repo.is_cred_entered:
+        repo.authenticate(context)
 
 ################################################################################
 ############## AUTOMATICALLY KEEPING FILE STATUSES UP TO DATE ##################
@@ -168,10 +164,6 @@ class BGP_SVN_Status(BackgroundProcess):
     timeout = 10
     repeat_delay = 15
     debug = False
-
-    def tick(self, context, prefs):
-        if context.scene.svn.get_repo(context).seconds_since_last_update > 30:
-            redraw_viewport()
 
     def acquire_output(self, context, prefs):
         try:
@@ -334,24 +326,21 @@ def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
 ############################# REGISTER #########################################
 ################################################################################
 
-def timer_init_svn(_dummy1=None, _dummy2=None):
-    print("SVN: Initializing with some delay after file load...")
-    return init_svn(bpy.context, None)
-
+def delayed_init_svn(delay=1):
+    bpy.app.timers.register(init_svn_info, first_interval=delay)
 
 def register():
-    bpy.app.handlers.load_post.append(init_svn)
+    bpy.app.handlers.load_post.append(init_svn_info)
 
-    bpy.app.handlers.save_post.append(init_svn)
+    bpy.app.handlers.save_post.append(init_svn_info)
     bpy.app.handlers.save_post.append(mark_current_file_as_modified)
 
-    bpy.app.timers.register(timer_init_svn, first_interval=1)
-
+    delayed_init_svn()
 
 def unregister():
-    bpy.app.handlers.load_post.remove(init_svn)
+    bpy.app.handlers.load_post.remove(init_svn_info)
 
-    bpy.app.handlers.save_post.remove(init_svn)
+    bpy.app.handlers.save_post.remove(init_svn_info)
     bpy.app.handlers.save_post.remove(mark_current_file_as_modified)
 
 

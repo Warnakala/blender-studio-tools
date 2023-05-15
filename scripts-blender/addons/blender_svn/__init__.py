@@ -15,7 +15,6 @@ bl_info = {
     "category": "Generic",
 }
 
-import bpy
 from bpy.utils import register_class, unregister_class
 import importlib
 

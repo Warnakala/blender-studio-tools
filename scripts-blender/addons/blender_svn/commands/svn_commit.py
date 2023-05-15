@@ -215,7 +215,8 @@ class BGP_SVN_Commit(BackgroundProcess):
 
     def process_output(self, context, prefs):
         print(self.output)
-        for f in context.scene.svn.get_repo(context).external_files:
+        repo = context.scene.svn.get_repo(context)
+        for f in repo.external_files:
             if f.status_predicted_flag == 'COMMIT':
                 f.status_predicted_flag = 'SINGLE'
         processes['Log'].start()

@@ -5,12 +5,11 @@ from pathlib import Path
 from datetime import datetime
 
 import bpy
-from bpy.types import PropertyGroup, UIList
+from bpy.types import PropertyGroup
 from bpy.props import StringProperty, BoolProperty, CollectionProperty, IntProperty, EnumProperty
 
-from .commands import svn_status
+from .commands import svn_status, svn_log
 from .commands.background_process import processes, process_in_background
-from .commands.svn_log import reload_svn_log
 from .util import redraw_viewport, make_getter_func, make_setter_func_readonly, svn_date_simple, get_addon_prefs
 from . import constants
 
@@ -212,12 +211,12 @@ class SVN_repository(PropertyGroup):
         return self.directory
 
     display_name: StringProperty(
-        name="SVN Name",
-        description="Name of the SVN repository"
+        name="Display Name",
+        description="Display name of this SVN repository"
     )
 
     url: StringProperty(
-        name="SVN URL",
+        name="URL",
         description="URL of the remote repository"
     )
 
@@ -240,25 +239,20 @@ class SVN_repository(PropertyGroup):
         if get_addon_prefs(context).loading:
             return
 
+        self.authenticate(context)
+
+    def authenticate(self, context):
         self.auth_failed = False
-
         process_in_background(BGP_SVN_Authenticate)
-        svn_status.init_svn(context, None)
-
-        # For some ungodly reason, ONLY with this addon,
-        # CollectionProperties stored in the AddonPrefs do not get
-        # auto-saved, only manually saved! So... we get it done.
-        if context.preferences.use_preferences_save:
-            bpy.ops.wm.save_userpref()
-            get_addon_prefs(context).save_repo_info_to_file()
+        get_addon_prefs(context).save_repo_info_to_file()
 
     username: StringProperty(
-        name="SVN Username",
+        name="Username",
         description="User name used for authentication with this SVN repository",
         update=update_cred
     )
     password: StringProperty(
-        name="SVN Password",
+        name="Password",
         description="Password used for authentication with this SVN repository. This password is stored in your Blender user preferences as plain text. Somebody with access to your user preferences will be able to read your password",
         subtype='PASSWORD',
         update=update_cred
@@ -307,7 +301,7 @@ class SVN_repository(PropertyGroup):
         options=set()
     )
 
-    reload_svn_log = reload_svn_log
+    reload_svn_log = svn_log.reload_svn_log
 
     @property
     def log_file_path(self) -> Path:
@@ -473,17 +467,6 @@ class SVN_repository(PropertyGroup):
         return delta.seconds
 
 
-class SVN_UL_repositories(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        repo = item
-        row = layout.row()
-        row.prop(repo, 'display_name', text="", icon='FILE_TEXT')
-        row.prop(repo, 'directory', text="", icon='FILE_TEXT')
-        row.prop(repo, 'url', text="", icon='URL')
-        row.prop(repo, 'username', text="", icon='USER')
-        row.prop(repo, 'password', text="", icon='LOCKED')
-
-
 class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
     name = "Authenticate"
     needs_authentication = False
@@ -509,10 +492,10 @@ class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
         if self.output:
             repo.authenticated = True
             repo.auth_failed = False
-            self.debug_print("Run init_svn()")
-            svn_status.init_svn(context, None)
 
             super().process_output(context, prefs)
+            process_in_background(svn_status.BGP_SVN_Status)
+            process_in_background(svn_log.BGP_SVN_Log)
             return
         elif self.error:
             if "Authentication failed" in self.error:
@@ -526,7 +509,6 @@ class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
 registry = [
     SVN_file,
     SVN_log,
-    SVN_UL_repositories,
     SVN_commit_line,
     SVN_repository,
 ]

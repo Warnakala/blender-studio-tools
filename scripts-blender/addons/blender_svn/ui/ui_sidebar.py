@@ -26,8 +26,9 @@ class SVN_UL_file_list(bpy.types.UIList):
         if self.layout_type != 'DEFAULT':
             raise NotImplemented
 
-        svn = data
+        repo = data
         file_entry = item
+        prefs = get_addon_prefs(context)
 
         main_row = layout.row()
         split = main_row.split(factor=0.6)
@@ -37,7 +38,7 @@ class SVN_UL_file_list(bpy.types.UIList):
 
         ops_ui = split.row(align=True)
         ops_ui.alignment = 'RIGHT'
-        ops_ui.enabled = file_entry.status_predicted_flag == 'NONE'
+        ops_ui.enabled = file_entry.status_predicted_flag == 'NONE' and not prefs.is_busy
 
         if self.show_file_paths:
             filepath_ui.prop(file_entry, 'svn_path', text="",
@@ -130,7 +131,7 @@ class SVN_UL_file_list(bpy.types.UIList):
         repo = scene_svn.get_repo(context)
 
         def has_default_status(file):
-            return file.status == 'normal' and file.repos_status == 'none'
+            return file.status == 'normal' and file.repos_status == 'none' and file.status_predicted_flag == 'NONE'
 
         if scene_svn.file_search_filter:
             flt_flags = helper_funcs.filter_items_by_name(scene_svn.file_search_filter, cls.UILST_FLT_ITEM, list_items, "name",

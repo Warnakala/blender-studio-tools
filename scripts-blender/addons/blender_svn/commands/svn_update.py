@@ -59,6 +59,8 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
     def set_predicted_file_statuses(self, context):
         repo = context.scene.svn.get_repo(context)
         for f in repo.external_files:
+            status_predict_flag_bkp = f.status_predicted_flag
+            f.status_predicted_flag = "UPDATE"
             if f.repos_status == 'modified' and f.status == 'normal':
                 # Modified on remote, exists on local.
                 f.repos_status = 'none'
@@ -71,11 +73,9 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
                 f.status = 'none'
                 f.repos_status = 'none'
             elif f.repos_status == 'none':
-                pass
+                f.status_predicted_flag = status_predict_flag_bkp
             else:
                 f.status = 'conflicted'
-
-                f.status_predicted_flag = "UPDATE"
 
 
 class BGP_SVN_Update(BackgroundProcess):

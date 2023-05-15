@@ -2,12 +2,11 @@
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
 import bpy
-from bpy.app.handlers import persistent
-
 import threading
 import random
 
 from ..util import get_addon_prefs, redraw_viewport
+from bpy.app.handlers import persistent
 
 processes = {}
 
@@ -20,7 +19,6 @@ def process_in_background(bgp_class: type, **kwargs):
     processes[bgp_class.name] = bgp_class(**kwargs)
 
 
-# TODO: If a process fails, show information about the failed process in the UI.
 class BackgroundProcess:
     """
     Base class that uses bpy.app.timers and threading to execute SVN commands 

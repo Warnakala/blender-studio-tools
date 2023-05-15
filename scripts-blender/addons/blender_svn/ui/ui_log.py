@@ -114,9 +114,6 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
         if active_file.status in ['unversioned', 'added']:
             return False
 
-        if repo.seconds_since_last_update > 30:
-            return False
-
         return True
 
     def draw(self, context):
