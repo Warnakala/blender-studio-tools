@@ -50,8 +50,8 @@ class SVN_explain_status(bpy.types.Operator):
         if not self.file_rel_path:
             return {'FINISHED'}
         repo = context.scene.svn.get_repo(context)
-        file_entry_idx = repo.get_file_by_svn_path(
-            self.file_rel_path, get_index=True)
+        file_entry = repo.get_file_by_svn_path(self.file_rel_path)
+        file_entry_idx = repo.get_index_of_file(file_entry)
         repo.external_files_active_index = file_entry_idx
         return {'FINISHED'}
 
@@ -204,7 +204,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     repo.timestamp_last_status_update = datetime.strftime(
         datetime.now(), "%Y/%m/%d %H:%M:%S")
 
-    posix_paths = []
+    svn_paths = []
     new_files_on_repo = set()
     for filepath_str, status_info in file_statuses.items():
         svn_path = Path(filepath_str)
@@ -218,12 +218,14 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             # .blend### are Blender backup files.
             continue
 
-        posix_paths.append(svn_path.as_posix())
+        svn_paths.append(filepath_str)
+
         wc_status, repos_status, revision = status_info
 
         file_entry = repo.get_file_by_svn_path(svn_path)
         entry_existed = True
         if not file_entry:
+            entry_existed = False
             file_entry = repo.external_files.add()
             # NOTE: For some reason, if this posix is not explicitly converted to
             # str, accessing svn_path can cause a segfault.
@@ -231,9 +233,8 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             file_entry['absolute_path'] = str(repo.svn_to_absolute_path(svn_path).as_posix())
 
             file_entry['name'] = svn_path.name
-            entry_existed = False
             if not file_entry.exists:
-                new_files_on_repo.add((file_entry, repos_status))
+                new_files_on_repo.add((file_entry.svn_path, repos_status))
 
         if file_entry.status_predicted_flag == 'SINGLE':
             # File status was predicted by a local svn file operation,
@@ -251,7 +252,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             continue
 
         if entry_existed and (file_entry.repos_status == 'none' and repos_status != 'none'):
-            new_files_on_repo.add((file_entry, repos_status))
+            new_files_on_repo.add((file_entry.svn_path, repos_status))
 
         file_entry.revision = revision
         file_entry.status = wc_status
@@ -261,15 +262,9 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     if new_files_on_repo:
         # File entry status has changed between local and repo.
         file_strings = []
-        for file_entry, repos_status in new_files_on_repo:
-            try:
-                file_string = constants.SVN_STATUS_NAME_TO_CHAR[repos_status] + \
-                    "    " + file_entry.svn_path
-            except KeyError:
-                print(
-                    f"No status character for this status: {file_entry.svn_path} - {repos_status}")
-                continue
-            file_strings.append(file_string)
+        for svn_path, repos_status in new_files_on_repo:
+            status_char = constants.SVN_STATUS_NAME_TO_CHAR.get(repos_status, " ")
+            file_strings.append(f"{status_char}    {svn_path}")
         print(
             "SVN: Detected file changes on remote:\n",
             "\n".join(file_strings),
@@ -281,7 +276,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     # This can happen if an unversioned file was removed from the filesystem,
     # Or sub-folders whose parent was Un-Added to the SVN.
     for file_entry in repo.external_files[:]:
-        if file_entry.svn_path not in posix_paths:
+        if file_entry.svn_path not in svn_paths:
             repo.remove_file_entry(file_entry)
 
     scene_svn.force_good_active_index(context)

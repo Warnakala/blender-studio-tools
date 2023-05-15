@@ -39,6 +39,7 @@ def draw_absolute_library_warning(self, context):
     print("Saved with absolute library paths:")
     for lib in get_absolute_libraries():
         print(lib.filepath)
+        layout.label(text=lib.filepath)
     layout.label(text="Click this button and save again before committing:")
     layout.operator('file.make_paths_relative')
     layout.label(text="Then report this to Demeter!")

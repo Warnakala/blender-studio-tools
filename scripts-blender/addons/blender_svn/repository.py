@@ -374,17 +374,20 @@ class SVN_repository(PropertyGroup):
         svn_dir = Path(self.directory)
         return svn_dir / svn_path
 
-    def get_file_by_svn_path(self, svn_path: str or Path, get_index=False) -> Optional[Tuple[int, SVN_file]]:
+    def get_file_by_svn_path(self, svn_path: str or Path) -> Optional[SVN_file]:
         if isinstance(svn_path, Path):
             # We must use isinstance() instead of type() because apparently
             # the Path() constructor returns a WindowsPath object on Windows.
-            svn_path = svn_path.as_posix()
+            svn_path = str(svn_path.as_posix())
 
-        for i, file in enumerate(self.external_files):
+        for file in self.external_files:
             if file.svn_path == svn_path:
-                if get_index:
-                    return i
                 return file
+
+    def get_index_of_file(self, file_entry) -> Optional[int]:
+        for i, file in enumerate(self.external_files):
+            if file == file_entry:
+                return i
 
     def update_active_file(self, context):
         """When user clicks on a different file, the latest log entry of that file
