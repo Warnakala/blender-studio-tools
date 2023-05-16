@@ -9,7 +9,8 @@
   "scripts": {
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
+    "docs:preview": "vitepress preview",
+    "docs:publish": "vitepress build && source .env && rsync -ravz -e \"ssh\" .vitepress/dist/ $DESTINATION"
   },
   "dependencies": {
     "@fontsource/heebo": "^4.5.15",
