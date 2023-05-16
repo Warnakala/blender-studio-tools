@@ -9,7 +9,7 @@ from ..threaded.background_process import Processes
 from ..util import get_addon_prefs
 
 
-class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
+class SVN_OT_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.update_all"
     bl_label = "SVN Update All"
     bl_description = "Download all the latest updates from the remote repository"
@@ -76,5 +76,5 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
 
 registry = [
-    SVN_update_all
+    SVN_OT_update_all
 ]

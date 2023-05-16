@@ -1,6 +1,18 @@
 import bpy
 from pathlib import Path
 
+class SVN_OT_open_blend_file(bpy.types.Operator):
+    bl_idname = "svn.open_blend_file"
+    bl_label = "Open Blend File"
+    bl_description = "Open Blend File"
+    bl_options = {'INTERNAL'}
+
+    filepath: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bpy.ops.wm.open_mainfile(filepath=self.filepath)
+        return {'FINISHED'}
+
 def svn_file_list_context_menu(self: bpy.types.UIList, context: bpy.types.Context) -> None:
     def is_svn_file_list() -> bool:
         # Important: Must check context first, or the menu is added for every kind of list.
@@ -13,12 +25,15 @@ def svn_file_list_context_menu(self: bpy.types.UIList, context: bpy.types.Contex
     layout = self.layout
     layout.separator()
     active_file = context.scene.svn.get_repo(context).active_file
-    layout.operator("wm.path_open",
-                    text=f"Open {active_file.name}").filepath = active_file.relative_path
+    if active_file.name.endswith("blend"):
+        layout.operator("wm.open_mainfile",
+                    text=f"Open {active_file.name}").filepath = active_file.absolute_path
+    else:
+        layout.operator("wm.path_open",
+                        text=f"Open {active_file.name}").filepath = str(Path(active_file.absolute_path))
     layout.operator("wm.path_open",
                     text=f"Open Containing Folder").filepath = Path(active_file.absolute_path).parent.as_posix()
     layout.separator()
-
 
 def svn_log_list_context_menu(self: bpy.types.UIList, context: bpy.types.Context) -> None:
     def is_svn_log_list() -> bool:
@@ -48,3 +63,5 @@ def register():
 def unregister():
     bpy.types.UI_MT_list_item_context_menu.remove(svn_file_list_context_menu)
     bpy.types.UI_MT_list_item_context_menu.remove(svn_log_list_context_menu)
+
+registry = [SVN_OT_open_blend_file]

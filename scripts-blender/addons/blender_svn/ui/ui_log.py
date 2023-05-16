@@ -194,7 +194,7 @@ def execute_tooltip_log(self, context):
     return {'FINISHED'}
 
 
-class SVN_tooltip_log(bpy.types.Operator):
+class SVN_OT_log_tooltip(bpy.types.Operator):
     bl_idname = "svn.tooltip_log"
     bl_label = ""  # Don't want the first line of the tooltip on mouse hover.
     # bl_description = "An operator to be drawn in the log list, that can display a dynamic tooltip"
@@ -211,7 +211,7 @@ class SVN_tooltip_log(bpy.types.Operator):
     execute = execute_tooltip_log
 
 
-class SVN_show_commit_message(bpy.types.Operator):
+class SVN_OT_log_show_commit_msg(bpy.types.Operator):
     bl_idname = "svn.display_commit_message"
     bl_label = ""  # Don't want the first line of the tooltip on mouse hover.
     # bl_description = "Show the currently active commit, using a dynamic tooltip"
@@ -268,6 +268,6 @@ class SVN_show_commit_message(bpy.types.Operator):
 registry = [
     VIEW3D_PT_svn_log,
     SVN_UL_log,
-    SVN_tooltip_log,
-    SVN_show_commit_message
+    SVN_OT_log_tooltip,
+    SVN_OT_log_show_commit_msg
 ]

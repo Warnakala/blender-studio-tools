@@ -21,7 +21,7 @@ from ..util import get_addon_prefs, redraw_viewport
 from . import svn_log
 
 
-class SVN_explain_status(bpy.types.Operator):
+class SVN_OT_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
     bl_label = ""  # Don't want the first line of the tooltip on mouse hover.
     bl_description = "Show an explanation of this status, using a dynamic tooltip"
@@ -252,7 +252,6 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             file_entry = repo.external_files.add()
             file_entry.svn_path = svn_path_str
             file_entry.absolute_path = str(repo.svn_to_absolute_path(svn_path).as_posix())
-            print("New file entry: ", file_entry.svn_path)
 
             file_entry['name'] = svn_path.name
             if not file_entry.exists:
@@ -374,4 +373,4 @@ def unregister():
     bpy.app.handlers.save_post.remove(mark_current_file_as_modified)
 
 
-registry = [SVN_explain_status]
+registry = [SVN_OT_explain_status]
