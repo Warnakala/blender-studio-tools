@@ -12,6 +12,7 @@
     "docs:preview": "vitepress preview"
   },
   "dependencies": {
+    "@fontsource/heebo": "^4.5.15",
     "markdown-it-html5-media": "^0.7.1"
   }
 }
