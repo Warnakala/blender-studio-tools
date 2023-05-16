@@ -137,15 +137,6 @@ def init_svn_info(_scene=None):
 
     prefs.is_busy = False
 
-    current_blend_file = repo.current_blend_file
-    if not current_blend_file:
-        f = repo.external_files.add()
-        svn_path = repo.absolute_to_svn_path(bpy.data.filepath)
-        f['svn_path'] = str(svn_path)
-        f['absolute_path'] = str(bpy.data.filepath)
-        f['name'] = svn_path.name
-        f.status = 'unversioned'
-
     if repo.external_files_active_index > len(repo.external_files):
         repo.external_files_active_index = 0
     repo.log_active_index = len(repo.log)-1
@@ -239,6 +230,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     new_files_on_repo = set()
     for filepath_str, status_info in file_statuses.items():
         svn_path = Path(filepath_str)
+        svn_path_str = str(svn_path.as_posix())
         suffix = svn_path.suffix
         if (suffix.startswith(".r") and suffix[2:].isdecimal()) \
                 or (suffix.startswith(".blend") and suffix[6:].isdecimal()) \
@@ -249,7 +241,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             # .blend### are Blender backup files.
             continue
 
-        svn_paths.append(filepath_str)
+        svn_paths.append(svn_path_str)
 
         wc_status, repos_status, revision = status_info
 
@@ -258,10 +250,9 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
         if not file_entry:
             entry_existed = False
             file_entry = repo.external_files.add()
-            # NOTE: For some reason, if this posix is not explicitly converted to
-            # str, accessing svn_path can cause a segfault.
-            file_entry['svn_path'] = str(svn_path.as_posix())
-            file_entry['absolute_path'] = str(repo.svn_to_absolute_path(svn_path).as_posix())
+            file_entry.svn_path = svn_path_str
+            file_entry.absolute_path = str(repo.svn_to_absolute_path(svn_path).as_posix())
+            print("New file entry: ", file_entry.svn_path)
 
             file_entry['name'] = svn_path.name
             if not file_entry.exists:

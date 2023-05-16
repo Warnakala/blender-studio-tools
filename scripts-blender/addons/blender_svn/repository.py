@@ -23,15 +23,9 @@ class SVN_file(bpy.types.PropertyGroup):
         options=set()
     )
 
-    # NOTE: Paths must be assigned at creation using dictionary syntax, 
-    # since the setter is blocked so that the user can't mess with this.
-    # NOTE: Always explicitly convert to string before assigning when using 
-    # dict syntax, otherwise it might crash.
     svn_path: StringProperty(
         name="SVN Path",
         description="Filepath relative to the SVN root",
-        get=make_getter_func("svn_path", ""),
-        set=make_setter_func_readonly("svn_path"),
         options=set()
     )
     absolute_path: StringProperty(
@@ -378,6 +372,18 @@ class SVN_repository(PropertyGroup):
             if file.svn_path == svn_path:
                 return file
 
+    def get_file_by_absolute_path(self, abs_path: str or Path) -> Optional[SVN_file]:
+        if isinstance(abs_path, Path):
+            # We must use isinstance() instead of type() because apparently
+            # the Path() constructor returns a WindowsPath object on Windows.
+            abs_path = str(abs_path.as_posix())
+        else:
+            abs_path = str(Path(abs_path).as_posix())
+
+        for file in self.external_files:
+            if file.absolute_path == abs_path:
+                return file
+
     def get_index_of_file(self, file_entry) -> Optional[int]:
         for i, file in enumerate(self.external_files):
             if file == file_entry:
@@ -446,8 +452,7 @@ class SVN_repository(PropertyGroup):
 
     @property
     def current_blend_file(self) -> SVN_file:
-        return self.get_file_by_svn_path(self.absolute_to_svn_path(Path(bpy.data.filepath)))
-
+        return self.get_file_by_absolute_path(bpy.data.filepath)
 
     ### SVN File List Status Updating ##########################################
 

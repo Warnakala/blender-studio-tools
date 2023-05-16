@@ -75,6 +75,10 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
         self.first_line = repo.commit_lines[0].line
 
+        # This flag is needed as a workaround because bpy.data.is_dirty gets set to True
+        # when we change the operator's checkboxes or 
+        self._is_file_dirty_on_invoke = bpy.data.is_dirty
+
         for f in repo.external_files:
             f.include_in_commit = False
         for f in self.get_committable_files(context):
@@ -97,7 +101,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             row.prop(file, "include_in_commit", text=file.name)
             text = file.status_name
             icon = file.status_icon
-            if file == repo.current_blend_file and bpy.data.is_dirty:
+            if file == repo.current_blend_file and self._is_file_dirty_on_invoke:
                 split = row.split(factor=0.7)
                 row = split.row()
                 row.alert = True

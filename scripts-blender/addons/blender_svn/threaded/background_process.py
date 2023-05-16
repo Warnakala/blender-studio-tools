@@ -199,6 +199,7 @@ class BackgroundProcess:
             self.start()
 
     def start(self, persistent=True):
+        """Start the process if it isn't running already, by registering its timer function."""
         self.is_running = True
         if not bpy.app.timers.is_registered(self.timer_function):
             self.debug_print("Register timer")
@@ -209,6 +210,7 @@ class BackgroundProcess:
             )
 
     def stop(self):
+        """Stop the process if it isn't running, by unregistering its timer function"""
         self.is_running = False
         if bpy.app.timers.is_registered(self.timer_function):
             # This won't work if the timer has returned None at any point, as that

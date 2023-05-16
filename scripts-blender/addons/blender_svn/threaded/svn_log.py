@@ -71,9 +71,9 @@ def reload_svn_log(self, context):
 
             file_path = Path(file_path)
             log_file_entry = log_entry.changed_files.add()
-            log_file_entry['name'] = file_path.name
-            log_file_entry['svn_path'] = str(file_path.as_posix())
-            log_file_entry['absolute_path'] = str(repo.svn_to_absolute_path(file_path).as_posix())
+            log_file_entry.name = file_path.name
+            log_file_entry.svn_path = str(file_path.as_posix())
+            log_file_entry.absolute_path = str(repo.svn_to_absolute_path(file_path).as_posix())
             log_file_entry.revision = r_number
             log_file_entry.status = constants.SVN_STATUS_CHAR_TO_NAME[status_char]
 

@@ -11,6 +11,8 @@ class SVN_UL_repositories(UIList):
 def draw_prefs(self, context) -> None:
     layout = self.layout
 
+    layout.prop(self, 'debug_mode')
+
     layout.label(text="SVN Repositories:")
     col = layout.column()
     col.template_list(
