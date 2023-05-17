@@ -11,6 +11,7 @@ from bpy.props import StringProperty, IntProperty, EnumProperty, BoolProperty
 from send2trash import send2trash
 
 from ..threaded.execute_subprocess import execute_svn_command
+from ..threaded.background_process import Processes
 from ..util import get_addon_prefs, redraw_viewport
 
 # TODO: Add an operator to revert all local changes to the working copy.
@@ -42,7 +43,7 @@ class SVN_Operator_Single_File(SVN_Operator):
         file = self.get_file(context)
         if file:
             self.set_predicted_file_status(repo, file)
-            file.status_predicted_flag = "SINGLE"
+            file.status_prediction_type = "SKIP_ONCE"
             redraw_viewport()
 
         return ret
@@ -420,6 +421,17 @@ class SVN_OT_cleanup(SVN_Operator, bpy.types.Operator):
         repo.external_files.clear()
         self.execute_svn_command(context, ["svn", "cleanup"])
         repo.reload_svn_log(context)
+
+        Processes.kill('Status')
+        Processes.kill('Log')
+        Processes.kill('Commit')
+        Processes.kill('Update')
+        Processes.kill('Authenticate')
+        Processes.kill('Activate File')
+
+        Processes.start('Status')
+        Processes.start('Log')
+
         self.report({'INFO'}, "SVN Cleanup complete.")
 
         return {"FINISHED"}

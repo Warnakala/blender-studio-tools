@@ -15,6 +15,7 @@ class BGP_SVN_Commit(BackgroundProcess):
     needs_authentication = True
     timeout = 5*60
     repeat_delay = 0
+    debug = False
 
     def __init__(self, commit_msg: str, file_list: List[str]):
         super().__init__()
@@ -33,7 +34,6 @@ class BGP_SVN_Commit(BackgroundProcess):
         try:
             sanitized_commit_msg = self.commit_msg.replace('"', "'")
             command = ["svn", "commit", "-m", f"{sanitized_commit_msg}"] + self.file_list
-
             self.output = execute_svn_command(
                 context,
                 command,
@@ -49,15 +49,13 @@ class BGP_SVN_Commit(BackgroundProcess):
         print(self.output)
         repo = context.scene.svn.get_repo(context)
         for f in repo.external_files:
-            if f.status_predicted_flag == 'COMMIT':
-                f.status_predicted_flag = 'SINGLE'
+            if f.status_prediction_type == 'SVN_COMMIT':
+                f.status_prediction_type = 'SKIP_ONCE'
         Processes.start('Log')
         Processes.start('Status')
-
-        self.commit_msg = ""
         repo.commit_message = ""
         prefs.is_busy = False
-        self.file_list = []
+        Processes.kill('Commit')
 
     def stop(self):
         get_addon_prefs(bpy.context).is_busy = False

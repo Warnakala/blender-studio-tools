@@ -129,7 +129,7 @@ def layout_log_split(layout):
     num_and_auth = main.row()
     date_and_msg = main.row()
 
-    num_and_auth_split = num_and_auth.split(factor=0.3)
+    num_and_auth_split = num_and_auth.split(factor=0.5)
     num = num_and_auth_split.row()
     auth = num_and_auth_split.row()
 
@@ -142,7 +142,7 @@ def layout_log_split(layout):
 
 def draw_svn_log(context, layout, file_browser: bool):
     num, auth, date, msg = layout_log_split(layout.row())
-    num.label(text="r#")
+    num.label(text="Rev. #")
     auth.label(text="Author")
     date.label(text="Date")
     msg.label(text="Message")

@@ -18,7 +18,6 @@ from .background_process import BackgroundProcess, Processes
 from .execute_subprocess import execute_svn_command, execute_command
 from .. import constants
 from ..util import get_addon_prefs, redraw_viewport
-from . import svn_log
 
 
 class SVN_OT_explain_status(bpy.types.Operator):
@@ -130,7 +129,7 @@ def init_svn_info(_scene=None):
         return
 
     if not repo:
-        repo = prefs.svn_repositories.add()
+        repo = prefs.repositories.add()
         repo.url = scene_svn.svn_url
         repo.directory = scene_svn.svn_directory
         repo.display_name = Path(scene_svn.svn_directory).name
@@ -257,18 +256,18 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             if not file_entry.exists:
                 new_files_on_repo.add((file_entry.svn_path, repos_status))
 
-        if file_entry.status_predicted_flag == 'SINGLE':
+        if file_entry.status_prediction_type == 'SKIP_ONCE':
             # File status was predicted by a local svn file operation,
             # so we should ignore this status update and reset the flag.
             # The file status will be updated on the next status update.
             # This is because this status update was initiated before the file's
             # status was predicted, so the prediction is likely to be correct,
             # and the status we have here is likely to be outdated.
-            file_entry.status_predicted_flag = 'WAITING'
+            file_entry.status_prediction_type = 'SKIPPED_ONCE'
             continue
-        elif file_entry.status_predicted_flag not in {'NONE', 'WAITING'}:
+        elif file_entry.status_prediction_type not in {'NONE', 'SKIPPED_ONCE'}:
             # We wait for `svn up/commit` background processes to finish and
-            # set the predicted flag to SINGLE. Until then, we ignore status
+            # set the predicted flag to SKIP_ONCE. Until then, we ignore status
             # updates on files that are being updated or committed.
             continue
 
@@ -278,7 +277,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
         file_entry.revision = revision
         file_entry.status = wc_status
         file_entry.repos_status = repos_status
-        file_entry.status_predicted_flag = 'NONE'
+        file_entry.status_prediction_type = 'NONE'
 
     if new_files_on_repo:
         # File entry status has changed between local and repo.
@@ -348,7 +347,7 @@ def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
     current_blend = scene_svn.get_repo(context).current_blend_file
     if current_blend:
         current_blend.status = 'modified'
-        current_blend.status_predicted_flag = 'SINGLE'
+        current_blend.status_prediction_type = 'SKIP_ONCE'
 
 
 ################################################################################

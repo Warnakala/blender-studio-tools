@@ -48,14 +48,14 @@ class SVN_file(bpy.types.PropertyGroup):
         default="none",
         options=set()
     )
-    status_predicted_flag: EnumProperty(
+    status_prediction_type: EnumProperty(
         name="Status Predicted By Process",
         items=[
             ("NONE", "None", "File status is not predicted, but actual."),
-            ("UPDATE", "Update", "File status is predicted by `svn up`. Status is protected until process is finished."),
-            ("COMMIT", "Commit", "File status is predicted by `svn commit`. Status is protected until process is finished."),
-            ("SINGLE", "Single", "File status is predicted by a local svn file operation. Next status update should be ignored, and this enum should be set to WAITING."),
-            ("WAITING", "Waiting", "File status update was skipped, next status update can be considered accurate, this enum should be set back to NONE, and operators should become available again."),
+            ("SVN_UP", "Update", "File status is predicted by `svn up`. Status is protected until process is finished."),
+            ("SVN_COMMIT", "Commit", "File status is predicted by `svn commit`. Status is protected until process is finished."),
+            ("SKIP_ONCE", "Skip Once", "File status is predicted by a working-copy svn file operation, like Revert. Next status update should be ignored, and this enum should be set to SKIPPED_ONCE."),
+            ("SKIPPED_ONCE", "Skipped Once", "File status update was skipped. Next status update can be considered accurate, and this flag can be reset to NONE. Until then, operations on this file should remain disabled."),
         ],
         description="Internal flag that notes what process set a predicted status on this file. Should be empty string when the status is not predicted but confirmed. When svn commit/update predicts a status, that status should not be overwritten until the process is finished. With instantaneous processes, a single status update should be ignored since it may be outdated",
         options=set()

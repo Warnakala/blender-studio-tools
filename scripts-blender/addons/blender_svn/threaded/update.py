@@ -38,8 +38,8 @@ class BGP_SVN_Update(BackgroundProcess):
         print("SVN Update complete:")
         print("\n".join(self.output.split("\n")[1:]))
         for f in context.scene.svn.get_repo(context).external_files:
-            if f.status_predicted_flag == 'UPDATE':
-                f.status_predicted_flag = 'SINGLE'
+            if f.status_prediction_type == 'SVN_UP':
+                f.status_prediction_type = 'SKIP_ONCE'
 
         prefs.is_busy = False
         Processes.start('Log')

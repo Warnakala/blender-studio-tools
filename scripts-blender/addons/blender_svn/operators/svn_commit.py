@@ -163,7 +163,7 @@ class SVN_OT_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
                     f.status = 'conflicted'
             # TODO: What happens if we DID delete the file, AND it was modified on the repo?
             # Should probably also predict a conflict.
-            f.status_predicted_flag = "COMMIT"
+            f.status_prediction_type = "SVN_COMMIT"
 
 
 class SVN_OT_commit_save_file(bpy.types.Operator):

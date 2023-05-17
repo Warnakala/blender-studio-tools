@@ -17,8 +17,8 @@ from pathlib import Path
 class SVN_addon_preferences(AddonPreferences):
     bl_idname = __package__
 
-    svn_repositories: CollectionProperty(type=SVN_repository)
-    svn_repo_active_idx: IntProperty(
+    repositories: CollectionProperty(type=SVN_repository)
+    active_repo_idx: IntProperty(
         name="SVN Repositories",
         options=set()
     )
@@ -28,7 +28,7 @@ class SVN_addon_preferences(AddonPreferences):
         if not scene_svn.svn_url or not scene_svn.svn_directory:
             return
 
-        for repo in self.svn_repositories:
+        for repo in self.repositories:
             if (repo.url == scene_svn.svn_url) and (repo.directory == scene_svn.svn_directory):
                 return repo
 
@@ -51,7 +51,7 @@ class SVN_addon_preferences(AddonPreferences):
     def save_repo_info_to_file(self):
         saved_props = {'url', 'directory', 'name', 'username', 'password', 'display_name'}
         repo_data = {}
-        for repo in self['svn_repositories']:
+        for repo in self['repositories']:
             directory = repo.get('directory', '')
             
             repo_data[directory] = {key:value for key, value in repo.to_dict().items() if key in saved_props}
@@ -71,9 +71,9 @@ class SVN_addon_preferences(AddonPreferences):
                 repo_data = json.load(f)
 
             for directory, repo_data in repo_data.items():
-                repo = self.svn_repositories.get(directory)
+                repo = self.repositories.get(directory)
                 if not repo:
-                    repo = self.svn_repositories.add()
+                    repo = self.repositories.add()
                     repo.directory = directory
                     for key, value in repo_data.items():
                         setattr(repo, key, value)

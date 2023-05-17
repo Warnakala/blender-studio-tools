@@ -28,10 +28,10 @@ class Processes:
     @classmethod
     def start(cls, proc_name: str, **kwargs):
         """Start a process if it's stopped, or create it if it hasn't yet been instantiated."""
-        for name, process in cls.processes.items():
-            if name == proc_name:
-                process.start()
-                return
+        process = cls.get(proc_name)
+        if process:
+            process.start()
+            return
         else:
             for subcl in get_recursive_subclasses(BackgroundProcess):
                 if subcl.name == proc_name:
@@ -43,9 +43,18 @@ class Processes:
     @classmethod
     def stop(cls, proc_name: str):
         """Stop a process if it exists, otherwise do nothing."""
-        for proc_name, proc in cls.processes.items():
-            if proc.name == proc_name:
-                proc.stop()
+        process = cls.get(proc_name)
+        if process:
+            process.stop()
+
+    @classmethod
+    def kill(cls, proc_name: str):
+        """Destroy a process entirely, such that it cannot be started again
+        without initializing a new instance."""
+        process = cls.get(proc_name)
+        if process:
+            process.stop()
+            del cls.processes[proc_name]
 
 
 class BackgroundProcess:
