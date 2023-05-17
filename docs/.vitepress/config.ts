@@ -41,7 +41,7 @@ export default defineConfig({
       { text: 'Films', link: `${studioURL}/films` },
       { text: 'Training', link: `${studioURL}/training` },
       { text: 'Blog', link: `${studioURL}/blog` },
-      { text: 'Pipeline and Tools', link: '/' },
+      { text: 'Pipeline', link: '/' },
       { text: 'Characters', link: `${studioURL}/characters`, }
     ],
 
