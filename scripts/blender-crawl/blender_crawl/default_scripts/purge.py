@@ -19,24 +19,19 @@
 #
 # (c) 2021, Blender Foundation
 
-import sys
-import logging
+import bpy
 
+# Setup prefs.
+bpy.context.preferences.filepaths.save_version = 0 #TODO Figure out why this is here
 
-class LoggerFactory:
+# Purge.
+print("Starting Recursive Purge")
+bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
 
-    """
-    Utility class to streamline logger creation
-    """
+# Save.
+bpy.ops.wm.save_mainfile()
+print("Saved file: %s", bpy.data.filepath)
 
-    formatter = logging.Formatter("%(name)s: %(message)s")
-    consoleHandler = logging.StreamHandler(sys.stdout)
-    level = logging.INFO
-
-    @classmethod
-    def getLogger(cls, name=__name__):
-        logger = logging.getLogger(name)
-        logger.addHandler(cls.consoleHandler)
-        logger.setLevel(cls.level)
-
-        return logger
+# Quit.
+print("Closing File")
+bpy.ops.wm.quit_blender()
