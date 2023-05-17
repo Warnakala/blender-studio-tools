@@ -5,7 +5,7 @@ const studioURL = 'https://studio.blender.org'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  base: '/pipeline-and-tools/',
+  base: '/pipeline/',
   title: "Blender Studio",
   description: "Documentation for the Blender Studio pipeline and tools.",
   lastUpdated: true,
@@ -57,7 +57,7 @@ export default defineConfig({
       {
         text: 'Addons',
         link:'/addons/addons_readme',
-        
+
         collapsed: true,
         items: [
           { text: 'Anim Cupboard', link: '/addons/anim_cupboard'},
