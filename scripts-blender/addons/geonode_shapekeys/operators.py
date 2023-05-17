@@ -227,7 +227,7 @@ class GNSK_add_shape(bpy.types.Operator):
                 }
 
                 # Mute driver, if any.
-                fc = obj.animation_data.drivers.get(f'modifiers["{m.name}"].show_viewport')
+                fc = obj.animation_data.drivers.find(f'modifiers["{m.name}"].show_viewport')
                 if fc:
                     fc.driver.mute = True
                 m.show_viewport = False
