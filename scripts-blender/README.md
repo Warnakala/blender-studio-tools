@@ -56,6 +56,12 @@ Add-on to create a contactsheet from sequence editor strips.
 
 Author: Paul Golter
 
+## Easy Weights
+
+Easy Weight is an addon focused on quality of life improvements for weight painting in Blender.
+
+Author & Maintainer: Demeter Dzadik
+
 ## Geonode Shapekeys
 
 Add-on used by animators to sculpt on linked and overridden meshes.

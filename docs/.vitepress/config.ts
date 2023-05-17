@@ -67,6 +67,7 @@ export default defineConfig({
           { text: 'Blender Gizmos', link: '/addons/bone_gizmos'},
           { text: 'Cache Manager', link: '/addons/cache_manager'},
           { text: 'Contact Sheet', link: '/addons/contactsheet'},
+          { text: 'Easy Weights', link: '/addons/easy_weights'},
           { text: 'Geonode Shapekeys', link: '/addons/geonode_shapekeys'},
           { text: 'Grase Converter', link: '/addons/grease_converter'},
           { text: 'Lattice Magic', link: '/addons/lattice_magic'},
