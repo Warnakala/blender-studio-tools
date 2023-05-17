@@ -1,11 +1,18 @@
-# cache-manager
+# Cache Manager
 cache-Manager is a Blender Add-on to streamline the alembic cache workflow of assets.
+
+## Table of Contents
+
+- [Installation](#installation)
+- [How to Get Started](#how-to-get-started)
+- [Features](#features)
 
 ## Disclaimer
 This addon is not used in the production of the Blender-Studio anymore and is not maintained actively.
 ## Installation
-Download or clone this repository.
-In the root project folder you will find the 'cache_manager' folder. Place this folder in your Blender addons directory or create a sym link to it.
+1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
+2. From the root of the repository navigate to `/scripts-blender/addons/` 
+3. Find the the `cache_manager` folder. Place this folder in your Blender addons directory or create a sym link to it.
 
 ## How to get started
 After installing the addon you need to setup the addon preferences.
@@ -28,12 +35,4 @@ You can control if modifiers should be disabled / enabled during import /export:
 - enable disable modifiers for cache with suffix in modifier name
     - modifier_name.cacheoff -> modifier off for export on  for import
     - modifier_name.cacheon  -> modifier on  for export off for import
-
-## Development
-In the project root you will find a `pyproject.toml` and `peotry.lock` file.
-With `poetry` you can easily generate a virtual env for the project which should get you setup quickly.
-Basic Usage: https://python-poetry.org/docs/basic-usage/
-
-Create a sym link in your blender addons directory to the blezou folder.
-
 

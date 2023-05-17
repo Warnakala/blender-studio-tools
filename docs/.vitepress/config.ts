@@ -10,7 +10,7 @@ export default defineConfig({
   description: "Documentation for the Blender Studio pipeline and tools.",
   lastUpdated: true,
   cleanUrls: true,
-  srcExclude: ['**/README.md',],
+  srcExclude: ['**/README',],
   head: [
     [
       'script',
@@ -52,6 +52,26 @@ export default defineConfig({
           { text: 'Introduction', link: '/pipeline-overview/introduction'},
           { text: 'Infrastructure', link: '/pipeline-overview/infrastructure'},
           { text: 'Rigging', link: '/pipeline-overview/rigging'},
+        ]
+      },
+      {
+        text: 'Addons',
+        link:'/addons/addons_readme',
+        
+        collapsed: true,
+        items: [
+          { text: 'Anim Cupboard', link: '/addons/anim_cupboard'},
+          { text: 'Asset Pipeline', link: '/addons/asset_pipeline'},
+          { text: 'Blender Kitsu', link: '/addons/blender_kitsu'},
+          { text: 'Blender SVN', link: '/addons/blender_svn'},
+          { text: 'Blender Gizmos', link: '/addons/bone_gizmos'},
+          { text: 'Cache Manager', link: '/addons/cache_manager'},
+          { text: 'Contact Sheet', link: '/addons/contactsheet'},
+          { text: 'Geonode Shapekeys', link: '/addons/geonode_shapekeys'},
+          { text: 'Grase Converter', link: '/addons/grease_converter'},
+          { text: 'Lighting Overrider', link: '/addons/lighting_overrider'},
+          { text: 'Pose Shape Keys', link: '/addons/pose_shape_keys'},
+          { text: 'Render Review', link: '/addons/render_review'},
         ]
       },
       {

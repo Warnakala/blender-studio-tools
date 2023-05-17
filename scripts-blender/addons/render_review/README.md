@@ -1,21 +1,21 @@
-# render-review
+# Render Review
 Blender Add-on to review renders from Flamenco with the Sequence Editor
 
 ## Table of Contents
 - [Installation](#installation)
 - [Before you get started](#before-you-get-started)
 - [Features](#features)
-- [Development](#development)
 
 ## Installation
-Download or clone this repository.
-In the root project folder you will find the 'render_review' folder. Place this folder in your Blender addons directory or create a sym link to it.
+1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
+2. From the root of the repository navigate to `/scripts-blender/addons/` 
+3. Find the the `render_review` folder. Place this folder in your Blender addons directory or create a sym link to it.
 
 After install you need to configure the addon in the addon preferences.
 
 ## Before you get started
 
-This addon requires a specific folder structure of the rendering pipeline. This structure is defined by <a href="https://www.flamenco.io">Flamenco</a>
+This addon requires a specific folder structure of the rendering pipeline. This structure is defined by <a href="https://flamenco.blender.org">Flamenco</a>
 
 If you have a different folder structure the addon might not work as
 expected.
@@ -28,11 +28,7 @@ expected.
 and copies it over to the shot_preview folder with automatic versioning incrementation
 - Creation of metadata.json files on approving renders and pushing renders to edit to keep track where a file came from
 - Connection to `blender-kitsu` addon, that can be enabled and extends the functionality of some operators
-## Development
-In the project root you will find a `pyproject.toml` and `peotry.lock` file.
-With `poetry` you can easily generate a virtual env for the project which should get you setup quickly.
-Basic Usage: https://python-poetry.org/docs/basic-usage/
 
 ## Links
 
-<a href="https://www.flamenco.io/docs/">Flamenco Doc</a>
+<a href="https://flamenco.blender.org/usage/quickstart/">Flamenco Doc</a>

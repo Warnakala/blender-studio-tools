@@ -1,7 +1,21 @@
-# What are Bone Gizmos?
+# Bone Gizmos
+
+## Table of Contents
+- [Installation](#installation)
+- [What are Bone Gizmos?](#what-are-bone-gizmos)
+- [Using Bone Gizmos](#using-bone-gizmos)
+    - [Rigger UX](#rigger-ux)
+    - [Animator UX](#animator-ux)
+
+## Installation
+1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
+2. From the root of the repository navigate to `/scripts-blender/addons/` 
+3. Find the the `bone_gizmos` folder. Place this folder in your Blender addons directory or create a sym link to it.
+
+## What are Bone Gizmos?
 This add-on is a prototype for a potential future Mesh Gizmos feature in Blender. See [this](https://developer.blender.org/T92218) task for more details.
 
-# Using Bone Gizmos
+## Using Bone Gizmos
 The UI for Bone Gizmos can be found under Properties Editor->Bone->Viewport Display->Custom Gimzo. You need to be in pose mode and have an active bone. You just need to select a mesh and optionally, a vertex group or face map that the gizmo should be bound to.
 
 ### Rigger UX

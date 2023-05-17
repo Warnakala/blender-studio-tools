@@ -1,8 +1,21 @@
+# Pose Shake Keys
+
+## Table of Contents
+- [Installation](#installation)
+- [Basic Workflow](#basic-workflow)
+- [Example Use Cases](#example-use-cases)
+
 
 This addon lets you create shape keys that blend already deformed meshes into a previously stored shape.
 It also lets you manage multiple copies of a shape key together. Each copy can have a different vertex group mask, or be applied mirrored around the X axis.
 
 You can find a detailed video tutorial on how to download, install and use the addon [here](https://studio.blender.org/training/blender-studio-rigging-tools/pose-shape-keys/).
+
+## Installation
+1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
+2. From the root of the repository navigate to `/scripts-blender/addons/` 
+3. Find the the `pose_shape_keys` folder. Place this folder in your Blender addons directory or create a sym link to it.
+
 
 ## Basic Workflow:
 - Create a pose whose deformation you want to correct. A pose is defined as an Action and a frame number.

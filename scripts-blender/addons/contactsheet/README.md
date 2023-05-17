@@ -1,9 +1,15 @@
-# contactsheet
+# Contact Sheet
 Blender Add-on to create a contactsheet from sequence editor strips.
 
+[Contact Sheet Blogpost](https://studio.blender.org/blog/contact-sheet-addon/)
+## Table of Contents
+
+- [Installation](#installation)
+- [Features](#features)
 ## Installation
-Download or clone this repository.
-In the root project folder you will find the 'contactsheet' folder. Place this folder in your Blender addons directory or create a symlink to it.
+1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
+2. From the root of the repository navigate to `/scripts-blender/addons/` 
+3. Find the the `contactsheet` folder. Place this folder in your Blender addons directory or create a symlink to it.
 
 ## Features
 After the addon is enabled you will find a `Contactsheet` tab in the Sequence Editor Toolbar.
@@ -14,9 +20,5 @@ You can overwrite the resolution of the contactsheet by adjusting the X and Y sl
 The number of rows and columns is automatically calculated. It can also be overwritten by toggling the lock button.
 Check the addon preferences there you find some options to customize the contactsheet even more.
 
-## Development
-In the project root you will find a `pyproject.toml` and `peotry.lock` file.
-With `poetry` you can easily generate a virtual env for the project which should get you setup quickly.
-Basic Usage: https://python-poetry.org/docs/basic-usage/
 
 Create a sym link in your Blender addons directory to the contactsheet/contactsheet folder.

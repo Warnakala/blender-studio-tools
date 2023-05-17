@@ -1,5 +1,7 @@
-# asset-pipeline
-asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blender Studio. It includes an Asset Builder and an Asset Updater.
+# Asset Pipeline
+asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blender Studio. It includes an Asset Builder and an Asset Updater. 
+
+[Asset Pipeline Presentation](https://youtu.be/IBTEBhAouKc?t=527)
 
 ## Table of Contents
 - [Installation](#installation)
@@ -7,7 +9,6 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
 - [Configuration](#configuration)
     - [Task Layers](#task_layers.py)
     - [Hooks](#hooks.py)
-- [Development](#development)
 - [Getting Started as a Developer](#getting-started-as-a-developer)
     - [Context](#context)
     - [UI](#ui)
@@ -21,8 +22,9 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
 
 
 ## Installation
-Download or clone this repository.
-In the root project folder you will find the 'asset_pipeline' folder. Place this folder in your Blender addons directory or create a sym link to it.
+1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
+2. From the root of the repository navigate to `/scripts-blender/addons/` 
+3. Find the the `asset_pipeline` folder. Place this folder in your Blender addons directory or create a sym link to it.
 
 > **_NOTE:_** This add-on depends on other add-ons that are in the [Blender Studio Tools](https://developer.blender.org/diffusion/BSTS/).
 
@@ -297,12 +299,7 @@ def test_hook_F(context: bpy.types.Context, asset_collection: bpy.types.Collecti
     print(asset_collection.name)
 ```
 
-## Development
-In the project root you will find a `pyproject.toml` and `peotry.lock` file.
-With `poetry` you can easily generate a virtual env for the project which should get you setup quickly.
-Basic Usage: https://python-poetry.org/docs/basic-usage/
 
-Create a sym link in your blender addons directory to the asset_pipeline folder.
 
 ## Getting Started as a Developer
 
