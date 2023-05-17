@@ -69,6 +69,7 @@ export default defineConfig({
           { text: 'Contact Sheet', link: '/addons/contactsheet'},
           { text: 'Geonode Shapekeys', link: '/addons/geonode_shapekeys'},
           { text: 'Grase Converter', link: '/addons/grease_converter'},
+          { text: 'Lattice Magic', link: '/addons/lattice_magic'},
           { text: 'Lighting Overrider', link: '/addons/lighting_overrider'},
           { text: 'Pose Shape Keys', link: '/addons/pose_shape_keys'},
           { text: 'Render Review', link: '/addons/render_review'},

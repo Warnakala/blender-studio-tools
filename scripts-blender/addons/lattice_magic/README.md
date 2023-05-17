@@ -1,15 +1,34 @@
+# Lattice Magic
 This addon adds some Lattice-based utilities to Blender. 
 
-Install like any other Blender addon: Download this repository as a .zip archive, then in Blender go to Edit->Preferences->Addons->Install Addon from File, and browse the zip you downloaded, and enable the checkbox for the addon.
+![Lattice Magic UI](/media/addons/lattice_magic/lattice_magic.png)
 
-After that, you can find the Lattice Magic panel in the 3D Viewport's Sidebar, which you can bring up by pressing the N key.  
+## Table of Contents
 
-![](docs/lattice_magic.png)
+- [Installation](#installation)
+- [Tweak Lattice](#tweak-lattice)
+    - [Parenting](#parenting)
+    - [Deletion](#deletion)
+    - [Adding/Removing meshes](#addingremoving-meshes)
+    - [Going under the hood](#going-under-the-hood)
+- [Camera Lattice](#camera-lattice)
+    - [Creation](#creation)
+    - [Parenting](#parenting-1)
+    - [Animation](#animation)
+    - [Deletion](#deletion-1)
 
-# Tweak Lattice
+
+### Installation
+1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
+2. From the root of the repository navigate to `/scripts-blender/addons/`
+3. Find the the `lattice_magic` folder. Place this folder in your Blender addons directory or create a symlink to it.
+4. After that, you can find the Lattice Magic panel in the 3D Viewport's Sidebar, which you can bring up by pressing the N key.  
+
+
+## Tweak Lattice
 Tweak Lattice lets you create a lattice setup at the 3D cursor to make deformation adjustments to the selected objects.  
 
-![](docs/tweak_lattice.gif)
+![How to Tweak Lattice](/media/addons/lattice_magic/tweak_lattice.gif)
 
 ### Parenting
 This is meant to be possible to be used in conjunction with a character rig: Before pressing the "Create Tweak Lattice" button, simply select the desired parent rig object and bone in the UI.
@@ -26,10 +45,10 @@ If you want more meshes to be influenced by a lattice, you don't need to delete 
 With the lattice control selected, you can see a "Helper Objects" section in the UI. This lists two objects which are taking care of things under the hood. If you want, you can enable them with the screen icon, which will let you mess with them. This should rarely be necessary though, and you should only do it at your own risk, since there's no way to get these back to their original states once modified.
 
 
-# Camera Lattice
+## Camera Lattice
 Camera Lattice lets you create a lattice in a camera's view frame and deform a character (or any collection) with the lattice.
 
-![](docs/camera_lattice.gif)
+![Camera Lattice Demo](/media/addons/lattice_magic/camera_lattice.gif)
 
 ### Creation
 Add an entry to the Camera Lattice list with the + icon. Each entry corresponds to deforming a single collection with a single lattice object from the perspective of a single camera.  

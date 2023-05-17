@@ -68,6 +68,11 @@ Add-on that can convert annotations to grease pencil objects and vise versa.
 
 Author: Paul Golter
 
+## Lattice Magic
+
+This addon adds some Lattice-based utilities to Blender. 
+
+Author & Maintainer: Demeter Dzadik
 
 ## Lighting Overrider
 
