@@ -2,25 +2,52 @@
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
 import bpy
-from bpy.app.handlers import persistent
-
 import threading
 import random
+from typing import List
 
 from ..util import get_addon_prefs, redraw_viewport
-
-processes = {}
-
-def process_in_background(bgp_class: type, **kwargs):
-    """This should be used to instantiate BackgroundProcess classes."""
-    global processes
-    if bgp_class.name in processes:
-        processes[bgp_class.name].stop()
-
-    processes[bgp_class.name] = bgp_class(**kwargs)
+from bpy.app.handlers import persistent
 
 
-# TODO: If a process fails, show information about the failed process in the UI.
+def get_recursive_subclasses(typ) -> List[type]:
+    ret = []
+    for subcl in typ.__subclasses__():
+        ret.append(subcl)
+        ret.extend(get_recursive_subclasses(subcl))
+    return ret
+
+class Processes:
+    processes = {}
+
+    @classmethod
+    def get(cls, proc_name: str):
+        """Return a process if it exists, or None."""
+        return cls.processes.get(proc_name, None)
+
+    @classmethod
+    def start(cls, proc_name: str, **kwargs):
+        """Start a process if it's stopped, or create it if it hasn't yet been instantiated."""
+        for name, process in cls.processes.items():
+            if name == proc_name:
+                process.start()
+                return
+        else:
+            for subcl in get_recursive_subclasses(BackgroundProcess):
+                if subcl.name == proc_name:
+                    cls.processes[subcl.name] = subcl(**kwargs)
+                    return
+
+        raise Exception("SVN: Process name not found: ", proc_name)
+
+    @classmethod
+    def stop(cls, proc_name: str):
+        """Stop a process if it exists, otherwise do nothing."""
+        for proc_name, proc in cls.processes.items():
+            if proc.name == proc_name:
+                proc.stop()
+
+
 class BackgroundProcess:
     """
     Base class that uses bpy.app.timers and threading to execute SVN commands 
@@ -172,6 +199,7 @@ class BackgroundProcess:
             self.start()
 
     def start(self, persistent=True):
+        """Start the process if it isn't running already, by registering its timer function."""
         self.is_running = True
         if not bpy.app.timers.is_registered(self.timer_function):
             self.debug_print("Register timer")
@@ -182,6 +210,7 @@ class BackgroundProcess:
             )
 
     def stop(self):
+        """Stop the process if it isn't running, by unregistering its timer function"""
         self.is_running = False
         if bpy.app.timers.is_registered(self.timer_function):
             # This won't work if the timer has returned None at any point, as that

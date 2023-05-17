@@ -14,13 +14,14 @@ from datetime import datetime
 import xmltodict
 import subprocess
 
-from .background_process import BackgroundProcess, process_in_background, processes
+from .background_process import BackgroundProcess, Processes
 from .execute_subprocess import execute_svn_command, execute_command
 from .. import constants
 from ..util import get_addon_prefs, redraw_viewport
+from . import svn_log
 
 
-class SVN_explain_status(bpy.types.Operator):
+class SVN_OT_explain_status(bpy.types.Operator):
     bl_idname = "svn.explain_status"
     bl_label = ""  # Don't want the first line of the tooltip on mouse hover.
     bl_description = "Show an explanation of this status, using a dynamic tooltip"
@@ -50,8 +51,8 @@ class SVN_explain_status(bpy.types.Operator):
         if not self.file_rel_path:
             return {'FINISHED'}
         repo = context.scene.svn.get_repo(context)
-        file_entry_idx = repo.get_file_by_svn_path(
-            self.file_rel_path, get_index=True)
+        file_entry = repo.get_file_by_svn_path(self.file_rel_path)
+        file_entry_idx = repo.get_index_of_file(file_entry)
         repo.external_files_active_index = file_entry_idx
         return {'FINISHED'}
 
@@ -107,10 +108,10 @@ def set_scene_svn_info(context) -> bool:
 
 
 @bpy.app.handlers.persistent
-def init_svn(_context, _dummy):
-    """Initialize SVN info when opening a .blend file that is in a repo."""
+def init_svn_info(_scene=None):
+    """Initialize SVN info and authenticate when opening a .blend file."""
 
-    context = bpy.context   # Without this, context is sometimes a string containing the current filepath??
+    context = bpy.context
     scene_svn = context.scene.svn
 
     prefs = get_addon_prefs(context)
@@ -120,43 +121,30 @@ def init_svn(_context, _dummy):
         scene_svn.svn_url = ""
         return
 
-    in_repo = set_scene_svn_info(context)
-
     repo = prefs.get_current_repo(context)
+    in_repo = set_scene_svn_info(context)
+    if not in_repo:
+        if repo:
+            repo.external_files.clear()
+            repo.log.clear()
+        return
+
     if not repo:
         repo = prefs.svn_repositories.add()
         repo.url = scene_svn.svn_url
         repo.directory = scene_svn.svn_directory
         repo.display_name = Path(scene_svn.svn_directory).name
-        print("SVN: Initialization failed. Try entering credentials.")
-        return 1
 
-    current_blend_file = repo.current_blend_file
-    if not current_blend_file:
-        f = repo.external_files.add()
-        svn_path = repo.absolute_to_svn_path(bpy.data.filepath)
-        f['svn_path'] = str(svn_path)
-        f['absolute_path'] = str(bpy.data.filepath)
-        f['name'] = svn_path.name
-        f.status = 'unversioned'
+    prefs.is_busy = False
 
     if repo.external_files_active_index > len(repo.external_files):
         repo.external_files_active_index = 0
     repo.log_active_index = len(repo.log)-1
-    if not in_repo:
-        repo.external_files.clear()
-        repo.log.clear()
-        print("SVN: Initialization cancelled: This .blend is not in an SVN repository.")
-        return
 
     repo.reload_svn_log(context)
 
-    prefs.is_busy = False
-
-    process_in_background(BGP_SVN_Status)
-    processes['Log'].start()
-
-    print("SVN: Successfully initialized repository: ", repo.url)
+    if repo.is_cred_entered:
+        repo.authenticate(context)
 
 ################################################################################
 ############## AUTOMATICALLY KEEPING FILE STATUSES UP TO DATE ##################
@@ -168,10 +156,6 @@ class BGP_SVN_Status(BackgroundProcess):
     timeout = 10
     repeat_delay = 15
     debug = False
-
-    def tick(self, context, prefs):
-        if context.scene.svn.get_repo(context).seconds_since_last_update > 30:
-            redraw_viewport()
 
     def acquire_output(self, context, prefs):
         try:
@@ -196,6 +180,44 @@ class BGP_SVN_Status(BackgroundProcess):
             return "Updating file statuses..."
 
 
+class BGP_SVN_Authenticate(BGP_SVN_Status):
+    name = "Authenticate"
+    needs_authentication = False
+    timeout = 10
+    repeat_delay = 0
+    debug = False
+
+    def tick(self, context, prefs):
+        redraw_viewport()
+
+    def acquire_output(self, context, prefs):
+        repo = prefs.get_current_repo(context)
+        if not repo or not repo.is_cred_entered:
+            return
+
+        super().acquire_output(context, prefs)
+
+    def process_output(self, context, prefs):
+        repo = prefs.get_current_repo(context)
+        if not repo or not repo.is_cred_entered:
+            return
+
+        if self.output:
+            repo.authenticated = True
+            repo.auth_failed = False
+
+            super().process_output(context, prefs)
+            Processes.start('Status')
+            Processes.start('Log')
+            return
+        elif self.error:
+            if "Authentication failed" in self.error:
+                repo.authenticated = False
+                repo.auth_failed = True
+            else:
+                repo.authenticated = False
+                repo.auth_failed = False
+
 def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     """Update the file list based on data from get_svn_file_statuses().
     (See timer_update_svn_status)"""
@@ -204,10 +226,11 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     repo.timestamp_last_status_update = datetime.strftime(
         datetime.now(), "%Y/%m/%d %H:%M:%S")
 
-    posix_paths = []
+    svn_paths = []
     new_files_on_repo = set()
     for filepath_str, status_info in file_statuses.items():
         svn_path = Path(filepath_str)
+        svn_path_str = str(svn_path.as_posix())
         suffix = svn_path.suffix
         if (suffix.startswith(".r") and suffix[2:].isdecimal()) \
                 or (suffix.startswith(".blend") and suffix[6:].isdecimal()) \
@@ -218,22 +241,21 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             # .blend### are Blender backup files.
             continue
 
-        posix_paths.append(svn_path.as_posix())
+        svn_paths.append(svn_path_str)
+
         wc_status, repos_status, revision = status_info
 
         file_entry = repo.get_file_by_svn_path(svn_path)
         entry_existed = True
         if not file_entry:
+            entry_existed = False
             file_entry = repo.external_files.add()
-            # NOTE: For some reason, if this posix is not explicitly converted to
-            # str, accessing svn_path can cause a segfault.
-            file_entry['svn_path'] = str(svn_path.as_posix())
-            file_entry['absolute_path'] = str(repo.svn_to_absolute_path(svn_path).as_posix())
+            file_entry.svn_path = svn_path_str
+            file_entry.absolute_path = str(repo.svn_to_absolute_path(svn_path).as_posix())
 
             file_entry['name'] = svn_path.name
-            entry_existed = False
             if not file_entry.exists:
-                new_files_on_repo.add((file_entry, repos_status))
+                new_files_on_repo.add((file_entry.svn_path, repos_status))
 
         if file_entry.status_predicted_flag == 'SINGLE':
             # File status was predicted by a local svn file operation,
@@ -251,7 +273,7 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
             continue
 
         if entry_existed and (file_entry.repos_status == 'none' and repos_status != 'none'):
-            new_files_on_repo.add((file_entry, repos_status))
+            new_files_on_repo.add((file_entry.svn_path, repos_status))
 
         file_entry.revision = revision
         file_entry.status = wc_status
@@ -261,27 +283,21 @@ def update_file_list(context, file_statuses: Dict[str, Tuple[str, str, int]]):
     if new_files_on_repo:
         # File entry status has changed between local and repo.
         file_strings = []
-        for file_entry, repos_status in new_files_on_repo:
-            try:
-                file_string = constants.SVN_STATUS_NAME_TO_CHAR[repos_status] + \
-                    "    " + file_entry.svn_path
-            except KeyError:
-                print(
-                    f"No status character for this status: {file_entry.svn_path} - {repos_status}")
-                continue
-            file_strings.append(file_string)
+        for svn_path, repos_status in new_files_on_repo:
+            status_char = constants.SVN_STATUS_NAME_TO_CHAR.get(repos_status, " ")
+            file_strings.append(f"{status_char}    {svn_path}")
         print(
             "SVN: Detected file changes on remote:\n",
             "\n".join(file_strings),
             "\nUpdating log...\n"
         )
-        processes['Log'].start()
+        Processes.start('Log')
 
     # Remove file entries who no longer seem to have an SVN status.
     # This can happen if an unversioned file was removed from the filesystem,
     # Or sub-folders whose parent was Un-Added to the SVN.
     for file_entry in repo.external_files[:]:
-        if file_entry.svn_path not in posix_paths:
+        if file_entry.svn_path not in svn_paths:
             repo.remove_file_entry(file_entry)
 
     scene_svn.force_good_active_index(context)
@@ -339,25 +355,22 @@ def mark_current_file_as_modified(_dummy1=None, _dummy2=None):
 ############################# REGISTER #########################################
 ################################################################################
 
-def timer_init_svn(_dummy1=None, _dummy2=None):
-    print("SVN: Initializing with some delay after file load...")
-    return init_svn(bpy.context, None)
-
+def delayed_init_svn(delay=1):
+    bpy.app.timers.register(init_svn_info, first_interval=delay)
 
 def register():
-    bpy.app.handlers.load_post.append(init_svn)
+    bpy.app.handlers.load_post.append(init_svn_info)
 
-    bpy.app.handlers.save_post.append(init_svn)
+    bpy.app.handlers.save_post.append(init_svn_info)
     bpy.app.handlers.save_post.append(mark_current_file_as_modified)
 
-    bpy.app.timers.register(timer_init_svn, first_interval=1)
-
+    delayed_init_svn()
 
 def unregister():
-    bpy.app.handlers.load_post.remove(init_svn)
+    bpy.app.handlers.load_post.remove(init_svn_info)
 
-    bpy.app.handlers.save_post.remove(init_svn)
+    bpy.app.handlers.save_post.remove(init_svn_info)
     bpy.app.handlers.save_post.remove(mark_current_file_as_modified)
 
 
-registry = [SVN_explain_status]
+registry = [SVN_OT_explain_status]

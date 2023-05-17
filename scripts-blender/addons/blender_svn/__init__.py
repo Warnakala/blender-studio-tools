@@ -15,14 +15,14 @@ bl_info = {
     "category": "Generic",
 }
 
-import bpy
 from bpy.utils import register_class, unregister_class
 import importlib
 
 from . import (
     props,
     repository,
-    commands,
+    threaded,
+    operators,
     ui,
     prefs,
 )
@@ -30,7 +30,8 @@ from . import (
 modules = [
     props,
     repository,
-    commands,
+    threaded,
+    operators,
     ui,
     prefs,
 ]

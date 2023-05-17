@@ -4,15 +4,12 @@
 import bpy
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 
-import subprocess
-
 from .simple_commands import May_Modifiy_Current_Blend
-from .execute_subprocess import execute_svn_command
-from .background_process import BackgroundProcess, process_in_background, processes
-from ..util import redraw_viewport, get_addon_prefs
+from ..threaded.background_process import Processes
+from ..util import get_addon_prefs
 
 
-class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
+class SVN_OT_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.update_all"
     bl_label = "SVN Update All"
     bl_description = "Download all the latest updates from the remote repository"
@@ -41,7 +38,7 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         self.set_predicted_file_statuses(context)
-        processes['Status'].stop()
+        Processes.stop('Status')
         if self.reload_file:
             self.execute_svn_command(
                 context, 
@@ -49,9 +46,9 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
                 use_cred=True
             )
             bpy.ops.wm.open_mainfile(filepath=bpy.data.filepath, load_ui=False)
-            processes['Log'].start()
+            Processes.start('Log')
         else:
-            process_in_background(BGP_SVN_Update)
+            Processes.start('Update')
             get_addon_prefs(context).is_busy = True
 
         return {"FINISHED"}
@@ -59,6 +56,8 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
     def set_predicted_file_statuses(self, context):
         repo = context.scene.svn.get_repo(context)
         for f in repo.external_files:
+            status_predict_flag_bkp = f.status_predicted_flag
+            f.status_predicted_flag = "UPDATE"
             if f.repos_status == 'modified' and f.status == 'normal':
                 # Modified on remote, exists on local.
                 f.repos_status = 'none'
@@ -71,47 +70,11 @@ class SVN_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
                 f.status = 'none'
                 f.repos_status = 'none'
             elif f.repos_status == 'none':
-                pass
+                f.status_predicted_flag = status_predict_flag_bkp
             else:
                 f.status = 'conflicted'
 
-                f.status_predicted_flag = "UPDATE"
-
-
-class BGP_SVN_Update(BackgroundProcess):
-    name = "Update"
-    needs_authentication = True
-    timeout = 5*60
-    repeat_delay = 0
-    debug = False
-
-    def tick(self, context, prefs):
-        redraw_viewport()
-
-    def acquire_output(self, context, prefs):
-        try:
-            self.output = execute_svn_command(
-                context, 
-                ["svn", "up", "--accept", "postpone"],
-                use_cred=True
-            )
-        except subprocess.CalledProcessError as error:
-            self.error = error.stderr.decode()
-            prefs.is_busy = False
-            processes['Status'].start()
-
-    def process_output(self, context, prefs):
-        print("SVN Update complete:")
-        print("\n".join(self.output.split("\n")[1:]))
-        for f in context.scene.svn.get_repo(context).external_files:
-            if f.status_predicted_flag == 'UPDATE':
-                f.status_predicted_flag = 'SINGLE'
-
-        prefs.is_busy = False
-        processes['Log'].start()
-        processes['Status'].start()
-
 
 registry = [
-    SVN_update_all
+    SVN_OT_update_all
 ]

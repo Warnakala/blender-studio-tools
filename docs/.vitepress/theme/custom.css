@@ -5,4 +5,32 @@
   --vp-c-brand-dark: #008ae0;
   --vp-c-brand-darker: #007ac6;
   --vp-local-search-highlight-bg: var(--vp-c-brand-lighter);
+
+  --vp-font-family-base: 'Heebo', ui-sans-serif,
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Helvetica, Arial, 'Noto Sans', sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --vp-font-family-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.VPNavBar {
+  background-color: var(--vp-c-bg);
+}
+
+.VPNavBar.has-sidebar {
+  background-color: transparent;
+}
+
+.VPHero {
+  background-image: url("/media/images/hero_banner.jpg");
+  background-size: cover;
+  margin-bottom: 2em;
+}
+
+.VPHero .name .clip,
+.VPHero .tagline,
+.VPHero .text {
+  color: white;
+  -webkit-text-fill-color: white;
 }

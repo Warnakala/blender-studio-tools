@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # (c) 2021, Blender Foundation - Paul Golter
-# (c) 2022, Blender Foundation - Demeter Dzadik
+# (c) 2023, Blender Foundation - Demeter Dzadik
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 from pathlib import Path
@@ -10,11 +10,10 @@ from bpy.props import StringProperty, IntProperty, EnumProperty, BoolProperty
 
 from send2trash import send2trash
 
-from .execute_subprocess import execute_svn_command
+from ..threaded.execute_subprocess import execute_svn_command
 from ..util import get_addon_prefs, redraw_viewport
 
-# TODO: Maybe add an operator to revert all local changes to the working copy?
-
+# TODO: Add an operator to revert all local changes to the working copy.
 
 class SVN_Operator:
     def execute_svn_command(self, context, command: List[str], use_cred=False) -> str:
@@ -125,7 +124,7 @@ class May_Modifiy_Current_Blend(SVN_Operator_Single_File, Warning_Operator):
         return {'FINISHED'}
 
 
-class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
+class SVN_OT_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.update_single"
     bl_label = "Update File"
     bl_description = "Download the latest available version of this file from the remote repository"
@@ -158,7 +157,7 @@ class SVN_update_single(May_Modifiy_Current_Blend, bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
+class SVN_OT_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.download_file_revision"
     bl_label = "Download Revision"
     bl_description = "Download this revision of this file"
@@ -207,7 +206,7 @@ class SVN_download_file_revision(May_Modifiy_Current_Blend, bpy.types.Operator):
             file_entry.repos_status = 'modified'
 
 
-class SVN_download_repo_revision(SVN_Operator, bpy.types.Operator):
+class SVN_OT_download_repo_revision(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.download_repo_revision"
     bl_label = "Download Repository Revision"
     bl_description = "Revert the entire working copy to this revision. Can be used to see what state a project was in at a certain point in time. May take a long time to download all the files"
@@ -234,7 +233,7 @@ class SVN_download_repo_revision(SVN_Operator, bpy.types.Operator):
         file_entry.status = 'normal'
 
 
-class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
+class SVN_OT_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.restore_file"
     bl_label = "Restore File"
     bl_description = "Restore this deleted file to its previously checked out revision"
@@ -255,7 +254,7 @@ class SVN_restore_file(May_Modifiy_Current_Blend, bpy.types.Operator):
         file_entry.status = 'normal'
 
 
-class SVN_revert_file(SVN_restore_file):
+class SVN_OT_revert_file(SVN_OT_restore_file):
     bl_idname = "svn.revert_file"
     bl_label = "Revert File"
     bl_description = "PERMANENTLY DISCARD local changes to this file and return it to the state of the last local revision. Cannot be undone"
@@ -272,7 +271,7 @@ class SVN_revert_file(SVN_restore_file):
         return "You will irreversibly and permanently lose the changes you've made to this file:\n    " + self.file_rel_path
 
 
-class SVN_add_file(SVN_Operator_Single_File, bpy.types.Operator):
+class SVN_OT_add_file(SVN_Operator_Single_File, bpy.types.Operator):
     bl_idname = "svn.add_file"
     bl_label = "Add File"
     bl_description = "Mark this file for addition to the remote repository. It can then be committed"
@@ -292,7 +291,7 @@ class SVN_add_file(SVN_Operator_Single_File, bpy.types.Operator):
         file_entry.status = 'added'
 
 
-class SVN_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
+class SVN_OT_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
     bl_idname = "svn.unadd_file"
     bl_label = "Un-Add File"
     bl_description = "Un-mark this file as being added to the remote repository. It will not be committed"
@@ -310,7 +309,7 @@ class SVN_unadd_file(SVN_Operator_Single_File, bpy.types.Operator):
         file_entry.status = 'unversioned'
 
 
-class SVN_trash_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Operator):
+class SVN_OT_trash_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Operator):
     bl_idname = "svn.trash_file"
     bl_label = "Trash File"
     bl_description = "Move this file to the recycle bin"
@@ -331,7 +330,7 @@ class SVN_trash_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Opera
         return {"FINISHED"}
 
 
-class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Operator):
+class SVN_OT_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Operator):
     bl_idname = "svn.remove_file"
     bl_label = "Remove File"
     bl_description = "Mark this file for removal from the remote repository"
@@ -354,7 +353,7 @@ class SVN_remove_file(SVN_Operator_Single_File, Warning_Operator, bpy.types.Oper
         file_entry.status = 'deleted'
 
 
-class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
+class SVN_OT_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
     bl_idname = "svn.resolve_conflict"
     bl_label = "Resolve Conflict"
     bl_description = "Resolve a conflict, by discarding either local or remote changes"
@@ -404,7 +403,7 @@ class SVN_resolve_conflict(May_Modifiy_Current_Blend, bpy.types.Operator):
             file_entry.status = 'normal'
 
 
-class SVN_cleanup(SVN_Operator, bpy.types.Operator):
+class SVN_OT_cleanup(SVN_Operator, bpy.types.Operator):
     bl_idname = "svn.cleanup"
     bl_label = "SVN Cleanup"
     bl_description = "Resolve issues that can arise from previous SVN processes having been interrupted"
@@ -427,15 +426,15 @@ class SVN_cleanup(SVN_Operator, bpy.types.Operator):
 
 
 registry = [
-    SVN_update_single,
-    SVN_download_file_revision,
-    SVN_download_repo_revision,
-    SVN_revert_file,
-    SVN_restore_file,
-    SVN_unadd_file,
-    SVN_add_file,
-    SVN_trash_file,
-    SVN_remove_file,
-    SVN_cleanup,
-    SVN_resolve_conflict,
+    SVN_OT_update_single,
+    SVN_OT_download_file_revision,
+    SVN_OT_download_repo_revision,
+    SVN_OT_revert_file,
+    SVN_OT_restore_file,
+    SVN_OT_unadd_file,
+    SVN_OT_add_file,
+    SVN_OT_trash_file,
+    SVN_OT_remove_file,
+    SVN_OT_cleanup,
+    SVN_OT_resolve_conflict,
 ]

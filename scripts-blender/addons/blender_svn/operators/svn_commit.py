@@ -1,35 +1,20 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-# (c) 2022, Blender Foundation - Demeter Dzadik
+# (c) 2023, Blender Foundation - Demeter Dzadik
 
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 
-import subprocess
-
 import bpy
-from bpy.props import StringProperty
+from bpy.props import StringProperty, BoolProperty
 
-from .background_process import processes, BackgroundProcess, process_in_background
+from ..threaded.background_process import Processes
 from .simple_commands import SVN_Operator, Popup_Operator
-from .execute_subprocess import execute_svn_command
 from ..util import get_addon_prefs
 
-# Hacks upon hacks! All for a tiny bit of nice UX...
+# Store a reference to the running operator in global namespace when it runs,
+# so that its sub-operators can mess
 active_commit_operator = None
 
-class SVN_commit_msg_clear(bpy.types.Operator):
-    bl_idname = "svn.clear_commit_message"
-    bl_label = "Clear SVN Commit Message"
-    bl_description = "Clear the commit message"
-    bl_options = {'INTERNAL'}
-
-    def execute(self, context):
-        context.scene.svn.get_repo(context).commit_message = ""
-        global active_commit_operator
-        active_commit_operator.first_line = ""
-        return {'FINISHED'}
-
-
-class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
+class SVN_OT_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     bl_idname = "svn.commit"
     bl_label = "SVN Commit"
     bl_description = "Commit a selection of files to the remote repository"
@@ -77,6 +62,11 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         active_commit_operator = self
 
         self.first_line = repo.commit_lines[0].line
+        self.is_file_really_dirty = bpy.data.is_dirty
+
+        # This flag is needed as a workaround because bpy.data.is_dirty gets set to True
+        # when we change the operator's checkboxes or 
+        self.is_file_dirty_on_invoke = bpy.data.is_dirty
 
         for f in repo.external_files:
             f.include_in_commit = False
@@ -100,7 +90,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             row.prop(file, "include_in_commit", text=file.name)
             text = file.status_name
             icon = file.status_icon
-            if file == repo.current_blend_file and bpy.data.is_dirty:
+            if file == repo.current_blend_file and self.is_file_really_dirty:
                 split = row.split(factor=0.7)
                 row = split.row()
                 row.alert = True
@@ -108,7 +98,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
                 icon = 'ERROR'
                 op_row = split.row()
                 op_row.alignment = 'LEFT'
-                op_row.operator('wm.save_mainfile', icon='FILE_BLEND', text="Save")
+                op_row.operator('svn.save_during_commit', icon='FILE_BLEND', text="Save")
             row.label(text=text, icon=icon)
 
         row = layout.row()
@@ -117,7 +107,7 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         # get focused automatically for smooth UX. (see `bl_property` above)
         row = layout.row()
         row.prop(self, 'first_line', text="")
-        row.operator(SVN_commit_msg_clear.bl_idname, text="", icon='TRASH')
+        row.operator(SVN_OT_commit_msg_clear.bl_idname, text="", icon='TRASH')
         for i in range(1, len(repo.commit_lines)):
             # Draw input boxes until the last one that has text, plus two, minimum three.
             # Why two after the last line? Because then you can use Tab to go to the next line.
@@ -146,12 +136,11 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
         filepaths = [f.svn_path for f in files_to_commit]
 
         self.set_predicted_file_statuses(files_to_commit)
-        process_in_background(
-            BGP_SVN_Commit,
+        Processes.stop('Status')
+        Processes.start('Commit',
             commit_msg=repo.commit_message,
             file_list=filepaths
         )
-        processes['Status'].stop()
         prefs.is_busy = True
 
         report = f"{(len(files_to_commit))} files"
@@ -177,57 +166,34 @@ class SVN_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             f.status_predicted_flag = "COMMIT"
 
 
-class BGP_SVN_Commit(BackgroundProcess):
-    name = "Commit"
-    needs_authentication = True
-    timeout = 5*60
-    repeat_delay = 0
+class SVN_OT_commit_save_file(bpy.types.Operator):
+    bl_idname = "svn.save_during_commit"
+    bl_label = "Save During SVN Commit"
+    bl_description = "Save During SVN Commit"
+    bl_options = {'INTERNAL'}
 
-    def __init__(self, commit_msg: str, file_list: List[str]):
-        super().__init__()
+    def execute(self, context):
+        global active_commit_operator
+        active_commit_operator.is_file_really_dirty = False
+        bpy.ops.wm.save_mainfile()
+        return {'FINISHED'}
 
-        self.commit_msg = commit_msg
-        self.file_list = file_list
 
-    def acquire_output(self, context, prefs):
-        """This function should be executed from a separate thread to avoid freezing 
-        Blender's UI during execute_svn_command().
-        """
-        filepaths_str = " ".join(self.file_list)
+class SVN_OT_commit_msg_clear(bpy.types.Operator):
+    bl_idname = "svn.clear_commit_message"
+    bl_label = "Clear SVN Commit Message"
+    bl_description = "Clear the commit message"
+    bl_options = {'INTERNAL'}
 
-        if not self.commit_msg:
-            self.stop()
-            return
-
-        try:
-            sanitized_commit_msg = self.commit_msg.replace('"', "'")
-            command = ["svn", "commit", "-m", f"{sanitized_commit_msg}"] + self.file_list
-            self.output = execute_svn_command(
-                context,
-                command,
-                use_cred=True
-            )
-        except subprocess.CalledProcessError as error:
-            print("Commit failed.")
-            self.error = error.stderr.decode()
-            prefs.is_busy = False
-            processes['Status'].start()
-
-    def process_output(self, context, prefs):
-        print(self.output)
-        for f in context.scene.svn.get_repo(context).external_files:
-            if f.status_predicted_flag == 'COMMIT':
-                f.status_predicted_flag = 'SINGLE'
-        processes['Log'].start()
-        processes['Status'].start()
-
-        self.commit_msg = ""
-        repo.commit_message = ""
-        prefs.is_busy = False
-        self.file_list = []
+    def execute(self, context):
+        context.scene.svn.get_repo(context).commit_message = ""
+        global active_commit_operator
+        active_commit_operator.first_line = ""
+        return {'FINISHED'}
 
 
 registry = [
-    SVN_commit_msg_clear,
-    SVN_commit
+    SVN_OT_commit,
+    SVN_OT_commit_save_file,
+    SVN_OT_commit_msg_clear,
 ]

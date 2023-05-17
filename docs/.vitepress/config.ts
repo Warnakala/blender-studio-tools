@@ -38,11 +38,11 @@ export default defineConfig({
     },
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'Open Projects', link: `${studioURL}/films`, target: '_self' },
-      { text: 'Training', link: `${studioURL}/training`, target: '_self' },
-      { text: 'Blog', link: `${studioURL}/blog`, target: '_self' },
+      { text: 'Films', link: `${studioURL}/films` },
+      { text: 'Training', link: `${studioURL}/training` },
+      { text: 'Blog', link: `${studioURL}/blog` },
       { text: 'Pipeline and Tools', link: '/' },
-      { text: 'Characters', link: `${studioURL}/characters`, target: '_self' }
+      { text: 'Characters', link: `${studioURL}/characters`, }
     ],
 
     sidebar: [

@@ -4,7 +4,7 @@ layout: home
 
 hero:
   name: "Blender Studio Pipeline and Tools"
-  tagline: "Documentation for the Blender Studio pipeline and tools."
+  tagline: "Sharing production knowledge based on the Blender open movie projects. Welcome to the official documentation of the Blender-centric pipeline."
   actions:
     - theme: brand
       text: Get Started

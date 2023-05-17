@@ -3,15 +3,14 @@
 from typing import Optional, Any, Set, Tuple, List
 from pathlib import Path
 from datetime import datetime
+from .threaded import svn_log
 
 import bpy
-from bpy.types import PropertyGroup, UIList
+from bpy.types import PropertyGroup
 from bpy.props import StringProperty, BoolProperty, CollectionProperty, IntProperty, EnumProperty
 
-from .commands import svn_status
-from .commands.background_process import processes, process_in_background
-from .commands.svn_log import reload_svn_log
-from .util import redraw_viewport, make_getter_func, make_setter_func_readonly, svn_date_simple, get_addon_prefs
+from .threaded.background_process import Processes
+from .util import make_getter_func, make_setter_func_readonly, svn_date_simple, get_addon_prefs
 from . import constants
 
 class SVN_file(bpy.types.PropertyGroup):
@@ -24,15 +23,9 @@ class SVN_file(bpy.types.PropertyGroup):
         options=set()
     )
 
-    # NOTE: Paths must be assigned at creation using dictionary syntax, 
-    # since the setter is blocked so that the user can't mess with this.
-    # NOTE: Always explicitly convert to string before assigning when using 
-    # dict syntax, otherwise it might crash.
     svn_path: StringProperty(
         name="SVN Path",
         description="Filepath relative to the SVN root",
-        get=make_getter_func("svn_path", ""),
-        set=make_setter_func_readonly("svn_path"),
         options=set()
     )
     absolute_path: StringProperty(
@@ -84,7 +77,7 @@ class SVN_file(bpy.types.PropertyGroup):
     @property
     def relative_path(self) -> str:
         """Return relative path with Blender's path conventions."""
-        return bpy.path.relpath(self.absolute_path.as_posix())
+        return bpy.path.relpath(self.absolute_path)
 
     @property
     def is_outdated(self):
@@ -212,12 +205,12 @@ class SVN_repository(PropertyGroup):
         return self.directory
 
     display_name: StringProperty(
-        name="SVN Name",
-        description="Name of the SVN repository"
+        name="Display Name",
+        description="Display name of this SVN repository"
     )
 
     url: StringProperty(
-        name="SVN URL",
+        name="URL",
         description="URL of the remote repository"
     )
 
@@ -240,25 +233,20 @@ class SVN_repository(PropertyGroup):
         if get_addon_prefs(context).loading:
             return
 
+        self.authenticate(context)
+
+    def authenticate(self, context):
         self.auth_failed = False
-
-        process_in_background(BGP_SVN_Authenticate)
-        svn_status.init_svn(context, None)
-
-        # For some ungodly reason, ONLY with this addon,
-        # CollectionProperties stored in the AddonPrefs do not get
-        # auto-saved, only manually saved! So... we get it done.
-        if context.preferences.use_preferences_save:
-            bpy.ops.wm.save_userpref()
-            get_addon_prefs(context).save_repo_info_to_file()
+        Processes.start('Authenticate')
+        get_addon_prefs(context).save_repo_info_to_file()
 
     username: StringProperty(
-        name="SVN Username",
+        name="Username",
         description="User name used for authentication with this SVN repository",
         update=update_cred
     )
     password: StringProperty(
-        name="SVN Password",
+        name="Password",
         description="Password used for authentication with this SVN repository. This password is stored in your Blender user preferences as plain text. Somebody with access to your user preferences will be able to read your password",
         subtype='PASSWORD',
         update=update_cred
@@ -307,7 +295,7 @@ class SVN_repository(PropertyGroup):
         options=set()
     )
 
-    reload_svn_log = reload_svn_log
+    reload_svn_log = svn_log.reload_svn_log
 
     @property
     def log_file_path(self) -> Path:
@@ -374,17 +362,32 @@ class SVN_repository(PropertyGroup):
         svn_dir = Path(self.directory)
         return svn_dir / svn_path
 
-    def get_file_by_svn_path(self, svn_path: str or Path, get_index=False) -> Optional[Tuple[int, SVN_file]]:
+    def get_file_by_svn_path(self, svn_path: str or Path) -> Optional[SVN_file]:
         if isinstance(svn_path, Path):
             # We must use isinstance() instead of type() because apparently
             # the Path() constructor returns a WindowsPath object on Windows.
-            svn_path = svn_path.as_posix()
+            svn_path = str(svn_path.as_posix())
 
-        for i, file in enumerate(self.external_files):
+        for file in self.external_files:
             if file.svn_path == svn_path:
-                if get_index:
-                    return i
                 return file
+
+    def get_file_by_absolute_path(self, abs_path: str or Path) -> Optional[SVN_file]:
+        if isinstance(abs_path, Path):
+            # We must use isinstance() instead of type() because apparently
+            # the Path() constructor returns a WindowsPath object on Windows.
+            abs_path = str(abs_path.as_posix())
+        else:
+            abs_path = str(Path(abs_path).as_posix())
+
+        for file in self.external_files:
+            if file.absolute_path == abs_path:
+                return file
+
+    def get_index_of_file(self, file_entry) -> Optional[int]:
+        for i, file in enumerate(self.external_files):
+            if file == file_entry:
+                return i
 
     def update_active_file(self, context):
         """When user clicks on a different file, the latest log entry of that file
@@ -406,7 +409,7 @@ class SVN_repository(PropertyGroup):
             space.deselect_all()
             space.activate_file_by_relative_path(
                 relative_path=self.active_file.name)
-            processes['Activate File'].start()
+            Processes.start('Activate File')
 
     external_files_active_index: bpy.props.IntProperty(
         name="File List",
@@ -449,8 +452,7 @@ class SVN_repository(PropertyGroup):
 
     @property
     def current_blend_file(self) -> SVN_file:
-        return self.get_file_by_svn_path(self.absolute_to_svn_path(Path(bpy.data.filepath)))
-
+        return self.get_file_by_absolute_path(bpy.data.filepath)
 
     ### SVN File List Status Updating ##########################################
 
@@ -470,60 +472,9 @@ class SVN_repository(PropertyGroup):
         return delta.seconds
 
 
-class SVN_UL_repositories(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        repo = item
-        row = layout.row()
-        row.prop(repo, 'display_name', text="", icon='FILE_TEXT')
-        row.prop(repo, 'directory', text="", icon='FILE_TEXT')
-        row.prop(repo, 'url', text="", icon='URL')
-        row.prop(repo, 'username', text="", icon='USER')
-        row.prop(repo, 'password', text="", icon='LOCKED')
-
-
-class BGP_SVN_Authenticate(svn_status.BGP_SVN_Status):
-    name = "Authenticate"
-    needs_authentication = False
-    timeout = 10
-    repeat_delay = 0
-    debug = False
-
-    def tick(self, context, prefs):
-        redraw_viewport()
-
-    def acquire_output(self, context, prefs):
-        repo = prefs.get_current_repo(context)
-        if not repo or not repo.is_cred_entered:
-            return
-
-        super().acquire_output(context, prefs)
-
-    def process_output(self, context, prefs):
-        repo = prefs.get_current_repo(context)
-        if not repo or not repo.is_cred_entered:
-            return
-
-        if self.output:
-            repo.authenticated = True
-            repo.auth_failed = False
-            self.debug_print("Run init_svn()")
-            svn_status.init_svn(context, None)
-
-            super().process_output(context, prefs)
-            return
-        elif self.error:
-            if "Authentication failed" in self.error:
-                repo.authenticated = False
-                repo.auth_failed = True
-            else:
-                repo.authenticated = False
-                repo.auth_failed = False
-
-
 registry = [
     SVN_file,
     SVN_log,
-    SVN_UL_repositories,
     SVN_commit_line,
     SVN_repository,
 ]
