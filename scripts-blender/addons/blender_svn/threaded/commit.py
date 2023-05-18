@@ -31,19 +31,20 @@ class BGP_SVN_Commit(BackgroundProcess):
             self.stop()
             return
 
-        try:
-            sanitized_commit_msg = self.commit_msg.replace('"', "'")
-            command = ["svn", "commit", "-m", f"{sanitized_commit_msg}"] + self.file_list
-            self.output = execute_svn_command(
-                context,
-                command,
-                use_cred=True
-            )
-        except subprocess.CalledProcessError as error:
-            print("Commit failed.")
-            self.error = error.stderr.decode()
-            prefs.is_busy = False
-            Processes.start('Status')
+        Processes.kill('Status')
+        sanitized_commit_msg = self.commit_msg.replace('"', "'")
+        command = ["svn", "commit", "-m", f"{sanitized_commit_msg}"] + self.file_list
+        self.output = execute_svn_command(
+            context,
+            command,
+            use_cred=True
+        )
+
+    def handle_error(self, context, error):
+        print("Commit failed.")
+        Processes.start('Status')
+        super().handle_error(context, error)
+
 
     def process_output(self, context, prefs):
         print(self.output)
@@ -54,9 +55,7 @@ class BGP_SVN_Commit(BackgroundProcess):
         Processes.start('Log')
         Processes.start('Status')
         repo.commit_message = ""
-        prefs.is_busy = False
         Processes.kill('Commit')
 
     def stop(self):
-        get_addon_prefs(bpy.context).is_busy = False
         super().stop()

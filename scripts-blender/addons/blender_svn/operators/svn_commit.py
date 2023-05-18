@@ -4,7 +4,8 @@
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
 
 import bpy
-from bpy.props import StringProperty, BoolProperty
+from bpy.types import PropertyGroup, Operator, Context
+from bpy.props import StringProperty
 
 from ..threaded.background_process import Processes
 from .simple_commands import SVN_Operator, Popup_Operator
@@ -14,7 +15,25 @@ from ..util import get_addon_prefs
 # so that its sub-operators can mess
 active_commit_operator = None
 
-class SVN_OT_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
+
+class SVN_commit_line(PropertyGroup):
+    """Property Group representing a single line of a commit message.
+    Only needed for UI/UX purpose, so we can store the commit message
+    even if the user changes their mind about wanting to commit."""
+
+    def update_line(self, context):
+        line_entries = context.scene.svn.get_repo(context).commit_lines
+        for i, line_entry in enumerate(line_entries):
+            if line_entry == self and i >= len(line_entries)-2:
+                # The last line was just modified
+                if self.line:
+                    # Content was added to the last line - add another line.
+                    line_entries.add()
+
+    line: StringProperty(update=update_line)
+
+
+class SVN_OT_commit(SVN_Operator, Popup_Operator, Operator):
     bl_idname = "svn.commit"
     bl_label = "SVN Commit"
     bl_description = "Commit a selection of files to the remote repository"
@@ -37,7 +56,11 @@ class SVN_OT_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
     @staticmethod
     def get_committable_files(context) -> List["SVN_file"]:
         """Return the list of file entries whose status allows committing"""
-        svn_file_list = context.scene.svn.get_repo(context).external_files
+        repo = context.scene.svn.get_repo(context)
+        if not repo:
+            return
+
+        svn_file_list = repo.external_files
         committable_statuses = ['modified', 'added', 'deleted']
         files_to_commit = [
             f for f in svn_file_list if f.status in committable_statuses]
@@ -45,16 +68,14 @@ class SVN_OT_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        prefs = get_addon_prefs(context)
-        if prefs.is_busy:
+        if get_addon_prefs(context).is_busy:
             # Don't allow attempting to Update/Commit while either is still running.
             return False
 
         return cls.get_committable_files(context)
 
     def invoke(self, context, event):
-        prefs = get_addon_prefs(context)
-        repo = prefs.get_current_repo(context)
+        repo = context.scene.svn.get_repo(context)
         if repo.commit_message == "":
             repo.commit_message = ""
 
@@ -117,7 +138,7 @@ class SVN_OT_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
                 repo.commit_lines[i], 'line', index=i, text="")
             continue
 
-    def execute(self, context: bpy.types.Context) -> Set[str]:
+    def execute(self, context: Context) -> Set[str]:
         committable_files = self.get_committable_files(context)
         files_to_commit = [f for f in committable_files if f.include_in_commit]
         prefs = get_addon_prefs(context)
@@ -141,7 +162,6 @@ class SVN_OT_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             commit_msg=repo.commit_message,
             file_list=filepaths
         )
-        prefs.is_busy = True
 
         report = f"{(len(files_to_commit))} files"
         if len(files_to_commit) == 1:
@@ -166,7 +186,7 @@ class SVN_OT_commit(SVN_Operator, Popup_Operator, bpy.types.Operator):
             f.status_prediction_type = "SVN_COMMIT"
 
 
-class SVN_OT_commit_save_file(bpy.types.Operator):
+class SVN_OT_commit_save_file(Operator):
     bl_idname = "svn.save_during_commit"
     bl_label = "Save During SVN Commit"
     bl_description = "Save During SVN Commit"
@@ -179,7 +199,7 @@ class SVN_OT_commit_save_file(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class SVN_OT_commit_msg_clear(bpy.types.Operator):
+class SVN_OT_commit_msg_clear(Operator):
     bl_idname = "svn.clear_commit_message"
     bl_label = "Clear SVN Commit Message"
     bl_description = "Clear the commit message"
@@ -196,4 +216,5 @@ registry = [
     SVN_OT_commit,
     SVN_OT_commit_save_file,
     SVN_OT_commit_msg_clear,
+    SVN_commit_line
 ]

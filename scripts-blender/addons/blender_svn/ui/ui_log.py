@@ -1,8 +1,11 @@
-import bpy
+# SPDX-License-Identifier: GPL-2.0-or-later
+# (c) 2023, Blender Foundation - Demeter Dzadik
+
 from bpy.props import IntProperty, BoolProperty
+from bpy.types import UIList, Panel, Operator
 
 
-class SVN_UL_log(bpy.types.UIList):
+class SVN_UL_log(UIList):
     show_all_logs: BoolProperty(
         name='Show All Logs',
         description='Show the complete SVN Log, instead of only entries that affected the currently selected file',
@@ -31,7 +34,7 @@ class SVN_UL_log(bpy.types.UIList):
             get_older.revision = log_entry.revision_number
             get_older.file_rel_path = active_file.svn_path
         auth.label(text=log_entry.revision_author)
-        date.label(text=log_entry.revision_date_simple.split(" ")[0][5:])
+        date.label(text=log_entry.revision_date_simple)
 
         commit_msg = log_entry.commit_message
         commit_msg = commit_msg.split(
@@ -92,7 +95,21 @@ class SVN_UL_log(bpy.types.UIList):
                       toggle=True, icon='ALIGN_JUSTIFY')
 
 
-class VIEW3D_PT_svn_log(bpy.types.Panel):
+def is_log_useful(context):
+    repo = context.scene.svn.get_repo(context)
+    if len(repo.log) == 0:
+        return False
+    any_visible = repo.get_visible_indicies(context)
+    if not any_visible:
+        return False
+    active_file = repo.active_file
+    if active_file.status in ['unversioned', 'added']:
+        return False
+
+    return True
+
+
+class VIEW3D_PT_svn_log(Panel):
     """Display the revision history of the selected file."""
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -103,18 +120,7 @@ class VIEW3D_PT_svn_log(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        scene_svn = context.scene.svn
-        repo = scene_svn.get_repo(context)
-        if len(repo.log) == 0:
-            return False
-        any_visible = scene_svn.get_visible_indicies(context)
-        if not any_visible:
-            return False
-        active_file = repo.active_file
-        if active_file.status in ['unversioned', 'added']:
-            return False
-
-        return True
+        return is_log_useful(context)
 
     def draw(self, context):
         layout = self.layout
@@ -194,7 +200,7 @@ def execute_tooltip_log(self, context):
     return {'FINISHED'}
 
 
-class SVN_OT_log_tooltip(bpy.types.Operator):
+class SVN_OT_log_tooltip(Operator):
     bl_idname = "svn.tooltip_log"
     bl_label = ""  # Don't want the first line of the tooltip on mouse hover.
     # bl_description = "An operator to be drawn in the log list, that can display a dynamic tooltip"
@@ -211,7 +217,7 @@ class SVN_OT_log_tooltip(bpy.types.Operator):
     execute = execute_tooltip_log
 
 
-class SVN_OT_log_show_commit_msg(bpy.types.Operator):
+class SVN_OT_log_show_commit_msg(Operator):
     bl_idname = "svn.display_commit_message"
     bl_label = ""  # Don't want the first line of the tooltip on mouse hover.
     # bl_description = "Show the currently active commit, using a dynamic tooltip"

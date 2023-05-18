@@ -1,8 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# (c) 2023, Blender Foundation - Demeter Dzadik
+
 import bpy
-from bpy.types import Context, UIList
+from bpy.types import Context, UIList, Operator
+from bpy.props import StringProperty
 from pathlib import Path
 
-class SVN_OT_open_blend_file(bpy.types.Operator):
+class SVN_OT_open_blend_file(Operator):
     # This is needed because drawing a button for wm.open_mainfile in the UI
     # directly simply does not work; Blender just opens a full-screen filebrowser,
     # instead of opening the .blend file. Probably a bug.
@@ -11,10 +15,10 @@ class SVN_OT_open_blend_file(bpy.types.Operator):
     bl_description = "Open Blend File"
     bl_options = {'INTERNAL'}
 
-    filepath: bpy.props.StringProperty()
+    filepath: StringProperty()
 
     def execute(self, context):
-        bpy.ops.wm.open_mainfile(filepath=self.filepath)
+        bpy.ops.wm.open_mainfile(filepath=self.filepath, load_ui = False)
         return {'FINISHED'}
 
 

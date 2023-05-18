@@ -1,182 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
-import bpy
-from bpy.props import BoolProperty, StringProperty
-
-from time import time
+from bpy.types import Panel
 
 from ..util import get_addon_prefs
-from .. import constants
-from ..threaded.background_process import Processes
-
-class SVN_UL_file_list(bpy.types.UIList):
-    # Value that indicates that this item has passed the filter process successfully. See rna_ui.c.
-    UILST_FLT_ITEM = 1 << 30
-
-    show_file_paths: BoolProperty(
-        name="Show File Paths",
-        description="Show file paths relative to the SVN root, instead of just the file name"
-    )
-
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        # As long as there are any items, always draw the filters.
-        self.use_filter_show = True
-
-        if self.layout_type != 'DEFAULT':
-            raise NotImplemented
-
-        repo = data
-        file_entry = item
-        prefs = get_addon_prefs(context)
-
-        main_row = layout.row()
-        split = main_row.split(factor=0.6)
-        filepath_ui = split.row()
-        split = split.split(factor=0.4)
-        status_ui = split.row(align=True)
-
-        ops_ui = split.row(align=True)
-        ops_ui.alignment = 'RIGHT'
-        ops_ui.enabled = file_entry.status_prediction_type == 'NONE' and not prefs.is_busy
-
-        if self.show_file_paths:
-            filepath_ui.prop(file_entry, 'svn_path', text="",
-                             emboss=False, icon=file_entry.file_icon)
-        else:
-            filepath_ui.prop(file_entry, 'name', text="",
-                             emboss=False, icon=file_entry.file_icon)
-
-        statuses = [file_entry.status]
-        # SVN operations
-        ops = []
-        if file_entry.status in ['missing', 'deleted']:
-            ops.append(ops_ui.operator(
-                'svn.restore_file', text="", icon='LOOP_BACK'))
-            if file_entry.status == 'missing':
-                ops.append(ops_ui.operator(
-                    'svn.remove_file', text="", icon='TRASH'))
-        elif file_entry.status == 'added':
-            ops.append(ops_ui.operator(
-                'svn.unadd_file', text="", icon='REMOVE'))
-        elif file_entry.status == 'unversioned':
-            ops.append(ops_ui.operator('svn.add_file', text="", icon='ADD'))
-            ops.append(ops_ui.operator(
-                'svn.trash_file', text="", icon='TRASH'))
-
-        elif file_entry.status == 'modified':
-            ops.append(ops_ui.operator(
-                'svn.revert_file', text="", icon='LOOP_BACK'))
-            if file_entry.repos_status == 'modified':
-                # The file isn't actually `conflicted` yet, by SVN's definition,
-                # but it will be as soon as we try to commit or update.
-                # I think it's better to let the user know in advance.
-                statuses.append('conflicted')
-                # Updating the file will create an actual conflict.
-                ops.append(ops_ui.operator(
-                    'svn.update_single', text="", icon='IMPORT'))
-
-        elif file_entry.status == 'conflicted':
-            ops.append(ops_ui.operator('svn.resolve_conflict',
-                       text="", icon='TRACKING_CLEAR_FORWARDS'))
-        elif file_entry.status in ['incomplete', 'obstructed']:
-            ops.append(ops_ui.operator(
-                'svn.cleanup', text="", icon='BRUSH_DATA'))
-        elif file_entry.status == 'none':
-            if file_entry.repos_status == 'added':
-                # From user POV it makes a bit more sense to call a file that doesn't
-                # exist yet "added" instead of "outdated".
-                statuses.append('added')
-            ops.append(ops_ui.operator(
-                'svn.update_single', text="", icon='IMPORT'))
-        elif file_entry.status == 'normal' and file_entry.repos_status == 'modified':
-            # From user POV, this file is outdated, not 'normal'.
-            statuses = ['none']
-            ops.append(ops_ui.operator(
-                'svn.update_single', text="", icon='IMPORT'))
-        elif file_entry.status in ['normal', 'external', 'ignored']:
-            pass
-        else:
-            print("Unknown file status: ", file_entry.svn_path,
-                  file_entry.status, file_entry.repos_status)
-
-        for op in ops:
-            if hasattr(op, 'file_rel_path'):
-                op.file_rel_path = file_entry.svn_path
-
-        # Populate the status icons.
-        for status in statuses:
-            icon = constants.SVN_STATUS_DATA[status][0]
-            explainer = status_ui.operator(
-                'svn.explain_status', text="", icon=icon, emboss=False)
-            explainer.status = status
-            explainer.file_rel_path = file_entry.svn_path
-
-    @classmethod
-    def cls_filter_items(cls, context, data, propname):
-        """By moving all of this logic to a classmethod (and all the filter 
-        properties to the addon preferences) we can find a visible entry
-        from other UI code, allowing us to avoid situations where the active
-        element becomes hidden."""
-        flt_flags = []
-        flt_neworder = []
-        list_items = getattr(data, propname)
-
-        helper_funcs = bpy.types.UI_UL_list
-
-        # This list should ALWAYS be sorted alphabetically.
-        flt_neworder = helper_funcs.sort_items_by_name(list_items, "name")
-
-        scene_svn = context.scene.svn
-        repo = scene_svn.get_repo(context)
-
-        def has_default_status(file):
-            return file.status == 'normal' and file.repos_status == 'none' and file.status_prediction_type == 'NONE'
-
-        if scene_svn.file_search_filter:
-            flt_flags = helper_funcs.filter_items_by_name(scene_svn.file_search_filter, cls.UILST_FLT_ITEM, list_items, "name",
-                                                          reverse=False)
-        else:
-            # Start with all files visible.
-            flt_flags = [cls.UILST_FLT_ITEM] * len(list_items)
-
-            for i, item in enumerate(list_items):
-                if item == repo.current_blend_file:
-                    # ALWAYS display the current .blend file.
-                    continue
-
-                if has_default_status(item):
-                    # Filter out files that have default statuses.
-                    flt_flags[i] = 0
-
-        return flt_flags, flt_neworder
-
-    def filter_items(self, context, data, propname):
-        if not self.use_filter_show:
-            # Prevent hiding the filter options when there are any file entries.
-            # This is done by disabling filtering when the filtering UI would be
-            # hidden. If there are any entries, draw_item() switches the
-            # filtering UI back on with self.use_filter_show=True.
-            list_items = getattr(data, propname)
-            helper_funcs = bpy.types.UI_UL_list
-            flt_neworder = helper_funcs.sort_items_by_name(list_items, "name")
-            flt_flags = [type(self).UILST_FLT_ITEM] * len(list_items)
-            # return flt_flags, flt_neworder
-        return type(self).cls_filter_items(context, data, propname)
-
-    def draw_filter(self, context, layout):
-        """Custom filtering UI.
-        Toggles are stored in addon preferences, see cls_filter_items().
-        """
-        main_row = layout.row()
-        row = main_row.row(align=True)
-
-        row.prop(self, 'show_file_paths', text="",
-                 toggle=True, icon="FILE_FOLDER")
-        row.prop(context.scene.svn, 'file_search_filter', text="")
+from .ui_file_list import draw_repo_file_list, draw_process_info
 
 
-class VIEW3D_PT_svn_credentials(bpy.types.Panel):
+class VIEW3D_PT_svn_credentials(Panel):
     """Prompt the user to enter their username and password for the remote repository of the current .blend file."""
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -185,12 +16,13 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        repo = context.scene.svn.get_repo(context)
-        if not repo:
-            # The repo entry should've been created at load_post() by set_scene_svn_info()
-            return False
+        prefs = get_addon_prefs(context)
+        if prefs.ui_mode == 'CURRENT_BLEND':
+            repo = context.scene.svn.get_scene_repo(context)
+        else:
+            repo = context.scene.svn.get_repo(context)
 
-        return not repo.authenticated
+        return repo and not repo.authenticated
 
     def draw(self, context):
         layout = self.layout
@@ -206,21 +38,10 @@ class VIEW3D_PT_svn_credentials(bpy.types.Panel):
         url.copy_on_click = True
         col.prop(repo, 'username', icon='USER')
         col.prop(repo, 'password', icon='UNLOCKED')
-        auth_proc = Processes.get('Authenticate')
-        if auth_proc and auth_proc.is_running:
-            col.enabled = False
-            layout.label(text="Authenticating" + dots())
-        if repo.auth_failed:
-            row = layout.row()
-            row.alert = True
-            row.label(text="Authentication failed. Double-check your credentials.")
+        draw_process_info(context, layout)
 
 
-def dots():
-    return "." * int((time() % 10) + 3)
-
-
-class VIEW3D_PT_svn_files(bpy.types.Panel):
+class VIEW3D_PT_svn_files(Panel):
     """Display a list of files in the SVN repository of the current .blend file."""
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -237,142 +58,13 @@ class VIEW3D_PT_svn_files(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        draw_svn_file_list(context, layout)
-
-
-def draw_svn_file_list(context, layout):
-    prefs = get_addon_prefs(context)
-    repo = context.scene.svn.get_repo(context)
-
-    process_message = "File statuses are updated every few seconds."
-    running_processes = []
-    any_error = False
-    for proc_name, process in Processes.processes.items():
-        if process.name not in {'Commit', 'Update', 'Log', 'Status'}:
-            continue
-
-        if process.is_running:
-            running_processes.append(process.name)
-            message = process.get_ui_message(context)
-            if message:
-                message = message.replace("...", dots())
-                process_message = f"SVN {proc_name}: {message}"
-        elif process.error:
-            any_error = True
-            row = layout.row()
-            row.alert = True
-            warning = row.operator(
-                'svn.clear_error', text=f"SVN {proc_name}: Error Occurred. Hover to view", icon='ERROR')
-            warning.process_id = proc_name
-
-    if not any_error:
-        layout.label(text=process_message)
-        if prefs.debug_mode:
-            layout.label(text="Processes: " + ", ".join(running_processes))
-            layout.label(text="Is busy: " + str(prefs.is_busy))
-
-    main_col = layout.column()
-    main_col.enabled = repo.seconds_since_last_update < 30
-    main_row = main_col.row()
-    split = main_row.split(factor=0.6)
-    filepath_row = split.row()
-    filepath_row.label(text="          Filepath")
-
-    status_row = split.row()
-    status_row.label(text="         Status")
-
-    ops_row = main_row.row()
-    ops_row.alignment = 'RIGHT'
-    ops_row.label(text="Operations")
-
-    timer_row = main_row.row()
-    timer_row.alignment = 'RIGHT'
-    timer_row.operator("svn.custom_tooltip", icon='BLANK1', text="",
-                       emboss=False).tooltip = "Time since last file status update: " + str(repo.seconds_since_last_update) + 's'
-
-    row = main_col.row()
-    row.template_list(
-        "SVN_UL_file_list",
-        "svn_file_list",
-        repo,
-        "external_files",
-        repo,
-        "external_files_active_index",
-    )
-
-    col = row.column()
-
-    col.separator()
-    col.operator("svn.commit", icon='EXPORT', text="")
-    col.operator("svn.update_all", icon='IMPORT', text="")
-
-    col.separator()
-    col.operator("svn.cleanup", icon='BRUSH_DATA', text="")
-
-
-class SVN_OT_custom_tooltip(bpy.types.Operator):
-    """Tooltip"""
-    bl_idname = "svn.custom_tooltip"
-    bl_label = ""
-    bl_description = " "
-    bl_options = {'INTERNAL'}
-
-    tooltip: StringProperty(
-        name="Tooltip",
-        description="Tooltip that is displayed when mouse hovering this operator"
-    )
-    copy_on_click: BoolProperty(
-        name="Copy on Click",
-        description="If True, the tooltip will be copied to the clipboard when the operator is clicked",
-        default=False
-    )
-
-    @classmethod
-    def description(cls, context, properties):
-        tooltip = properties.tooltip
-        if properties.copy_on_click:
-            tooltip = "Copy to clipboard: " + properties.tooltip
-        return tooltip
-
-    def execute(self, context):
-        if self.copy_on_click:
-            context.window_manager.clipboard = self.tooltip
-            self.report({'INFO'}, "Copied to Clipboard: " + self.tooltip)
-        return {'FINISHED'}
-
-
-class SVN_OT_clear_error(bpy.types.Operator):
-    bl_idname = "svn.clear_error"
-    bl_label = "Error:"
-    bl_description = ""
-    bl_options = {'INTERNAL'}
-
-    process_id: StringProperty()
-
-    @classmethod
-    def description(cls, context, properties):
-        process = Processes.get(properties.process_id)
-        if not process:
-            return ""
-        return process.error_description + "\n\n" + process.error + "\n\n Click to clear the error and copy it to your clipboard"
-
-    def execute(self, context):
-        process = Processes.get(self.process_id)
-        if not process:
-            return {'FINISHED'}
-        context.window_manager.clipboard = process.error_description + "\n\n" + process.error
-        process.clear_error()
-        self.report({'INFO'}, "Copied error to Clipboard.")
-
-        return {'FINISHED'}
-
+        repo = context.scene.svn.get_repo(context)
+        draw_process_info(context, layout)
+        draw_repo_file_list(context, layout, repo)
 
 
 registry = [
-    SVN_UL_file_list,
     VIEW3D_PT_svn_credentials,
     VIEW3D_PT_svn_files,
-    SVN_OT_custom_tooltip,
-    SVN_OT_clear_error
 ]
 

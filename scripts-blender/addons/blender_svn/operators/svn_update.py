@@ -1,15 +1,17 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
-import bpy
 from typing import List, Dict, Union, Any, Set, Optional, Tuple
+
+import bpy
+from bpy.types import Operator, Context
 
 from .simple_commands import May_Modifiy_Current_Blend
 from ..threaded.background_process import Processes
 from ..util import get_addon_prefs
 
 
-class SVN_OT_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
+class SVN_OT_update_all(May_Modifiy_Current_Blend, Operator):
     bl_idname = "svn.update_all"
     bl_label = "SVN Update All"
     bl_description = "Download all the latest updates from the remote repository"
@@ -17,12 +19,14 @@ class SVN_OT_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        prefs = get_addon_prefs(context)
-        if prefs.is_busy:
+        if get_addon_prefs(context).is_busy:
             # Don't allow attempting to Update/Commit while either is still running.
             return False
 
-        for f in prefs.get_current_repo(context).external_files:
+        repo = context.scene.svn.get_repo(context)
+        if not repo:
+            return False
+        for f in repo.external_files:
             if f.repos_status != 'none':
                 return True
 
@@ -36,7 +40,7 @@ class SVN_OT_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
             return context.window_manager.invoke_props_dialog(self, width=500)
         return self.execute(context)
 
-    def execute(self, context: bpy.types.Context) -> Set[str]:
+    def execute(self, context: Context) -> Set[str]:
         self.set_predicted_file_statuses(context)
         Processes.stop('Status')
         if self.reload_file:
@@ -49,7 +53,6 @@ class SVN_OT_update_all(May_Modifiy_Current_Blend, bpy.types.Operator):
             Processes.start('Log')
         else:
             Processes.start('Update')
-            get_addon_prefs(context).is_busy = True
 
         return {"FINISHED"}
 

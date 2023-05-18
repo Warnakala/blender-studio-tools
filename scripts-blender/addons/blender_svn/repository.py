@@ -2,24 +2,23 @@
 # (c) 2023, Blender Foundation - Demeter Dzadik
 from typing import Optional, Any, Set, Tuple, List
 from pathlib import Path
-from datetime import datetime
-from .threaded import svn_log
 
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import StringProperty, BoolProperty, CollectionProperty, IntProperty, EnumProperty
 
+from .threaded import svn_log
 from .threaded.background_process import Processes
-from .util import make_getter_func, make_setter_func_readonly, svn_date_simple, get_addon_prefs
+from .operators.svn_commit import SVN_commit_line
+from .svn_info import get_svn_info
+from .util import get_addon_prefs
 from . import constants
 
-class SVN_file(bpy.types.PropertyGroup):
+class SVN_file(PropertyGroup):
     """Property Group that can represent a version of a File in an SVN repository."""
 
     name: StringProperty(
         name="File Name",
-        get=make_getter_func("name", ""),
-        set=make_setter_func_readonly("name"),
         options=set()
     )
 
@@ -125,7 +124,7 @@ class SVN_file(bpy.types.PropertyGroup):
         return 'QUESTION'
 
 
-class SVN_log(bpy.types.PropertyGroup):
+class SVN_log(PropertyGroup):
     """Property Group that can represent an SVN log entry."""
 
     revision_number: IntProperty(
@@ -136,10 +135,10 @@ class SVN_log(bpy.types.PropertyGroup):
         name="Revision Date",
         description="Date when the current revision was committed",
     )
-
-    @property
-    def revision_date_simple(self):
-        return svn_date_simple(self.revision_date)
+    revision_date_simple: StringProperty(
+        name="Revision Date",
+        description="Date when the current revision was committed",
+    )
 
     revision_author: StringProperty(
         name="Revision Author",
@@ -181,41 +180,31 @@ class SVN_log(bpy.types.PropertyGroup):
         return " ".join([rev, auth, files, msg, date]).lower()
 
 
-class SVN_commit_line(PropertyGroup):
-    """Property Group representing a single line of a commit message.
-    Only needed for UI/UX purpose, so we can store the commit message
-    even if the user changes their mind about wanting to commit."""
-
-    def update_line(self, context):
-        line_entries = context.scene.svn.get_repo(context).commit_lines
-        for i, line_entry in enumerate(line_entries):
-            if line_entry == self and i >= len(line_entries)-2:
-                # The last line was just modified
-                if self.line:
-                    # Content was added to the last line - add another line.
-                    line_entries.add()
-
-    line: StringProperty(update=update_line)
-
-
 class SVN_repository(PropertyGroup):
     ### Basic SVN Info. ###
     @property
     def name(self):
         return self.directory
 
+    def update_repo_info_file(self, context):
+        get_addon_prefs(context).save_repo_info_to_file()
+
     display_name: StringProperty(
-        name="Display Name",
-        description="Display name of this SVN repository"
+        name = "Display Name",
+        description = "Display name of this SVN repository",
+        update = update_repo_info_file
     )
 
     url: StringProperty(
-        name="URL",
-        description="URL of the remote repository"
+        name = "URL",
+        description = "URL of the remote repository",
     )
 
     def update_directory(self, context):
-        self['name'] = self.directory
+        self.name = self.directory
+
+        root_dir, base_url = get_svn_info(self.directory)
+        self.initialize(root_dir, base_url)
 
     directory: StringProperty(
         name="Root Directory",
@@ -224,21 +213,42 @@ class SVN_repository(PropertyGroup):
         description="Absolute directory path of the SVN repository's root in the file system",
         update=update_directory
     )
+    @property
+    def is_valid(self):
+        dir_path = Path(self.directory)
+        return dir_path.exists() and dir_path.is_dir()
+
+    def initialize(self, directory: str, url: str, display_name=""):
+        self.url = url
+        if self.directory != directory:
+            # Don't set this if it's already set, to avoid infinite recursion
+            # via the update callback.
+            self.directory = directory
+        if display_name:
+            self.display_name = display_name
+        else:
+            self.display_name = Path(directory).name
+
+        return self
+
+    def exists(self) -> bool:
+        return Path(self.directory).exists()
 
     ### Credentials. ###
     def update_cred(self, context):
         if not (self.username and self.password):
             # Only try to authenticate if BOTH username AND pw are entered.
+            self.authenticated = False
             return
         if get_addon_prefs(context).loading:
             return
 
         self.authenticate(context)
+        self.update_repo_info_file(context)
 
     def authenticate(self, context):
         self.auth_failed = False
         Processes.start('Authenticate')
-        get_addon_prefs(context).save_repo_info_to_file()
 
     username: StringProperty(
         name="Username",
@@ -339,7 +349,7 @@ class SVN_repository(PropertyGroup):
 
 
     ### SVN File List. ###
-    external_files: bpy.props.CollectionProperty(type=SVN_file)  # type: ignore
+    external_files: CollectionProperty(type=SVN_file)
 
     def remove_file_entry(self, file_entry: SVN_file):
         """Remove a file entry from the file list, based on its filepath."""
@@ -411,7 +421,7 @@ class SVN_repository(PropertyGroup):
                 relative_path=self.active_file.name)
             Processes.start('Activate File')
 
-    external_files_active_index: bpy.props.IntProperty(
+    external_files_active_index: IntProperty(
         name="File List",
         description="Files tracked by SVN",
         update=update_active_file,
@@ -454,27 +464,45 @@ class SVN_repository(PropertyGroup):
     def current_blend_file(self) -> SVN_file:
         return self.get_file_by_absolute_path(bpy.data.filepath)
 
-    ### SVN File List Status Updating ##########################################
+    ### File List UIList filter properties ###
+    # These are normally stored on the UIList, but then they cannot be accessed
+    # from anywhere else, since template_list() does not return the UIList instance.
+    # We need to be able to access them outside of drawing code, to be able to
+    # know which entries are visible and ensure that a filtered out entry can never
+    # be the active one.
 
-    timestamp_last_status_update: StringProperty(
-        name="Last Status Update",
-        description="Timestamp of when the last successful file status update was completed"
+    def get_visible_indicies(self, context) -> List[int]:
+        flt_flags, _flt_neworder = bpy.types.SVN_UL_file_list.cls_filter_items(
+            context, self, 'external_files')
+
+        visible_indicies = [i for i, flag in enumerate(flt_flags) if flag != 0]
+        return visible_indicies
+
+    def force_good_active_index(self, context) -> bool:
+        """
+        We want to avoid having the active file entry be invisible due to filtering.
+        If the active element is being filtered out, set the active element to 
+        something that is visible.
+        """
+        visible_indicies = self.get_visible_indicies(context)
+        if len(visible_indicies) == 0:
+            self.external_files_active_index = 0
+        elif self.external_files_active_index not in visible_indicies:
+            self.external_files_active_index = visible_indicies[0]
+
+    def update_file_filter(self, context):
+        """Should run when any of the SVN file list search filters are changed."""
+        self.force_good_active_index(context)
+
+    file_search_filter: StringProperty(
+        name="Search Filter",
+        description="Only show entries that contain this string",
+        update=update_file_filter
     )
-
-    @property
-    def seconds_since_last_update(self):
-        if not self.timestamp_last_status_update:
-            return 1000
-        last_update_time = datetime.strptime(
-            self.timestamp_last_status_update, "%Y/%m/%d %H:%M:%S")
-        current_time = datetime.now()
-        delta = current_time - last_update_time
-        return delta.seconds
 
 
 registry = [
     SVN_file,
     SVN_log,
-    SVN_commit_line,
     SVN_repository,
 ]

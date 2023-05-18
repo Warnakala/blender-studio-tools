@@ -2,59 +2,12 @@
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
 import bpy
-import threading
+import threading, subprocess
 import random
 from typing import List
 
 from ..util import get_addon_prefs, redraw_viewport
 from bpy.app.handlers import persistent
-
-
-def get_recursive_subclasses(typ) -> List[type]:
-    ret = []
-    for subcl in typ.__subclasses__():
-        ret.append(subcl)
-        ret.extend(get_recursive_subclasses(subcl))
-    return ret
-
-class Processes:
-    processes = {}
-
-    @classmethod
-    def get(cls, proc_name: str):
-        """Return a process if it exists, or None."""
-        return cls.processes.get(proc_name, None)
-
-    @classmethod
-    def start(cls, proc_name: str, **kwargs):
-        """Start a process if it's stopped, or create it if it hasn't yet been instantiated."""
-        process = cls.get(proc_name)
-        if process:
-            process.start()
-            return
-        else:
-            for subcl in get_recursive_subclasses(BackgroundProcess):
-                if subcl.name == proc_name:
-                    cls.processes[subcl.name] = subcl(**kwargs)
-                    return
-
-        raise Exception("SVN: Process name not found: ", proc_name)
-
-    @classmethod
-    def stop(cls, proc_name: str):
-        """Stop a process if it exists, otherwise do nothing."""
-        process = cls.get(proc_name)
-        if process:
-            process.stop()
-
-    @classmethod
-    def kill(cls, proc_name: str):
-        """Destroy a process entirely, such that it cannot be started again
-        without initializing a new instance."""
-        process = cls.get(proc_name)
-        if process:
-            process.stop()
-            del cls.processes[proc_name]
 
 
 class BackgroundProcess:
@@ -90,7 +43,7 @@ class BackgroundProcess:
     # Displayed in the tooltip on mouse-hover in the error message when an error occurs.
     error_description = "SVN Error:"
 
-    debug = False
+    debug = True
 
     def debug_print(self, msg: str):
         if self.debug:
@@ -107,14 +60,24 @@ class BackgroundProcess:
 
         self.start()
 
-    def acquire_output(self, context, prefs):
+    def acquire_output_safe(self, context, prefs):
         """
         Executed from a thread to avoid UI freezing during execute_svn_command().
 
         Should save data into self.output and self.error.
         Reading Blender data from this function is safe, but writing isn't!
         """
+        try:
+            self.acquire_output(context, prefs)
+        except subprocess.CalledProcessError as error:
+            self.handle_error(context, error)
+
+    def acquire_output(self, context, prefs):
         raise NotImplementedError
+
+    def handle_error(self, context, error):
+        self.output = ""
+        self.error = error.stderr.decode()
 
     def process_output(self, context, prefs):
         """
@@ -154,13 +117,13 @@ class BackgroundProcess:
             return
 
         if self.needs_authentication and not repo.authenticated:
-                self.debug_print("Shutdown: Authentication needed.")
-                self.is_running = False
-                return
+            self.debug_print("Shutdown: Authentication needed.")
+            self.is_running = False
+            return
 
         if not self.thread or not self.thread.is_alive() and not self.output and not self.error:
             self.thread = threading.Thread(
-                target=self.acquire_output, args=(context, prefs))
+                target=self.acquire_output_safe, args=(context, prefs))
             self.thread.start()
             self.debug_print("Started thread")
             return self.tick_delay
@@ -169,7 +132,8 @@ class BackgroundProcess:
             self.is_running = False
             return
         elif self.output:
-            self.debug_print("Processing output: \n" + str(self.output))
+            self.debug_print("Processing output")
+            # self.debug_print("Processing output: \n" + str(self.output))
             self.process_output(context, prefs)
             self.output = ""
             redraw_viewport()
@@ -197,19 +161,15 @@ class BackgroundProcess:
             return "Running..."
         return ""
 
-    def clear_error(self):
-        """Sub-classes should override this function to define behaviour on how to handle their errors."""
-        self.error = ""
-        self.output = ""
-
+    def restart(self):
         self.stop()
-
-        if self.repeat_delay > 0:
-            self.start()
+        self.start()
 
     def start(self, persistent=True):
         """Start the process if it isn't running already, by registering its timer function."""
         self.is_running = True
+        self.error = ""
+        self.output = ""
         if not bpy.app.timers.is_registered(self.timer_function):
             self.debug_print("Register timer")
             bpy.app.timers.register(
@@ -228,3 +188,70 @@ class BackgroundProcess:
             # Actually, it doesn't seem to work anyways...
             bpy.app.timers.unregister(self.timer_function)
             self.debug_print("Force-unregistered.")
+
+
+def get_recursive_subclasses(typ) -> List[type]:
+    ret = []
+    for subcl in typ.__subclasses__():
+        ret.append(subcl)
+        ret.extend(get_recursive_subclasses(subcl))
+    return ret
+
+
+processes = {}
+class ProcessManager:
+    @property
+    def processes(self):
+        # I tried to implement this thing as a Singleton that inherits from the `dict` class,
+        # I tried having the `processes` dict on the class level,
+        # and it just refuses to work properly. I add an instance to the dictionary,
+        # I print it, I can see that it's there, I make sure it absolutely doesn't get removed,
+        # but when I try to access it from anywhere, it's just empty. My mind is boggled.
+        # Global dict works. :shrug:
+        global processes
+        return processes
+
+    @property
+    def running_processes(self) -> List[BackgroundProcess]:
+        return [p for p in self.processes.values() if p.is_running]
+
+    def is_running(self, *args: List[str]):
+        for proc_name in args:
+            if proc_name in self.processes:
+                return self.processes[proc_name].is_running
+
+
+    def get(self, proc_name: str):
+        return self.processes.get(proc_name)
+
+    def start(self, proc_name: str, **kwargs):
+        """Start a process if it's stopped, or create it if it hasn't yet been instantiated."""
+        process = self.processes.get(proc_name, None)
+        if process:
+            process.start()
+            return
+        else:
+            for subcl in get_recursive_subclasses(BackgroundProcess):
+                if subcl.name == proc_name:
+                    self.processes[subcl.name] = subcl(**kwargs)
+                    return
+
+        raise Exception("SVN: Process name not found: ", proc_name)
+
+    def stop(self, proc_name: str):
+        """Stop a process if it exists, otherwise do nothing."""
+        process = self.processes.get(proc_name, None)
+        if process:
+            process.stop()
+
+    def kill(self, proc_name: str):
+        """Destroy a process entirely, such that it cannot be started again
+        without initializing a new instance."""
+        process = self.processes.get(proc_name, None)
+        if process:
+            process.stop()
+            del self.processes[proc_name]
+
+# I named this variable with title-case, to indicate that it's a Singleton.
+# There should only be one.
+Processes = ProcessManager()

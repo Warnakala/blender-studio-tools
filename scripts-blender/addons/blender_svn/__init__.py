@@ -21,19 +21,21 @@ import importlib
 from . import (
     props,
     repository,
-    threaded,
     operators,
+    threaded,
     ui,
     prefs,
+    svn_info,
 )
 
 modules = [
     props,
+    operators,
     repository,
     threaded,
-    operators,
     ui,
     prefs,
+    svn_info,
 ]
 
 def register_unregister_modules(modules: list, register: bool):
