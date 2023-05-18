@@ -101,6 +101,10 @@ class BackgroundProcess:
     def timer_function(self):
         """This is the actual function registered to bpy.app.timers."""
         context = bpy.context
+        if not hasattr(context.scene, 'svn'):
+            # With some bad luck, this can happen when in the middle of opening a .blend file.
+            return 1
+
         repo = context.scene.svn.get_repo(context)
         if not repo:
             self.debug_print("Shutdown: Not in repo.")
