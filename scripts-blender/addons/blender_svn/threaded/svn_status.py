@@ -69,7 +69,7 @@ def init_svn_of_current_file(_scene=None):
     scene_svn = context.scene.svn
 
     prefs = get_addon_prefs(context)
-    prefs.load_repo_info_from_file()
+    prefs.sync_repo_info_file()
 
     for repo in prefs.repositories:
         # This would ideally only run when opening Blender for the first 

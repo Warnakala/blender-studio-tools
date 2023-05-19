@@ -142,6 +142,10 @@ class SVN_addon_preferences(AddonPreferences):
         finally:
             self.loading = False
 
+    def sync_repo_info_file(self):
+        self.load_repo_info_from_file()
+        self.save_repo_info_to_file()
+
     draw = ui_prefs.draw_prefs
 
 registry = [
