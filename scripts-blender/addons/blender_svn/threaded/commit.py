@@ -45,7 +45,6 @@ class BGP_SVN_Commit(BackgroundProcess):
         Processes.start('Status')
         super().handle_error(context, error)
 
-
     def process_output(self, context, prefs):
         print(self.output)
         repo = context.scene.svn.get_repo(context)
@@ -57,5 +56,15 @@ class BGP_SVN_Commit(BackgroundProcess):
         repo.commit_message = ""
         Processes.kill('Commit')
 
+    def get_ui_message(self, context) -> str:
+        """Return a string that should be drawn in the UI for user feedback, 
+        depending on the state of the process."""
+
+        if self.is_running:
+            plural = "s" if len(self.file_list) > 1 else ""
+            return f"Committing {len(self.file_list)} file{plural}..."
+        return ""
+
     def stop(self):
         super().stop()
+    

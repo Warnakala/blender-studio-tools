@@ -36,5 +36,14 @@ class BGP_SVN_Update(BackgroundProcess):
         Processes.start('Log')
         Processes.start('Status')
 
+
+    def get_ui_message(self, context) -> str:
+        """Return a string that should be drawn in the UI for user feedback, 
+        depending on the state of the process."""
+
+        if self.is_running:
+            return f"Updating files..."
+        return ""
+
     def stop(self):
         super().stop()

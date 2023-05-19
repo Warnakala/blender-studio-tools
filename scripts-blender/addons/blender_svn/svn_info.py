@@ -31,6 +31,8 @@ def get_svn_info(path: Path or str) -> Tuple[str, str]:
 
     full_url = lines[2].split("URL: ")[1]
     relative_url = lines[3].split("Relative URL: ")[1][1:]
-    base_url = full_url.replace(relative_url, "").strip()
+    base_url = full_url
+    if len(relative_url) > 1:
+        base_url = full_url.replace(relative_url, "").strip()
 
     return root_dir, base_url
