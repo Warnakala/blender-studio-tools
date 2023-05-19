@@ -19,6 +19,8 @@ def delete_vgroups(mesh_ob, vgroups):
 
 def get_deforming_vgroups(mesh_ob) -> List[VertexGroup]:
 	arm_ob = get_deforming_armature(mesh_ob)
+	if not arm_ob:
+		return []
 	all_vgroups = mesh_ob.vertex_groups
 	deforming_vgroups = []
 	for b in arm_ob.data.bones:
@@ -371,6 +373,15 @@ class SymmetrizeVertexGroups(Operator):
 		]
 	)
 
+	direction: EnumProperty(
+		name = "Direction",
+		description = "Whether to symmetrize left to right or vice versa",
+		items = [
+			('LEFT_TO_RIGHT', "Left to Right", "Left to Right"),
+			('RIGHT_TO_LEFT', "Right to Left", "Right to Left")
+		]
+	)
+
 	@classmethod
 	def poll(cls, context):
 		obj = context.object
@@ -380,20 +391,32 @@ class SymmetrizeVertexGroups(Operator):
 
 	def execute(self, context):
 		obj = context.object
-		symmetry_mapping = get_symmetry_mapping(obj=obj)
 
 		vgs = [obj.vertex_groups.active]
 		if self.groups == 'SELECTED':
 			# Get vertex groups of selected bones.
+			for vg_name in context.context.selected_pose_bones:
+				vg = obj.vertex_groups.get(vg_name)
+				if not vg:
+					continue
+				flipped_vg = flip_name(vg_name)
+				if flipped_vg in vgs:
+					self.report({'ERROR'}, f'Both sides selected: "{vg.name}" & "{flipped_vg.name}". Only one side should be selected.')
+					return {'CANCELLED'}
+				vgs.append(vg)
+
 			vgs = [obj.vertex_groups.get(pb.name) for pb in context.selected_pose_bones]
 		elif self.groups == 'ALL':
-			vgs = obj.vertex_groups
-		
+			vgs = obj.vertex_groups[:]
+
+		symmetry_mapping = get_symmetry_mapping(obj=obj)
+
 		for vg in vgs:
 			symmetrize_vertex_group(
 				obj=obj, 
 				vg_name=vg.name, 
-				symmetry_mapping=symmetry_mapping
+				symmetry_mapping=symmetry_mapping,
+				right_to_left = self.direction == 'RIGHT_TO_LEFT'
 			)
 		return {'FINISHED'}
 

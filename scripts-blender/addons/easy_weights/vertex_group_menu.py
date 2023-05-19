@@ -56,11 +56,20 @@ class MESH_MT_vertex_group_symmetry(bpy.types.Menu):
 			text="Symmetrize Selected Bones' Groups", 
 			icon='MOD_MIRROR'
 		).groups = 'BONES'
-		layout.operator(
+		op = layout.operator(
 			"object.symmetrize_vertex_weights", 
-			text="Symmetrize ALL Groups", 
+			text="Symmetrize All Left->Right", 
 			icon='MOD_MIRROR'
-		).groups = 'ALL'
+		)
+		op.groups = 'ALL'
+		op.direction = 'LEFT_TO_RIGHT'
+		op = layout.operator(
+			"object.symmetrize_vertex_weights", 
+			text="Symmetrize All Right->Left", 
+			icon='MOD_MIRROR'
+		)
+		op.groups = 'ALL'
+		op.direction = 'RIGHT_TO_LEFT'
 
 class MESH_MT_vertex_group_sort(bpy.types.Menu):
 	bl_label = "Sort"
