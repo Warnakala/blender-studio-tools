@@ -8,7 +8,7 @@ GeoNode Shape Keys is a Blender Add-on that lets you deform linked and overridde
 ## Installation
 1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
 2. From the root of the repository navigate to `/scripts-blender/addons/` 
-3. Find the the `geonode_shapekeys`a Place this folder in your Blender addons directory or create a symlink to it.
+3. Find the the `geonode_shapekeys` folder. Copy this folder into your Blender addons directory or create a symlink to it.
 
 # How to use
 The add-on's UI is only visible on linked and overridden meshes.  

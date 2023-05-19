@@ -10,7 +10,7 @@ System to create, manage and apply python overrides in a flexible and reliable w
 ## Installation
 1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
 2. From the root of the repository navigate to `/scripts-blender/addons/` 
-3. Find the the `lighting_overrider` folder. Place this folder in your Blender addons directory or create a symlink to it.
+3. Find the the `lighting_overrider` folder. Copy this folder into your Blender addons directory or create a symlink to it.
 
 
  ## Purpose

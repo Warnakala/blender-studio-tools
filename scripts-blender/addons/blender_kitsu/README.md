@@ -33,14 +33,14 @@ blender-kitsu is a Blender Add-on to interact with Kitsu from within Blender. It
 ## Installation
 1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
 2. From the root of the repository navigate to `/scripts-blender/addons/` 
-3. Find the the `blender_kitsu` folder. Place this folder in your Blender addons directory or create a sym link to it.
+3. Find the the `blender_kitsu` folder. Copy this folder into your Blender addons directory or create a sym link to it.
 
 ## How to get started
 After installing you need to setup the addon preferences to fit your environment.
 In order to be able to log in to Kitsu you need a server that runs the Kitsu production management suite.
 Information on how to set up Kitsu can be found [here](https://zou.cg-wire.com/).
 
-If Kitsu is up and running and you can succesfully log in via the web interface you have to setup the `addon preferences`.
+If Kitsu is up and running and you can successfully log in via the web interface you have to setup the `addon preferences`.
 
 > **_NOTE:_**  If you want to get started quickly you only need to setup login data and active project
 
@@ -48,17 +48,17 @@ If Kitsu is up and running and you can succesfully log in via the web interface 
 
 ![image info](/media/addons/blender_kitsu/prefs_login.jpg)
 
->**Host**: The webadress of your kitsu server (e.G https://kitsu.mydomain.com)<br/>
+>**Host**: The web address of your kitsu server (e.G https://kitsu.mydomain.com)<br/>
 **Email**: The email you use to log in to kitsu<br/>
 **Password**: The password you use to log in to kitsu<br/>
 
-Press the login button. If the login was succesfull, the next step is..
+Press the login button. If the login was successful, the next step is..
 
 ###### **Setup Project Settings**
 
 ![image info](/media/addons/blender_kitsu/prefs_project.jpg)
 
->**Project Root Directory**: Path to the root of your project. Will later be used to configurate the addon on a per project basis<br/>
+>**Project Root Directory**: Path to the root of your project. Will later be used to configure the addon on a per project basis<br/>
 
 
 ###### **Setup Animation Tools**
@@ -68,7 +68,7 @@ Press the login button. If the login was succesfull, the next step is..
 
 
 >**Playblast Root Directory**: Path to a directory in which playblasts will be saved to<br/>
-**Open Webbrowser after Playblast**: Open default browser after playblast which points to shot on kitsu<br/>
+**Open Web browser after Playblast**: Open default browser after playblast which points to shot on kitsu<br/>
 **Open Video Sequence Editor after Playblast**: Open a new scene with Sequence Editor and playback playblast after playblast creation<br/>
 
 
@@ -82,7 +82,7 @@ Press the login button. If the login was succesfull, the next step is..
 
 ![image info](/media/addons/blender_kitsu/prefs_outdated_media.jpg)
 
->**Path List**: List of paths to top level directorys. Only media that is a child (recursive) of one of these directories will be scanned for outdated media.<br/>
+>**Path List**: List of paths to top level directory. Only media that is a child (recursive) of one of these directories will be scanned for outdated media.<br/>
 
 ###### **Setup Miscellaneous**
 
@@ -103,7 +103,7 @@ blender-kitsu has many feature and in this documentation they are divided in dif
 blender-kitsu sequence editor tools were constructed with the idea in mind to have a relationship between sequence strips and shots on Kitsu. This connection enables the exchange of metadata between the edit and the shots on Kitsu. Some examples are frame ranges of shots can be directly updated from the edit or thumbnails can be rendered and uploaded to Kitsu with a click of a button and many more which you will find out in this section:
 
 ##### Metastrips
-Metastrips are regular Movie Strips that can be linked to a shot in kitsu. It is a good idea to create a seperate meta strip in a seperate channel that represents the shot. That gives you the freedom to assemble a shot out of multiple elements, like multiple storyboard pictures, and still have one metastrip that contains the full shot range.
+Metastrips are regular Movie Strips that can be linked to a shot in kitsu. It is a good idea to create a separate meta strip in a separate channel that represents the shot. That gives you the freedom to assemble a shot out of multiple elements, like multiple storyboard pictures, and still have one metastrip that contains the full shot range.
 
 ![image info](/media/addons/blender_kitsu/metastrip.001.jpg)
 
@@ -129,13 +129,13 @@ This will import a metastrip.mp4 (1000 frame black video) file which is saved in
 
     3.1 Execute the `Initialize Shot` Operator.
 
-    3.2 Link this strip to a sequence with the `Link Sequence` operator or create a new seuence with the `Submit New Sequence` operator.
+    3.2 Link this strip to a sequence with the `Link Sequence` operator or create a new sequence with the `Submit New Sequence` operator.
 
     3.3 Type in the name of the new shot in the `Shot` field
 
     3.4 Execute the `Submit New Shot` operator in the `Push` Panel (Will warn you if the shot already exists on Kitsu)
 
->**Note**: Most of the operatos are selection sensitive. So you can do these operations for a batch of seqeuence strips. If you have nothing selected it will usually try to operate on all strips in the sequence editor. <br/>
+>**Note**: Most of the operator are selection sensitive. So you can do these operations for a batch of sequence strips. If you have nothing selected it will usually try to operate on all strips in the sequence editor. <br/>
 ![image info](/media/addons/blender_kitsu/sqe_init_selection.jpg)
 
 ##### Metadata
@@ -145,7 +145,7 @@ If you select a single linked strip you will see a `Metadata` panel that shows y
 
 The frame range will be updated by using the Blender editing tools on the strip. (trimming, sliding, etc.). <br/>
 If you execute the `Initialize Shot Start Frame` operator (refresh icon) the current in point of the strip will be remapped so the shot starts at 101 in the current editing state. <br/>
-You can reassign the shot to another seqeunce by exeucting the `Link Sequence` Operator, change the shot name or the seqeuence color. <br/>
+You can reassign the shot to another sequence by executing the `Link Sequence` Operator, change the shot name or the sequence color. <br/>
 
 If you linked in a sequence that has no `["data"]["color"]` attribute on Kitsu yet the gpu overlay line will be white. In order to add a new sequence color execute the `Add Sequence Color` operator. <br/>
 
@@ -160,7 +160,7 @@ In the `Push` panel you will find all the operators that push data to Kitsu. <br
 
 ![image info](/media/addons/blender_kitsu/sqe_push.jpg)
 
->**Metadata**: Pushes metadata of shot: sequence, shotname, frame range, sequence_color
+>**Metadata**: Pushes metadata of shot: sequence, shot name, frame range, sequence_color
 >>**Note**:  Global edit frame range will be saved in `"frame_in"` `"frame_out"` kitsu shot attribute <br/>
 The actual shot frame range (starting at 101) will be saved in `["data"]["3d_in"] and `["data"]["3d_out"] kitsu shot attribute <br/>
 
@@ -173,7 +173,7 @@ In the `Pull` panel you will find all the operators that pull data from Kitsu to
 
 ![image info](/media/addons/blender_kitsu/sqe_pull.jpg)
 
->**Metadata**: Pulls metadata of shot: sequence, shotname, shot description and updates the strip name to match the shotname.
+>**Metadata**: Pulls metadata of shot: sequence, shot name, shot description and updates the strip name to match the shot name.
 >>**Note**:  Frame ranges will **never** be updated when pulling data from Kitsu. They belong to the edit and will only be pushed to Kitsu.<br/>
 
 If you have not sequence selected the `Pull Entire Edit` Operator will appear in the `Pull` panel.<br/>
@@ -201,10 +201,10 @@ If you check the `Advanced` checkbox next to the counter value, you have access 
 
 ![image info](/media/addons/blender_kitsu/sqe_multi_edit_advanced.jpg)
 
-You can adjust the number of counter digits, the incrementation size and also the `Pattern` it will use to generate the shot name. <br/>
+You can adjust the number of counter digits, the increment size and also the `Pattern` it will use to generate the shot name. <br/>
 >**Pattern**: supports 3 wildcards. `<Sequence>`, `<Counter>`, `<Project>` that can be used multiple times in any order. <br/>
-**Custom Sequence Variable**: specify a custom string that should be used in the `<Sequence>` wildcard instaed of the sequence name. <br/>
-**Custom Project Variable**: specify a custom string that should be used in the `<Project>` wildcard instaed of the project name. <br/>
+**Custom Sequence Variable**: specify a custom string that should be used in the `<Sequence>` wildcard instead of the sequence name. <br/>
+**Custom Project Variable**: specify a custom string that should be used in the `<Project>` wildcard instead of the project name. <br/>
 
 ##### General Sequence Editor Tools
 In the general tab you can find some tools that don't directly relate to Kitsu but are useful for editing.
@@ -243,7 +243,7 @@ The animation tools will show up when you selected a `Task Type` with the name `
 
 ![image info](/media/addons/blender_kitsu/context_animation_tools.jpg)
 
->**Create Playblast**: Will create a openGL viewport render of the viewport from which the operator was executed and uploads it to Kitsu. The `+` button increments the version of the playblast. If you would override an older version you will see a warning before the filepath. The `directory` button will open a file browser in the playblast directory. The playblast will be uploaded to the `Animation` Task Type of the active shot that was set in the `Context Browser`. The webbrowser will be opened after the playblast and should point to the respective shot on Kitsu. <br/>
+>**Create Playblast**: Will create a openGL viewport render of the viewport from which the operator was executed and uploads it to Kitsu. The `+` button increments the version of the playblast. If you would override an older version you will see a warning before the filepath. The `directory` button will open a file browser in the playblast directory. The playblast will be uploaded to the `Animation` Task Type of the active shot that was set in the `Context Browser`. The web browser will be opened after the playblast and should point to the respective shot on Kitsu. <br/>
 **Update Frame Range**: Will pull the frame range of the active shot from Kitsu and apply it to the scene. It will use the `['data']['3d_in']` and `['data']['3d_out']` attribute of the Kitsu shot. <br/>
 **Update Output Collection**: Blender Studio Pipeline specific operator. <br/>
 **Duplicate Collection**: Blender Studio Pipeline specific operator. <br/>
@@ -268,10 +268,10 @@ blender-kitsu makes good use of logging and status reports. Most of the operator
 
 ## Credits
 This project uses gazu as a submodule to interact with the gazu data base. Gazu is written by CG Wire, a company based in France.
-- dazu repo: https://github.com/cgwire/gazu
+- gazu repo: https://github.com/cgwire/gazu
 - gazu doc : https://gazu.cg-wire.com/
 
-The file at ./blender_kitsu/sqe/draw.py is copied and modified from the blender-cloud-addon (https://developer.blender.org/diffusion/BCA/).
+The file at ./blender_kitsu/sqe/draw.py is copied and modified from the blender-cloud-addon (https://projects.blender.org/archive/blender-cloud-addon).
 Original author of this file is: Sybren A. Stuevel.
 
 

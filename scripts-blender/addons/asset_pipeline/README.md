@@ -24,12 +24,12 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
 ## Installation
 1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
 2. From the root of the repository navigate to `/scripts-blender/addons/` 
-3. Find the the `asset_pipeline` folder. Place this folder in your Blender addons directory or create a sym link to it.
+3. Find the the `asset_pipeline` folder. Copy this folder into your Blender addons directory or create a sym link to it.
 
-> **_NOTE:_** This add-on depends on other add-ons that are in the [Blender Studio Tools](https://developer.blender.org/diffusion/BSTS/).
+> **_NOTE:_** This add-on depends on other add-ons that are in the [Blender Studio Tools](https://projects.blender.org/studio/blender-studio-pipeline).
 
 Make sure to also install:
-- [**blender-kitsu**](https://developer.blender.org/diffusion/BSTS/browse/master/blender-kitsu/)
+- [**blender-kitsu**](/addons/blender_kitsu)
 
 
 ## How to get started
@@ -40,7 +40,7 @@ The asset-pipeline add-on can be configured with some config files. The idea is 
 
 In the add-on preferences you need to setup the `Production Config Directory`. In this folder the add-on expects to find a file called `task_layers.py`. What exactly you need to define in this file is something you will learn in the [Configuration](#configuration) section.
 
-To understand the underlying concepts of the Asset Pipeline it is recommended to read [this](https://studio.blender.org/blog/asset-pipeline/) article.
+To understand the underlying concepts of the Asset Pipeline it is recommended to read [this](https://studio.blender.org/blog/asset-pipeline-update-2022/) article.
 
 ## Configuration
 The add-on can be configured on a per project basis, by pointing the the `Production Config Directory` property in the add-on preferences to a folder that contains the config files.
@@ -155,10 +155,10 @@ transfer_mapping.target_coll: bpy.types.Collection
 
 Further than that you can access to objects which had no match.
 ```
-transfer_mapping.no_match_target_objs: Set[bpy.types.Object] (all objs that exist in target but not in source)
+transfer_mapping.no_match_target_objs: Set[bpy.types.Object] (all Objects that exist in target but not in source)
 transfer_mapping.no_match_source_objs: Set[bpy.types.Object] (vice versa)
 ```
-- **transfer_settings**: Is the `TransferSettings` PropertyGroup that was defined in the task_layer.py module. More to that in the next section. If the PropertyGroup was defined you can just query its values as you would regularily do it inside of Blender: `transfer_settings.my_value`
+- **transfer_settings**: Is the `TransferSettings` PropertyGroup that was defined in the task_layer.py module. More to that in the next section. If the PropertyGroup was defined you can just query its values as you would regularly do it inside of Blender: `transfer_settings.my_value`
 
 ---
 **Defining Transfer Settings**
@@ -436,20 +436,20 @@ metadata, which is in integral part of the pipeline.
 
 An asset file is always paired with a metadata file. The metadata file contains various information
 about that particular asset file. It saves all the TaskLayers that are contained in this file and where
-they came from. It also holds all kinds of information that make the Asset cleary identifieable.
+they came from. It also holds all kinds of information that make the Asset clearly identifiable.
 
 The AssetFile Classes automatically load this metadata on creation.
 
 The file format of this metadata is `xmp`. For that the asset-pipeline uses the `xml.etree` library.
 In the `metadata.py` file are Schemas that represent the different Metadata blocks.
 
-The idea here is to have Schemas in the form of Python `Dataclasses` that can be converted to their equivalent as XML Element. That way we have a clear definition of what kind of field are expected and available.
-Schemas can have nested Dataclasses. The conversion from Dataclass to XML Element happens in the `ElementMetadata` class and is automated.
+The idea here is to have Schemas in the form of Python `dataclasses` that can be converted to their equivalent as XML Element. That way we have a clear definition of what kind of field are expected and available.
+Schemas can have nested Data Classes. The conversion from Data Class to XML Element happens in the `ElementMetadata` class and is automated.
 Metadata Classes can also be generated from ElementClasses. This conversion is happening in the `from_element()` function.
 
-The code base should only work with Dataclasses as they are much easier to handle.
+The code base should only work with Data Classes as they are much easier to handle.
 That means it is forbidden to import `Element[]` classes from `metadata.py`.
-The conversion from and to Dataclasses is only handled in this module.
+The conversion from and to Data Classes is only handled in this module.
 
 That results in this logic:
 A: Saving Metadata to file:

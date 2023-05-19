@@ -12,7 +12,7 @@ Miscellaneous operators and tools requested by Blender Studio Animators.
 ## Installation
 1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
 2. From the root of the repository navigate to `/scripts-blender/addons/` 
-3. Find the the `anim_cupboard` folder. Place this folder in your Blender addons directory or create a sym link to it.
+3. Find the the `anim_cupboard` folder. Copy this folder into your Blender addons directory or create a sym link to it.
 
 ## Features
 ### Select Similar Curves

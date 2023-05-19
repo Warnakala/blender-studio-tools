@@ -21,7 +21,7 @@ This addon adds some Lattice-based utilities to Blender.
 ### Installation
 1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
 2. From the root of the repository navigate to `/scripts-blender/addons/`
-3. Find the the `lattice_magic` folder. Place this folder in your Blender addons directory or create a symlink to it.
+3. Find the the `lattice_magic` folder. Copy this folder into your Blender addons directory or create a symlink to it.
 4. After that, you can find the Lattice Magic panel in the 3D Viewport's Sidebar, which you can bring up by pressing the N key.  
 
 

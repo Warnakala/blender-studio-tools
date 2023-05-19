@@ -12,7 +12,7 @@ This addon is not used in the production of the Blender-Studio anymore and is no
 ## Installation
 1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
 2. From the root of the repository navigate to `/scripts-blender/addons/` 
-3. Find the the `cache_manager` folder. Place this folder in your Blender addons directory or create a sym link to it.
+3. Find the the `cache_manager` folder. Copy this folder into your Blender addons directory or create a sym link to it.
 
 ## How to get started
 After installing the addon you need to setup the addon preferences.

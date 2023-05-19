@@ -17,7 +17,7 @@ Easy Weight is an addon focused on quality of life improvements for weight paint
 ## Installation
 1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
 2. From the root of the repository navigate to `/scripts-blender/addons/` 
-3. Find the the `easy_weights` Place this folder in your Blender addons directory or create a symlink to it.
+3. Find the the `easy_weights` folder. Copy this folder into your Blender addons directory or create a symlink to it.
 
 ## How to Use
 Easy Weight is an addon focused on quality of life improvements for weight painting in Blender.
@@ -27,7 +27,7 @@ The Toggle Weight Paint Mode operator lets you switch into weight paint mode eas
 Simply select your mesh object and run the operator. The armature will be un-hidden and put into pose mode if necessary.
 Run the operator again to reset the armature object's visibility states to what they were before you entered weight paint mode.
 
-I recommend setting up a keybind for this, eg.:  
+I recommend setting up a key bind for this, eg.:  
 ![toggle_wp_shortcut](/media/addons/easy_weights/toggle_wp_shortcut.png)
 If you don't want to use the hotkey editor, you can also just find the operator in the "Object" or "Weights" menus, and simply Right Click->Assign Shortcut.
 
@@ -75,5 +75,5 @@ This operator tries to anyways, by duplicating your mesh, flipping it on the X a
 
 ## Previous Features
 Over time as more things have been fixed on Blender's side, some features have been removed. To avoid confusion, these are listed here:
-- As of [Blender 3.1](https://developer.blender.org/rBa215d7e230d3286abbed0108a46359ce57104bc1), holding the Ctrl and Shift buttons in weight painting will use the Subtract and Blur brushes respectively, removing the need for the shortcuts on the 1, 2, 3 keys this addon used to add to provide quick brush switching.
-- As of [Blender 3.0](https://developer.blender.org/rBSc0f600cad1d2d107d189b15b12e2fcc6bba0985c), the weight paint overlay is no longer multiplied on top of the underlying colors, removing the need for this addon to change shading or object display settings when using the Toggle Weight Paint mode operator.
+- As of [Blender 3.1](https://projects.blender.org/blender/blender/commit/a215d7e230d3286abbed0108a46359ce57104bc1), holding the Ctrl and Shift buttons in weight painting will use the Subtract and Blur brushes respectively, removing the need for the shortcuts on the 1, 2, 3 keys this addon used to add to provide quick brush switching.
+- As of [Blender 3.0](https://projects.blender.org/blender/blender/issues/61486), the weight paint overlay is no longer multiplied on top of the underlying colors, removing the need for this addon to change shading or object display settings when using the Toggle Weight Paint mode operator.

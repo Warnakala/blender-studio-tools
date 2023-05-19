@@ -14,7 +14,7 @@ You can find a detailed video tutorial on how to download, install and use the a
 ## Installation
 1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
 2. From the root of the repository navigate to `/scripts-blender/addons/` 
-3. Find the the `pose_shape_keys` folder. Place this folder in your Blender addons directory or create a sym link to it.
+3. Find the the `pose_shape_keys` folder. Copy this folder into your Blender addons directory or create a sym link to it.
 
 
 ## Basic Workflow:
