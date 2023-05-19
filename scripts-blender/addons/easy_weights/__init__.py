@@ -11,6 +11,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+from .utils.hotkeys import register_hotkey
 from . import rogue_weights
 from . import vertex_group_menu
 from . import vertex_group_operators
@@ -18,7 +20,6 @@ from . import weight_paint_context_menu
 from . import toggle_weight_paint
 from . import force_apply_mirror
 from . import smart_weight_transfer
-from . import hotkeys
 from typing import List
 from bpy.utils import register_class, unregister_class
 import importlib
@@ -45,7 +46,6 @@ modules = [
     vertex_group_operators,
     vertex_group_menu,
     rogue_weights,
-    hotkeys
 ]
 
 
@@ -81,6 +81,40 @@ def register_unregister_modules(modules: List, register: bool):
 def register():
     register_unregister_modules(modules, True)
 
+    register_hotkey(
+        bl_idname = 'paint.weight_paint',
+        km_name='Weight Paint',
+        key_id = 'LEFTMOUSE',
+        op_kwargs = {
+            'mode' : 'NORMAL'
+        }
+   )
+    register_hotkey(
+        bl_idname = 'paint.weight_paint',
+        km_name='Weight Paint',
+        key_id = 'LEFTMOUSE',
+        ctrl = True,
+        op_kwargs = {
+            'mode' : 'INVERT'
+        }
+    )
+    register_hotkey(
+        bl_idname = 'paint.weight_paint',
+        km_name='Weight Paint',
+        key_id = 'LEFTMOUSE',
+        shift = True,
+        op_kwargs = {
+            'mode' : 'SMOOTH'
+        }
+    )
+
+    register_hotkey(
+        bl_idname = 'object.custom_weight_paint_context_menu',
+        km_name='Weight Paint',
+        key_id = 'W',
+    )
+
+    print("Registered EasyWeight Hotkeys.")
 
 def unregister():
     register_unregister_modules(modules, False)

@@ -48,9 +48,9 @@ class EASYWEIGHT_OT_wp_context_menu(bpy.types.Operator):
                                 ]
                                 )
 
-    @classmethod
-    def poll(cls, context):
-        return context.mode == 'PAINT_WEIGHT'
+    # @classmethod
+    # def poll(cls, context):
+    #     return context.mode == 'PAINT_WEIGHT'
 
     def draw_operators(self, layout, context):
         layout.label(text="Operators")
