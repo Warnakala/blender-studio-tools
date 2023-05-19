@@ -1,14 +1,15 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # (c) 2022, Blender Foundation - Demeter Dzadik
 
-import bpy
+from bpy.types import Panel
 from bl_ui.space_filebrowser import FileBrowserPanel
 
 from .ui_log import draw_svn_log
-from .ui_sidebar import draw_svn_file_list
+from .ui_file_list import draw_repo_file_list
+from ..util import get_addon_prefs
 
 
-class FILEBROWSER_PT_SVN_files(FileBrowserPanel, bpy.types.Panel):
+class FILEBROWSER_PT_SVN_files(FileBrowserPanel, Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_region_type = 'TOOLS'
     bl_category = "Bookmarks"
@@ -30,10 +31,14 @@ class FILEBROWSER_PT_SVN_files(FileBrowserPanel, bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        draw_svn_file_list(context, layout)
+        # TODO: Get repository of the current file browser's directory.
+        prefs = get_addon_prefs(context)
+        if len(prefs.repositories) > 0:
+            repo = prefs.active_repo
+            draw_repo_file_list(context, layout, repo)
 
 
-class FILEBROWSER_PT_SVN_log(FileBrowserPanel, bpy.types.Panel):
+class FILEBROWSER_PT_SVN_log(FileBrowserPanel, Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_region_type = 'TOOLS'
     bl_category = "Bookmarks"

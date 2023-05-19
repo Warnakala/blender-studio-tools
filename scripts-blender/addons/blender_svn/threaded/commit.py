@@ -15,6 +15,7 @@ class BGP_SVN_Commit(BackgroundProcess):
     needs_authentication = True
     timeout = 5*60
     repeat_delay = 0
+    debug = False
 
     def __init__(self, commit_msg: str, file_list: List[str]):
         super().__init__()
@@ -30,35 +31,40 @@ class BGP_SVN_Commit(BackgroundProcess):
             self.stop()
             return
 
-        try:
-            sanitized_commit_msg = self.commit_msg.replace('"', "'")
-            command = ["svn", "commit", "-m", f"{sanitized_commit_msg}"] + self.file_list
+        Processes.kill('Status')
+        sanitized_commit_msg = self.commit_msg.replace('"', "'")
+        command = ["svn", "commit", "-m", f"{sanitized_commit_msg}"] + self.file_list
+        self.output = execute_svn_command(
+            context,
+            command,
+            use_cred=True
+        )
 
-            self.output = execute_svn_command(
-                context,
-                command,
-                use_cred=True
-            )
-        except subprocess.CalledProcessError as error:
-            print("Commit failed.")
-            self.error = error.stderr.decode()
-            prefs.is_busy = False
-            Processes.start('Status')
+    def handle_error(self, context, error):
+        print("Commit failed.")
+        Processes.start('Status')
+        super().handle_error(context, error)
 
     def process_output(self, context, prefs):
         print(self.output)
         repo = context.scene.svn.get_repo(context)
         for f in repo.external_files:
-            if f.status_predicted_flag == 'COMMIT':
-                f.status_predicted_flag = 'SINGLE'
+            if f.status_prediction_type == 'SVN_COMMIT':
+                f.status_prediction_type = 'SKIP_ONCE'
         Processes.start('Log')
         Processes.start('Status')
-
-        self.commit_msg = ""
         repo.commit_message = ""
-        prefs.is_busy = False
-        self.file_list = []
+        Processes.kill('Commit')
+
+    def get_ui_message(self, context) -> str:
+        """Return a string that should be drawn in the UI for user feedback, 
+        depending on the state of the process."""
+
+        if self.is_running:
+            plural = "s" if len(self.file_list) > 1 else ""
+            return f"Committing {len(self.file_list)} file{plural}..."
+        return ""
 
     def stop(self):
-        get_addon_prefs(bpy.context).is_busy = False
         super().stop()
+    

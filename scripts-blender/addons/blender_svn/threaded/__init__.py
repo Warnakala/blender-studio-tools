@@ -5,7 +5,8 @@ from . import (
     svn_status,
     filebrowser_activate_file,
     update,
-    commit
+    commit,
+    redraw_viewport
 )
 
 modules = [
@@ -15,5 +16,6 @@ modules = [
     svn_status,
     filebrowser_activate_file,
     update,
-    commit
+    commit,
+    redraw_viewport
 ]

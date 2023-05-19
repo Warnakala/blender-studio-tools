@@ -1,21 +1,30 @@
 #!/usr/bin/env python
+<<<<<<< HEAD
 
 # TODO Put the default_scripts in /usr/share and adjust main Logic to accomodate
 
 """The setup script."""
 
 from setuptools import setup, find_packages
+=======
+"""The setup script for blender-crawl."""
+
+from setuptools import setup
+>>>>>>> upstream/main
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
 
+<<<<<<< HEAD
 requirements = []
 
 setup_requirements = []
 
 test_requirements = []
 
+=======
+>>>>>>> upstream/main
 setup(
     author="Nick Alberelli",
     author_email="nick@blender.org",
@@ -31,6 +40,7 @@ setup(
         "Programming Language :: Python :: 3.8",
     ],
     description="Command line tool to perform recursive crawl blend files from the console",
+<<<<<<< HEAD
     install_requires=requirements,
     long_description=readme,
     include_package_data=True,
@@ -48,3 +58,14 @@ setup(
         ('default_purge', ['blender-crawl/default-scripts/purge.py'])
         ]
 )
+=======
+    long_description=readme,
+    include_package_data=True,
+    keywords="blender_crawl",
+    name="blender_crawl",
+    packages=["blender_crawl", "blender_crawl.default_scripts",],
+    version="0.1.0",
+    entry_points={"console_scripts": ["blender_crawl = blender_crawl.__main__:main"]},
+    package_data={'blender_crawl.default_scripts': ['*']}, #TODO Verify this is working correctly after install
+)
+>>>>>>> upstream/main

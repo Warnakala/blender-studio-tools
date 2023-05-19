@@ -337,18 +337,11 @@ def _calc_kitsu_frame_start(self):
     Calculates strip.kitsu_frame_start, little hack because it seems like we cant access the strip from a property group
     But we need acess to seqeuence properties.
     """
-    # self.frame_final_start = 50
-    # self.frame_start = 60
-    # self.kitsu.frame_start_offset = 10
-
-    offset_start = self.frame_final_start - self.frame_start  # 50 - 60 = -10
-
-    frame_start_final = (
-        bkglobals.FRAME_START - self.kitsu.frame_start_offset + offset_start
+    kitsu_frame_start = (
+        bkglobals.FRAME_START - self.kitsu.frame_start_offset 
     )
-    # 101 - (-10) +(-10) = 101.
 
-    return int(frame_start_final)
+    return int(kitsu_frame_start)
 
 
 def _calc_kitsu_frame_end(self):
@@ -356,23 +349,8 @@ def _calc_kitsu_frame_end(self):
     Calculates strip.kitsu_frame_end, little hack because it seems like we cant access the strip from a property group
     But we need acess to seqeuence properties.
     """
-    # example strip goes from frame 50 - 101 (endpoint picture 100 > 51 frames duration) is trimmed
-    # 10 frames in beginning and -939 in the end
-    # bkglobals.FRAME_START = 101
-    # self.frame_duration = 1000
-    # self.frame_start = 40 (cause of trim in beginning)
-    # self.kitsu.frame_start_offset = 10
-
-    frame_end_global = self.frame_start + self.frame_duration  # (40 + 1000 = 1040)
-
-    frame_end_final = (
-        bkglobals.FRAME_START
-        + self.frame_duration
-        - self.kitsu.frame_start_offset
-        + ((self.frame_final_end - 1) - frame_end_global)
-    )
-    # 101 + 1000 - 10 + ((101 -1) - 1040) = 151.
-
+    frame_start = _calc_kitsu_frame_start(self)
+    frame_end_final = (frame_start + self.frame_final_duration)
     return int(frame_end_final)
 
 

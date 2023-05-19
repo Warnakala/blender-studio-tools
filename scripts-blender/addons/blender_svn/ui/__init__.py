@@ -1,4 +1,5 @@
 from . import (
+    ui_file_list,
     ui_sidebar,
     ui_filebrowser,
     ui_log,
@@ -8,6 +9,7 @@ from . import (
 )
 
 modules = [
+    ui_file_list,
     ui_sidebar,
     ui_filebrowser,
     ui_log,

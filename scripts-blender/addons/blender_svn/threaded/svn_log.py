@@ -57,6 +57,7 @@ def reload_svn_log(self, context):
         log_entry.revision_author = r_author
 
         log_entry.revision_date = r_date
+        log_entry.revision_date_simple = svn_date_simple(r_date).split(" ")[0][5:]
 
         # File change set is on line 3 until the commit message begins...
         file_change_lines = chunk[2:-(r_msg_length+1)]
@@ -127,9 +128,6 @@ class BGP_SVN_Log(BackgroundProcess):
     repeat_delay = 3
     debug = False
 
-    def tick(self, context, prefs):
-        redraw_viewport()
-
     def acquire_output(self, context, prefs):
         """This function should be executed from a separate thread to avoid freezing 
         Blender's UI during execute_svn_command().
@@ -167,8 +165,23 @@ class BGP_SVN_Log(BackgroundProcess):
             self.stop()
 
     def get_ui_message(self, context):
-        try:
-            rev_no = context.scene.svn.get_repo(context).log[-1].revision_number
-            return f"Updating. Current: {rev_no}..."
-        except IndexError:
-            return ""
+        repo = context.scene.svn.get_repo(context)
+        if len(repo.log) > 0:
+            rev_no = repo.log[-1].revision_number
+            return f"Updating log. Current: r{rev_no}..."
+
+from datetime import datetime
+def svn_date_to_datetime(datetime_str: str) -> datetime:
+    """Convert a string from SVN's datetime format to a datetime object."""
+    date, time, _timezone, _day, _n_day, _mo, _y = datetime_str.split(" ")
+    return datetime.strptime(f"{date} {time}", '%Y-%m-%d %H:%M:%S')
+
+
+def svn_date_simple(datetime_str: str) -> str:
+    """Convert a string form SVN's datetime format to a simpler format."""
+    dt = svn_date_to_datetime(datetime_str)
+    month_name = dt.strftime("%b")
+    date_str = f"{dt.year}-{month_name}-{dt.day}"
+    time_str = f"{str(dt.hour).zfill(2)}:{str(dt.minute).zfill(2)}"
+
+    return date_str + " " + time_str

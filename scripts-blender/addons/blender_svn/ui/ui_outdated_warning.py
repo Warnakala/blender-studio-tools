@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# (c) 2023, Blender Foundation - Demeter Dzadik
+
 import bpy
 
 def draw_outdated_file_warning(self, context):
@@ -7,7 +10,7 @@ def draw_outdated_file_warning(self, context):
     try:
         current_file = repo.current_blend_file
     except ValueError:
-        # This can happen if the svn_directory property wasn't update yet (not enough time has passed since opening the file)
+        # This can happen if the svn_directory property wasn't updated yet (not enough time has passed since opening the file)
         pass
     if not current_file:
         # If the current file is not in an SVN repository.

@@ -42,9 +42,9 @@ def get_resource_blend_path(context) -> Tuple[str, bool]:
     addon_prefs = context.preferences.addons[__package__].preferences
 
     # Hardcoding for Pet Projects. Relies on the SVN add-on being enabled.
-    if 'svn' in context.scene and context.scene['svn']['svn_url'] == 'https://svn.blender.studio/repo/pets':
-        svn_dir = context.scene['svn']['svn_directory']
-        filepath = Path(svn_dir + "/pro/lib/nodes/GeoNodeShapeKey.blend")
+    if hasattr(context.scene, 'svn') and context.scene.svn.svn_url == 'https://svn.blender.studio/repo/pets':
+        svn_dir = context.scene.svn.svn_directory
+        filepath = Path(svn_dir) / Path("pro/lib/nodes/GeoNodeShapeKey.blend")
         if not filepath.exists():
             raise FileNotFoundError(f"Node tree file not found: '{filepath.as_posix()}'. Browse it in the add-on preferences.")
         return filepath.as_posix(), True
@@ -227,9 +227,9 @@ class GNSK_add_shape(bpy.types.Operator):
                 }
 
                 # Mute driver, if any.
-                fc = obj.animation_data.drivers.get(f'modifiers["{m.name}"].show_viewport')
+                fc = obj.animation_data.drivers.find(f'modifiers["{m.name}"].show_viewport')
                 if fc:
-                    fc.driver.mute = True
+                    fc.mute = True
                 m.show_viewport = False
 
         return modifier_states
@@ -242,9 +242,9 @@ class GNSK_add_shape(bpy.types.Operator):
                 setattr(obj.modifiers[mod_name], key, value)
 
                 # Unmute driver, if any.
-                fc = obj.animation_data.drivers.get(f'modifiers["{mod_name}"].{key}')
+                fc = obj.animation_data.drivers.find(f'modifiers["{mod_name}"].{key}')
                 if fc:
-                    fc.driver.mute = False
+                    fc.mute = False
 
     def make_evaluated_object(self,
                               context: bpy.types.Context,

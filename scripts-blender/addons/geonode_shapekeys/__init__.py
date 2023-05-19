@@ -53,8 +53,7 @@ class GNSK_Preferences(AddonPreferences):
         layout.separator()
 
         layout.row().prop(self, 'node_import_type', expand=True)
-        if self.node_import_type == 'LINK':
-            layout.prop(self, 'blend_path')
+        layout.prop(self, 'blend_path')
 
 
 def register_unregister_modules(modules: List, register: bool):

@@ -5,12 +5,12 @@ const studioURL = 'https://studio.blender.org'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  base: '/pipeline-and-tools/',
+  base: '/pipeline/',
   title: "Blender Studio",
   description: "Documentation for the Blender Studio pipeline and tools.",
   lastUpdated: true,
   cleanUrls: true,
-  srcExclude: ['**/README.md',],
+  srcExclude: ['**/README',],
   head: [
     [
       'script',
@@ -41,7 +41,7 @@ export default defineConfig({
       { text: 'Films', link: `${studioURL}/films` },
       { text: 'Training', link: `${studioURL}/training` },
       { text: 'Blog', link: `${studioURL}/blog` },
-      { text: 'Pipeline and Tools', link: '/' },
+      { text: 'Pipeline', link: '/' },
       { text: 'Characters', link: `${studioURL}/characters`, }
     ],
 
@@ -52,6 +52,28 @@ export default defineConfig({
           { text: 'Introduction', link: '/pipeline-overview/introduction'},
           { text: 'Infrastructure', link: '/pipeline-overview/infrastructure'},
           { text: 'Rigging', link: '/pipeline-overview/rigging'},
+        ]
+      },
+      {
+        text: 'Addons',
+        link:'/addons/addons_readme',
+
+        collapsed: true,
+        items: [
+          { text: 'Anim Cupboard', link: '/addons/anim_cupboard'},
+          { text: 'Asset Pipeline', link: '/addons/asset_pipeline'},
+          { text: 'Blender Kitsu', link: '/addons/blender_kitsu'},
+          { text: 'Blender SVN', link: '/addons/blender_svn'},
+          { text: 'Blender Gizmos', link: '/addons/bone_gizmos'},
+          { text: 'Cache Manager', link: '/addons/cache_manager'},
+          { text: 'Contact Sheet', link: '/addons/contactsheet'},
+          { text: 'Easy Weights', link: '/addons/easy_weights'},
+          { text: 'Geonode Shapekeys', link: '/addons/geonode_shapekeys'},
+          { text: 'Grase Converter', link: '/addons/grease_converter'},
+          { text: 'Lattice Magic', link: '/addons/lattice_magic'},
+          { text: 'Lighting Overrider', link: '/addons/lighting_overrider'},
+          { text: 'Pose Shape Keys', link: '/addons/pose_shape_keys'},
+          { text: 'Render Review', link: '/addons/render_review'},
         ]
       },
       {
