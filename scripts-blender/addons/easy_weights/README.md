@@ -21,36 +21,27 @@ Easy Weight is an addon focused on quality of life improvements for weight paint
 
 ## How to Use
 Easy Weight is an addon focused on quality of life improvements for weight painting in Blender.
+Read the entire ReadMe below, to find out how to set it up to boost your weight painting workflow and comfort.
 
 ### Entering Weight Paint Mode
-The Toggle Weight Paint Mode operator lets you switch into weight paint mode easier.
-Simply select your mesh object and run the operator. The armature will be un-hidden and put into pose mode if necessary.
-Run the operator again to reset the armature object's visibility states to what they were before you entered weight paint mode.
+An operator called "Toggle Weight Paint" is added under the "Object" and "Weight" menus in the 3D View. You can right-click the operator in either of these locations to assign a shortcut. I use pie menu object modes on Tab, so my Ctrl+Tab shortcut is available for this.
 
-I recommend setting up a key bind for this, eg.:  
-![toggle_wp_shortcut](/media/addons/easy_weights/toggle_wp_shortcut.png)
-If you don't want to use the hotkey editor, you can also just find the operator in the "Object" or "Weights" menus, and simply Right Click->Assign Shortcut.
+The operator will switch into weight paint mode without having to select both the armature and the mesh. Just select a mesh and press the shortcut you assigned. The armature will be un-hidden and put into pose mode if necessary.
+Press the shortcut again to reset the armature object's visibility state to what it was before, and go back to Object Mode.
 
 ### Weight Paint Context Menu
-The default context menu (accessed via W key or Right Click) for weight paint mode is not very useful.
-The Custom Weight Paint Context Menu operator is intended as a replacement for it.  
-![custom_wp_context_menu](/media/addons/easy_weights/custom_wp_context_menu.png)
-_(The "OK" button is not needed, I just can't avoid it)_  
+The add-on will override Blender's built-in "W" shortcut for the Context Menu in weight paint mode.
+Simply enter Weight Paint mode and press W after installing the add-on.
 
-This panel provides quick access to commonly needed tools, whether they are part of core Blender or the addon:
-- Global toggles for the Accumulate, Front Faces Only and Falloff Shape brush options.
-- Weight Paint mode settings including a new "Clean Weights" option to run the Clean Weights operator after every brush stroke.
+This pop-up panel provides quick access to commonly needed tools, whether they are part of core Blender or the addon:
+- Toggles for the Accumulate, Front Faces Only and Falloff Shape brush options, affecting all WP brushes.
+- WP Mode settings: Auto-Normalize, Multi-Paint, X-Mirror.
+- A new "Clean Weights" option. When enabled, this will remove 0-weights after every brush stroke.
 - Commonly used Overlay and Armature display settings.
 - Commonly used or [new](#vertex-group-operators) operators.
-It lets you change the brush falloff type (Sphere/Projected) and the Front Faces Only option. These will affect ALL brushes.  
-Also, the color of your brushes will be darker when you're using Sphere falloff.  
-
-I recommend to overwrite the shortcut of the default weight paint context menu like so:  
-![wp_context_menu_shortcut](/media/addons/easy_weights/wp_context_menu_shortcut.png) 
 
 ### Hunting Rogue Weights
-The addon provides a super sleek workflow for hunting down rogue weights efficiently but safely, with just the right amount of automation. This functionality can be found in the Sidebar->EasyWeight->Weight Islands panel.
-![weight_islands](/media/addons/easy_weights/weight_islands.png) 
+The addon provides a workflow for hunting down rogue weights efficiently but safely, with just the right amount of automation. This functionality can be found in the Sidebar->EasyWeight->Weight Islands panel.
 
 - After pressing Calculate Weight Islands and waiting a few seconds, you will see a list of all vertex groups which consist of more than a single island. 
 - Clicking the magnifying glass icon will focus the smallest island in the group, so you can decide what to do with it.
@@ -60,7 +51,6 @@ The addon provides a super sleek workflow for hunting down rogue weights efficie
 
 ### Vertex Group Operators
 The Vertex Groups context menu is re-organized with more icons and better labels, as well as some additional operators:
-![vg_context_menu](/media/addons/easy_weights/vg_context_menu.png)
 - **Delete Empty Deform Groups**: Delete deforming groups that don't have any weights.  
 - **Delete Unused Non-Deform Groups**: Delete non-deforming groups that aren't used anywhere, even if they do have weights.  
 - **Delete Unselected Deform Groups**: Delete all deforming groups that don't correspond to a selected pose bone. Only in Weight Paint mode.  
