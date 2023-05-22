@@ -6,7 +6,7 @@ This is a legacy document originally written by Andy in 2019 as part of the Spri
 
 This is a proof of concept for a more streamlined caching workflow. It also addresses some shortcomings of Blender's current cache system, namely the lack of property animation.
 
-![Shot Builder](/media/archive/pipeline-proposal-2019/cache_tool.m4v)
+![Shot Builder](/media/archive/pipeline-proposal-2019/cache_tool.mp4)
 
 This work is largely based on the research below:
 
