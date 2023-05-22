@@ -120,6 +120,24 @@ export default defineConfig({
             ]
           },
         ]
+      },
+      {
+        text: 'Archive',
+        collapsed: true,
+        items: [
+          {text: 'Pipeline Proposal', link: '/archive/pipeline-proposal-2019/introduction'},
+          {text: 'Attact Updates', link: '/archive/pipeline-proposal-2019/attract-improvements'},
+          {text: 'Task Companion Add-on', link: '/archive/pipeline-proposal-2019/task-companion-add-on'},
+          {text: 'Shot Caching', link: '/archive/pipeline-proposal-2019/shot-caching/introduction', items: [
+            {text: 'Add-on', link: '/archive/pipeline-proposal-2019/shot-caching/add-on', items: [
+              {text: 'User Stories', link: '/archive/pipeline-proposal-2019/shot-caching/user-stories'},
+              {text: 'Structural Ideas', link: '/archive/pipeline-proposal-2019/shot-caching/structural-ideas'}
+            ]},
+            {text: 'Issues', link: '/archive/pipeline-proposal-2019/shot-caching/issues'},
+          ]},
+          {text: 'Asset Publishing', link: '/archive/pipeline-proposal-2019/asset-publishing/introduction'},
+          {text: 'Character Pipeline Assistant', link: '/archive/pipeline-proposal-2019/asset-publishing/character-pipeline-assistant'},
+        ],
       }
     ],
   },
