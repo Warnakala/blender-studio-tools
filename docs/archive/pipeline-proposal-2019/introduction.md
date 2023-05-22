@@ -70,7 +70,7 @@ We have to make clearer steps towards automating tasks that require a higher deg
 
 We should also strive to automate communication tools like reviewing rendered media; an animator should not have to worry about where to save a play-blast (or create the location if necessary), they only have to initiate it, but then the system takes care of storing it and notifying the reviewers. 
 
-[Task Companion Add-on](task-companion-addon)
+[Task Companion Add-on](task-companion-add-on)
 
 ## Caching animation
 
