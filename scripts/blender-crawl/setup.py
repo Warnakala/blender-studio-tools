@@ -27,7 +27,7 @@ setup(
     keywords="blender_crawl",
     name="blender_crawl",
     packages=["blender_crawl", "blender_crawl.default_scripts",],
-    version="0.1.0",
+    version="0.1.1",
     entry_points={"console_scripts": ["blender_crawl = blender_crawl.__main__:main"]},
     package_data={'blender_crawl.default_scripts': ['*']}, #TODO Verify this is working correctly after install
 )

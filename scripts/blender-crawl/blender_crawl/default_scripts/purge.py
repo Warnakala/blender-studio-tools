@@ -20,18 +20,5 @@
 # (c) 2021, Blender Foundation
 
 import bpy
-
-# Setup prefs.
-bpy.context.preferences.filepaths.save_version = 0 #TODO Figure out why this is here
-
-# Purge.
-print("Starting Recursive Purge")
 bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
-
-# Save.
-bpy.ops.wm.save_mainfile()
-print("Saved file: %s", bpy.data.filepath)
-
-# Quit.
-print("Closing File")
 bpy.ops.wm.quit_blender()

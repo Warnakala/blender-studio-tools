@@ -27,12 +27,14 @@ import argparse
 import re
 from pathlib import Path
 from typing import List
+import tempfile
+import uuid
 
 # Command line arguments.
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "path",
-    help="Path to a file(s) or folder(s) on which to perform crawl",
+    help="Path to a file(s) or folder(s) on which to perform crawl.",
     nargs='+'
 )
 
@@ -46,33 +48,39 @@ parser.add_argument(
 parser.add_argument(
     "-s",
     "--script",
-    help="Path to blender python script(s) to execute inside .blend files during crawl. Execution is skipped if no script is provided",
+    help="Path to blender python script(s) to execute inside .blend files during crawl. Execution is skipped if no script is provided.",
     nargs='+',
+)
+parser.add_argument(
+    "-n",
+    "--nosave",
+    help="Don't save .blend after script execution.",
+    action="store_true",
 )
 parser.add_argument(
     "-r",
     "--recursive",
-    help="If -r is provided in combination with a folder path will perform recursive crawl",
+    help="If -r is provided in combination with a folder path will perform recursive crawl.",
     action="store_true",
 )
 
 parser.add_argument(
     "-f",
     "--filter",
-    help="Provide a string to filter the found .blend files",
+    help="Provide a string to filter the found .blend files.",
 )
 
 parser.add_argument(
     "-a",
     "--ask",
-    help="If --ask is provided there will be no confirmation prompt before running script on .blend files.",
+    help="If --ask is provided there will be a prompt for confirmation before running script on .blend files.",
     action="store_true",
 )
 
 parser.add_argument(
     "-p",
     "--purge",
-    help="Run 'built-in function to purge data-blocks from all .blend files found in crawl.'.",
+    help="Run 'built-in function to purge data-blocks from all .blend files found in crawl, and saves them.",
     action="store_true",
 )
 
@@ -120,7 +128,7 @@ def is_filepath_blend(path: Path) -> None:
         cancel_program(f"Not a blend file: {path.suffix}")
 
 
-def check_file_exists(file_path_str: str, error_msg: str):
+def check_file_exists(file_path_str: str, error_msg: str) -> Path:
     if file_path_str is None:
         return
     file_path = Path(file_path_str).absolute()
@@ -129,22 +137,39 @@ def check_file_exists(file_path_str: str, error_msg: str):
     else:
         cancel_program(error_msg)
 
+def script_append_save(script: Path, skip_save:bool):
+    if skip_save:
+        return script
+    save_script = get_default_script("save.py", True)
+    # Reading data from file1
+    with open(script) as script_file:
+        script_data = script_file.read()
+        # Reading data from file2
+    with open(save_script) as save_file:
+        save_data = save_file.read()
+    script_data += "\n"
+    script_data += save_data
+    temp_dir = Path(tempfile.TemporaryDirectory().name).parent
+    new_temp_file = Path.joinpath(Path(temp_dir), f"blender_crawl_{uuid.uuid4()}.py")
+    with open(new_temp_file, "w") as new_file:
+        new_file.write(script_data)
+    return new_temp_file
 
-def get_purge_path(purge: bool):
+
+def get_default_script(file_name:str, purge: bool):
     # Cancel function if user has not supplied purge arg
     if not purge:
         return
     scripts_directory =  Path((os.path.dirname(__file__))).joinpath("default_scripts/")
-    purge_script = os.path.join(scripts_directory.resolve(), "purge.py")
+    purge_script = os.path.join(scripts_directory.resolve(), file_name)
     return check_file_exists(str(purge_script), "Default scripts location may be invalid")
-
 
 def main() -> int:
     import sys
     """Crawl blender files in a directory and run a provided scripts"""
     # Parse arguments.
     args = parser.parse_args()
-    purge_path = get_purge_path(args.purge)
+    purge_path = get_default_script("purge.py", args.purge)
     recursive = args.recursive
     exec = args.exec
     regex = args.filter
@@ -154,15 +179,15 @@ def main() -> int:
     scripts = []
     if script_input:
         for script in script_input:
-            script_name = check_file_exists(
+            script_path = check_file_exists(
             script,
             "No --script was not provided as argument, printed found .blend files, exiting program.",
         )
-            scripts.append(script_name)
+            scripts.append(script_append_save(script_path, args.nosave)) 
 
     # Purge is optional so it can be none
     if purge_path is not None:
-        scripts.append(purge_path)
+        scripts.append(script_append_save(purge_path, args.nosave))
 
     if not exec:
         blender_exec = find_executable()
@@ -227,7 +252,6 @@ def main() -> int:
         )
         sys.exit(0)
 
-    # crawl each file two times.
     for blend_file in files:
         for script in scripts:
             cmd_list = (
