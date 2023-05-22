@@ -55,7 +55,7 @@ export default defineConfig({
         ]
       },
       {
-        text: 'Addons',
+        text: 'Add-ons',
         link:'/addons/addons_readme',
 
         collapsed: true,
