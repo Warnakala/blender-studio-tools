@@ -36,7 +36,7 @@ class SVN_Operator_Single_File(SVN_Operator):
     def execute(self, context: Context) -> Set[str]:
         """Most operators want to make sure that the file exists pre-execute."""
         if not self.file_exists(context) and not type(self).missing_file_allowed:
-            self.report({'ERROR'}, "File is no longer on the file system.")
+            self.report({'ERROR'}, f'File is no longer on the file system: "{self.file_rel_path}"')
             return {'CANCELLED'}
 
         status = Processes.get('Status')
@@ -57,8 +57,8 @@ class SVN_Operator_Single_File(SVN_Operator):
         raise NotImplementedError
 
     def get_file_full_path(self, context) -> Path:
-        scene_svn = context.scene.svn
-        return Path.joinpath(Path(scene_svn.svn_directory), Path(self.file_rel_path))
+        repo = context.scene.svn.get_repo(context)
+        return Path.joinpath(Path(repo.directory), Path(self.file_rel_path))
 
     def get_file(self, context) -> "SVN_file":
         return context.scene.svn.get_repo(context).get_file_by_svn_path(self.file_rel_path)
