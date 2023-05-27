@@ -150,8 +150,8 @@ class GNSK_add_shape(bpy.types.Operator):
             # Find desired modifier index: After any other GNSK modifier, or if 
             # none, before the SubSurf modifier.
             mod_index = self.get_desired_modifier_index(obj, mod)
-            bpy.ops.object.modifier_move_to_index(
-                {'object': obj}, modifier=mod.name, index=mod_index)
+            with context.temp_override(object=obj):
+                bpy.ops.object.modifier_move_to_index(modifier=mod.name, index=mod_index)
             gnsk.name = mod.name  # In case the modifier got a .001 suffix.
 
             gnsk.storage_object = sk_ob
