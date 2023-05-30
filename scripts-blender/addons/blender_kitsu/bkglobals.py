@@ -75,7 +75,7 @@ MULTI_ASSETS = [
     "briny_bears_bag",
 ]  # list of assets that gets duplicated and therefore follows another naming sheme
 
-ASSET_COLL_PREFIXES = ["CH-", "PR-", "SE-"]
+ASSET_COLL_PREFIXES = ["CH-", "PR-", "SE-", "FX-"], 
 
 
 RES_DIR_PATH = Path(os.path.abspath(__file__)).parent.joinpath("res")
