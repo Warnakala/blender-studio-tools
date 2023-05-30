@@ -37,8 +37,10 @@ rect_coords = ((0, 0), (1, 0), (1, 1), (0, 1))
 # elements does not make sense.
 # See register() and unregister().
 if not bpy.app.background:
-    ucolor_2d_shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
-    ucolor_2d_rect_batch = batch_for_shader(ucolor_2d_shader, 'TRI_FAN', {"pos": rect_coords})
+    ucolor_2d_shader = gpu.shader.from_builtin("UNIFORM_COLOR")  # TEST THIS HOTFX
+    ucolor_2d_rect_batch = batch_for_shader(
+        ucolor_2d_shader, "TRI_FAN", {"pos": rect_coords}
+    )
 
 
 Float2 = typing.Tuple[float, float]
@@ -92,7 +94,6 @@ def draw_line_in_strip(strip_coords: Float4, height_factor: float, color: Float4
 
 
 def draw_callback_px():
-
     context = bpy.context
     sqe = context.scene.sequence_editor
     if not sqe:
@@ -105,7 +106,9 @@ def draw_callback_px():
 
         if strip.kitsu.initialized or strip.kitsu.linked:
             try:
-                color = tuple(context.scene.kitsu.sequence_colors[strip.kitsu.sequence_id].color)
+                color = tuple(
+                    context.scene.kitsu.sequence_colors[strip.kitsu.sequence_id].color
+                )
             except KeyError:
                 color = (1, 1, 1)
 
@@ -126,7 +129,11 @@ def register():
     if bpy.app.background:
         # Do not register anything if Blender runs in the background (no UI needed).
         return
-    draw_handles.append(bpy.types.SpaceSequenceEditor.draw_handler_add(draw_callback_px, (), "WINDOW", "POST_VIEW"))
+    draw_handles.append(
+        bpy.types.SpaceSequenceEditor.draw_handler_add(
+            draw_callback_px, (), "WINDOW", "POST_VIEW"
+        )
+    )
 
 
 def unregister():
@@ -134,7 +141,7 @@ def unregister():
         return
     for handle in reversed(draw_handles):
         try:
-            bpy.types.SpaceSequenceEditor.draw_handler_remove(handle, 'WINDOW')
+            bpy.types.SpaceSequenceEditor.draw_handler_remove(handle, "WINDOW")
         except ValueError:
             # Not sure why, but sometimes the handler seems to already be removed...??
             pass
