@@ -395,22 +395,14 @@ class RR_OT_setup_review_workspace(bpy.types.Operator):
 
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        # Remove non video editing workspaces.
-        for ws in bpy.data.workspaces:
-            if ws.name != "Video Editing":
-                bpy.ops.workspace.delete({"workspace": ws})
+        scripts_path = bpy.utils.script_paths(use_user=False)[0]
+        template_path = "/startup/bl_app_templates_system/Video_Editing/startup.blend"
+        ws_filepath = Path(scripts_path + template_path)
+        bpy.ops.workspace.append_activate(
+            idname="Video Editing",
+            filepath=ws_filepath.as_posix(),
+        )
 
-        # Add / load video editing workspace.
-        if "Video Editing" not in [ws.name for ws in bpy.data.workspaces]:
-            scripts_path = bpy.utils.script_paths(use_user=False)[0]
-            template_path = "/startup/bl_app_templates_system/Video_Editing/startup.blend"
-            ws_filepath = Path(scripts_path + template_path)
-            bpy.ops.workspace.append_activate(
-                idname="Video Editing",
-                filepath=ws_filepath.as_posix(),
-            )
-        else:
-            context.window.workspace = bpy.data.workspaces["Video Editing"]
 
         # Pre-fill render directory with farm output shots directory.
         addon_prefs = prefs.addon_prefs_get(bpy.context)
