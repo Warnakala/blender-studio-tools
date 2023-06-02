@@ -7,6 +7,3 @@
 - Fix Addon Install Instructions
 - Fix Addons Spelling and Links (#54)
 
-### UN-CATEGORIZED 
-- Include Addon READMEs in Pipeline Docs (#49)
-

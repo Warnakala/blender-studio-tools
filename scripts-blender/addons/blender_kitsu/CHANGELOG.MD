@@ -8,11 +8,7 @@
 - Fix "Update output collection"
 - Fix PyGPU Key (#60)
 - Fix Addons Spelling and Links (#54)
-
-### UN-CATEGORIZED 
 - Make PyGPU enum backwards compatible
-- Include Addon READMEs in Pipeline Docs (#49)
-- [Blender-Kitsu] Fix Frame Start & Frame End Calculation (#46)
-- [Blender-Kitsu] Push Seq - restore gen_output_path() (#45)
-- [Blender_Kitsu] Add Operators to cleanup Animation Files (#38)
-
+- Fix Frame Start & Frame End Calculation (#46)
+- Push Seq - restore gen_output_path() (#45)
+- Add Operators to cleanup Animation Files (#38)

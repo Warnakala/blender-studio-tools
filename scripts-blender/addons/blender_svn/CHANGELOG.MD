@@ -2,6 +2,8 @@
  
 ### ADDED 
 - Add a debug UI toggle
+- Multi-repository support
+
 
 ### FIXED 
 - Fix Addon Install Instructions
@@ -11,10 +13,7 @@
 - Fix URL reading on linux
 - Fix crash in update_file_list()
 
-### UN-CATEGORIZED 
-- Update ReadMe
-- Multi-repository support
-- Include Addon READMEs in Pipeline Docs (#49)
+## CHANGED
 - SVN Cleanup now resets background threads
 - Allow context menus to open .blend files
 - More restructuring, added a ProcessManager.
@@ -22,5 +21,6 @@
 - Store credentials on disk
 - UX improvements
 - Restructure add-on
-- Nuke BAT dead code and relevant UI/UX.
 
+## REMOVED
+- Nuke BAT dead code and relevant UI/UX.

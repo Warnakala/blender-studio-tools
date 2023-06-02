@@ -7,9 +7,7 @@
 - Fix error in writing credentials to file
 - Fix another error in disable_modifiers()
 - Fix small bug found by MackBo
-
-### UN-CATEGORIZED 
 - Another small bugfix
-- Include Addon READMEs in Pipeline Docs (#49)
-- Nuke BAT dead code and relevant UI/UX.
 
+### REMOVED
+- Nuke BAT dead code and relevant UI/UX.
