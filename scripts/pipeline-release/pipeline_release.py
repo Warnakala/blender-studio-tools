@@ -295,12 +295,12 @@ def addon_package(directory: Path, commit_prefix: str, is_major=False, force=Fal
         addon_output_dir = get_directory(dist_dir, directory.name)
 
         zipped_addon = shutil.make_archive(
-            addon_output_dir.joinpath(f"{name}_{version}"), 'zip', directory
+            addon_output_dir.joinpath(f"{name}-{version}"), 'zip', directory
         )
         checksum = generate_checksum(zipped_addon)
         checksum_file = write_file(
-            addon_output_dir.joinpath(f"{name}_{version}.sha256"),
-            f"{checksum} {name}_{version}.zip",
+            addon_output_dir.joinpath(f"{name}-{version}.sha256"),
+            f"{checksum} {name}-{version}.zip",
         )
     else:
         print(f"No New Version: {directory.name}")
