@@ -22,9 +22,9 @@ asset-pipeline is a Blender Add-on that manages the Asset Pipeline of the Blende
 
 
 ## Installation
-1. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
-2. From the root of the repository navigate to `/scripts-blender/addons/` 
-3. Find the the `asset_pipeline` folder. Copy this folder into your Blender addons directory or create a sym link to it.
+1. Download [latest release](../addons/overview) 
+2. Launch Blender, navigate to `Edit > Preferences` select `Addons` and then `Install`, 
+3. Navigate to the downloaded add-on and select `Install Add-on` 
 
 > **_NOTE:_** This add-on depends on other add-ons that are in the [Blender Studio Tools](https://projects.blender.org/studio/blender-studio-pipeline).
 
