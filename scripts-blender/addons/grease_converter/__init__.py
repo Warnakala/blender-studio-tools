@@ -23,7 +23,7 @@ bl_info = {
     "author": "Paul Golter",
     "description": "Blender add-on to convert annotations to grease pencil objects and back",
     "blender": (3, 0, 0),
-    "version": (0, 1, 0),
+    "version": (0, 1, 1),
     "location": "View3D",
     "warning": "",
     "doc_url": "",
