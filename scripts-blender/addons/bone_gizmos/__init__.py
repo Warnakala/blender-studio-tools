@@ -10,14 +10,14 @@ from bpy.props import FloatProperty, IntProperty
 from bpy.types import AddonPreferences
 
 bl_info = {
-	'name' : "Bone Gizmos"
-	,'author': "Demeter Dzadik"
-	,'version' : (0, 0, 1)
-	,'blender' : (3, 0, 0)
-	,'description' : "Bone Gizmos for better armature interaction"
-	,'location': "Properties->Bone->Viewport Display->Custom Gizmo"
-	,'category': 'Rigging'
-	# ,'doc_url' : "https://gitlab.com/blender/CloudRig/"
+	'name' : "Bone Gizmos",
+	'author': "Demeter Dzadik",
+	'version' : (0, 0, 1),
+	'blender' : (3, 0, 0),
+	'description' : "Bone Gizmos for better armature interaction",
+	'location': "Properties->Bone->Viewport Display->Custom Gizmo",
+	'category': 'Rigging',
+	# 'doc_url' : "https://gitlab.com/blender/CloudRig/",
 }
 
 modules = (
