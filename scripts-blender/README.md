@@ -11,7 +11,7 @@ Add-ons used by the Blender Studio pipeline. Download the latest addons releases
 |Blender SVN |UI for the SVN (Subversion) file versioning system.  | [v0.2.1](../download/blender_svn/blender_svn-0.2.1.zip) |[SHA256](../download/blender_svn/blender_svn-0.2.1.sha256)|
 |Blender Gizmos|Attempt to prototype a system for using meshes for the manipulation of armatures.  |[v0.0.2](../download/bone_gizmos/bone_gizmos-0.0.2.zip) |[SHA256](../download/bone_gizmos/bone_gizmos-0.0.2.sha256)|
 |Cache Manager |Streamline the Alembic cache workflow of assets. |[v0.2.1](../download/cache_manager/cache_manager-0.1.1.zip) |[SHA256](../download/cache_manager/cache_manager-0.1.1.sha256)|
-|Contact Sheet |Create a contactsheet from sequence editor strips.  | [v0.1.1](../download/contactsheet/contact_sheet-0.1.1.zip) |[SHA256](../download/contactsheet/contact_sheet-0.1.1.sha256)|
+|Contact Sheet |Create a contactsheet from sequence editor strips.  | [v0.1.1](../download/contactsheet/contactsheet-0.1.1.zip) |[SHA256](../download/contactsheet/contactsheet-0.1.1.sha256)|
 |Easy Weights |Quality of life improvements for weight painting.  |[v0.1.1](../download/easy_weights/easy_weights-0.1.1.zip) |[SHA256](../download/easy_wights/easy_wights-0.1.1.sha256)|
 |Geonode Shapekeys |Enable animators to sculpt on linked and overridden meshes.  | [v0.0.2](../download/geonode_shapekeys/geonode_shapekeys-0.0.2.zip) |[SHA256](../download/geonode_shapekeys/geonode_shapekeys-0.0.2.sha256)|
 |Grease Converter |Convert annotations to Grease Pencil objects and vise versa.  |[v0.1.1](../download/grease_converter/grease_converter-0.1.1.zip) |[SHA256](../download/grease_converter/grease_converter-0.1.1.sha256)|
