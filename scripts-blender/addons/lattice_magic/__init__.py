@@ -16,7 +16,7 @@
 bl_info = {
 	"name": "Lattice Magic",
 	"author": "Demeter Dzadik",
-	"version": (0, 1, 0),
+    "version": (0, 1, 1),
 	"blender": (2, 90, 0),
 	"location": "View3D > Sidebar > Lattice Magic",
 	"description": "Various Lattice-based tools to smear or adjust geometry.",
