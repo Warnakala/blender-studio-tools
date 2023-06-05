@@ -1,3 +1,4 @@
 <!--@include: ../../scripts-blender/addons/lighting_overrider/README.md-->
-# CHANGELOG
+## 
+# Changelog
 <!--@include: ../../scripts-blender/addons/lighting_overrider/CHANGELOG.md-->

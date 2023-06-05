@@ -9,7 +9,7 @@ from . import operators, ui, props
 
 bl_info = {
     'name': "GeoNode Shape Keys", 'author': "Demeter Dzadik", 
-	'version': (0, 0, 1), 
+    "version": (0, 0, 2),
 	'blender': (3, 5, 0), 
 	'description': "Shape keys in the modifier stack", 
 	'location': "Properties->Mesh->Shape Keys->GeoNode ShapeKeys, only on overridden meshes", 

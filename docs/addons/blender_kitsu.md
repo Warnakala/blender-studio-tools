@@ -1,4 +1,5 @@
 <!--@include: ../../scripts-blender/addons/blender_kitsu/README.md-->
-# CHANGELOG
+## 
+# Changelog
 <!--@include: ../../scripts-blender/addons/blender_kitsu/CHANGELOG.md-->
 
