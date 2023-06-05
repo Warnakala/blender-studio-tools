@@ -350,7 +350,7 @@ def _calc_kitsu_frame_end(self):
     But we need acess to seqeuence properties.
     """
     frame_start = _calc_kitsu_frame_start(self)
-    frame_end_final = (frame_start + self.frame_final_duration)
+    frame_end_final = (frame_start + (self.frame_final_duration - 1))
     return int(frame_end_final)
 
 
