@@ -391,7 +391,7 @@ class MV_OT_toggle_timeline(bpy.types.Operator):
         if area_timeline:
             # Timeline needs to be closed.
             timeline_state = TimelineState(area=area_timeline)
-            opsdata.close_area(area_timeline)
+            opsdata.close_area(context, area_timeline)
             logger.info("Hide timeline")
 
         elif area_media:
@@ -453,7 +453,7 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
             # If sqe and timeline visible but not filebrowser
             # we need to first close timeline and then open it after to
             # get correct layout.
-            opsdata.close_area(area_time)
+            opsdata.close_area(context, area_time)
 
             # We need to do some custom context assembly here
             # because the bpy.ops.screen.area_close() sets context.screen to NULL.
@@ -468,7 +468,8 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
             )
 
             # Screen must be re-drawn, otherwise space.params is None.
-            bpy.ops.wm.redraw_timer(ctx, type="DRAW_WIN_SWAP", iterations=1)
+            with context.temp_override(**ctx):
+                bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
 
             # Restore previous filebrowser state.
             filebrowser_state.apply_to_area(area_fb)
@@ -513,7 +514,7 @@ class MV_OT_toggle_filebrowser(bpy.types.Operator):
             # Save filebrowser state.
             filebrowser_state = FileBrowserState(area=area_fb)
 
-            opsdata.close_area(area_fb)
+            opsdata.close_area(context, area_fb)
             logger.info("Hide filebrowser")
             return {"FINISHED"}
 
@@ -649,7 +650,8 @@ class MV_OT_screen_full_area(bpy.types.Operator):
 
         # active_media_area_obj = area_media
         ctx = opsdata.get_context_for_area(area_media)
-        bpy.ops.screen.screen_full_area(ctx, use_hide_panels=True)
+        with context.temp_override(**ctx):
+            bpy.ops.screen.screen_full_area(use_hide_panels=True)
         is_fullscreen = not is_fullscreen
 
         # Select previous filepath if in FILE_BROWSER area.
@@ -699,7 +701,8 @@ class MV_OT_jump_folder_up(bpy.types.Operator):
             return {"CANCELLED"}
 
         ctx = opsdata.get_context_for_area(area_fb)
-        bpy.ops.file.parent(ctx)
+        with context.temp_override(**ctx):
+            bpy.ops.file.parent()
 
         return {"FINISHED"}
 
@@ -761,7 +764,8 @@ class MV_OT_walk_bookmarks(bpy.types.Operator):
 
         # Run Cleanup.
         ctx = opsdata.get_context_for_area(area_fb)
-        bpy.ops.file.bookmark_cleanup(ctx)
+        with context.temp_override(**ctx):
+            bpy.ops.file.bookmark_cleanup()
 
         # !!!!!
         # The following section is the most stupid code in the universe.
@@ -913,7 +917,8 @@ class MV_OT_animation_play(bpy.types.Operator):
 
         ctx = opsdata.get_context_for_area(area_media)
 
-        bpy.ops.screen.animation_play(ctx)
+        with context.temp_override(**ctx):
+            bpy.ops.screen.animation_play()
 
         return {"FINISHED"}
 
@@ -943,7 +948,8 @@ class MV_OT_next_media_file(bpy.types.Operator):
             # If not fullscreen, just call select_wall op
             area_fb = opsdata.find_area(context, "FILE_BROWSER")
             ctx = opsdata.get_context_for_area(area_fb)
-            bpy.ops.file.select_walk(ctx, "INVOKE_DEFAULT", direction=self.direction)
+            with context.temp_override(**ctx):
+                bpy.ops.file.select_walk(ctx, "INVOKE_DEFAULT", direction=self.direction)
             return {"FINISHED"}
 
         # Get all files and folders and sort them alphabetically.
@@ -1040,7 +1046,8 @@ class MV_OT_set_fb_display_type(bpy.types.Operator):
 
         # Redraw if needed to update params.
         if not area_fb.spaces.active.params:
-            bpy.ops.wm.redraw_timer(ctx, type="DRAW_WIN_SWAP", iterations=1)
+            with context.temp_override(**ctx):
+                bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
 
         # Set display type.
         area_fb.spaces.active.params.display_type = self.display_type
@@ -1123,15 +1130,13 @@ class MV_OT_pan_media_view(bpy.types.Operator):
 
         if area_media.type == "IMAGE_EDITOR":
             ctx = opsdata.get_context_for_area(area_media)
-            bpy.ops.image.view_pan(
-                ctx, "EXEC_DEFAULT", offset=(self.deltax, self.deltay)
-            )
+            with context.temp_override(**ctx):
+                bpy.ops.image.view_pan("EXEC_DEFAULT", offset=(self.deltax, self.deltay))
 
         elif area_media.type == "SEQUENCE_EDITOR":
             ctx = opsdata.get_context_for_area(area_media, region_type="PREVIEW")
-            bpy.ops.view2d.pan(
-                ctx, "EXEC_DEFAULT", deltax=self.deltax, deltay=self.deltay
-            )
+            with context.temp_override(**ctx):
+                bpy.ops.view2d.pan("EXEC_DEFAULT", deltax=self.deltax, deltay=self.deltay)
 
         # Redraw Area.
         area_media.tag_redraw()
@@ -1162,19 +1167,21 @@ class MV_OT_zoom_media_view(bpy.types.Operator):
         if area_media.type == "IMAGE_EDITOR":
             ctx = opsdata.get_context_for_area(area_media)
 
-            if self.direction == "IN":
-                bpy.ops.image.view_zoom_in(ctx, "EXEC_DEFAULT", location=(0.5, 0.5))
+            with context.temp_override(**ctx):
+                if self.direction == "IN":
+                    bpy.ops.image.view_zoom_in("EXEC_DEFAULT", location=(0.5, 0.5))
 
-            elif self.direction == "OUT":
-                bpy.ops.image.view_zoom_out(ctx, "EXEC_DEFAULT", location=(0.5, 0.5))
+                elif self.direction == "OUT":
+                    bpy.ops.image.view_zoom_out("EXEC_DEFAULT", location=(0.5, 0.5))
 
         elif area_media.type == "SEQUENCE_EDITOR":
             ctx = opsdata.get_context_for_area(area_media, region_type="PREVIEW")
 
-            if self.direction == "IN":
-                bpy.ops.view2d.zoom_in(ctx, "EXEC_DEFAULT")
-            elif self.direction == "OUT":
-                bpy.ops.view2d.zoom_out(ctx, "EXEC_DEFAULT")
+            with context.temp_override(**ctx):
+                if self.direction == "IN":
+                    bpy.ops.view2d.zoom_in("EXEC_DEFAULT")
+                elif self.direction == "OUT":
+                    bpy.ops.view2d.zoom_out("EXEC_DEFAULT")
 
         # Redraw Area.
         area_media.tag_redraw()
@@ -1607,7 +1614,8 @@ class MV_OT_flip_media_view(bpy.types.Operator):
 
         elif active_media_area == "IMAGE_EDITOR":
             ctx = opsdata.get_context_for_area(area)
-            bpy.ops.image.flip(ctx, use_flip_x=True)
+            with context.temp_override(**ctx):
+                bpy.ops.image.flip(use_flip_x=True)
 
         else:
             return {"CANCELLED"}
