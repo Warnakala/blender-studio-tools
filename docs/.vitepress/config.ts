@@ -50,8 +50,17 @@ export default defineConfig({
         text: 'Pipeline Overview',
         items: [
           { text: 'Introduction', link: '/pipeline-overview/introduction'},
+          { text: 'Design Principles', link: '/pipeline-overview/design-principles'},
           { text: 'Infrastructure', link: '/pipeline-overview/infrastructure'},
-          { text: 'Rigging', link: '/pipeline-overview/rigging'},
+          { text: 'Editorial and Previz', link: '/pipeline-overview/editorial-and-previz'},
+          { 
+            text: 'Asset Creation', 
+            collapsed: true,
+            items: [
+              { text: 'Modeling', link: '/pipeline-overview/asset-creation/modeling'},
+              { text: 'Rigging', link: '/pipeline-overview/asset-creation/rigging'},
+            ]
+          },
         ]
       },
       {
@@ -78,6 +87,7 @@ export default defineConfig({
       },
       {
         text: 'Naming Conventions',
+        collapsed: true,
         items: [
           { text: 'Introduction', link: '/naming-conventions/introduction'},
           { text: 'File Types', link: '/naming-conventions/file-types'},
@@ -92,6 +102,7 @@ export default defineConfig({
           {text: 'Project Setup', link: '/user-guide/project-setup'},
           {
             text: 'Workstation',
+            collapsed: true,
             items: [
               { text: 'Introduction', link: '/user-guide/workstations/introduction'},
               { text: 'Installing Software', link: '/user-guide/workstations/installing-software'},
@@ -112,6 +123,7 @@ export default defineConfig({
           {text: 'Project Setup', link: '/td-guide/project-setup'},
           {
             text: 'Workstation',
+            collapsed: true,
             items: [
               { text: 'Overview', link: '/td-guide/workstations/overview'},
               { text: 'Installation', link: '/td-guide/workstations/installation'},
