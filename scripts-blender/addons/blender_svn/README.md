@@ -4,10 +4,10 @@ blender-svn is a Blender add-on to interact with the Subversion version control 
 [Blender-SVN Demo Video](https://studio.blender.org/films/charge/gallery/?asset=5999)
 
 ## Installation
-1. Make sure you have an SVN client installed, such that typing `svn` in the command line gives a result.
-2. Clone repository `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
-3. From the root of the repository navigate to `/scripts-blender/addons/` 
-4. Find the the `blender_svn` folder. Copy this folder into your Blender addons directory or create a sym link to it.
+1. Download [latest release](../addons/overview) 
+2. Launch Blender, navigate to `Edit > Preferences` select `Addons` and then `Install`, 
+3. Navigate to the downloaded add-on and select `Install Add-on` 
+4. Make sure you have an SVN client installed, such that typing `svn` in the command line gives a result.
 
 ## Features
 - Open a .blend file that is in an SVN repository, and enter credentials.

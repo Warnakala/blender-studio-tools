@@ -17,7 +17,7 @@
 bl_info = {
 	"name": "Pose Shape Keys",
 	"author": "Demeter Dzadik",
-	"version": (0, 0, 1),
+    "version": (0, 0, 2),
 	"blender": (3, 1, 0),
 	"location": "Properties -> Mesh Data -> Shape Keys -> Pose Keys",
 	"description": "Create shape keys that blend deformed meshes into a desired shape",

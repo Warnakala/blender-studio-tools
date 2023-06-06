@@ -127,7 +127,8 @@ def fit_timeline_view(context: bpy.types.Context, area: bpy.types.Area = None) -
             return
 
     ctx = get_context_for_area(area)
-    bpy.ops.action.view_all(ctx)
+    with context.temp_override(**ctx):
+        bpy.ops.action.view_all()
 
 
 def fit_image_editor_view(
@@ -139,7 +140,8 @@ def fit_image_editor_view(
             return
 
     ctx = get_context_for_area(area)
-    bpy.ops.image.view_all(ctx, fit_view=True)
+    with context.temp_override(**ctx):
+        bpy.ops.image.view_all(fit_view=True)
 
 
 def fit_sqe_preview(context: bpy.types.Context, area: bpy.types.Area = None) -> None:
@@ -149,7 +151,8 @@ def fit_sqe_preview(context: bpy.types.Context, area: bpy.types.Area = None) -> 
             return
 
     ctx = get_context_for_area(area)
-    bpy.ops.sequencer.view_all_preview(ctx)
+    with context.temp_override(**ctx):
+        bpy.ops.sequencer.view_all_preview()
 
 
 def fit_view(context: bpy.types.Context, area: bpy.types.Area) -> None:
@@ -195,7 +198,8 @@ def split_area(
         ctx = get_context_for_area(area_split)
 
     start_areas = screen.areas[:]
-    bpy.ops.screen.area_split(ctx, direction=direction, factor=factor)
+    with context.temp_override(**ctx):
+        bpy.ops.screen.area_split(direction=direction, factor=factor)
 
     for area in screen.areas:
         if area not in start_areas:
@@ -203,9 +207,10 @@ def split_area(
             return area
 
 
-def close_area(area: bpy.types.Area) -> None:
+def close_area(context: bpy.types.Context, area: bpy.types.Area) -> None:
     ctx = get_context_for_area(area)
-    bpy.ops.screen.area_close(ctx)
+    with context.temp_override(**ctx):
+        bpy.ops.screen.area_close()
 
 
 def setup_filebrowser_area(filebrowser_area: bpy.types.Area) -> None:

@@ -12,7 +12,7 @@ from . import warn_about_broken_libraries
 bl_info = {
     'name' : "Animation Cupboard",
     'author': "Demeter Dzadik",
-    'version' : (0, 0, 1),
+    "version": (0, 0, 2),
     'blender' : (3, 2, 0),
     'description' : "Tools to improve animation workflows",
     'location': "Various",

@@ -31,7 +31,7 @@ bl_info = {
     "author": "Paul Golter",
     "description": "Blender Studio Asset Pipeline Add-on",
     "blender": (3, 1, 0),
-    "version": (0, 1, 0),
+    "version": (0, 1, 1),
     "location": "View3D",
     "warning": "",
     "doc_url": "",

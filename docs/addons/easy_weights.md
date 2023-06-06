@@ -1,4 +1,5 @@
 <!--@include: ../../scripts-blender/addons/easy_weights/README.md-->
-# CHANGELOG
+## 
+# Changelog
 <!--@include: ../../scripts-blender/addons/easy_weights/CHANGELOG.md-->
 
