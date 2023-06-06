@@ -108,6 +108,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
         "if they follow the Blender Studio naming convention"
     )
     wrong: List[Tuple[bpy.types.Action, str]] = []
+    cleanup_empty_actions: bpy.props.BoolProperty(name="Delete Empty Action Data-Blocks", default=False, description="Remove any empty action data-blocks, actions that have 0 Fcurves/Keyframes")
     # List of tuples that contains the action on index 0 with the wrong name
     # and the name it should have on index 1.
 
@@ -122,6 +123,18 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
         existing_action_names = [a.name for a in bpy.data.actions]
         failed = []
         succeeded = []
+        removed = []
+
+
+        if self.cleanup_empty_actions:
+            for action in bpy.data.actions:
+                if len(action.fcurves) == 0 and action.use_fake_user and action.users == 1:
+                    removed.append(action.name)
+                    action.use_fake_user = False
+                    bpy.data.actions.remove(action)
+
+
+        
 
         for obj in [obj for obj in bpy.data.objects if obj.type == "ARMATURE"]:
             # Cerate Action if None Exists
@@ -155,9 +168,14 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
         # Report.
         report_str = f"Renamed actions: {len(succeeded)}"
         report_state = "INFO"
+
+        if self.cleanup_empty_actions:
+            report_str += f" | Removed Empty Actions: {len(removed)}"
         if failed:
             report_state = "WARNING"
             report_str += f" | Failed: {len(failed)}"
+        
+        
 
         self.report(
             {report_state},
@@ -240,12 +258,12 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-
         for action, name in self.wrong:
             row = layout.row()
             row.label(text=action.name)
             row.label(text="", icon="FORWARD")
             row.label(text=name)
+        layout.prop(self, "cleanup_empty_actions")
 
 
 class KITSU_OT_anim_enforce_naming_convention(bpy.types.Operator):
