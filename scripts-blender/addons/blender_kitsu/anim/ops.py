@@ -108,13 +108,23 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
         "if they follow the Blender Studio naming convention"
     )
     wrong: List[Tuple[bpy.types.Action, str]] = []
+    created: List[bpy.types.Action] = []
     cleanup_empty_actions: bpy.props.BoolProperty(name="Delete Empty Action Data-Blocks", default=False, description="Remove any empty action data-blocks, actions that have 0 Fcurves/Keyframes")
+    
     # List of tuples that contains the action on index 0 with the wrong name
     # and the name it should have on index 1.
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return bool(cache.shot_active_get())
+    
+    def get_action(self, action_name:str):
+        if bpy.data.actions.get(action_name):
+            return bpy.data.actions.get(action_name)
+        else:
+            new_action = bpy.data.actions.new(action_name)
+            self.created.append(new_action)
+            return new_action
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         active_shot = cache.shot_active_get()
@@ -140,9 +150,8 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
             # Cerate Action if None Exists
             if obj.animation_data is None or obj.animation_data.action is None:
                 base_name = obj.name.split(addon_prefs.shot_builder_armature_prefix)[-1]
-                new_action = bpy.data.actions.new(
-                    f"{addon_prefs.shot_builder_action_prefix}{base_name}.{active_shot.name}.v001"
-                )
+                action_name = f"{addon_prefs.shot_builder_action_prefix}{base_name}.{active_shot.name}.v001"
+                new_action = self.get_action(action_name)
                 new_action.use_fake_user = True
                 obj.animation_data_create()
                 obj.animation_data.action = new_action
@@ -173,7 +182,9 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
             report_str += f" | Removed Empty Actions: {len(removed)}"
         if failed:
             report_state = "WARNING"
-            report_str += f" | Failed: {len(failed)}"
+            report_str += f" | Rename Failed: {len(failed)}"
+        if len(self.created) != 0:
+            report_str += f" | Created Actions: {len(self.created)}"
         
         
 
@@ -190,6 +201,7 @@ class KITSU_OT_anim_check_action_names(bpy.types.Operator):
     def invoke(self, context, event):
         shot_active = cache.shot_active_get()
         self.wrong.clear()
+        self.created.clear()
         no_action = []
         correct = []
 
