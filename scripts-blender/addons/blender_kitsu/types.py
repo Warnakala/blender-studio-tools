@@ -874,11 +874,12 @@ class Task(Entity):
         return comment_obj
 
     def add_preview_to_comment(
-        self, comment: Comment, preview_file_path: str
-    ) -> Preview:
+        self, comment: Comment, preview_file_path: str,
+    frame_number:int) -> Preview:
         preview_dict = gazu.task.add_preview(
             asdict(self), asdict(comment), preview_file_path
         )
+        gazu.task.set_main_preview(preview_dict["id"], frame_number)
         return Preview.from_dict(preview_dict)
 
     def __bool__(self) -> bool:
