@@ -154,10 +154,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             return ""
         return self.project_root_path.joinpath("pipeline/blender_kitsu").as_posix()
 
-    def get_metastrip_file(self) -> str:
-        res_dir = bkglobals.RES_DIR_PATH
-        return res_dir.joinpath("metastrip.mp4").as_posix()
-
     def init_playblast_file_model(self, context: bpy.types.Context) -> None:
         ops_playblast_data.init_playblast_file_model(context)
 
@@ -228,16 +224,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         get=get_config_dir,
     )
 
-    metastrip_file: bpy.props.StringProperty(  # type: ignore
-        name="Meta Strip File",
-        description=(
-            "Filepath to black .mp4 file that will be used as metastrip for shots in the sequence editor"
-        ),
-        default="",
-        subtype="FILE_PATH",
-        get=get_metastrip_file,
-    )
-
     project_active_id: bpy.props.StringProperty(  # type: ignore
         name="Project Active ID",
         description="Server Id that refers to the last active project",
@@ -252,7 +238,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         name="Show Advanced Settings",
         description="Show advanced settings that should already have good defaults",
     )
-    shot_builder_show_advanced : bpy.props.BoolProperty(  # type: ignore
+    shot_builder_show_advanced: bpy.props.BoolProperty(  # type: ignore
         name="Show Advanced Settings",
         description="Show advanced settings that should already have good defaults",
     )
@@ -313,13 +299,12 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         options={"HIDDEN", "SKIP_SAVE"},
         description="File pattern to search for latest editorial export. Typically '{proj_name}_v\d\d\d.mp4'",
         default="petprojects_v\d\d\d.mp4",
-       
     )
 
     edit_export_frame_offset: bpy.props.IntProperty(  # type: ignore
         name="Editorial Export Offset",
         description="Shift Editorial Export by this frame-range after set-up.",
-        default=-102, #HARD CODED FOR PET PROJECTS BLENDER FILM
+        default=-102,  # HARD CODED FOR PET PROJECTS BLENDER FILM
     )
 
     shot_builder_frame_offset: bpy.props.IntProperty(  # type: ignore
@@ -340,7 +325,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
         default="ANI-",
     )
 
-    user_exec_code: bpy.props.StringProperty(# type: ignore
+    user_exec_code: bpy.props.StringProperty(  # type: ignore
         name="Post Execution Command",
         description="Run this command after shot_builder is complete, but before the file is saved.",
         default="",
@@ -424,7 +409,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             icon="ADD",
             emboss=False,
         )
-        
+
         # Shot_Builder settings.
         box = layout.box()
         box.label(text="Shot Builder", icon="MOD_BUILD")
@@ -437,7 +422,7 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             start_frame_row.label(text="Start Frame Offset")
             start_frame_row.prop(self, "shot_builder_frame_offset", text="")
             box.row().prop(self, "shot_builder_armature_prefix")
-            box.row().prop(self, "shot_builder_action_prefix") 
+            box.row().prop(self, "shot_builder_action_prefix")
             box.row().prop(self, "user_exec_code")
 
         # Misc settings.
@@ -452,7 +437,6 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             box.row().prop(self, "shot_pattern")
             box.row().prop(self, "shot_counter_digits")
             box.row().prop(self, "shot_counter_increment")
-
 
     @property
     def playblast_root_path(self) -> Optional[Path]:
@@ -495,15 +479,16 @@ class KITSU_addon_preferences(bpy.types.AddonPreferences):
             return False
 
         return True
-    
+
     @property
     def is_editorial_dir_valid(self) -> bool:
         if editorial_export_check_latest(bpy.context) is None:
             logger.error(
-                    "Failed to initialize editorial export file model. Invalid path/pattern. Check addon preferences"
-                )
+                "Failed to initialize editorial export file model. Invalid path/pattern. Check addon preferences"
+            )
             return False
         return True
+
 
 def session_get(context: bpy.types.Context) -> Session:
     """
@@ -544,7 +529,6 @@ def register():
 
 
 def unregister():
-
     # Log user out.
     addon_prefs = bpy.context.preferences.addons["blender_kitsu"].preferences
     if addon_prefs.session.is_auth():

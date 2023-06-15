@@ -172,7 +172,6 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
         return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         if not self.confirm:
             self.report({"WARNING"}, "Submit new shots aborted")
             return {"CANCELLED"}
@@ -309,6 +308,7 @@ class KITSU_OT_sqe_push_new_shot(bpy.types.Operator):
             % (noun.lower()),
         )
 
+
 class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
     bl_idname = "kitsu.sqe_push_new_sequence"
     bl_label = "Submit New Sequence"
@@ -327,7 +327,6 @@ class KITSU_OT_sqe_push_new_sequence(bpy.types.Operator):
         return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         if not self.confirm:
             self.report({"WARNING"}, "Submit new sequence aborted")
             return {"CANCELLED"}
@@ -420,7 +419,6 @@ class KITSU_OT_sqe_init_strip(bpy.types.Operator):
         )
 
         for strip in selected_sequences:
-
             if not checkstrip.is_valid_type(strip):
                 continue
 
@@ -621,7 +619,6 @@ class KITSU_OT_sqe_link_shot(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_multi_edit_strip(bpy.types.Operator):
-
     bl_idname = "kitsu.sqe_multi_edit_strip"
     bl_label = "Multi Edit Strip"
     bl_options = {"INTERNAL"}
@@ -685,7 +682,6 @@ class KITSU_OT_sqe_multi_edit_strip(bpy.types.Operator):
         )
 
         for idx, strip in enumerate(selected_sequences):
-
             # Gen data for resolver.
             counter_number = shot_counter_start + (shot_counter_increment * idx)
             counter = str(counter_number).rjust(shot_counter_digits, "0")
@@ -852,7 +848,6 @@ class KITSU_OT_sqe_uninit_strip(bpy.types.Operator):
         logger.info("-START- Uninitializing strips")
 
         for strip in context.selected_sequences:
-
             if not checkstrip.is_valid_type(strip):
                 continue
 
@@ -905,7 +900,6 @@ class KITSU_OT_sqe_unlink_shot(bpy.types.Operator):
         logger.info("-START- Unlinking shots")
 
         for strip in context.selected_sequences:
-
             if not checkstrip.is_valid_type(strip):
                 continue
 
@@ -1047,7 +1041,6 @@ class KITSU_OT_sqe_set_thumbnail_task_type(bpy.types.Operator):
         return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         # Task type selected by user.
         task_type_id = self.enum_prop
 
@@ -1084,7 +1077,6 @@ class KITSU_OT_sqe_set_sqe_render_task_type(bpy.types.Operator):
         return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         # Task type selected by user.
         task_type_id = self.enum_prop
 
@@ -1135,7 +1127,6 @@ class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
 
         with self.override_render_settings(context):
             with self.temporary_current_frame(context) as original_curframe:
-
                 # ----RENDER AND SAVE THUMBNAILS ------.
 
                 # Begin first progress update.
@@ -1320,7 +1311,6 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
         Cache.clear_all()
 
         with self.override_render_settings(context):
-
             # ----RENDER AND SAVE SQE ------.
 
             # Get strips.
@@ -1404,13 +1394,12 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
         # Log.
         logger.info("-END- Pushing Sequence Editor Render")
         return {"FINISHED"}
+
     def _gen_output_path(self, strip: bpy.types.Sequence, task_type: TaskType) -> Path:
-            addon_prefs = prefs.addon_prefs_get(bpy.context)
-            folder_name = addon_prefs.sqe_render_dir
-            file_name = f"{strip.kitsu.shot_id}_{strip.kitsu.shot_name}.{(task_type.name).lower()}.mp4"
-            return Path(folder_name).absolute().joinpath(file_name)
-
-
+        addon_prefs = prefs.addon_prefs_get(bpy.context)
+        folder_name = addon_prefs.sqe_render_dir
+        file_name = f"{strip.kitsu.shot_id}_{strip.kitsu.shot_name}.{(task_type.name).lower()}.mp4"
+        return Path(folder_name).absolute().joinpath(file_name)
 
     @contextlib.contextmanager
     def override_render_settings(self, context, thumbnail_width=256):
@@ -1473,9 +1462,7 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
 class KITSU_OT_sqe_push_shot(bpy.types.Operator):
     bl_idname = "kitsu.sqe_push_shot"
     bl_label = "Push Shot to Kitsu"
-    bl_description = (
-        "Pushes the active strip to Kitsu"
-    )
+    bl_description = "Pushes the active strip to Kitsu"
 
     comment: bpy.props.StringProperty(
         name="Comment",
@@ -1483,14 +1470,14 @@ class KITSU_OT_sqe_push_shot(bpy.types.Operator):
         default="",
     )
     task_type: bpy.props.EnumProperty(
-        name = "Task Type",
-        description = "Which task this video should be added to",
-        items = cache.get_task_types_enum_for_current_context
+        name="Task Type",
+        description="Which task this video should be added to",
+        items=cache.get_task_types_enum_for_current_context,
     )
     task_status: bpy.props.EnumProperty(
-        name = "Task Status",
-        description = "What to set the task's status to",
-        items = cache.get_all_task_statuses_enum
+        name="Task Status",
+        description="What to set the task's status to",
+        items=cache.get_all_task_statuses_enum,
     )
 
     @classmethod
@@ -1499,9 +1486,7 @@ class KITSU_OT_sqe_push_shot(bpy.types.Operator):
         if not hasattr(active_strip, 'filepath'):
             return False
 
-        return bool(
-            prefs.session_auth(context)
-        )
+        return bool(prefs.session_auth(context))
 
     def invoke(self, context, _event):
         return context.window_manager.invoke_props_dialog(self)
@@ -1523,8 +1508,8 @@ class KITSU_OT_sqe_push_shot(bpy.types.Operator):
         shot_name = active_strip.name.split(".")[0]
         metastrip = context.scene.sequence_editor.sequences.get(shot_name)
         if not metastrip:
-            # The metastrip should've been created by sqe_create_review_session, 
-            # if the Kitsu integration is enabled in the add-on preferences, 
+            # The metastrip should've been created by sqe_create_review_session,
+            # if the Kitsu integration is enabled in the add-on preferences,
             # the Kitsu add-on is enabled, and valid Kitsu credentials were entered.
             self.report({"ERROR"}, f"Could not find Kitsu metastrip: {shot_name}.")
             return {"CANCELLED"}
@@ -1707,11 +1692,7 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return bool(
-            prefs.session_auth(context)
-            and cache.project_active_get()
-            and addon_prefs.metastrip_file
-        )
+        return bool(prefs.session_auth(context) and cache.project_active_get())
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
@@ -1791,12 +1772,12 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
                             frame_end,
                         )
                         continue
-
+                # TODO Refactor as this reuses code from KITSU_OT_sqe_create_meta_strip
                 if not strip:
                     # Create new strip.
                     strip = context.scene.sequence_editor.sequences.new_movie(
                         shot.name,
-                        addon_prefs.metastrip_file,
+                        "",
                         channel,
                         frame_start,
                     )
@@ -1912,7 +1893,6 @@ class KITSU_OT_sqe_pull_edit(bpy.types.Operator):
 
 
 class KITSU_OT_sqe_init_strip_start_frame(bpy.types.Operator):
-
     bl_idname = "kitsu.sqe_init_strip_start_frame"
     bl_label = "Initialize Shot Start Frame"
     bl_description = "Calculates offset so the current shot starts at 101"
@@ -1932,7 +1912,6 @@ class KITSU_OT_sqe_init_strip_start_frame(bpy.types.Operator):
             selected_sequences = context.scene.sequence_editor.sequences_all
 
         for strip in selected_sequences:
-
             if not checkstrip.is_valid_type(strip):
                 continue
 
@@ -1981,7 +1960,7 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         addon_prefs = prefs.addon_prefs_get(context)
-        return bool(context.selected_sequences and addon_prefs.metastrip_file)
+        return bool(context.selected_sequences)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = prefs.addon_prefs_get(context)
@@ -1993,15 +1972,7 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
         selected_sequences = context.selected_sequences
 
         # Check if metastrip file actually exists.
-        if not Path(addon_prefs.metastrip_file).exists():
-            self.report(
-                {"ERROR"},
-                f"Failed to load metastrip file: {addon_prefs.metastrip_file}. Path does not exist",
-            )
-            return {"CANCELLED"}
-
         for strip in selected_sequences:
-
             # Get frame range information from current strip.
             strip_range = range(strip.frame_final_start, strip.frame_final_end)
             channel = strip.channel + 1
@@ -2026,7 +1997,7 @@ class KITSU_OT_sqe_create_meta_strip(bpy.types.Operator):
             # on the first try, EDIT: seems to work maybe per python overlaps of sequences possible?
             meta_strip = context.scene.sequence_editor.sequences.new_movie(
                 f"{strip.name}_metastrip",
-                addon_prefs.metastrip_file,
+                "",
                 strip.channel + 1,
                 strip.frame_final_start,
             )
@@ -2117,7 +2088,8 @@ class KITSU_OT_sqe_scan_for_media_updates(bpy.types.Operator):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         sqe = context.scene.sequence_editor
-        if not sqe: return False
+        if not sqe:
+            return False
         return bool(sqe.sequences_all)
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -2136,7 +2108,6 @@ class KITSU_OT_sqe_scan_for_media_updates(bpy.types.Operator):
         logger.info("-START- Scanning for media updates")
 
         for strip in sequences:
-
             if not strip.type == "MOVIE":
                 continue
 
@@ -2253,7 +2224,6 @@ class KITSU_OT_sqe_clear_update_indicators(bpy.types.Operator):
             sequences = context.scene.sequence_editor.sequences_all
 
         for strip in sequences:
-
             if strip.kitsu.media_outdated:
                 strip.kitsu.media_outdated = False
                 reset.append(strip)
@@ -2400,32 +2370,40 @@ class KITSU_OT_sqe_change_strip_source(bpy.types.Operator):
 
         util.ui_redraw()
         return {"FINISHED"}
-    
+
+
 def set_entity_data(entity, key: str, value: int):
     if get_entity_data(entity, key) is not None:
         entity['data'][key] = value
         return entity
 
+
 def get_entity_data(entity, key: str):
     if entity.get("data").get(key) is not None:
         return entity.get("data").get(key)
 
-def get_dict_len(items:dict):
+
+def get_dict_len(items: dict):
     try:
         return len(items)
     except TypeError:
         return None
 
+
 def set_revision_int(prev_rev=None):
     if prev_rev is None:
         return 1
-    return prev_rev+1
+    return prev_rev + 1
+
+
 class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
     bl_idname = "kitsu.vse_publish_edit_revision"
     bl_label = "Render and 'Publish as Revision'"
     bl_description = "Renders current VSE Edit as .mp4 and publishes as revision on 'Edit Task'.\nWill not overwrite existing files"
-    
-    def get_edit_entry_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+
+    def get_edit_entry_items(
+        self: Any, context: bpy.types.Context
+    ) -> List[Tuple[str, str, str]]:
         sorted_edits = []
         active_project = cache.project_active_get()
 
@@ -2433,45 +2411,68 @@ class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
             if (edit["project_id"] == active_project.id) and not edit['canceled']:
                 sorted_edits.append(edit)
 
-        return [(item.get("id"), item.get("name"), f'Created at: "{item.get("created_at")}" {item.get("description")}') for item in sorted_edits]
+        return [
+            (
+                item.get("id"),
+                item.get("name"),
+                f'Created at: "{item.get("created_at")}" {item.get("description")}',
+            )
+            for item in sorted_edits
+        ]
 
-    def get_edit_task_items(self: Any, context: bpy.types.Context) -> List[Tuple[str, str, str]]:
+    def get_edit_task_items(
+        self: Any, context: bpy.types.Context
+    ) -> List[Tuple[str, str, str]]:
         tasks = gazu.task.all_tasks_for_edit(self.edit_entry)
-        return [(item.get("id"), item.get("name"), f'Created at: "{item.get("created_at")}" {item.get("description")}') for item in tasks]
-    
+        return [
+            (
+                item.get("id"),
+                item.get("name"),
+                f'Created at: "{item.get("created_at")}" {item.get("description")}',
+            )
+            for item in tasks
+        ]
+
     comment: bpy.props.StringProperty(name="Comment")
     edit_entry: bpy.props.EnumProperty(name="Edit", items=get_edit_entry_items)
     task: bpy.props.EnumProperty(name="Edit", items=get_edit_task_items)
-    render_dir: bpy.props.StringProperty( 
+    render_dir: bpy.props.StringProperty(
         name="Folder",
         subtype="DIR_PATH",
     )
-    use_frame_start: bpy.props.BoolProperty(name="Submit update to 'frame_start'.", default=False)
-    frame_start: bpy.props.IntProperty(name="Frame Start", description="Send an integerfor the 'frame_start' value of the current Kitsu Edit. \nThis is used by Watchtower to pad the edit in the timeline.", default=0)
+    use_frame_start: bpy.props.BoolProperty(
+        name="Submit update to 'frame_start'.", default=False
+    )
+    frame_start: bpy.props.IntProperty(
+        name="Frame Start",
+        description="Send an integerfor the 'frame_start' value of the current Kitsu Edit. \nThis is used by Watchtower to pad the edit in the timeline.",
+        default=0,
+    )
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        return bool(
-            prefs.session_auth(context)
-            and cache.project_active_get()
-        )
-    
+        return bool(prefs.session_auth(context) and cache.project_active_get())
+
     def invoke(self, context, event):
         # Ensure user has permissions to access edit data
         try:
             edits = gazu.edit.get_all_edits_with_tasks()
         except gazu.exception.NotAllowedException:
-            self.report({"ERROR"}, "Kitsu User doesn't have permissions to access edit data.")
-            return {"CANCELLED"} 
+            self.report(
+                {"ERROR"}, "Kitsu User doesn't have permissions to access edit data."
+            )
+            return {"CANCELLED"}
 
         # Remove file name if set in render.filepath
         dir_path = bpy.path.abspath(context.scene.render.filepath)
         if not os.path.isdir(Path(dir_path)):
             dir_path = Path(dir_path).parent
-        self.render_dir =   str(dir_path)
-        
+        self.render_dir = str(dir_path)
+
         #'frame_start' is optionally property appearring on all edit_entries for a project if it exists
-        server_frame_start = get_entity_data(gazu.edit.get_edit(self.edit_entry), 'frame_start')
+        server_frame_start = get_entity_data(
+            gazu.edit.get_edit(self.edit_entry), 'frame_start'
+        )
         if server_frame_start is int:
             self.frame_start = server_frame_start
         self.use_frame_start = bool(server_frame_start is not None)
@@ -2488,11 +2489,12 @@ class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
         # Only set `frame_start` if exists on current project
         if self.use_frame_start:
             layout.prop(self, "frame_start")
-        
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         if self.task == "":
-            self.report({"ERROR"}, "Selected edit doesn't have any task associated with it  .")
+            self.report(
+                {"ERROR"}, "Selected edit doesn't have any task associated with it  ."
+            )
             return {"CANCELLED"}
 
         active_project = cache.project_active_get()
@@ -2505,9 +2507,8 @@ class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
         render_dir = bpy.path.abspath(self.render_dir)
         if not os.path.isdir(Path(render_dir)):
             self.report(
-            {"ERROR"},
-            f"Render path is not set to a directory. '{self.render_dir}'"
-        )
+                {"ERROR"}, f"Render path is not set to a directory. '{self.render_dir}'"
+            )
             return {"CANCELLED"}
         edit_entry = gazu.edit.get_edit(self.edit_entry)
         prod_name = active_project.name.lower().replace(' ', '')
@@ -2516,32 +2517,34 @@ class KITSU_OT_vse_publish_edit_revision(bpy.types.Operator):
         # check path exists
         if render_path.is_file():
             self.report(
-            {"ERROR"},
-            f"File '{render_name}' already exists at '{self.render_dir}'"
-        )
+                {"ERROR"}, f"File '{render_name}' already exists at '{self.render_dir}'"
+            )
             return {"CANCELLED"}
-        
+
         # Render Sequence to .mp4
         with override_render_path(self, context, render_path.as_posix()):
             with override_render_format(self, context):
-                bpy.ops.render.opengl(animation=True, sequencer=True)  
+                bpy.ops.render.opengl(animation=True, sequencer=True)
 
         # Create comment with video
         task_entity = gazu.task.get_task(self.task)
-        new_comment = gazu.task.add_comment(task_entity, task_entity["task_status"], self.comment)
+        new_comment = gazu.task.add_comment(
+            task_entity, task_entity["task_status"], self.comment
+        )
         new_preview = gazu.task.add_preview(task_entity, new_comment, render_path)
 
         # Update edit_entry's frame_start if 'frame_start' is found on server
         if self.use_frame_start:
-            edit_entity_update = set_entity_data(edit_entry, 'frame_start', self.frame_start)
-            updated_edit_entity = gazu.entity.update_entity(edit_entity_update) #TODO add a generic function to update entites
+            edit_entity_update = set_entity_data(
+                edit_entry, 'frame_start', self.frame_start
+            )
+            updated_edit_entity = gazu.entity.update_entity(
+                edit_entity_update
+            )  # TODO add a generic function to update entites
 
-
-        self.report(
-            {"INFO"},
-            f"Submitted new comment 'Revision {revision}'"
-        )
+        self.report({"INFO"}, f"Submitted new comment 'Revision {revision}'")
         return {"FINISHED"}
+
 
 # ---------REGISTER ----------.
 
@@ -2573,7 +2576,6 @@ classes = [
     KITSU_OT_sqe_change_strip_source,
     KITSU_OT_sqe_clear_update_indicators,
     KITSU_OT_vse_publish_edit_revision,
-
 ]
 
 
