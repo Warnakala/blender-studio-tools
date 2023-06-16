@@ -38,7 +38,10 @@ from blender_kitsu.types import (
     TaskStatus,
     TaskType,
 )
-from blender_kitsu.playblast.core import playblast_with_shading_settings, playblast_user_shading_settings
+from blender_kitsu.playblast.core import (
+    playblast_with_shading_settings,
+    playblast_user_shading_settings,
+)
 from blender_kitsu.playblast import opsdata
 
 logger = LoggerFactory.getLogger()
@@ -64,7 +67,14 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
     task_status: bpy.props.EnumProperty(items=cache.get_all_task_statuses_enum)  # type: ignore
 
     use_user_shading: bpy.props.BoolProperty(
-        name="Use Current Viewport Shading", default=True)
+        name="Use Current Viewport Shading", default=True
+    )
+    thumbnail_frame: bpy.props.IntProperty(
+        name="Thumbnail Frame",
+        description="Frame to use as the thumbnail on Kitsu",
+        min=0,
+    )
+    thumbnail_frame_final: bpy.props.IntProperty(name="Thumbnail Frame Final")
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -76,11 +86,23 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
         )
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         addon_prefs = prefs.addon_prefs_get(context)
 
         if not self.task_status:
             self.report({"ERROR"}, "Failed to create playblast. Missing task status")
+            return {"CANCELLED"}
+
+        # Playblast file always starts at frame 0, account for this in thumbnail frame selection
+        self.thumbnail_frame_final = self.thumbnail_frame - context.scene.frame_start
+
+        # Ensure thumbnail frame is not outside of frame range
+        if self.thumbnail_frame_final not in range(
+            0, (context.scene.frame_end - context.scene.frame_start) + 1
+        ):
+            self.report(
+                {"ERROR"},
+                f"Thumbnail frame '{self.thumbnail_frame}' is outside of frame range ",
+            )
             return {"CANCELLED"}
 
         shot_active = cache.shot_active_get()
@@ -96,12 +118,14 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
         # Render and save playblast
         if self.use_user_shading:
             output_path = playblast_user_shading_settings(
-                self, context, context.scene.kitsu.playblast_file)
+                self, context, context.scene.kitsu.playblast_file
+            )
 
         else:
             # Get output path.
             output_path = playblast_with_shading_settings(
-                self, context, context.scene.kitsu.playblast_file)
+                self, context, context.scene.kitsu.playblast_file
+            )
 
         context.window_manager.progress_update(1)
 
@@ -152,7 +176,9 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
             # Setup video sequence editor space.
             if "Video Editing" not in [ws.name for ws in bpy.data.workspaces]:
                 scripts_path = bpy.utils.script_paths(use_user=False)[0]
-                template_path = "/startup/bl_app_templates_system/Video_Editing/startup.blend"
+                template_path = (
+                    "/startup/bl_app_templates_system/Video_Editing/startup.blend"
+                )
                 ws_filepath = Path(scripts_path + template_path)
                 bpy.ops.workspace.append_activate(
                     idname="Video Editing",
@@ -191,6 +217,7 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
     def invoke(self, context, event):
         # Initialize comment and playblast task status variable.
         self.comment = ""
+        self.thumbnail_frame = context.scene.frame_current
 
         prev_task_status_id = context.scene.kitsu.playblast_task_status_id
         if prev_task_status_id:
@@ -211,6 +238,7 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
         row.prop(self, "comment")
         row = layout.row(align=True)
         row.prop(self, "use_user_shading")
+        row.prop(self, "thumbnail_frame")
 
     def _upload_playblast(self, context: bpy.types.Context, filepath: Path) -> None:
         # Get shot.
@@ -241,7 +269,11 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
         )
 
         # Add_preview_to_comment
-        task.add_preview_to_comment(comment, filepath.as_posix())
+        task.add_preview_to_comment(
+            comment,
+            filepath.as_posix(),
+            self.thumbnail_frame_final,
+        )
 
         # Preview.set_main_preview()
         logger.info(f"Uploaded playblast for shot: {shot.name} under: {task_type.name}")
@@ -265,7 +297,6 @@ class KITSU_OT_playblast_create(bpy.types.Operator):
 
         url = f"{host_url}/productions/{cache.project_active_get().id}/shots?search={cache.shot_active_get().name}"
         webbrowser.open(url)
-
 
 
 class KITSU_OT_playblast_set_version(bpy.types.Operator):
@@ -365,7 +396,6 @@ class KITSU_OT_playblast_increment_playblast_version(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-
         # Incremenet version.
         version = opsdata.add_playblast_version_increment(context)
 
@@ -465,7 +495,6 @@ def register():
 
 
 def unregister():
-
     # Clear handlers.
     bpy.app.handlers.load_post.remove(load_post_handler_check_frame_range)
     bpy.app.handlers.load_post.remove(load_post_handler_init_version_model)

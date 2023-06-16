@@ -55,7 +55,6 @@ def addon_prefs() -> bpy.types.AddonPreferences:
 def create_meta_strip(
     context: bpy.types.Context, strip: bpy.types.Sequence
 ) -> bpy.types.MovieSequence:
-
     # Get frame range information from current strip.
     strip_range = range(strip.frame_final_start, strip.frame_final_end)
     channel = strip.channel + 1
@@ -63,7 +62,7 @@ def create_meta_strip(
     # Create new meta strip.
     meta_strip = context.scene.sequence_editor.sequences.new_movie(
         f"{strip.name}_metastrip",
-        addon_prefs().metastrip_file,
+        "",
         strip.channel + 1,
         strip.frame_final_start,
     )
@@ -94,7 +93,6 @@ def link_strip_by_name(
     shot_name: str,
     sequence_name: str,
 ) -> None:
-
     # Get seq and shot.
     active_project = cache.project_active_get()
     seq = active_project.get_sequence_by_name(sequence_name)
