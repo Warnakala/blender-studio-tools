@@ -21,6 +21,7 @@
 from typing import Dict, List, Set, Optional, Tuple, Any
 
 import bpy
+import threading
 
 from blender_kitsu import cache, prefs, gazu
 
@@ -31,6 +32,7 @@ from blender_kitsu.logger import LoggerFactory
 
 logger = LoggerFactory.getLogger()
 
+active_thread = False
 
 class KITSU_OT_session_start(bpy.types.Operator):
     """
@@ -52,14 +54,8 @@ class KITSU_OT_session_start(bpy.types.Operator):
         return True
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        session = prefs.session_get(context)
-
-        session.set_config(self.get_config(context))
-
-        try:
-            session_data = session.start()
-
-        except gazu.exception.AuthFailedException:
+        self.thread_login(context)
+        if not prefs.session_get(context).is_auth():
             self.report({"ERROR"}, "Login data not correct")
             logger.error("Login data not correct")
             return {"CANCELLED"}
@@ -75,8 +71,6 @@ class KITSU_OT_session_start(bpy.types.Operator):
 
         # Check frame range.
         ops_playblast.load_post_handler_check_frame_range(None)
-
-        self.report({"INFO"}, f"Logged in as {session_data.user['full_name']}")
         return {"FINISHED"}
 
     def get_config(self, context: bpy.types.Context) -> Dict[str, str]:
@@ -86,6 +80,24 @@ class KITSU_OT_session_start(bpy.types.Operator):
             "host": addon_prefs.host,
             "passwd": addon_prefs.passwd,
         }
+
+    def kitsu_session_start(self, context):
+        session = prefs.session_get(context)
+        session.set_config(self.get_config(context))
+        try:
+            session_data = session.start()
+            self.report({"INFO"}, f"Logged in as {session_data.user['full_name']}")
+        finally:
+            return
+
+    def thread_login(self, context):
+        global active_thread
+        if active_thread:
+            active_thread._stop()
+        active_thread = threading.Thread(
+            target=self.kitsu_session_start(context), daemon=True
+        )
+        active_thread.start()
 
 
 class KITSU_OT_session_end(bpy.types.Operator):
