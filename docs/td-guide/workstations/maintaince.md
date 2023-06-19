@@ -19,6 +19,7 @@ The script will pull all of the latest changes from the main gentoo repository a
 1. Use `su` to Login as root or login as root directly
 2. Run `emerge -1 flamenco` to update the flamenco addon
 3. Run `emerge -1 blender-studio-tools` to update the studio addons
+4. Run `date -R > /var/cache/update_info/timestamp.chk` to mark this update as the latest
 
 ## Wake on LAN
 
