@@ -1097,13 +1097,13 @@ class KITSU_OT_sqe_set_sqe_render_task_type(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class KITSU_OT_sqe_push_thumbnail(bpy.types.Operator):
-    bl_idname = "kitsu.sqe_push_thumbnail"
-    bl_label = "Push Thumbnail"
+class KITSU_OT_sqe_push_render_still(bpy.types.Operator):
+    bl_idname = "kitsu.seq_render_still"
+    bl_label = "Push Still"
     bl_options = {"INTERNAL"}
     bl_description = (
-        "Makes and saves one thumbnail for each shot. "
-        "Uploads each thumbnail to server under the selected task type"
+        "Makes and saves one still for each shot. "
+        "Uploads each still to server as a preview image for the selected task type"
     )
 
     @classmethod
@@ -1290,7 +1290,7 @@ class KITSU_OT_sqe_push_render(bpy.types.Operator):
     bl_options = {"INTERNAL"}
     bl_description = (
         "Makes and saves a .mp4 for each shot. "
-        "Uploads each render on server under the selected task type"
+        "Uploads each render on server as a preview image for the selected task type"
     )
 
     @classmethod
@@ -2559,7 +2559,7 @@ classes = [
     KITSU_OT_sqe_link_sequence,
     KITSU_OT_sqe_set_thumbnail_task_type,
     KITSU_OT_sqe_set_sqe_render_task_type,
-    KITSU_OT_sqe_push_thumbnail,
+    KITSU_OT_sqe_push_render_still,
     KITSU_OT_sqe_push_render,
     KITSU_OT_sqe_push_shot,
     KITSU_OT_sqe_push_del_shot,

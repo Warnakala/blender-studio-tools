@@ -34,7 +34,7 @@ from blender_kitsu.sqe.ops import (
     KITSU_OT_sqe_link_sequence,
     KITSU_OT_sqe_set_thumbnail_task_type,
     KITSU_OT_sqe_set_sqe_render_task_type,
-    KITSU_OT_sqe_push_thumbnail,
+    KITSU_OT_sqe_push_render_still,
     KITSU_OT_sqe_push_render,
     KITSU_OT_sqe_push_del_shot,
     KITSU_OT_sqe_pull_shot_meta,
@@ -68,7 +68,6 @@ class KITSU_MT_sqe_advanced_delete(bpy.types.Menu):
     bl_label = "Advanced Delete"
 
     def draw(self, context: bpy.types.Context) -> None:
-
         selshots = context.selected_sequences
         strips_to_unlink = [s for s in selshots if s.kitsu.linked]
 
@@ -97,12 +96,9 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         sqe = context.scene.sequence_editor
-        return bool(
-            prefs.session_auth(context) or (sqe and sqe.sequences_all)
-        )
+        return bool(prefs.session_auth(context) or (sqe and sqe.sequences_all))
 
     def draw(self, context: bpy.types.Context) -> None:
-
         if self.poll_error(context):
             self.draw_error(context)
 
@@ -216,7 +212,6 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
             # Unlink.
             elif strip.kitsu.linked:
-
                 row = box.row(align=True)
                 row.operator(
                     KITSU_OT_sqe_unlink_shot.bl_idname,
@@ -404,7 +399,6 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
         row.prop(context.window_manager, "show_advanced", text="")
 
         if context.window_manager.show_advanced:
-
             # Counter.
             box.row().prop(
                 addon_prefs, "shot_counter_digits", text="Shot Counter Digits"
@@ -532,13 +526,12 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
 
         # Thumbnail and seqeunce renderoperator.
         if strips_to_tb:
-
             # Upload thumbnail op.
             noun = get_selshots_noun(len(strips_to_tb), prefix=f"{len(strips_to_meta)}")
             split = col.split(factor=0.7, align=True)
             split.operator(
-                KITSU_OT_sqe_push_thumbnail.bl_idname,
-                text=f"Thumbnail {noun}",
+                KITSU_OT_sqe_push_render_still.bl_idname,
+                text=f"Render Still {noun}",
                 icon="IMAGE_DATA",
             )
             # Select task types op.
@@ -554,7 +547,7 @@ class KITSU_PT_sqe_shot_tools(bpy.types.Panel):
             split = col.split(factor=0.7, align=True)
             split.operator(
                 KITSU_OT_sqe_push_render.bl_idname,
-                text=f"Render {noun}",
+                text=f"Render Movie {noun}",
                 icon="IMAGE_DATA",
             )
             # Select task types op.
@@ -696,7 +689,6 @@ class KITSU_PT_sqe_general_tools(bpy.types.Panel):
         return bool(movie_strips)
 
     def draw(self, context: bpy.types.Context) -> None:
-
         active_strip = context.scene.sequence_editor.active_strip
         selshots = context.selected_sequences
         if not selshots:
@@ -735,6 +727,7 @@ class KITSU_PT_sqe_general_tools(bpy.types.Panel):
                 KITSU_OT_sqe_change_strip_source.bl_idname, text="", icon="FILE_PARENT"
             ).go_latest = True
 
+
 class KITSU_PT_edit_task(bpy.types.Panel):
     bl_category = "Kitsu"
     bl_label = "Edit Tasks"
@@ -744,8 +737,7 @@ class KITSU_PT_edit_task(bpy.types.Panel):
 
     def draw(self, context: bpy.types.Context) -> None:
         self.layout.operator("kitsu.vse_publish_edit_revision")
-        
-        
+
 
 # ---------REGISTER ----------.
 
@@ -753,7 +745,7 @@ classes = [
     KITSU_MT_sqe_advanced_delete,
     KITSU_PT_sqe_shot_tools,
     KITSU_PT_sqe_general_tools,
-    KITSU_PT_edit_task
+    KITSU_PT_edit_task,
 ]
 
 
