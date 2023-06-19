@@ -874,8 +874,8 @@ class Task(Entity):
         return comment_obj
 
     def add_preview_to_comment(
-        self, comment: Comment, preview_file_path: str,
-    frame_number:int) -> Preview:
+        self, comment: Comment, preview_file_path: str, frame_number=0
+    ) -> Preview:
         preview_dict = gazu.task.add_preview(
             asdict(self), asdict(comment), preview_file_path
         )
