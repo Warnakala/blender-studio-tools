@@ -403,7 +403,9 @@ def ensure_loaded_production(context: bpy.types.Context) -> bool:
     global _PRODUCTION
     addon_prefs = prefs.addon_prefs_get(bpy.context)
     base_path = Path(addon_prefs.project_root_dir)
-    production_root = os.path.join(base_path, "pro") #TODO Fix during refactor should use base_path
+    production_root = os.path.join(
+        base_path, "pro", "config"
+    )  # TODO Fix during refactor should use base_path
     if is_valid_production_root(Path(production_root)):
         logger.debug(
         f"loading new production configuration from '{production_root}'.")

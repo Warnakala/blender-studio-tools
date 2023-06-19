@@ -200,7 +200,7 @@ configuration file is found. Project-specific settings are not configured/stored
 but in this configuration file.
 
 The add-on will look in the root of the production repository to locate the
-main configuration file `shot-builder/config.py`. This file contains general
+main configuration file `config/shot-builder/config.py`. This file contains general
 settings about the production, including:
 
 * The name of the production for reporting back to the user when needed.
