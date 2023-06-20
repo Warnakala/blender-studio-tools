@@ -1,12 +1,20 @@
 # Install instructions for the studio systems
 
-If you are installing the whole system from scratch you need to first to do three things:
 
-1. Setup a place where the iPXE boot loader can access files.
-2. Install the iPXE loader onto a USB stick
-3. Install the build server.
 
-After this is done, you can start rolling out the system to the client computers.
+::: warning Work in Progress
+20 June 2023 - The IPXE Boot Scripts from the Blender Studio have not yet been made public yet.
+:::
+
+
+If you are installing the whole system from scratch you need to first to do four things:
+1. Clone `Repo_to_be_determined.com` to get the files
+2. Run `build.sh` to setup the files needed by the IPXE bootloader
+3. Create an HTTP server to host the IPXE files. 
+    - For example to start an HTTP server using python run ` python -m http.server 8000` from the directory containing your IPXE Files
+4. Create IPXE Boot Stick by running `file_to_be_determined.sh` from the`Repo_to_be_determined.com` repo. You will need to supply the script with the address for the above HTTP server.
+
+After this is done, you can start installation of your build server and then client computers.
 
 ## Installing the build server server
 
@@ -37,10 +45,20 @@ When these steps are complete, one simply has to wait for the installer to finis
 
 
 ## Installing client workstation 
-Installing the client computers is **almost** exactly the same as installing the server. The only difference is that you should select the first option “Boot Gentoo installer (Blender Institute Customized)” in the iPXE boot menu.
+Installing the client computers is **almost** exactly the same as installing the server. The only difference is that you should select the first option “Boot Gentoo installer (Blender Institute Customized)” in the iPXE boot menu. 
 
-It will pull all programs and libraries from the build server.
+::: warning Warning
+The Gentoo Build Server must be online for the client workstation installer to work.
+:::
 
+1. Boot from the iPXE payload on the USB stick.
+2. Select the first option “Boot Gentoo installer”
+3. It will ask you to select keyboard layout, press enter if you want to use the default US layout
+4. When the computer has successfully booted you will be prompted to select a Hostname and install location.
+5. Once the installation is complete, it will ask to press any key to reboot.Everything should have been set up and configured, no additional configuration should be required.
+
+
+::: info Install Duration
 This is much faster than the server install process. On a **recent** workstation computer, the installation should complete in 15-20 minutes. On the more low powered computers in the office (the Intel NUCs for example), this will take around one hour or so.
+::: 
 
-As with the server, once the installation is complete, it will ask to press any key to reboot.Everything should have been set up and configured, no additional configuration should be required.
