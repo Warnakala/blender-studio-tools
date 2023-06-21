@@ -26,6 +26,8 @@ def apply_settings(data):
         try:
             if data[path][1] == 'STRING':
                 exec(path+f" = '{data[path][0]}'")
+            elif type(eval(path)) == idprop.types.IDPropertyArray:
+                exec(path+f'[:] = {data[path][0]}') # workaround for Blender not retaining UI data of property (see https://projects.blender.org/blender/blender/pulls/109203)
             else:
                 exec(path+f' = {data[path][0]}')
         except:
