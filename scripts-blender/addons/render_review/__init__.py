@@ -40,7 +40,7 @@ bl_info = {
     "author": "Paul Golter",
     "description": "Addon to review renders from Flamenco with the Sequence Editor",
     "blender": (3, 0, 0),
-    "version": (0, 1, 1),
+    "version": (0, 1, 2),
     "location": "Sequence Editor",
     "warning": "",
     "doc_url": "",
