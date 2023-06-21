@@ -211,7 +211,10 @@ class LOR_OT_override_picker(bpy.types.Operator):
             del context.scene['override']
             return {'CANCELLED'}
 
-        exec(self.rna_path+f' = context.scene.override')
+        if type(eval(self.rna_path)) == idprop.types.IDPropertyArray:
+            exec(self.rna_path+f'[:] = context.scene.override') # workaround for Blender not retaining UI data of property (see https://projects.blender.org/blender/blender/pulls/109203)
+        else:
+            exec(self.rna_path+f' = context.scene.override')
 
         add_info=[self.name_string, self.rna_path, context.scene.override, self.type]
         rna_overrides.add_rna_override(context, add_info)
@@ -234,8 +237,11 @@ class LOR_OT_override_picker(bpy.types.Operator):
                 eval(rna_path)
             except:
                 continue
-
-            exec(rna_path+f' = context.scene.override')
+            
+            if type(eval(rna_path)) == idprop.types.IDPropertyArray:
+                exec(rna_path+f'[:] = context.scene.override') # workaround for Blender not retaining UI data of property (see https://projects.blender.org/blender/blender/pulls/109203)
+            else:
+                exec(rna_path+f' = context.scene.override')
             name_string = stylize_name(rna_path)
             add_info = [name_string, rna_path, context.scene.override, self.type]
             rna_overrides.add_rna_override(context, add_info)
