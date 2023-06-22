@@ -1,4 +1,4 @@
-# Pose Shake Keys
+# Pose Shape Keys
 
 ## Table of Contents
 - [Installation](#installation)
