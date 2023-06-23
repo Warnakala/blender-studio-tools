@@ -21,7 +21,7 @@ The documentation features two types of content:
   * Concept design
   * Asset creation
     * Modeling
-    * Shading
+    * Shading and Texturing
     * Rigging
   * Shot assembly
   * Animation
