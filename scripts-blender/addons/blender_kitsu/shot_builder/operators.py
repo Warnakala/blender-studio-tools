@@ -192,10 +192,6 @@ class SHOTBUILDER_OT_NewShotFile(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         addon_prefs = bpy.context.preferences.addons["blender_kitsu"].preferences
-        if self.task_type == 'anim' and not addon_prefs.is_editorial_dir_valid:
-            self.report(
-                {'ERROR'}, "Shot builder is dependant on a valid editorial export path and file pattern.  \nCheck Preferences, errors appear in console")
-            return {'CANCELLED'}
         wm = context.window_manager
         self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
