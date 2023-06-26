@@ -1004,7 +1004,7 @@ class Preview(BaseDataClass):
     type: str = ""
 
     def set_main_preview(self):
-        gazu.task.set_main_preview(asdict(self))
+        gazu.task.set_main_preview(asdict(self), 0)
 
     def __bool__(self) -> bool:
         return bool(self.id)
