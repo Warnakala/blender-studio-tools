@@ -227,9 +227,10 @@ class GNSK_add_shape(bpy.types.Operator):
                 }
 
                 # Mute driver, if any.
-                fc = obj.animation_data.drivers.find(f'modifiers["{m.name}"].show_viewport')
-                if fc:
-                    fc.mute = True
+                if obj.animation_data:
+                    fc = obj.animation_data.drivers.find(f'modifiers["{m.name}"].show_viewport')
+                    if fc:
+                        fc.mute = True
                 m.show_viewport = False
 
         return modifier_states
@@ -242,9 +243,10 @@ class GNSK_add_shape(bpy.types.Operator):
                 setattr(obj.modifiers[mod_name], key, value)
 
                 # Unmute driver, if any.
-                fc = obj.animation_data.drivers.find(f'modifiers["{mod_name}"].{key}')
-                if fc:
-                    fc.mute = False
+                if obj.animation_data:
+                    fc = obj.animation_data.drivers.find(f'modifiers["{mod_name}"].{key}')
+                    if fc:
+                        fc.mute = False
 
     def make_evaluated_object(self,
                               context: bpy.types.Context,
