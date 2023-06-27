@@ -25,8 +25,8 @@ from blender_kitsu.shot_builder.task_type import TaskType
 from blender_kitsu.shot_builder.render_settings import RenderSettings
 from blender_kitsu.shot_builder.connectors.connector import Connector
 import requests
-from blender_kitsu import  cache 
-from blender_kitsu.gazu.asset import  all_assets_for_shot
+from blender_kitsu import cache
+from blender_kitsu.gazu.asset import all_assets_for_shot
 from blender_kitsu.gazu.shot import all_shots_for_project, all_sequences_for_project
 
 import typing
@@ -43,16 +43,19 @@ class KitsuPreferences(bpy.types.PropertyGroup):
     backend: bpy.props.StringProperty(  # type: ignore
         name="Server URL",
         description="Kitsu server address",
-        default="https://kitsu.blender.cloud/api")
+        default="https://kitsu.blender.cloud/api",
+    )
 
     username: bpy.props.StringProperty(  # type: ignore
         name="Username",
-        description="Username to connect to Kitsu",)
+        description="Username to connect to Kitsu",
+    )
 
     password: bpy.props.StringProperty(  # type: ignore
         name="Password",
         description="Password to connect to Kitsu",
-        subtype='PASSWORD',)
+        subtype='PASSWORD',
+    )
 
     def draw(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.label(text="Kitsu")
@@ -63,10 +66,11 @@ class KitsuPreferences(bpy.types.PropertyGroup):
     def _validate(self):
         if not (self.backend and self.username and self.password):
             raise KitsuException(
-                "Kitsu connector has not been configured in the add-on preferences")
+                "Kitsu connector has not been configured in the add-on preferences"
+            )
 
 
-class KitsuDataContainer():
+class KitsuDataContainer:
     def __init__(self, data: typing.Dict[str, typing.Optional[str]]):
         self._data = data
 
@@ -109,7 +113,17 @@ class KitsuSequenceRef(ShotRef):
 
 
 class KitsuShotRef(ShotRef):
-    def __init__(self, kitsu_id: str, name: str, code: str, frame_start: int, frames: int, frame_end: int, frames_per_second: float, sequence: KitsuSequenceRef):
+    def __init__(
+        self,
+        kitsu_id: str,
+        name: str,
+        code: str,
+        frame_start: int,
+        frames: int,
+        frame_end: int,
+        frames_per_second: float,
+        sequence: KitsuSequenceRef,
+    ):
         super().__init__(name=name, code=code)
         self.kitsu_id = kitsu_id
         self.frame_start = frame_start
@@ -137,8 +151,7 @@ class KitsuConnector(Connector):
 
     def __get_production_data(self) -> KitsuProject:
         production = cache.project_active_get()
-        project = KitsuProject(typing.cast(
-            typing.Dict[str, typing.Any], production))
+        project = KitsuProject(typing.cast(typing.Dict[str, typing.Any], production))
         return project
 
     def get_name(self) -> str:
@@ -147,8 +160,9 @@ class KitsuConnector(Connector):
 
     def get_task_types(self) -> typing.List[TaskType]:
         project = cache.project_active_get()
-        task_types = project.task_types 
+        task_types = project.task_types
         import pprint
+
         pprint.pprint(task_types)
         return []
 
@@ -156,56 +170,80 @@ class KitsuConnector(Connector):
         project = cache.project_active_get()
         kitsu_sequences = all_sequences_for_project(project.id)
 
-        sequence_lookup = {sequence_data['id']: KitsuSequenceRef(
-            kitsu_id=sequence_data['id'],
-            name=sequence_data['name'],
-            code=sequence_data['code'],
-        ) for sequence_data in kitsu_sequences}
+        sequence_lookup = {
+            sequence_data['id']: KitsuSequenceRef(
+                kitsu_id=sequence_data['id'],
+                name=sequence_data['name'],
+                code=sequence_data['code'],
+            )
+            for sequence_data in kitsu_sequences
+        }
 
         kitsu_shots = all_shots_for_project(project.id)
         shots: typing.List[ShotRef] = []
 
         for shot_data in kitsu_shots:
-
-            #Initialize default values
+            # Initialize default values
             frame_start = vars.DEFAULT_FRAME_START
             frame_end = 0
 
             #  shot_data['data'] can be None
             if shot_data['data']:
-                # If 3d_in key not found use default start frame.
-                frame_start = int(shot_data['data'].get('3d_in', vars.DEFAULT_FRAME_START))
-                frame_end = int(shot_data['data'].get('3d_out', 0))
+                # If 3d_start key not found use default start frame.
+                frame_start = int(
+                    shot_data['data'].get('3d_start', vars.DEFAULT_FRAME_START)
+                )
+                frame_end = (
+                    int(shot_data['data'].get('3d_start', vars.DEFAULT_FRAME_START))
+                    + shot_data['nb_frames']
+                    - 1
+                )
 
-            # If 3d_in and 3d_out available use that to calculate frames.
+            # If 3d_start and 3d_out available use that to calculate frames.
             # If not try shot_data['nb_frames'] or 0 -> invalid.
-            frames = int((frame_end - frame_start + 1) if frame_end else shot_data['nb_frames'] or 0)
+            frames = int(
+                (frame_end - frame_start + 1)
+                if frame_end
+                else shot_data['nb_frames'] or 0
+            )
             if frames < 0:
-                logger.error("%s duration is negative: %i. Check frame range information on Kitsu", shot_data['name'], frames)
+                logger.error(
+                    "%s duration is negative: %i. Check frame range information on Kitsu",
+                    shot_data['name'],
+                    frames,
+                )
                 frames = 0
 
-            shots.append(KitsuShotRef(
-                kitsu_id=shot_data['id'],
-                name=shot_data['name'],
-                code=shot_data['code'],
-                frame_start=frame_start,
-                frames=frames,
-                frame_end = frame_end,
-                frames_per_second=24.0,
-                sequence=sequence_lookup[shot_data['parent_id']],
-                ))
+            shots.append(
+                KitsuShotRef(
+                    kitsu_id=shot_data['id'],
+                    name=shot_data['name'],
+                    code=shot_data['code'],
+                    frame_start=frame_start,
+                    frames=frames,
+                    frame_end=frame_end,
+                    frames_per_second=24.0,
+                    sequence=sequence_lookup[shot_data['parent_id']],
+                )
+            )
 
         return shots
 
     def get_assets_for_shot(self, shot: Shot) -> typing.List[AssetRef]:
-        kitsu_assets = all_assets_for_shot(shot.kitsu_id) 
-        
-        return [AssetRef(name=asset_data['name'], code=asset_data['code'])
-                for asset_data in kitsu_assets]
+        kitsu_assets = all_assets_for_shot(shot.kitsu_id)
+
+        return [
+            AssetRef(name=asset_data['name'], code=asset_data['code'])
+            for asset_data in kitsu_assets
+        ]
 
     def get_render_settings(self, shot: Shot) -> RenderSettings:
         """
         Retrieve the render settings for the given shot.
         """
         project = cache.project_active_get()
-        return RenderSettings(width=int(project.resolution.split('x')[0]), height=int(project.resolution.split('x')[1]), frames_per_second=project.fps)
+        return RenderSettings(
+            width=int(project.resolution.split('x')[0]),
+            height=int(project.resolution.split('x')[1]),
+            frames_per_second=project.fps,
+        )

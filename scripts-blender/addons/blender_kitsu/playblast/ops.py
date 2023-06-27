@@ -25,6 +25,8 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 import bpy
 from bpy.app.handlers import persistent
 
+from blender_kitsu import bkglobals
+
 from blender_kitsu import (
     cache,
     util,
@@ -340,9 +342,36 @@ class KITSU_OT_playblast_set_version(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class KITSU_OT_push_frame_range(bpy.types.Operator):
+    bl_idname = "kitsu.push_frame_range"
+    bl_label = "Push Frame Start"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Adjusts the start frame of animation file."
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return bool(prefs.session_auth(context) and cache.shot_active_get())
+
+    def draw(self, context: bpy.types.Context) -> None:
+        layout = self.layout
+        col = layout.column(align=True)
+        col.label(text="Set 3d_start using current scene frame start.")
+        col.label(text=f"New Frame Start: {context.scene.frame_start}", icon="ERROR")
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        shot = cache.shot_active_pull_update()
+        shot.data["3d_start"] = context.scene.frame_start
+        shot.update()
+        self.report({"INFO"}, f"Updated frame range offset {context.scene.frame_start}")
+        return {"FINISHED"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> Set[str]:
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+
 class KITSU_OT_pull_frame_range(bpy.types.Operator):
     bl_idname = "kitsu.pull_frame_range"
-    bl_label = "Update Frame Range"
+    bl_label = "Pull Frame Range"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
         "Pulls frame range of active shot from the server "
@@ -356,15 +385,15 @@ class KITSU_OT_pull_frame_range(bpy.types.Operator):
     def execute(self, context: bpy.types.Context) -> Set[str]:
         active_shot = cache.shot_active_pull_update()
 
-        if "3d_in" not in active_shot.data or "3d_out" not in active_shot.data:
+        if "3d_start" not in active_shot.data:
             self.report(
                 {"ERROR"},
-                f"Failed to pull frame range. Shot {active_shot.name} missing '3d_in', '3d_out' attribute on server",
+                f"Failed to pull frame range. Shot {active_shot.name} missing '3d_start'.",
             )
             return {"CANCELLED"}
 
-        frame_in = int(active_shot.data["3d_in"])
-        frame_out = int(active_shot.data["3d_out"])
+        frame_in = int(active_shot.data["3d_start"])
+        frame_out = int(active_shot.data["3d_start"]) + int(active_shot.nb_frames) - 1
 
         # Check if current frame range matches the one for active shot.
         if (
@@ -428,16 +457,14 @@ def load_post_handler_check_frame_range(dummy: Any) -> None:
     # Pull update for shot.
     cache.shot_active_pull_update()
 
-    if "3d_in" not in active_shot.data or "3d_out" not in active_shot.data:
+    if "3d_start" not in active_shot.data:
         logger.warning(
-            "Failed to check frame range. Shot %s missing '3d_in', '3d_out' attribute on server",
+            "Failed to check frame range. Shot %s missing '3d_start' attribute on server",
             active_shot.name,
         )
         return
-
-    frame_in = int(active_shot.data["3d_in"])
-    frame_out = int(active_shot.data["3d_out"])
-
+    frame_in = int(active_shot.data["3d_start"])
+    frame_out = int(active_shot.data["3d_start"]) + int(active_shot.nb_frames) - 1
     if (
         frame_in == bpy.context.scene.frame_start
         and frame_out == bpy.context.scene.frame_end
@@ -478,6 +505,7 @@ classes = [
     KITSU_OT_playblast_set_version,
     KITSU_OT_playblast_increment_playblast_version,
     KITSU_OT_pull_frame_range,
+    KITSU_OT_push_frame_range,
 ]
 
 

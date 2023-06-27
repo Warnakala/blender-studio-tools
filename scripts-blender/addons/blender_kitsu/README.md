@@ -161,7 +161,7 @@ In the `Push` panel you will find all the operators that push data to Kitsu. <br
 
 >**Metadata**: Pushes metadata of shot: sequence, shot name, frame range, sequence_color
 >>**Note**:  Global edit frame range will be saved in `"frame_in"` `"frame_out"` kitsu shot attribute <br/>
-The actual shot frame range (starting at 101) will be saved in `["data"]["3d_in"] and `["data"]["3d_out"] kitsu shot attribute <br/>
+The actual shot frame range (starting at 101) will be saved in `["data"]["3d_start"]` kitsu shot attribute <br/>
 
 >**Thumbnails**: Renders a thumbnail of the selected shots (will be saved to the `Thumbnail Directory` -> see addon preferences) and uploads it to Kitsu. Thumbnails are linked to a task in Kitsu. So you can select the Task Type for which you want to upload the thumbnail with the `Set Thumbnail Task Type` operator. <br/>
 If you select multiple metastrips it will always use the middle frame to create the thumbnail. If you have only one selected it will use the frame which is under the cursor (it curser is inside shot range). <br/>
@@ -243,7 +243,8 @@ The animation tools will show up when you selected a `Task Type` with the name `
 ![image info](/media/addons/blender_kitsu/context_animation_tools.jpg)
 
 >**Create Playblast**: Will create a openGL viewport render of the viewport from which the operator was executed and uploads it to Kitsu. The `+` button increments the version of the playblast. If you would override an older version you will see a warning before the filepath. The `directory` button will open a file browser in the playblast directory. The playblast will be uploaded to the `Animation` Task Type of the active shot that was set in the `Context Browser`. The web browser will be opened after the playblast and should point to the respective shot on Kitsu. <br/>
-**Update Frame Range**: Will pull the frame range of the active shot from Kitsu and apply it to the scene. It will use the `['data']['3d_in']` and `['data']['3d_out']` attribute of the Kitsu shot. <br/>
+**Push Frame Start**: Will Push the current scene's frame start to Kitsu. This will set the `['data']['3d_start]` attribute of the Kitsu shot.
+**Pull Frame Range**: Will pull the frame range of the active shot from Kitsu and apply it to the scene. It will use read `['data']['3d_start]` attribute of the Kitsu shot. <br/>
 **Update Output Collection**: Blender Studio Pipeline specific operator. <br/>
 **Duplicate Collection**: Blender Studio Pipeline specific operator. <br/>
 **Check Action Names**: Blender Studio Pipeline specific operator. <br/>
