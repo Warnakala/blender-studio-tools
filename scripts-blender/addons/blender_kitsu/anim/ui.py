@@ -59,11 +59,11 @@ class KITSU_PT_vi3d_anim_tools(bpy.types.Panel):
         box = layout.box()
         box.label(text="Scene", icon="SCENE_DATA")
 
-        # Pull frame range.
-        row = box.row(align=True)
-        row.operator(
+        col = box.column(align=True)
+        col.operator("kitsu.push_frame_range", icon="TRIA_UP")
+        col.operator(
             "kitsu.pull_frame_range",
-            icon="FILE_REFRESH",
+            icon="TRIA_DOWN",
         )
 
         # Update output collection.
