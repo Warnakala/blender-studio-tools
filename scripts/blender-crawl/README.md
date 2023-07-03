@@ -9,25 +9,11 @@
 In order to use this tool you need:
 - Python 3.5+
 
-## Run without Installation
+## Run 
 This folder contains a command line tool that doesn't require installation to use properly. This tool doesn't require installation to be run. To run `blender-crawl` without installation follow the steps below.
 1. Clone this repository with `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
 2. Run `cd blender-studio-pipeline/scripts/blender-crawl` to enter directory
 3. Run program with `python blender_crawl /my-folder/` 
-
-
-## Installation (OPTIONAL)
-Download or clone this repository. This repository is a command line tool that can be installed with the python packaging manager. Installation is an optional step only intended for advanced users.
-This script does the following (follow this if you want to do this manually or on another platform):
-Steps 3 and 5 are specific to linux, similar steps to gain root/administration privileges are avaliable to [Windows](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/jj717276(v=ws.11)) and [Mac](https://support.apple.com/en-ca/guide/terminal/apd5b0b6259-a7d4-4435-947d-0dff528912ba/mac) users.
-
-1. Clone this repository with `git clone https://projects.blender.org/studio/blender-studio-pipeline.git`
-2. Run `cd blender-studio-pipeline/scripts/blender-crawl` to enter directory
-3. Gain root access with `su` or equivalent command to grant permission to modify the system.
-4. Install with `pip install .`
-5. Type `exit` to log out of root user or equivalent command.
-5. Run with `blender_crawl /my-folder/`
-6. Get help with `blender_crawl -h`
 
 
 ## How to get started
